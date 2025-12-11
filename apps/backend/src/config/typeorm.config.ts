@@ -15,5 +15,5 @@ export const createTypeOrmOptions = (config: ConfigService): DataSourceOptions =
   database: config.get<string>('DB_NAME', 'app'),
   entities: [],
   synchronize: false,
-  logging: false,
+  logging: config.get<string>('NODE_ENV') !== 'production',
 });

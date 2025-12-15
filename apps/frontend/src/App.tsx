@@ -1,39 +1,56 @@
-import { useState } from 'react';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
-import './App.css';
-import { css } from '@emotion/react';
-import { typography } from './styles/typography';
+import { css, Global, ThemeProvider } from '@emotion/react';
 
-function App() {
-  const [count, setCount] = useState(0);
+import { Button } from './components/Button';
+import { lightTheme } from './styles/theme';
 
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1 css={H1}>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount(count => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </>
+    <ThemeProvider theme={lightTheme}>
+      <Global styles={globalStyle} />
+      <main css={pageStyle}>
+        <section css={stackStyle}>
+          <Button variant="primary" fullWidth>
+            사용해 보기
+          </Button>
+          <Button variant="secondary" fullWidth>
+            전 이미 계정이 있어요
+          </Button>
+        </section>
+      </main>
+    </ThemeProvider>
   );
 }
 
-const H1 = css`
-  font-size: ${typography['36ExtraBold'].fontSize};
-  line-height: ${typography['36ExtraBold'].lineHeight};
-  font-weight: ${typography['36ExtraBold'].fontWeight};
-  color: #4e4866;
+const globalStyle = css`
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #f7f7fc 0%, #eef1ff 100%);
+    font-family:
+      'SUIT',
+      'D2Coding',
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+  }
 `;
-export default App;
+
+const pageStyle = css`
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 64px;
+`;
+
+const stackStyle = css`
+  width: min(920px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+`;

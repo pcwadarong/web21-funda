@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@emotion/react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import { ModalProvider } from './contexts/ModalContext';
 import { AuthCheck } from './pages/AuthCheck';
 import { Error } from './pages/Error';
 import { Fields } from './pages/Fields';
@@ -80,7 +81,9 @@ export default function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </ThemeProvider>
   );
 }

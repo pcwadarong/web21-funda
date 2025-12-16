@@ -1,4 +1,4 @@
-import { css, Global, ThemeProvider } from '@emotion/react';
+import { ThemeProvider } from '@emotion/react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { AuthCheck } from './pages/AuthCheck';
@@ -80,26 +80,7 @@ export default function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-      <Global styles={globalStyle} />
       <RouterProvider router={router} />
     </ThemeProvider>
   );
 }
-
-const globalStyle = css`
-  * {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    background: linear-gradient(180deg, #f7f7fc 0%, #eef1ff 100%);
-    font-family:
-      'SUIT',
-      'Inter',
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      sans-serif;
-  }
-`;

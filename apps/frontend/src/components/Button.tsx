@@ -1,7 +1,7 @@
 import { css, type CSSObject, useTheme } from '@emotion/react';
 import type { ButtonHTMLAttributes } from 'react';
 
-import type { Theme } from '../styles/theme';
+import type { Theme } from '@/styles/theme';
 
 type Variant = 'primary' | 'secondary';
 

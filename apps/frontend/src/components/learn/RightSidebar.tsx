@@ -1,6 +1,6 @@
 import { css, useTheme } from '@emotion/react';
 
-import type { Theme } from '../styles/theme';
+import type { Theme } from '../../styles/theme';
 
 // TODO: 유저 정보 수정
 const USER_STATS = {

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import checkIcon from '../assets/check.svg';
 import lockIcon from '../assets/lock.svg';
 import startIcon from '../assets/start.svg';
-import { LearnRightSidebar } from '../components/LearnRightSidebar';
+import { LearnRightSidebar } from '../components/learn/RightSidebar';
 import { Sidebar } from '../components/Sidebar';
 import type { Theme } from '../styles/theme';
 

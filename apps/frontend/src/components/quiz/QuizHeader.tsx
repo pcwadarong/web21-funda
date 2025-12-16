@@ -1,6 +1,6 @@
 import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { Theme } from '@/styles/theme';
@@ -16,21 +16,18 @@ export const QuizHeader = ({ currentStep, totalSteps, completedSteps }: QuizHead
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const handleCloseClick = () => {
-    if (completedSteps > 0) {
-      setShowExitModal(true);
-    } else {
-      navigate('/learn');
-    }
-  };
+  const handleCloseClick = useCallback(() => {
+    if (completedSteps > 0) setShowExitModal(true);
+    else navigate('/learn');
+  }, [completedSteps, navigate]);
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     setShowExitModal(false);
-  };
+  }, []);
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     navigate('/learn');
-  };
+  }, [navigate]);
 
   const progress = (completedSteps / totalSteps) * 100;
 

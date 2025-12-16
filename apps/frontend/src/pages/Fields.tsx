@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -21,19 +21,21 @@ export const Fields = () => {
   const navigate = useNavigate();
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
 
-  const toggleField = (fieldId: string) => {
-    const newSelected = new Set(selectedFields);
-    if (newSelected.has(fieldId)) {
-      newSelected.delete(fieldId);
-    } else {
-      newSelected.add(fieldId);
-    }
-    setSelectedFields(newSelected);
-  };
+  const toggleField = useCallback((fieldId: string) => {
+    setSelectedFields(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(fieldId)) {
+        newSelected.delete(fieldId);
+      } else {
+        newSelected.add(fieldId);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const handleComplete = () => {
+  const handleComplete = useCallback(() => {
     navigate('/learn');
-  };
+  }, [navigate]);
 
   return (
     <div css={containerStyle()}>

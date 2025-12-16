@@ -2,7 +2,7 @@ import { Button } from '@comp/Button';
 import { QuizHeader } from '@comp/quiz/QuizHeader';
 import { MultipleChoice, type MultipleChoiceQuestion } from '@comp/quiz/quizType/MultipleChoice';
 import { css, useTheme } from '@emotion/react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useModal } from '@/contexts/ModalContext';
@@ -57,20 +57,25 @@ export const Quiz = () => {
   const completedSteps = questionStatuses.filter(status => status === 'checked').length;
   const showResult = currentQuestionStatus === 'checked';
 
-  const handleOptionClick = (optionIndex: number) => {
-    if (currentQuestionStatus !== 'idle') return;
+  const handleOptionClick = useCallback(
+    (optionIndex: number) => {
+      if (currentQuestionStatus !== 'idle') return;
 
-    const newSelectedAnswers = [...selectedAnswers];
-    // Toggle 로직: 이미 선택된 옵션을 다시 클릭하면 선택 해제
-    if (newSelectedAnswers[currentQuestionIndex] === optionIndex) {
-      newSelectedAnswers[currentQuestionIndex] = -1;
-    } else {
-      newSelectedAnswers[currentQuestionIndex] = optionIndex;
-    }
-    setSelectedAnswers(newSelectedAnswers);
-  };
+      setSelectedAnswers(prev => {
+        const newSelectedAnswers = [...prev];
+        // Toggle 로직: 이미 선택된 옵션을 다시 클릭하면 선택 해제
+        if (newSelectedAnswers[currentQuestionIndex] === optionIndex) {
+          newSelectedAnswers[currentQuestionIndex] = -1;
+        } else {
+          newSelectedAnswers[currentQuestionIndex] = optionIndex;
+        }
+        return newSelectedAnswers;
+      });
+    },
+    [currentQuestionIndex, currentQuestionStatus],
+  );
 
-  const handleCheckAnswer = async () => {
+  const handleCheckAnswer = useCallback(async () => {
     if (!isAnswerSelected || currentQuestionStatus !== 'idle') return;
 
     setCurrentQuestionStatus('checking');
@@ -81,32 +86,34 @@ export const Quiz = () => {
 
     setCurrentQuestionStatus('checked');
     // 정답 제출 완료 상태 업데이트
-    const newQuestionStatuses = [...questionStatuses];
-    newQuestionStatuses[currentQuestionIndex] = 'checked';
-    setQuestionStatuses(newQuestionStatuses);
-  };
+    setQuestionStatuses(prev => {
+      const newQuestionStatuses = [...prev];
+      newQuestionStatuses[currentQuestionIndex] = 'checked';
+      return newQuestionStatuses;
+    });
+  }, [isAnswerSelected, currentQuestionStatus, currentQuestionIndex]);
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = useCallback(() => {
     if (isLastQuestion) {
       navigate(`/quiz/${unitId}/${stepId}/result`);
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
       setCurrentQuestionStatus(questionStatuses[currentQuestionIndex + 1] || 'idle');
     }
-  };
+  }, [isLastQuestion, navigate, unitId, stepId, questionStatuses, currentQuestionIndex]);
 
   // TODO: 내용 구현 및 분리
-  const handleShowExplanation = () => {
+  const handleShowExplanation = useCallback(() => {
     openModal('문제 해설', <div>내용 준비 중입니다.</div>);
-  };
+  }, [openModal]);
 
-  const handleShowReport = () => {
+  const handleShowReport = useCallback(() => {
     openModal('문제 오류 신고', <ReportModalContent />);
-  };
+  }, [openModal]);
 
-  const handleShowAI = () => {
+  const handleShowAI = useCallback(() => {
     openModal('AI에게 질문하기', <div>내용 준비 중입니다.</div>);
-  };
+  }, [openModal]);
 
   return (
     <div css={containerStyle}>

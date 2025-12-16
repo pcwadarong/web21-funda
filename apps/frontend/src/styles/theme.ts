@@ -1,4 +1,3 @@
-// src/styles/theme.ts
 import { colors } from './color';
 import { typography } from './typography';
 

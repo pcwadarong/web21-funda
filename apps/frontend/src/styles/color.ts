@@ -1,4 +1,3 @@
-// src/styles/colors.ts
 export const colors = {
   light: {
     text: {

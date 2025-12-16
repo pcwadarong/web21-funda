@@ -7,7 +7,6 @@ export const typography = {
   },
 
   // Bold 700
-
   '32Bold': {
     fontSize: '32px',
     lineHeight: '48px',

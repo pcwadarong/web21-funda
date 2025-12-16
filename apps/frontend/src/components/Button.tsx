@@ -30,7 +30,7 @@ export const Button = ({
       ]}
       {...props}
     >
-      <span css={labelStyle(theme)}>{children}</span>
+      {children}
     </button>
   );
 };
@@ -56,6 +56,10 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
     'Segoe UI',
     sans-serif;
   background: transparent;
+
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
 `;
 
 const primaryStyle = (theme: Theme) => css`
@@ -96,12 +100,5 @@ const secondaryStyle = (theme: Theme) => css`
 const disabledStyle = (theme: Theme) => css`
   opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
   border-color: ${theme.colors.border.default};
-`;
-
-const labelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
-  font-weight: ${theme.typography['16Medium'].fontWeight};
 `;

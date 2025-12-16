@@ -1,4 +1,4 @@
-import { css, useTheme } from '@emotion/react';
+import { css, type CSSObject, useTheme } from '@emotion/react';
 import type { ButtonHTMLAttributes } from 'react';
 
 import type { Theme } from '../styles/theme';
@@ -8,12 +8,14 @@ type Variant = 'primary' | 'secondary';
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   fullWidth?: boolean;
+  css?: CSSObject;
 }
 
 export const Button = ({
   variant = 'primary',
   fullWidth = false,
   children,
+  css: customCss,
   ...props
 }: ButtonProps) => {
   const theme = useTheme();
@@ -24,6 +26,7 @@ export const Button = ({
         baseStyle(theme, fullWidth),
         variant === 'primary' ? primaryStyle(theme) : secondaryStyle(theme),
         props.disabled && disabledStyle(theme),
+        customCss,
       ]}
       {...props}
     >

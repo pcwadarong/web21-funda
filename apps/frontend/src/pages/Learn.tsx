@@ -58,15 +58,26 @@ export const Learn = () => {
               {LESSON_ITEMS.map(lesson => {
                 const isDisabled = lesson.status === 'locked' || lesson.type === 'checkpoint';
 
+                if (isDisabled) {
+                  return (
+                    <div key={lesson.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                      <span css={lessonIconStyle}>
+                        <img src={lockIcon} alt="잠김" css={iconImageStyle} />
+                      </span>
+                      <div css={lessonNameStyle(theme)}>{lesson.name}</div>
+                    </div>
+                  );
+                }
+
                 return (
-                  <button
+                  <Link
                     key={lesson.id}
-                    disabled={isDisabled}
+                    // TODO: 하드코딩 삭제
+                    to="/quiz/1/1"
                     css={[
                       lessonItemStyle(theme),
                       lesson.status === 'completed' && completedLessonStyle(theme),
                       lesson.status === 'active' && activeLessonStyle(theme),
-                      (lesson.status === 'locked' || isDisabled) && lockedLessonStyle(theme),
                     ]}
                   >
                     <span css={lessonIconStyle}>
@@ -76,12 +87,9 @@ export const Learn = () => {
                       {lesson.status === 'active' && (
                         <img src={startIcon} alt="활성" css={iconImageStyle} />
                       )}
-                      {lesson.status === 'locked' && (
-                        <img src={lockIcon} alt="잠김" css={iconImageStyle} />
-                      )}
                     </span>
                     <div css={lessonNameStyle(theme)}>{lesson.name}</div>
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -154,7 +162,7 @@ const unitTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: rgba(255, 255, 255, 0.9);
+  color: ${theme.colors.surface.bold};
 `;
 
 const titleTextStyle = (theme: Theme) => css`
@@ -195,10 +203,10 @@ const lessonItemStyle = (theme: Theme) => css`
   transition: all 150ms ease;
   text-align: left;
   width: 100%;
+  text-decoration: none;
 
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
+  &:hover {
+    transform: translateY(-2px);
   }
 `;
 

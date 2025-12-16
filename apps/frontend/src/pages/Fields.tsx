@@ -129,7 +129,6 @@ const fieldButtonStyle = (theme: Theme, isSelected: boolean) => css`
   background: ${theme.colors.surface.strong};
   border: 2px solid ${isSelected ? theme.colors.primary.main : theme.colors.border.default};
   border-radius: ${theme.borderRadius.medium};
-  cursor: pointer;
   transition: all 150ms ease;
   box-shadow: ${isSelected
     ? `0 4px 12px ${theme.colors.primary.surface}`

@@ -22,14 +22,17 @@ export const LearnRightSidebar = () => {
 
   return (
     <aside css={rightSectionStyle}>
-      <div css={cardStyle(theme)}>
-        <div css={statsTextStyle(theme)}>{USER_STATS.learningDays}일째 학습 중</div>
-        <div css={statsIconsStyle(theme)}>
-          <span css={statIconStyle}>💎</span>
-          <span css={statValueStyle(theme)}>{USER_STATS.diamond}</span>
-          <span css={statIconStyle}>💻</span>
+      <div css={statsContainerStyle}>
+        <div css={statContainerStyle}>
+          <span>💻</span>
           <span css={statValueStyle(theme)}>{USER_STATS.field}</span>
-          <span css={statIconStyle}>🔥</span>
+        </div>
+        <div css={statContainerStyle}>
+          <span>💎</span>
+          <span css={statValueStyle(theme)}>{USER_STATS.diamond}</span>
+        </div>
+        <div css={statContainerStyle}>
+          <span>🔥</span>
           <span css={statValueStyle(theme)}>{USER_STATS.streak}</span>
         </div>
       </div>
@@ -81,22 +84,24 @@ const rightSectionStyle = css`
   }
 `;
 
-const statsTextStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Bold'].fontSize};
-  line-height: ${theme.typography['16Bold'].lineHeight};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  color: ${theme.colors.text.strong};
+const statsContainerStyle = css`
+  display: flex;
+  gap: 8px;
 `;
 
-const statsIconsStyle = (_theme: Theme) => css`
+const statContainerStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['20Bold'].fontSize};
+  line-height: ${theme.typography['20Bold'].lineHeight};
+  font-weight: ${theme.typography['20Bold'].fontWeight};
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
+  justify-content: center;
+  padding: 8px;
+  border-radius: ${theme.borderRadius.small};
 
-const statIconStyle = css`
-  font-size: 20px;
+  &:hover {
+    background: ${theme.colors.surface.bold};
+  }
 `;
 
 const statValueStyle = (theme: Theme) => css`

@@ -35,7 +35,7 @@ export const QuizHeader = ({ currentStep, totalSteps, completedSteps }: QuizHead
     <>
       <header css={headerStyle(theme)}>
         <div css={headerContentStyle}>
-          <button css={closeButtonStyle} onClick={handleCloseClick}>
+          <button css={closeButtonStyle(theme)} onClick={handleCloseClick}>
             ✕
           </button>
           <div css={progressContainerStyle(theme)}>
@@ -90,7 +90,8 @@ const headerContentStyle = css`
   margin: 0 auto;
 `;
 
-const closeButtonStyle = css`
+const closeButtonStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.default};
   display: flex;
   align-items: center;
   justify-content: center;

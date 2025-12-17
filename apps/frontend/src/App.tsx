@@ -1,4 +1,4 @@
-import { ThemeProvider } from '@emotion/react';
+import { css, Global, ThemeProvider } from '@emotion/react';
 import { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
@@ -95,6 +95,15 @@ export default function App() {
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <Global
+        styles={css`
+          body {
+            background: ${isDarkMode
+              ? 'linear-gradient(180deg, #3f3b5e 0%, #2e345d 100%)'
+              : 'linear-gradient(180deg, #f7f7fc 0%, #eef1ff 100%)'};
+          }
+        `}
+      />
       <ModalProvider>
         <RouterProvider router={router} />
       </ModalProvider>

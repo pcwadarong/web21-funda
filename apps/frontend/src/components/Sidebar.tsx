@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { Link } from 'react-router-dom';
 
 import type { Theme } from '../styles/theme';
 
@@ -23,10 +24,10 @@ export const Sidebar = () => {
 
   return (
     <aside css={sidebarStyle(theme)}>
-      <div css={logoSectionStyle}>
+      <Link to="/learn" css={logoSectionStyle}>
         <span css={logoIconStyle}>🐼</span>
         <span css={logoTextStyle(theme)}>Funda</span>
-      </div>
+      </Link>
 
       <nav css={navStyle}>
         {NAV_ITEMS.map(item => (

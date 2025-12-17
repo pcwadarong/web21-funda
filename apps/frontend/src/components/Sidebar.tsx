@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { Link } from 'react-router-dom';
 
 import type { Theme } from '../styles/theme';
 
@@ -23,10 +24,10 @@ export const Sidebar = () => {
 
   return (
     <aside css={sidebarStyle(theme)}>
-      <div css={logoSectionStyle}>
+      <Link to="/learn" css={logoSectionStyle}>
         <span css={logoIconStyle}>🐼</span>
         <span css={logoTextStyle(theme)}>Funda</span>
-      </div>
+      </Link>
 
       <nav css={navStyle}>
         {NAV_ITEMS.map(item => (
@@ -111,7 +112,7 @@ const logoTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   line-height: ${theme.typography['20Bold'].lineHeight};
-  color: ${theme.colors.text.strong};
+  color: ${theme.colors.primary.main};
 
   @media (max-width: 1024px) {
     display: none;
@@ -166,7 +167,7 @@ const navItemStyle = (theme: Theme) => css`
 
 const activeNavItemStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
-  color: ${theme.colors.primary.main};
+  color: ${theme.colors.primary.dark};
   font-weight: 700;
 `;
 

@@ -187,22 +187,32 @@ const containerStyle = css`
 
 const mainStyle = css`
   flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 24px;
   overflow-y: auto;
-  background: linear-gradient(180deg, #f7f7fc 0%, #eef1ff 100%);
+
+  @media (min-width: 768px) {
+    padding: 24px;
+  }
 `;
 
 const quizCardContainerStyle = (theme: Theme) => css`
-  max-width: 45rem;
   width: 100%;
-  margin: 0 auto;
   background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.large};
   padding: 32px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+
+  @media (min-width: 768px) {
+    max-width: 45rem;
+    height: min-content;
+    margin: 0 auto;
+    border-radius: ${theme.borderRadius.large};
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const questionHeaderStyle = (_theme: Theme) => css`

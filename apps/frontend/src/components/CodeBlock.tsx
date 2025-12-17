@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import type { HTMLAttributes } from 'react';
 
 import type { Theme } from '@/styles/theme';
+import { colors } from '@/styles/token';
 
 export interface CodeBlockProps extends HTMLAttributes<HTMLPreElement> {
   children: React.ReactNode;
@@ -38,14 +39,14 @@ export const CodeBlock = ({ children, language = 'JavaScript' }: CodeBlockProps)
 };
 
 const codeBlockContainerStyle = (theme: Theme) => css`
-  background: ${theme.colors.text.strong};
+  background: ${colors.light.grayscale[900]};
   border-radius: ${theme.borderRadius.medium};
   border: 1px solid ${theme.colors.border.default};
   overflow: hidden;
 `;
 
 const badgeContainerStyle = (theme: Theme) => css`
-  background: ${theme.colors.text.default};
+  background: ${colors.light.grayscale[800]};
   border-bottom: 1px solid ${theme.colors.text.light};
   display: flex;
   justify-content: flex-end;
@@ -57,7 +58,7 @@ const badgeStyle = (theme: Theme) => css`
   background: #fff9c4;
   padding: 4px 12px;
   border-radius: 20px;
-  color: ${theme.colors.text.default};
+  color: #704508;
   font-size: ${theme.typography['12Medium'].fontSize};
 `;
 
@@ -71,7 +72,7 @@ const codeStyle = (theme: Theme) => css`
   font-family: 'D2Coding', 'Courier New', monospace;
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: 1.6;
-  color: ${theme.colors.surface.default};
+  color: ${colors.light.grayscale[50]};
   white-space: pre-wrap;
   word-wrap: break-word;
 `;

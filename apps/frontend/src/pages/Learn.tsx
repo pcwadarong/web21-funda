@@ -1,6 +1,8 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
+import { colors } from '@/styles/token';
+
 import checkIcon from '../assets/check.svg';
 import lockIcon from '../assets/lock.svg';
 import startIcon from '../assets/start.svg';
@@ -130,16 +132,13 @@ const centerSectionStyle = css`
 `;
 
 const centerSectionInnerStyle = css`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 40rem;
   overflow-y: auto;
-  padding-right: 8px;
 `;
 
 const headerSectionStyle = (theme: Theme) => css`
@@ -148,7 +147,7 @@ const headerSectionStyle = (theme: Theme) => css`
   align-items: center;
   justify-content: space-between;
   padding: 24px 32px;
-  background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgb(143, 133, 255) 100%);
+  background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgba(123, 111, 249, 1) 100%);
   border-radius: ${theme.borderRadius.large};
 `;
 
@@ -162,14 +161,14 @@ const unitTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${theme.colors.surface.bold};
+  color: ${colors.light.grayscale[400]};
 `;
 
 const titleTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['32Bold'].fontSize};
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
-  color: ${theme.colors.surface.strong};
+  color: ${colors.light.grayscale[50]};
 `;
 
 const overviewButtonStyle = (theme: Theme) => css`
@@ -213,17 +212,19 @@ const lessonItemStyle = (theme: Theme) => css`
 const completedLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
+  color: ${colors.light.grayscale[50]};
 `;
 
 const activeLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
   border-color: ${theme.colors.primary.dark};
-  color: ${theme.colors.surface.strong};
+  color: ${colors.light.grayscale[50]};
 `;
 
 const lockedLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.default};
   border-color: ${theme.colors.border.default};
+  color: ${theme.colors.text.strong};
   opacity: 0.6;
   cursor: not-allowed;
 `;

@@ -111,7 +111,7 @@ const logoTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   line-height: ${theme.typography['20Bold'].lineHeight};
-  color: ${theme.colors.text.strong};
+  color: ${theme.colors.primary.main};
 
   @media (max-width: 1024px) {
     display: none;
@@ -166,7 +166,7 @@ const navItemStyle = (theme: Theme) => css`
 
 const activeNavItemStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
-  color: ${theme.colors.primary.main};
+  color: ${theme.colors.primary.dark};
   font-weight: 700;
 `;
 

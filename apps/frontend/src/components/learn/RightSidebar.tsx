@@ -94,6 +94,7 @@ const statContainerStyle = (theme: Theme) => css`
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   display: flex;
+  gap: 8px;
   align-items: center;
   justify-content: center;
   padding: 8px;
@@ -147,7 +148,6 @@ const reviewBadgeStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   line-height: ${theme.typography['12Medium'].lineHeight};
   font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.primary.main};
   text-align: center;
 `;
 

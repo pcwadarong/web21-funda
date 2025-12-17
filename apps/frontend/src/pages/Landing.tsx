@@ -80,7 +80,7 @@ const titleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['36ExtraBold'].fontSize};
   line-height: ${theme.typography['36ExtraBold'].lineHeight};
   font-weight: ${theme.typography['36ExtraBold'].fontWeight};
-  color: ${theme.colors.text.weak};
+  color: ${theme.colors.text.light};
   margin: 0;
   text-align: center;
 `;

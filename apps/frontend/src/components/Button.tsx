@@ -2,6 +2,7 @@ import { css, type CSSObject, useTheme } from '@emotion/react';
 import type { ButtonHTMLAttributes } from 'react';
 
 import type { Theme } from '@/styles/theme';
+import { colors } from '@/styles/token';
 
 type Variant = 'primary' | 'secondary';
 
@@ -63,7 +64,7 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
 
 const primaryStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
-  color: ${theme.colors.surface.strong};
+  color: ${colors.light.grayscale[50]};
   box-shadow: 0 10px 0 ${theme.colors.primary.dark};
 
   &:hover {
@@ -79,10 +80,10 @@ const primaryStyle = (theme: Theme) => css`
 `;
 
 const secondaryStyle = (theme: Theme) => css`
-  background: ${theme.colors.surface.strong};
-  color: ${theme.colors.text.light};
+  background: ${colors.light.grayscale[50]};
+  color: ${colors.light.grayscale[700]};
   border: 2px solid ${theme.colors.primary.surface};
-  box-shadow: 0 10px 0 ${theme.colors.primary.surface};
+  box-shadow: 0 10px 0 ${theme.colors.primary.light};
 
   &:hover {
     transform: translateY(-2px);

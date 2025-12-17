@@ -1,8 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import { Fields } from '@/pages/Fields';
-import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@emotion/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+
+import { Fields } from '@/pages/Fields';
 import { lightTheme } from '@/styles/theme';
 
 // useNavigate 모킹
@@ -15,15 +16,14 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const renderFields = () => {
-  return render(
+const renderFields = () =>
+  render(
     <ThemeProvider theme={lightTheme}>
       <MemoryRouter>
         <Fields />
       </MemoryRouter>
     </ThemeProvider>,
   );
-};
 
 describe('Fields 컴포넌트 테스트', () => {
   beforeEach(() => {

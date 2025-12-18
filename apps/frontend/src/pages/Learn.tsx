@@ -212,7 +212,7 @@ const lessonItemStyle = (theme: Theme) => css`
 const completedLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
-  color: ${colors.light.grayscale[50]};
+  color: ${theme.colors.text.strong};
 `;
 
 const activeLessonStyle = (theme: Theme) => css`

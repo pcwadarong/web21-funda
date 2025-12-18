@@ -1,4 +1,9 @@
+import { ThemeProvider } from '@emotion/react';
 import type { Preview } from '@storybook/react-vite';
+
+import { darkTheme, lightTheme } from '@/styles/theme';
+
+import '../src/styles/main.css';
 
 const preview: Preview = {
   parameters: {
@@ -16,6 +21,17 @@ const preview: Preview = {
       test: 'todo',
     },
   },
+  decorators: [
+    (Story, context) => {
+      const background = context.globals.backgrounds?.value;
+      const theme = background === 'dark' ? darkTheme : lightTheme;
+      return (
+        <ThemeProvider theme={theme}>
+          <Story />
+        </ThemeProvider>
+      );
+    },
+  ],
 };
 
 export default preview;

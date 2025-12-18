@@ -48,6 +48,7 @@ const modalContentStyle = (theme: Theme) => css`
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  color: ${theme.colors.text.strong};
 `;
 
 const modalHeaderStyle = css`
@@ -61,14 +62,11 @@ const modalTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
-  color: ${theme.colors.text.strong};
   margin: 0;
 `;
 
-const modalCloseButtonStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+const modalCloseButtonStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['20Medium'].fontSize};
 `;
 
 const modalBodyStyle = (theme: Theme) => css`

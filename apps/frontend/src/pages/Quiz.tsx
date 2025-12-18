@@ -15,22 +15,62 @@ type QuestionStatus = 'idle' | 'checking' | 'checked';
 const QUESTIONS: MultipleChoiceQuestion[] = [
   {
     id: 1,
-    question: '이진 탐색(Binary Search)의 시간 복잡도는?',
-    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)'],
-    correctAnswer: 1,
+    question:
+      'A와 B가 통신할 때, 데이터의 순서 보장과 오류 검출 및 재전송을 담당하는 OSI 계층은 어디인가요?',
+    options: [
+      '물리 계층 (Physical Layer)',
+      '네트워크 계층 (Network Layer)',
+      '전송 계층 (Transport Layer)',
+      '세션 계층 (Session Layer)',
+    ],
+    correctAnswer: 2,
   },
   {
     id: 2,
     question: '다음 코드에서 빈칸에 들어갈 메서드는?',
-    code: `const arr = [1, 2, 3, 4, 5];\nconst doubled = arr.       (x => x * 2);\nconsole.log(doubled); // [2, 4, 6, 8, 10]`,
+    code: `const arr = [1, 2, 3, 4, 5];\nconst doubled = arr.{{BLANK}}(x => x * 2);\nconsole.log(doubled); // [2, 4, 6, 8, 10]`,
     options: ['filter', 'map', 'reduce', 'forEach', 'for ... of'],
     correctAnswer: 1,
     explanation: 'map() 메서드는 배열의 각 요소를 변환하여 새로운 배열을 반환합니다.',
   },
   {
     id: 3,
-    question: '이진 탐색(Binary Search)의 시간 복잡도는?',
-    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)', 'O(n²)'],
+    question:
+      '브라우저에 www.google.com을 처음 입력했을 때, IP 주소를 알아내기 위해 질의하는 순서로 올바른 것은? (캐시가 없다고 가정)',
+    options: [
+      'Root DNS → TLD(.com) DNS → Authoritative(google.com) DNS',
+      'Authoritative DNS → Root DNS → TLD DNS',
+      'TLD DNS → Root DNS → Authoritative DNS',
+      'Local DNS가 임의로 IP를 생성하여 응답',
+    ],
+    correctAnswer: 0,
+  },
+  {
+    id: 4,
+    question: 'CSS Box Model의 구성 요소를 안쪽에서 바깥쪽 순서로 올바르게 나열한 것은?',
+    options: [
+      'margin → border → padding → content',
+      'content → padding → border → margin',
+      'padding → content → margin → border',
+      'content → border → padding → margin',
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 5,
+    question: 'JavaScript에서 변수 호이스팅(hoisting) 이 발생하는 이유와 가장 관련 깊은 개념은?',
+    options: [
+      '이벤트 루프(Event Loop)',
+      '실행 컨텍스트(Execution Context)',
+      '프로토타입 체인(Prototype Chain)',
+      '클로저(Closure)',
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 6,
+    question: '다음 중 의미(semantic) 를 가장 잘 드러내는 HTML 태그는 무엇인가요?',
+    options: ['<div>', '<span>', '<section>', '<b>'],
     correctAnswer: 1,
   },
 ];

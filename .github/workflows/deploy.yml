@@ -26,6 +26,10 @@ jobs:
       - name: install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 2-1. lint 체크
+      - name: run lint
+        run: pnpm -r lint
+
       # 테스트 코드 실행. 현재는 테스트 코드가 없으므로 주석 처리.
       # - name: run tests
       #   run: pnpm -r test?? --filter 사용? 어떻게 해야할지는 테스트코드 작성 후 결정

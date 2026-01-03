@@ -39,7 +39,6 @@ jobs:
       # 3. FE 환경변수 파일 생성 (빌드 시점에 주입되어 이미지에 포함되도록)
       - name: create FE env file
         run: |
-          mkdir -p apps/frontend
           printf '%s' "${{ secrets.ENV_FE_PROD }}" > ./apps/frontend/.env.production
 
       # 4. NCP NCR 로그인
@@ -90,7 +89,11 @@ jobs:
           script: |
             # 경로 설정
             APP_DIR=~/web21-funda
-            mkdir -p $APP_DIR/apps/backend
+            cd $APP_DIR
+
+            # 최신 코드 가져오기
+            # git pull origin main
+            git pull origin feat/ci-cd
 
             # docker-compose.deploy.yml 파일용 환경 변수 파일 생성
             printf "NCR_REGISTRY=%s\nDB_ROOT_PASSWORD=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \

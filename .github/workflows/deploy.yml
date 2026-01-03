@@ -12,17 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 1. pnpm 및 Node.js 환경 세팅
-      - name: install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
+      # 1. Node.js 환경 세팅
       - name: set node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: 'pnpm'
+
+      # 1-1. pnpm 세팅 (corepack)
+      - name: enable corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.0.0 --activate
 
       # 2. 의존성 설치
       - name: install dependencies

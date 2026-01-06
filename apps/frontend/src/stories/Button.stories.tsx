@@ -1,8 +1,7 @@
+import { Button } from '@comp/Button';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { fn } from 'storybook/test';
-
-import { Button } from '@/components/Button';
 
 type ButtonProps = ComponentProps<typeof Button> & {
   buttonText: string;

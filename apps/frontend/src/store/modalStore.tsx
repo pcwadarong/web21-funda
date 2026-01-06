@@ -1,6 +1,5 @@
+import { Modal } from '@comp/Modal';
 import { createContext, type ReactNode, useContext, useState } from 'react';
-
-import { Modal } from '../components/Modal';
 
 interface ModalState {
   title: string;

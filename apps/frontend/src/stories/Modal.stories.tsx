@@ -1,10 +1,10 @@
+import { Button } from '@comp/Button';
+import { Modal } from '@comp/Modal';
 import { css, useTheme } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 
-import { Button } from '@/components/Button';
-import { Modal } from '@/components/Modal';
 import type { Theme } from '@/styles/theme';
 
 type ModalProps = ComponentProps<typeof Modal>;

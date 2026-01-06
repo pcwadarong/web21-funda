@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import { PointEffect } from '@/components/result/PointEffect';
-import { QuizResultContent } from '@/components/result/QuizResultContent';
+import { PointEffect } from '@/features/quiz/components/PointEffect';
+import { QuizResultContent } from '@/features/quiz/components/QuizResultContent';
 
 // TODO: FETCH
 const RESULT_DATA = {

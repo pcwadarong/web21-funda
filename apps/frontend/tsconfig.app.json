@@ -28,7 +28,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@comp/*": ["src/components/*"]
+      "@/comp/*": ["src/components/*"],
+      "@/feat/*": ["src/features/*"]
     }
   },
   "include": ["src", ".storybook/**/*", "vitest.shims.d.ts", "vitest.setup.ts"]

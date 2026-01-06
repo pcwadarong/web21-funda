@@ -15,7 +15,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(dirname, './src'),
-      '@comp': path.resolve(dirname, './src/components'),
+      '@/comp': path.resolve(dirname, './src/components'),
+      '@/feat': path.resolve(dirname, './src/features'),
     },
   },
   server: {
@@ -39,7 +40,8 @@ export default defineConfig({
           setupFiles: ['./vitest.setup.ts'],
           alias: {
             '@': path.resolve(dirname, './src'),
-            '@comp': path.resolve(dirname, './src/components'),
+            '@/comp': path.resolve(dirname, './src/components'),
+            '@/feat': path.resolve(dirname, './src/features'),
           },
         },
       },

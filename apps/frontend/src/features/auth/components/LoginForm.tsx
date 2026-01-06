@@ -1,6 +1,6 @@
-import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
 
+import { Button } from '@/comp/Button';
 import type { Theme } from '@/styles/theme';
 
 interface LoginFormProps {

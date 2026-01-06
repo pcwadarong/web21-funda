@@ -1,8 +1,8 @@
-import { CodeBlock } from '@comp/CodeBlock';
 import { css, useTheme } from '@emotion/react';
 
-import { QuizOption } from '@/features/quiz/components/QuizOption';
-import type { MultipleChoiceQuestion } from '@/features/quiz/types';
+import { CodeBlock } from '@/comp/CodeBlock';
+import { QuizOption } from '@/feat/quiz/components/QuizOption';
+import type { MultipleChoiceQuestion } from '@/feat/quiz/types';
 import type { Theme } from '@/styles/theme';
 
 interface MultipleChoiceProps {

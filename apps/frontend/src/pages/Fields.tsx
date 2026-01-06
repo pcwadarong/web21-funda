@@ -1,9 +1,9 @@
-import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { StudyField } from '@/features/fields/types';
+import { Button } from '@/comp/Button';
+import type { StudyField } from '@/feat/fields/types';
 import type { Theme } from '@/styles/theme';
 
 const STUDY_FIELDS: StudyField[] = [

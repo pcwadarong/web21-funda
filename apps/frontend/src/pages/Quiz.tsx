@@ -1,11 +1,11 @@
-import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { QuizHeader } from '@/features/quiz/components/QuizHeader';
-import { MultipleChoice } from '@/features/quiz/components/quizType/MultipleChoice';
-import type { MultipleChoiceQuestion, QuestionStatus } from '@/features/quiz/types';
+import { Button } from '@/comp/Button';
+import { QuizHeader } from '@/feat/quiz/components/QuizHeader';
+import { MultipleChoice } from '@/feat/quiz/components/quizType/MultipleChoice';
+import type { MultipleChoiceQuestion, QuestionStatus } from '@/feat/quiz/types';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
 

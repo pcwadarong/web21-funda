@@ -1,8 +1,8 @@
-import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { Button } from '@/comp/Button';
 import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {

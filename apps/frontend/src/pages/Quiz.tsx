@@ -1,15 +1,13 @@
 import { Button } from '@comp/Button';
-import { QuizHeader } from '@comp/quiz/QuizHeader';
-import { MultipleChoice, type MultipleChoiceQuestion } from '@comp/quiz/quizType/MultipleChoice';
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { useModal } from '@/contexts/ModalContext';
+import { QuizHeader } from '@/features/quiz/components/QuizHeader';
+import { MultipleChoice } from '@/features/quiz/components/quizType/MultipleChoice';
+import type { MultipleChoiceQuestion, QuestionStatus } from '@/features/quiz/types';
+import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
-
-// TODO: 타입 분리
-type QuestionStatus = 'idle' | 'checking' | 'checked';
 
 // TODO: FETCH
 const QUESTIONS: MultipleChoiceQuestion[] = [

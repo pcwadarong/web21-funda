@@ -1,24 +1,14 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
+import checkIcon from '@/assets/check.svg';
+import lockIcon from '@/assets/lock.svg';
+import startIcon from '@/assets/start.svg';
+import { LearnRightSidebar } from '@/features/learn/components/RightSidebar';
+import type { LessonItem } from '@/features/learn/types';
+import { Sidebar } from '@/layouts/Sidebar';
+import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
-
-import checkIcon from '../assets/check.svg';
-import lockIcon from '../assets/lock.svg';
-import startIcon from '../assets/start.svg';
-import { LearnRightSidebar } from '../components/learn/RightSidebar';
-import { Sidebar } from '../components/Sidebar';
-import type { Theme } from '../styles/theme';
-
-// TODO: 타입 파일 분리
-type LessonType = 'normal' | 'checkpoint';
-
-type LessonItem = {
-  id: string;
-  name: string;
-  status: 'completed' | 'active' | 'locked';
-  type: LessonType;
-};
 
 // TODO: FETCH
 const SECTION_INFO = {

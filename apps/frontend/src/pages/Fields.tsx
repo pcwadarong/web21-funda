@@ -1,11 +1,12 @@
+import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../components/Button';
-import type { Theme } from '../styles/theme';
+import type { StudyField } from '@/features/fields/types';
+import type { Theme } from '@/styles/theme';
 
-const STUDY_FIELDS = [
+const STUDY_FIELDS: StudyField[] = [
   { id: 'frontend', name: '프론트엔드', icon: '🖥️' },
   { id: 'backend', name: '백엔드', icon: '🖥️' },
   { id: 'mobile', name: '모바일', icon: '📱' },

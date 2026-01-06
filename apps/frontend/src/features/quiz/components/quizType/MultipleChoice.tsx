@@ -2,16 +2,8 @@ import { CodeBlock } from '@comp/CodeBlock';
 import { css, useTheme } from '@emotion/react';
 
 import { QuizOption } from '@/features/quiz/components/QuizOption';
+import type { MultipleChoiceQuestion } from '@/features/quiz/types';
 import type { Theme } from '@/styles/theme';
-
-export interface MultipleChoiceQuestion {
-  id: number;
-  question: string;
-  code?: string;
-  options: string[];
-  correctAnswer: number;
-  explanation?: string;
-}
 
 interface MultipleChoiceProps {
   question: MultipleChoiceQuestion;

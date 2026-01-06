@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { action } from 'storybook/actions';
 
-import { Sidebar } from '@/components/Sidebar';
+import { Sidebar } from '@/layouts/Sidebar';
 
 type SidebarProps = ComponentProps<typeof Sidebar>;
 const navClickAction = action('Sidebar navigation click');

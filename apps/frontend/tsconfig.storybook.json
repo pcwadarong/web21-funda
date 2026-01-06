@@ -8,9 +8,9 @@
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
       "@/comp/*": ["src/components/*"],
-      "@/feat/*": ["src/features/*"]
+      "@/feat/*": ["src/features/*"],
+      "@/*": ["src/*"]
     }
   },
   "include": [".storybook/**/*", "src/**/*"]

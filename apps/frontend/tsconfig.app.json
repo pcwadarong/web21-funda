@@ -27,9 +27,9 @@
     /* Path alias */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
       "@/comp/*": ["src/components/*"],
-      "@/feat/*": ["src/features/*"]
+      "@/feat/*": ["src/features/*"],
+      "@/*": ["src/*"]
     }
   },
   "include": ["src", ".storybook/**/*", "vitest.shims.d.ts", "vitest.setup.ts"]

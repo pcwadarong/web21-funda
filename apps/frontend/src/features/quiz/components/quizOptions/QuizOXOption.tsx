@@ -19,6 +19,10 @@ export const QuizOXOption = ({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={isSelected}
+      data-selected={isSelected}
+      data-correct={isCorrect}
+      data-wrong={isWrong}
       css={[
         oxBaseStyle(theme),
         S.commonHoverStyle(theme),

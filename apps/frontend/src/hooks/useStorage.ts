@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { type Progress, type QuizStorageData, storageUtil, type UIState } from '../utils/storage';
+import { type Progress, type QuizStorageData, storageUtil, type UIState } from '@/utils/storage';
 
 export const useStorage = () => {
   // 초기 상태를 로컬 스토리지에서 읽어온다.

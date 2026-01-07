@@ -111,6 +111,7 @@ describe('QuizContentCard', () => {
     const onNext = vi.fn();
     renderCard({ status: 'checked', onNext, isLast: false });
 
+    //TODO: 수정
     expect(screen.getByText('문제 해설 내용이 여기에 노출됩니다.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '해설 보기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다음 문제' })).toBeInTheDocument();

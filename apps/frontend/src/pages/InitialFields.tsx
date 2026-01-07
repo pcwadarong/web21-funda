@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import type { IconMapTypes } from '@/constants/icons';
+import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
 interface StudyField {
@@ -29,6 +30,7 @@ export const InitialFields = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const { updateUIState } = useStorage();
 
   const handleFieldChange = useCallback((fieldId: string) => {
     setSelectedField(prev => (prev === fieldId ? null : fieldId));
@@ -36,6 +38,8 @@ export const InitialFields = () => {
 
   const handleComplete = useCallback(() => {
     navigate('/quiz');
+    // TODO: API 호출해서 실제 첫 번째 스텝으로 수정
+    updateUIState({ current_quiz_step_id: 1 });
   }, [navigate]);
 
   return (

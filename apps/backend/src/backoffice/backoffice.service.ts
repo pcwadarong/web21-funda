@@ -110,7 +110,6 @@ export class BackofficeService {
 
   /**
    * 필수 필드를 검증한다.
-   * OX 타입은 content가 비어 있어도 허용한다.
    */
   private validateRow(row: QuizJsonlRow, lineNumber: number): void {
     const required = [
@@ -120,19 +119,12 @@ export class BackofficeService {
       ['step_title', row.step_title],
       ['type', row.type],
       ['question', row.question],
+      ['content', row.content],
       ['answer', row.answer],
     ] as const;
 
     const missing = required.filter(([, value]) => !value || `${value}`.trim().length === 0);
     const missingKeys: string[] = missing.map(([key]) => key);
-    const typeNormalized = row.type?.trim().toLowerCase();
-    const contentMissing =
-      row.content === undefined || row.content === null || `${row.content}`.trim().length === 0;
-
-    // OX는 content 비어도 허용 그 외는 필수
-    if (typeNormalized !== 'ox' && contentMissing) {
-      missingKeys.push('content');
-    }
 
     if (missingKeys.length > 0) {
       throw new BadRequestException(
@@ -353,18 +345,9 @@ export class BackofficeService {
     );
   }
 
-  /** type에 따라 content를 보정한다. */
+  /** content를 JSON 형태로 정규화한다. */
   private normalizeContent(row: QuizJsonlRow, lineNumber: number): unknown {
-    const typeNormalized = row.type?.trim().toLowerCase();
     const rawContent = row.content;
-    const contentMissing =
-      rawContent === undefined || rawContent === null || `${rawContent}`.trim().length === 0;
-
-    // OX의 content가 비어 있으면 기본 choices를 채운다.
-    if (typeNormalized === 'ox' && contentMissing) {
-      return { choices: ['O', 'X'] };
-    }
-
     return this.normalizeJsonValue(rawContent, 'content', lineNumber);
   }
 

@@ -2,40 +2,38 @@ import { css, useTheme } from '@emotion/react';
 
 import { CodeBlock } from '@/comp/CodeBlock';
 import { QuizOption } from '@/feat/quiz/components/QuizOption';
-import type { MultipleChoiceQuestion } from '@/feat/quiz/types';
+import type { CodeContent, QuizComponentProps } from '@/feat/quiz/types';
 import type { Theme } from '@/styles/theme';
 
-interface MultipleChoiceProps {
-  question: MultipleChoiceQuestion;
-  selectedAnswer: number;
-  showResult: boolean;
-  onOptionClick: (optionIndex: number) => void;
-  disabled?: boolean;
-}
-
-export const MultipleChoice = ({
-  question,
+export const QuizCode = ({
+  content,
   selectedAnswer,
   showResult,
-  onOptionClick,
+  onAnswerChange,
   disabled = false,
-}: MultipleChoiceProps) => {
+}: QuizComponentProps) => {
   const theme = useTheme();
-  const isCorrect = selectedAnswer === question.correctAnswer;
+
+  const codeContent = content as CodeContent;
+  const { code_metadata, choices } = codeContent;
+
+  // TODO: 실제 API 데이터의 answer 필드와 매칭 필요 (현재는 임시로 0번)
+  const mockCorrectAnswer = 0;
+  const isCorrect = selectedAnswer === mockCorrectAnswer;
 
   return (
     <div css={quizCardStyle(theme)}>
-      {question.code && (
+      {code_metadata && (
         <div css={codeBlockWrapperStyle}>
-          <CodeBlock language="JavaScript">{question.code}</CodeBlock>
+          <CodeBlock language={code_metadata.language}>{code_metadata.snippet}</CodeBlock>
         </div>
       )}
 
       <div css={optionsContainerStyle}>
-        {question.options.map((option, index) => {
-          const label = String.fromCharCode(65 + index); // A, B, C, D, E
+        {choices.map((option, index) => {
+          const label = String.fromCharCode(65 + index); // A, B, C, D...
           const isSelected = selectedAnswer === index;
-          const isCorrectOption = showResult && index === question.correctAnswer;
+          const isCorrectOption = showResult && index === mockCorrectAnswer;
           const isWrongOption = showResult && isSelected && !isCorrect;
 
           return (
@@ -46,7 +44,7 @@ export const MultipleChoice = ({
               isSelected={isSelected}
               isCorrect={isCorrectOption}
               isWrong={isWrongOption}
-              onClick={() => onOptionClick(index)}
+              onClick={() => onAnswerChange(index)}
               disabled={disabled}
             />
           );
@@ -58,7 +56,6 @@ export const MultipleChoice = ({
 
 const quizCardStyle = (theme: Theme) => css`
   width: 100%;
-  max-width: 800px;
   background: ${theme.colors.surface.strong};
 `;
 

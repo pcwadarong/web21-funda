@@ -31,14 +31,14 @@ export const Sidebar = () => {
 
       <nav css={navStyle}>
         {NAV_ITEMS.map(item => (
-          <a
+          <Link
             key={item.id}
-            href={item.path}
+            to={item.path}
             css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
           >
             <span css={navIconStyle}>{item.icon}</span>
             <span css={navLabelStyle(theme)}>{item.label}</span>
-          </a>
+          </Link>
         ))}
       </nav>
 

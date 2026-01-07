@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Fields } from '@/pages/Fields';
+import { InitialFields } from '@/pages/InitialFields';
 import { lightTheme } from '@/styles/theme';
 
 // useNavigate 모킹
@@ -20,7 +20,7 @@ const renderFields = () =>
   render(
     <ThemeProvider theme={lightTheme}>
       <MemoryRouter>
-        <Fields />
+        <InitialFields />
       </MemoryRouter>
     </ThemeProvider>,
   );

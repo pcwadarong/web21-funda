@@ -17,7 +17,7 @@ const STUDY_FIELDS: StudyField[] = [
   { id: 'devops', name: '데브옵스', icon: '☁️' },
 ] as const;
 
-export const Fields = () => {
+export const InitialFields = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
@@ -35,7 +35,7 @@ export const Fields = () => {
   }, []);
 
   const handleComplete = useCallback(() => {
-    navigate('/learn');
+    navigate('/quiz');
   }, [navigate]);
 
   return (

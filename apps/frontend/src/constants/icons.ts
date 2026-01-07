@@ -27,6 +27,7 @@ export const IconSizes = {
   lg: 24,
   md: 20,
   sm: 16,
+  xs: 12,
 };
 
 export type IconSizeTypes = keyof typeof IconSizes;

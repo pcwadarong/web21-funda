@@ -40,9 +40,9 @@ export const InitialFields = () => {
 
   return (
     <div css={containerStyle()}>
-      <div css={panelStyle(theme)}>
+      <div css={panelStyle}>
         <h1 css={titleStyle(theme)}>어떤 분야를 공부하고 싶나요?</h1>
-        <p css={instructionStyle(theme)}>1개를 선택해주세요.</p>
+        <p css={instructionStyle(theme)}>학습을 시작하고 싶은 분야를 1개 선택해주세요.</p>
         <div css={gridStyle}>
           {STUDY_FIELDS.map(field => {
             const isSelected = selectedField === field.id;
@@ -56,21 +56,18 @@ export const InitialFields = () => {
                   onChange={() => handleFieldChange(field.id)}
                   css={radioInputStyle}
                 />
-                {isSelected && <span css={checkmarkStyle}>✓</span>}
-                <span css={iconStyle}>
-                  <SVGIcon icon={field.icon} size="lg" />
-                </span>
+                {isSelected && (
+                  <span css={checkmarkStyle}>
+                    <SVGIcon icon="Check" aria-hidden="true" size="xs" />
+                  </span>
+                )}
+                <SVGIcon icon={field.icon} size="lg" />
                 <span css={fieldNameStyle(theme)}>{field.name}</span>
               </label>
             );
           })}
         </div>
-        <Button
-          variant="primary"
-          onClick={handleComplete}
-          disabled={selectedField === null}
-          fullWidth
-        >
+        <Button variant="primary" onClick={handleComplete} disabled={selectedField === null}>
           선택 완료하고 시작하기
         </Button>
       </div>
@@ -86,12 +83,9 @@ const containerStyle = () => css`
   padding: 48px 24px;
 `;
 
-const panelStyle = (theme: Theme) => css`
-  background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.large};
+const panelStyle = css`
   padding: 48px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
+  max-width: 60rem;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -112,14 +106,15 @@ const instructionStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.weak};
-  margin: 0;
+  margin-top: 0;
   text-align: center;
 `;
 
 const gridStyle = css`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 1.2rem;
+  margin-bottom: 1rem;
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
@@ -138,15 +133,14 @@ const fieldLabelStyle = (theme: Theme, isSelected: boolean) => css`
   border: 2px solid ${isSelected ? theme.colors.primary.main : theme.colors.border.default};
   border-radius: ${theme.borderRadius.medium};
   transition: all 150ms ease;
-  box-shadow: ${isSelected
-    ? `0 4px 12px ${theme.colors.primary.surface}`
-    : '0 2px 8px rgba(0, 0, 0, 0.05)'};
+  box-shadow: 0 0.5rem 0 ${theme.colors.border.default};
   cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  color: ${theme.colors.text.default};
 `;
 
 const radioInputStyle = css`
@@ -157,10 +151,10 @@ const radioInputStyle = css`
 
 const checkmarkStyle = css`
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+  top: -5px;
+  right: -5px;
+  width: 1.5rem;
+  height: 1.5rem;
   background: #02d05c;
   border-radius: 50%;
   display: flex;
@@ -171,15 +165,8 @@ const checkmarkStyle = css`
   font-weight: bold;
 `;
 
-const iconStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
 const fieldNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${theme.colors.text.default};
 `;

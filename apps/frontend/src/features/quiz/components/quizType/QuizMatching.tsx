@@ -1,5 +1,5 @@
 import { css } from '@emotion/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { QuizMatchingOption } from '@/feat/quiz/components/quizOptions/QuizMatchingOption';
 import type { MatchingContent, MatchingPair, QuizComponentProps } from '@/feat/quiz/types';
@@ -17,7 +17,19 @@ export const QuizMatching = ({
 }: QuizComponentProps) => {
   const { matching_metadata } = content as MatchingContent;
 
-  /** @type {MatchingPair[]} 사용자가 현재까지 완성한 매칭 쌍 목록 */
+  /** 모든 버튼의 Ref를 담을 저장소 */
+  const optionRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  /** 전체를 감싸는 부모 컨테이너의 Ref */
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  /** 렌더링 시 각 옵션에 Ref를 할당하는 함수 */
+  const setRef = (side: 'left' | 'right', item: string) => (el: HTMLButtonElement | null) => {
+    if (el) optionRefs.current.set(`${side}-${item}`, el);
+    else optionRefs.current.delete(`${side}-${item}`);
+  };
+
+  /** 사용자가 현재까지 완성한 매칭 쌍 목록 */
   const currentPairs = (selectedAnswer as { pairs: MatchingPair[] })?.pairs || [];
 
   // TODO: 실제 API 데이터의 answer 필드와 매칭 필요
@@ -103,8 +115,12 @@ export const QuizMatching = ({
   /**
    * 좌/우 컬럼의 선택지들을 렌더링하는 공통 함수
    * @param {'left' | 'right'} side 렌더링할 쪽
+   * @param setRef 특정 아이템의 DOM 요소를 Map에 저장하기 위한 고차 함수
    */
-  const renderColumn = (side: 'left' | 'right') => (
+  const renderColumn = (
+    side: 'left' | 'right',
+    setRef: (side: 'left' | 'right', item: string) => (el: HTMLButtonElement | null) => void,
+  ) => (
     <div css={columnStyle}>
       {matching_metadata[side].map(item => {
         const isAlreadyPaired = !!findPairByValue(side, item);
@@ -114,6 +130,7 @@ export const QuizMatching = ({
 
         return (
           <QuizMatchingOption
+            ref={setRef(side, item)}
             key={item}
             option={item}
             isMatched={isAlreadyPaired} // 이미 짝이 지어짐 (연하게 표시용)
@@ -129,9 +146,9 @@ export const QuizMatching = ({
   );
 
   return (
-    <div css={matchingWrapperStyle}>
-      {renderColumn('left')}
-      {renderColumn('right')}
+    <div css={matchingWrapperStyle} ref={containerRef}>
+      {renderColumn('left', setRef)}
+      {renderColumn('right', setRef)}
     </div>
   );
 };

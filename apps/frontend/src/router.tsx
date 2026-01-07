@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import { AuthCheck } from '@/pages/AuthCheck';
 import { Error } from '@/pages/Error';
-import { Fields } from '@/pages/Fields';
+import { InitialFields } from '@/pages/InitialFields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
@@ -18,8 +18,8 @@ export const router = createBrowserRouter([
     element: <Landing />,
   },
   {
-    path: '/fields',
-    element: <Fields />,
+    path: '/initial-fields',
+    element: <InitialFields />,
   },
   {
     path: '/login',
@@ -34,11 +34,11 @@ export const router = createBrowserRouter([
     element: <Overview />,
   },
   {
-    path: '/quiz/:unitId/:stepId',
+    path: '/quiz',
     element: <Quiz />,
   },
   {
-    path: '/quiz/:unitId/:stepId/result',
+    path: '/quiz/result',
     element: <QuizResult />,
   },
   {

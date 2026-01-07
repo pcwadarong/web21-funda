@@ -1,9 +1,9 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
-import checkIcon from '@/assets/check.svg';
 import lockIcon from '@/assets/lock.svg';
 import startIcon from '@/assets/start.svg';
+import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import type { LessonItem } from '@/feat/learn/types';
 import { Sidebar } from '@/layouts/Sidebar';
@@ -72,9 +72,9 @@ export const Learn = () => {
                       lesson.status === 'active' && activeLessonStyle(theme),
                     ]}
                   >
-                    <span css={lessonIconStyle}>
+                    <span css={lessonIconStyle(theme)}>
                       {lesson.status === 'completed' && (
-                        <img src={checkIcon} alt="완료" css={iconImageStyle} />
+                        <SVGIcon icon="Check" aria-hidden="true" size="lg" />
                       )}
                       {lesson.status === 'active' && (
                         <img src={startIcon} alt="활성" css={iconImageStyle} />
@@ -219,13 +219,14 @@ const lockedLessonStyle = (theme: Theme) => css`
   cursor: not-allowed;
 `;
 
-const lessonIconStyle = css`
+const lessonIconStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
   flex-shrink: 0;
+  color: ${theme.colors.primary.main};
 `;
 
 const iconImageStyle = css`

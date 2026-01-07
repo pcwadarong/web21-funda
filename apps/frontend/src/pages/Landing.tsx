@@ -10,7 +10,7 @@ export const Landing = () => {
   const navigate = useNavigate();
 
   const handleStart = useCallback(() => {
-    navigate('/fields');
+    navigate('/initial-fields');
   }, [navigate]);
 
   const handleLogin = useCallback(() => {

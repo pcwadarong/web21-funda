@@ -1,11 +1,13 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   RelationId,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { Step } from '../../roadmap/entities/step.entity';
@@ -31,4 +33,10 @@ export class UserStepStatus {
 
   @Column({ name: 'best_score', type: 'int', nullable: true })
   bestScore?: number | null;
+
+  @CreateDateColumn({ name: 'created_at', type: 'datetime' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'datetime' })
+  updatedAt!: Date;
 }

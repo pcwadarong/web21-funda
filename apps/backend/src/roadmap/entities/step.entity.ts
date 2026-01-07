@@ -1,5 +1,6 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   Index,
   JoinColumn,
@@ -7,6 +8,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   RelationId,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { UserStepStatus } from '../../progress/entities/user-step-status.entity';
@@ -59,4 +61,10 @@ export class Step {
 
   @OneToMany(() => UserStepStatus, status => status.step)
   stepStatuses?: UserStepStatus[];
+
+  @CreateDateColumn({ name: 'created_at', type: 'datetime' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'datetime' })
+  updatedAt!: Date;
 }

@@ -1,11 +1,13 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   RelationId,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { SolveLog } from '../../progress/entities/solve-log.entity';
@@ -32,10 +34,10 @@ export class Quiz {
   question!: string;
 
   @Column({ type: 'json' })
-  content!: Record<string, unknown>;
+  content!: unknown;
 
   @Column({ type: 'json' })
-  answer!: Record<string, unknown>;
+  answer!: unknown;
 
   @Column({ type: 'text', nullable: true })
   explanation?: string | null;
@@ -48,4 +50,10 @@ export class Quiz {
 
   @OneToMany(() => SolveLog, log => log.quiz)
   solveLogs?: SolveLog[];
+
+  @CreateDateColumn({ name: 'created_at', type: 'datetime' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'datetime' })
+  updatedAt!: Date;
 }

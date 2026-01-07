@@ -3,35 +3,35 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
-import type { StudyField } from '@/feat/fields/types';
+import SVGIcon from '@/comp/SVGIcon';
+import type { IconMapTypes } from '@/constants/icons';
 import type { Theme } from '@/styles/theme';
 
+interface StudyField {
+  id: string;
+  name: string;
+  icon: IconMapTypes;
+}
+
+// TODO: /api/fields 연동
 const STUDY_FIELDS: StudyField[] = [
-  { id: 'frontend', name: '프론트엔드', icon: '🖥️' },
-  { id: 'backend', name: '백엔드', icon: '🖥️' },
-  { id: 'mobile', name: '모바일', icon: '📱' },
-  { id: 'cs', name: 'CS 기초', icon: '⚙️' },
-  { id: 'algorithm', name: '알고리즘', icon: '⚙️' },
-  { id: 'game', name: '게임 개발', icon: '🎮' },
-  { id: 'data', name: '데이터/AI 기초', icon: '💾' },
-  { id: 'devops', name: '데브옵스', icon: '☁️' },
+  { id: 'frontend', name: '프론트엔드', icon: 'Frontend' },
+  { id: 'backend', name: '백엔드', icon: 'Backend' },
+  { id: 'mobile', name: '모바일', icon: 'Mobile' },
+  { id: 'cs', name: 'CS 기초', icon: 'ComputerScience' },
+  { id: 'algorithm', name: '알고리즘', icon: 'Algorithm' },
+  { id: 'game', name: '게임 개발', icon: 'Game' },
+  { id: 'data', name: '데이터/AI 기초', icon: 'Data' },
+  { id: 'devops', name: '데브옵스', icon: 'Cloud' },
 ] as const;
 
 export const InitialFields = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
+  const [selectedField, setSelectedField] = useState<string | null>(null);
 
-  const toggleField = useCallback((fieldId: string) => {
-    setSelectedFields(prev => {
-      const newSelected = new Set(prev);
-      if (newSelected.has(fieldId)) {
-        newSelected.delete(fieldId);
-      } else {
-        newSelected.add(fieldId);
-      }
-      return newSelected;
-    });
+  const handleFieldChange = useCallback((fieldId: string) => {
+    setSelectedField(prev => (prev === fieldId ? null : fieldId));
   }, []);
 
   const handleComplete = useCallback(() => {
@@ -42,28 +42,33 @@ export const InitialFields = () => {
     <div css={containerStyle()}>
       <div css={panelStyle(theme)}>
         <h1 css={titleStyle(theme)}>어떤 분야를 공부하고 싶나요?</h1>
-        <p css={instructionStyle(theme)}>최소 1개 이상 선택해주세요.</p>
+        <p css={instructionStyle(theme)}>1개를 선택해주세요.</p>
         <div css={gridStyle}>
           {STUDY_FIELDS.map(field => {
-            const isSelected = selectedFields.has(field.id);
+            const isSelected = selectedField === field.id;
             return (
-              <button
-                key={field.id}
-                css={fieldButtonStyle(theme, isSelected)}
-                onClick={() => toggleField(field.id)}
-                type="button"
-              >
+              <label key={field.id} css={fieldLabelStyle(theme, isSelected)}>
+                <input
+                  type="radio"
+                  name="studyField"
+                  value={field.id}
+                  checked={isSelected}
+                  onChange={() => handleFieldChange(field.id)}
+                  css={radioInputStyle}
+                />
                 {isSelected && <span css={checkmarkStyle}>✓</span>}
-                <span css={iconStyle}>{field.icon}</span>
+                <span css={iconStyle}>
+                  <SVGIcon icon={field.icon} size="lg" />
+                </span>
                 <span css={fieldNameStyle(theme)}>{field.name}</span>
-              </button>
+              </label>
             );
           })}
         </div>
         <Button
           variant="primary"
           onClick={handleComplete}
-          disabled={selectedFields.size === 0}
+          disabled={selectedField === null}
           fullWidth
         >
           선택 완료하고 시작하기
@@ -121,7 +126,7 @@ const gridStyle = css`
   }
 `;
 
-const fieldButtonStyle = (theme: Theme, isSelected: boolean) => css`
+const fieldLabelStyle = (theme: Theme, isSelected: boolean) => css`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -136,11 +141,18 @@ const fieldButtonStyle = (theme: Theme, isSelected: boolean) => css`
   box-shadow: ${isSelected
     ? `0 4px 12px ${theme.colors.primary.surface}`
     : '0 2px 8px rgba(0, 0, 0, 0.05)'};
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+`;
+
+const radioInputStyle = css`
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 `;
 
 const checkmarkStyle = css`
@@ -160,7 +172,9 @@ const checkmarkStyle = css`
 `;
 
 const iconStyle = css`
-  font-size: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const fieldNameStyle = (theme: Theme) => css`

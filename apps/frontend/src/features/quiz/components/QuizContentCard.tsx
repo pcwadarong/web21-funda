@@ -13,6 +13,7 @@ interface QuizContentCardProps {
   status: QuestionStatus;
   selectedAnswer: AnswerType | null;
   onAnswerChange: (answer: any) => void;
+  isSubmitDisabled: boolean;
   onCheck: () => void;
   onNext: () => void;
   isLast: boolean;
@@ -23,6 +24,7 @@ export const QuizContentCard = ({
   status,
   selectedAnswer,
   onAnswerChange,
+  isSubmitDisabled,
   onCheck,
   onNext,
   isLast,
@@ -80,12 +82,7 @@ export const QuizContentCard = ({
             </Button>
           </>
         ) : (
-          <Button
-            variant="primary"
-            onClick={onCheck}
-            disabled={selectedAnswer === null || status === 'checking'}
-            css={flexBtn}
-          >
+          <Button variant="primary" onClick={onCheck} disabled={isSubmitDisabled} css={flexBtn}>
             {status === 'checking' ? '확인 중..' : '정답 확인'}
           </Button>
         )}

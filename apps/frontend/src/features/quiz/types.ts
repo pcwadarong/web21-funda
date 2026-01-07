@@ -50,11 +50,10 @@ export interface MatchingContent extends BaseQuizContent {
  * 퀴즈 전체 객체 구조
  * ----------------------------------------- */
 
-export interface QuizQuestion {
-  id: number;
-  type: QuizType;
-  content: DefaultContent | CodeContent | MatchingContent;
-}
+export type QuizQuestion =
+  | { id: number; type: 'ox' | 'mcq'; content: DefaultContent }
+  | { id: number; type: 'code'; content: CodeContent }
+  | { id: number; type: 'matching'; content: MatchingContent };
 
 /** -----------------------------------------
  * 퀴즈 정답
@@ -93,6 +92,7 @@ export interface QuizOptionProps {
   label?: string;
   option: string;
   isSelected: boolean;
+  isMatched?: boolean;
   isCorrect?: boolean;
   isWrong?: boolean;
   onClick: () => void;

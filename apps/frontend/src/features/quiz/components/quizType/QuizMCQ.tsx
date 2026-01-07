@@ -18,7 +18,7 @@ export const QuizMCQ = ({
 
   return (
     <div css={optionsWrapperStyle}>
-      {mcqContent.choices.map((option, index) => {
+      {mcqContent.options.map((option, index) => {
         const label = String.fromCharCode(65 + index);
         const isSelected = selectedAnswer === index;
         const isCorrectOption = showResult && index === mockCorrectAnswer;

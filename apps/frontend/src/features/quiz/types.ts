@@ -17,12 +17,12 @@ interface BaseQuizContent {
 
 /** MCQ, OX */
 export interface DefaultContent extends BaseQuizContent {
-  choices: string[];
+  options: string[];
 }
 
 /** CODE 전용 */
 export interface CodeContent extends BaseQuizContent {
-  choices: string[];
+  options: string[];
   code_metadata: {
     language: string;
     snippet: string;

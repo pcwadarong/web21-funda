@@ -13,7 +13,7 @@ const quizzes: QuizQuestion[] = [
     type: 'ox',
     content: {
       question: ':nth-child(2)는 같은 타입(type)의 두 번째 요소만 선택한다.',
-      choices: ['O', 'X'],
+      options: ['O', 'X'],
     },
   },
   {
@@ -21,7 +21,7 @@ const quizzes: QuizQuestion[] = [
     type: 'mcq',
     content: {
       question: ':not(.active)는 어떤 요소를 선택하는가?',
-      choices: [
+      options: [
         'active 클래스를 가진 요소',
         'active 클래스를 가지지 않은 요소',
         'active 클래스를 가진 자식 요소',
@@ -45,7 +45,7 @@ const quizzes: QuizQuestion[] = [
     type: 'code',
     content: {
       question: 'data-state가 "open"인 요소만 선택하려고 합니다. 빈칸에 들어갈 선택자를 고르세요.',
-      choices: [
+      options: [
         '[data-state="open"]',
         '[data-state^="open"]',
         '[data-state*="open"]',
@@ -62,7 +62,7 @@ const quizzes: QuizQuestion[] = [
     type: 'mcq',
     content: {
       question: '가상 요소(pseudo-element)로 올바른 것은?',
-      choices: [':hover', '::before', ':nth-child(2)', ':not(.a)'],
+      options: [':hover', '::before', ':nth-child(2)', ':not(.a)'],
     },
   },
 ];

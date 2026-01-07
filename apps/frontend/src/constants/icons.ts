@@ -1,3 +1,4 @@
+import Check from '@/assets/check.svg?react';
 import Algorithm from '@/assets/field-icons/algorithm.svg?react';
 import Backend from '@/assets/field-icons/backend.svg?react';
 import Cloud from '@/assets/field-icons/cloud.svg?react';
@@ -16,6 +17,7 @@ export const IconMap = {
   Frontend,
   Game,
   Mobile,
+  Check,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

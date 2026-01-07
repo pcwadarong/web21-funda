@@ -1,7 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
-import type { Theme } from '../styles/theme';
+import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: '🏠', path: '/learn' },

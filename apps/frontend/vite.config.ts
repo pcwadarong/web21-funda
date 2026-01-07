@@ -13,10 +13,11 @@ const dirname =
 export default defineConfig({
   plugins: [react(), svgr({ include: '**/*.svg?react' })],
   resolve: {
-    alias: {
-      '@': path.resolve(dirname, './src'),
-      '@comp': path.resolve(dirname, './src/components'),
-    },
+    alias: [
+      { find: '@/comp', replacement: path.resolve(dirname, './src/components') },
+      { find: '@/feat', replacement: path.resolve(dirname, './src/features') },
+      { find: '@', replacement: path.resolve(dirname, './src') },
+    ],
   },
   server: {
     proxy: {
@@ -37,10 +38,11 @@ export default defineConfig({
           environment: 'jsdom',
           include: ['src/**/*.test.{ts,tsx}'],
           setupFiles: ['./vitest.setup.ts'],
-          alias: {
-            '@': path.resolve(dirname, './src'),
-            '@comp': path.resolve(dirname, './src/components'),
-          },
+          alias: [
+            { find: '@/comp', replacement: path.resolve(dirname, './src/components') },
+            { find: '@/feat', replacement: path.resolve(dirname, './src/features') },
+            { find: '@', replacement: path.resolve(dirname, './src') },
+          ],
         },
       },
       {

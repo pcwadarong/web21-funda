@@ -1,6 +1,6 @@
 import { css } from '@emotion/react';
 
-import { QuizOption } from '@/feat/quiz/components/QuizOption';
+import { QuizOption } from '@/feat/quiz/components/quizOptions/QuizOption';
 import type { DefaultContent, QuizComponentProps } from '@/feat/quiz/types';
 
 export const QuizMCQ = ({
@@ -17,7 +17,7 @@ export const QuizMCQ = ({
   const isCorrect = selectedAnswer === mockCorrectAnswer;
 
   return (
-    <div css={optionsContainerStyle}>
+    <div css={optionsWrapperStyle}>
       {mcqContent.choices.map((option, index) => {
         const label = String.fromCharCode(65 + index);
         const isSelected = selectedAnswer === index;
@@ -41,7 +41,7 @@ export const QuizMCQ = ({
   );
 };
 
-const optionsContainerStyle = css`
+const optionsWrapperStyle = css`
   display: flex;
   flex-direction: column;
   gap: 12px;

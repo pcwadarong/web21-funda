@@ -52,6 +52,17 @@ export interface QuizComponentProps {
   disabled: boolean;
 }
 
+/** 퀴즈의 옵션 컴포넌트 공통 매개견수 */
+export interface QuizOptionProps {
+  label?: string;
+  option: string;
+  isSelected: boolean;
+  isCorrect?: boolean;
+  isWrong?: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
 /** 정답 및 해설 구조 */
 export interface QuizSolution {
   question_id: number;

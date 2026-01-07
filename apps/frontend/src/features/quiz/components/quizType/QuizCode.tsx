@@ -1,7 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 
 import { CodeBlock } from '@/comp/CodeBlock';
-import { QuizOption } from '@/feat/quiz/components/QuizOption';
+import { QuizOption } from '@/feat/quiz/components/quizOptions/QuizOption';
 import type { CodeContent, QuizComponentProps } from '@/feat/quiz/types';
 import type { Theme } from '@/styles/theme';
 
@@ -29,7 +29,7 @@ export const QuizCode = ({
         </div>
       )}
 
-      <div css={optionsContainerStyle}>
+      <div css={optionsWrapperStyle}>
         {choices.map((option, index) => {
           const label = String.fromCharCode(65 + index); // A, B, C, D...
           const isSelected = selectedAnswer === index;
@@ -63,7 +63,7 @@ const codeBlockWrapperStyle = css`
   margin-bottom: 24px;
 `;
 
-const optionsContainerStyle = css`
+const optionsWrapperStyle = css`
   display: flex;
   flex-direction: column;
   gap: 12px;

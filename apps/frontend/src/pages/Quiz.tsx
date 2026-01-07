@@ -13,7 +13,10 @@ const quizzes: QuizQuestion[] = [
     type: 'ox',
     content: {
       question: ':nth-child(2)는 같은 타입(type)의 두 번째 요소만 선택한다.',
-      options: ['O', 'X'],
+      options: [
+        { id: 'o', text: 'O' },
+        { id: 'x', text: 'X' },
+      ],
     },
   },
   {
@@ -22,10 +25,10 @@ const quizzes: QuizQuestion[] = [
     content: {
       question: ':not(.active)는 어떤 요소를 선택하는가?',
       options: [
-        'active 클래스를 가진 요소',
-        'active 클래스를 가지지 않은 요소',
-        'active 클래스를 가진 자식 요소',
-        'active 클래스를 가진 형제 요소',
+        { id: 'c1', text: 'active 클래스를 가진 요소' },
+        { id: 'c2', text: 'active 클래스를 가지지 않은 요소' },
+        { id: 'c3', text: 'active 클래스를 가진 자식 요소' },
+        { id: 'c4', text: 'active 클래스를 가진 형제 요소' },
       ],
     },
   },
@@ -46,10 +49,10 @@ const quizzes: QuizQuestion[] = [
     content: {
       question: 'data-state가 "open"인 요소만 선택하려고 합니다. 빈칸에 들어갈 선택자를 고르세요.',
       options: [
-        '[data-state="open"]',
-        '[data-state^="open"]',
-        '[data-state*="open"]',
-        '[data-state$="open"]',
+        { id: 'c1', text: '[data-state="open"]' },
+        { id: 'c2', text: '[data-state^="open"]' },
+        { id: 'c3', text: '[data-state*="open"]' },
+        { id: 'c4', text: '[data-state$="open"]' },
       ],
       code_metadata: {
         language: 'css',
@@ -62,7 +65,12 @@ const quizzes: QuizQuestion[] = [
     type: 'mcq',
     content: {
       question: '가상 요소(pseudo-element)로 올바른 것은?',
-      options: [':hover', '::before', ':nth-child(2)', ':not(.a)'],
+      options: [
+        { id: 'c1', text: ':hover' },
+        { id: 'c2', text: '::before' },
+        { id: 'c3', text: ':nth-child(2)' },
+        { id: 'c4', text: ':not(.a)' },
+      ],
     },
   },
 ];

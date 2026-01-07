@@ -1,14 +1,23 @@
-/** 퀴즈 유형 */
-export type QuizType = 'mcq' | 'ox' | 'matching' | 'code';
-
 /** 문제 풀이 상태 */
 export type QuestionStatus = 'idle' | 'checking' | 'checked';
 
-/** 퀴즈 유형별 정답 데이터 타입 정의 */
-export type AnswerType = number | number[] | Record<number, number>;
+/** 퀴즈 유형 */
+export type QuizType = 'mcq' | 'ox' | 'matching' | 'code';
+
+/** 선택지 옵션 구조 (ID 기반) */
+export interface QuizOption {
+  id: string; // 'c1', 'o', 'x' 등
+  text: string; // 화면에 보여줄 텍스트
+}
+
+/** 매칭 문제의 쌍(Pair) 구조 */
+export interface MatchingPair {
+  left: string;
+  right: string;
+}
 
 /** -----------------------------------------
- * 퀴즈 문제 구조
+ * 퀴즈 문제 상세 콘텐츠 구조
  * ----------------------------------------- */
 
 interface BaseQuizContent {
@@ -17,12 +26,12 @@ interface BaseQuizContent {
 
 /** MCQ, OX */
 export interface DefaultContent extends BaseQuizContent {
-  options: string[];
+  options: QuizOption[];
 }
 
 /** CODE 전용 */
 export interface CodeContent extends BaseQuizContent {
-  options: string[];
+  options: QuizOption[];
   code_metadata: {
     language: string;
     snippet: string;
@@ -37,11 +46,38 @@ export interface MatchingContent extends BaseQuizContent {
   };
 }
 
+/** -----------------------------------------
+ * 퀴즈 전체 객체 구조
+ * ----------------------------------------- */
+
 export interface QuizQuestion {
   id: number;
   type: QuizType;
   content: DefaultContent | CodeContent | MatchingContent;
 }
+
+/** -----------------------------------------
+ * 퀴즈 정답
+ * ----------------------------------------- */
+
+/** 퀴즈 유형별 정답 데이터 타입 정의 */
+export type AnswerType = string | { pairs: MatchingPair[] } | null;
+
+/** 정답 및 해설 구조 */
+export interface QuizSolution {
+  question_id: number;
+  answer_id: string;
+  is_correct: boolean;
+  solution: {
+    explanation: string;
+    correct_option_id?: string; // MCQ, OX, CODE
+    correct_pairs?: MatchingPair[]; // MATCHING
+  };
+}
+
+/** -----------------------------------------
+ * 공통 매개변수
+ * ----------------------------------------- */
 
 /** 각 퀴즈 컴포넌트에서 공통으로 사용하는 매개변수 */
 export interface QuizComponentProps {
@@ -61,15 +97,4 @@ export interface QuizOptionProps {
   isWrong?: boolean;
   onClick: () => void;
   disabled?: boolean;
-}
-
-/** 정답 및 해설 구조 */
-export interface QuizSolution {
-  question_id: number;
-  is_correct: boolean;
-  solution: {
-    explanation: string;
-    correct_index?: number; // MCQ, OX, CODE
-    correct_pairs?: Record<number, number>; // MATCHING
-  };
 }

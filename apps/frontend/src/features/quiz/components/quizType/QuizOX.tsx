@@ -13,23 +13,23 @@ export const QuizOX = ({
   const { options } = content as DefaultContent;
 
   // TODO: 실제 API 데이터의 answer 필드와 매칭 필요
-  const mockCorrectAnswer = 0;
+  const mockCorrectAnswer = 'x';
 
   return (
     <div css={oxWrapperStyle}>
-      {options.map((option, index) => {
-        const isSelected = selectedAnswer === index;
-        const isCorrectOption = showResult && index === mockCorrectAnswer;
-        const isWrongOption = showResult && isSelected && index !== mockCorrectAnswer;
+      {options.map(option => {
+        const isSelected = selectedAnswer === option.id;
+        const isCorrectOption = showResult && option.id === mockCorrectAnswer;
+        const isWrongOption = showResult && isSelected && option.id !== mockCorrectAnswer;
 
         return (
           <QuizOXOption
-            key={index}
-            option={option}
+            key={option.id}
+            option={option.text}
             isSelected={isSelected}
             isCorrect={isCorrectOption}
             isWrong={isWrongOption}
-            onClick={() => onAnswerChange(index)}
+            onClick={() => onAnswerChange(option.id)}
             disabled={disabled}
           />
         );

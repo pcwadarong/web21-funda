@@ -1,6 +1,7 @@
 import { css } from '@emotion/react';
 import { useMemo, useRef, useState } from 'react';
 
+import { MatchingLine } from '@/feat/quiz/components/quizOptions/MatchingLine';
 import { QuizMatchingOption } from '@/feat/quiz/components/quizOptions/QuizMatchingOption';
 import type { MatchingContent, MatchingPair, QuizComponentProps } from '@/feat/quiz/types';
 
@@ -149,11 +150,39 @@ export const QuizMatching = ({
     <div css={matchingWrapperStyle} ref={containerRef}>
       {renderColumn('left', setRef)}
       {renderColumn('right', setRef)}
+
+      {showResult && (
+        <svg css={svgOverlayStyle}>
+          //TODO: API 데이터로 수정
+          {mockCorrectPairs.map((correctPair, index) => {
+            const isUserCorrect = currentPairs.some(
+              userPair =>
+                userPair.left === correctPair.left && userPair.right === correctPair.right,
+            );
+
+            const startEl = optionRefs.current.get(`left-${correctPair.left}`);
+            const endEl = optionRefs.current.get(`right-${correctPair.right}`);
+
+            if (!startEl || !endEl || !containerRef.current) return null;
+
+            return (
+              <MatchingLine
+                key={index}
+                startEl={startEl}
+                endEl={endEl}
+                containerEl={containerRef.current}
+                isCorrect={isUserCorrect}
+              />
+            );
+          })}
+        </svg>
+      )}
     </div>
   );
 };
 
 const matchingWrapperStyle = css`
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 24px;
@@ -166,4 +195,13 @@ const columnStyle = css`
   display: flex;
   flex-direction: column;
   gap: 12px;
+`;
+
+const svgOverlayStyle = css`
+  position: absolute; /* 따옴표 없음, 세미콜론 사용 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 `;

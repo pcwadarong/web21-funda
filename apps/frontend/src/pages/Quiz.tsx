@@ -10,63 +10,60 @@ import type { QuestionStatus, QuizQuestion } from '@/feat/quiz/types';
 const quizzes: QuizQuestion[] = [
   {
     id: 1,
-    question:
-      'A와 B가 통신할 때, 데이터의 순서 보장과 오류 검출 및 재전송을 담당하는 OSI 계층은 어디인가요?',
-    options: [
-      '물리 계층 (Physical Layer)',
-      '네트워크 계층 (Network Layer)',
-      '전송 계층 (Transport Layer)',
-      '세션 계층 (Session Layer)',
-    ],
-    correctAnswer: 2,
+    type: 'ox',
+    content: {
+      question: ':nth-child(2)는 같은 타입(type)의 두 번째 요소만 선택한다.',
+      choices: ['O', 'X'],
+    },
   },
   {
     id: 2,
-    question: '다음 코드에서 빈칸에 들어갈 메서드는?',
-    code: `const arr = [1, 2, 3, 4, 5];\nconst doubled = arr.{{BLANK}}(x => x * 2);\nconsole.log(doubled); // [2, 4, 6, 8, 10]`,
-    options: ['filter', 'map', 'reduce', 'forEach', 'for ... of'],
-    correctAnswer: 1,
-    explanation: 'map() 메서드는 배열의 각 요소를 변환하여 새로운 배열을 반환합니다.',
+    type: 'mcq',
+    content: {
+      question: ':not(.active)는 어떤 요소를 선택하는가?',
+      choices: [
+        'active 클래스를 가진 요소',
+        'active 클래스를 가지지 않은 요소',
+        'active 클래스를 가진 자식 요소',
+        'active 클래스를 가진 형제 요소',
+      ],
+    },
   },
   {
     id: 3,
-    question:
-      '브라우저에 www.google.com을 처음 입력했을 때, IP 주소를 알아내기 위해 질의하는 순서로 올바른 것은? (캐시가 없다고 가정)',
-    options: [
-      'Root DNS → TLD(.com) DNS → Authoritative(google.com) DNS',
-      'Authoritative DNS → Root DNS → TLD DNS',
-      'TLD DNS → Root DNS → Authoritative DNS',
-      'Local DNS가 임의로 IP를 생성하여 응답',
-    ],
-    correctAnswer: 0,
+    type: 'matching',
+    content: {
+      question: '선택자와 의미를 올바르게 연결하세요.',
+      matching_metadata: {
+        left: ['div p', 'div > p', 'h1 + p', 'h1 ~ p'],
+        right: ['div의 모든 자손 p', 'div의 직계 자식 p', 'h1 바로 다음 p', 'h1 뒤의 모든 형제 p'],
+      },
+    },
   },
   {
     id: 4,
-    question: 'CSS Box Model의 구성 요소를 안쪽에서 바깥쪽 순서로 올바르게 나열한 것은?',
-    options: [
-      'margin → border → padding → content',
-      'content → padding → border → margin',
-      'padding → content → margin → border',
-      'content → border → padding → margin',
-    ],
-    correctAnswer: 1,
+    type: 'code',
+    content: {
+      question: 'data-state가 "open"인 요소만 선택하려고 합니다. 빈칸에 들어갈 선택자를 고르세요.',
+      choices: [
+        '[data-state="open"]',
+        '[data-state^="open"]',
+        '[data-state*="open"]',
+        '[data-state$="open"]',
+      ],
+      code_metadata: {
+        language: 'css',
+        snippet: '{{BLANK}} {\n  opacity: 1;\n}',
+      },
+    },
   },
   {
     id: 5,
-    question: 'JavaScript에서 변수 호이스팅(hoisting) 이 발생하는 이유와 가장 관련 깊은 개념은?',
-    options: [
-      '이벤트 루프(Event Loop)',
-      '실행 컨텍스트(Execution Context)',
-      '프로토타입 체인(Prototype Chain)',
-      '클로저(Closure)',
-    ],
-    correctAnswer: 1,
-  },
-  {
-    id: 6,
-    question: '다음 중 의미(semantic) 를 가장 잘 드러내는 HTML 태그는 무엇인가요?',
-    options: ['<div>', '<span>', '<section>', '<b>'],
-    correctAnswer: 1,
+    type: 'mcq',
+    content: {
+      question: '가상 요소(pseudo-element)로 올바른 것은?',
+      choices: [':hover', '::before', ':nth-child(2)', ':not(.a)'],
+    },
   },
 ];
 

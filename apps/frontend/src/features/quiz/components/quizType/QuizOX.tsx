@@ -8,7 +8,7 @@ export const QuizOX = ({
   selectedAnswer,
   onAnswerChange,
   showResult,
-  disabled,
+  disabled = false,
 }: QuizComponentProps) => {
   const { options } = content as DefaultContent;
 
@@ -30,7 +30,7 @@ export const QuizOX = ({
             isCorrect={isCorrectOption}
             isWrong={isWrongOption}
             onClick={() => onAnswerChange(option.id)}
-            disabled={disabled}
+            disabled={disabled || showResult}
           />
         );
       })}

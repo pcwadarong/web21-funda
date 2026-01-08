@@ -60,20 +60,42 @@ describe('QuizOX 컴포넌트 테스트', () => {
 
   it('selectedAnswer가 o일 때 O 선택지가 선택된 상태로 표시된다', () => {
     renderQuizOX({ selectedAnswer: 'o' });
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(2);
+    const buttonO = screen.getByRole('button', { name: 'O' });
+    const buttonX = screen.getByRole('button', { name: 'X' });
+
+    expect(buttonO).toHaveAttribute('aria-pressed', 'true');
+    expect(buttonX).toHaveAttribute('aria-pressed', 'false');
+    expect(buttonO).toHaveAttribute('data-selected', 'true');
   });
 
   it('selectedAnswer가 x일 때 X 선택지가 선택된 상태로 표시된다', () => {
     renderQuizOX({ selectedAnswer: 'x' });
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(2);
+    const buttonO = screen.getByRole('button', { name: 'O' });
+    const buttonX = screen.getByRole('button', { name: 'X' });
+
+    expect(buttonX).toHaveAttribute('aria-pressed', 'true');
+    expect(buttonO).toHaveAttribute('aria-pressed', 'false');
+    expect(buttonX).toHaveAttribute('data-selected', 'true');
   });
 
-  it('showResult가 true일 때 정답/오답 상태가 표시된다', () => {
-    renderQuizOX({ selectedAnswer: 'o', showResult: true });
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(2);
+  it('showResult가 true일 때 정답/오답 상태가 표시되고 클릭이 막힌다', () => {
+    // QuizOX 내부 mockCorrectAnswer = 'x'
+    const handleAnswerChange = vi.fn();
+    renderQuizOX({ selectedAnswer: 'o', showResult: true, onAnswerChange: handleAnswerChange });
+
+    const buttonO = screen.getByRole('button', { name: 'O' });
+    const buttonX = screen.getByRole('button', { name: 'X' });
+
+    // 결과 표시 중엔 클릭 불가
+    expect(buttonO).toBeDisabled();
+    expect(buttonX).toBeDisabled();
+
+    // 선택된 오답(O) / 정답(X) 상태 표기
+    expect(buttonO).toHaveAttribute('data-wrong', 'true');
+    expect(buttonX).toHaveAttribute('data-correct', 'true');
+
+    fireEvent.click(buttonX);
+    expect(handleAnswerChange).not.toHaveBeenCalled();
   });
 
   it('disabled가 true일 때 모든 선택지가 비활성화된다', () => {

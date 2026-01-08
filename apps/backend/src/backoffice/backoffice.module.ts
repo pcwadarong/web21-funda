@@ -1,0 +1,17 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { Field } from '../roadmap/entities/field.entity';
+import { Quiz } from '../roadmap/entities/quiz.entity';
+import { Step } from '../roadmap/entities/step.entity';
+import { Unit } from '../roadmap/entities/unit.entity';
+
+import { BackofficeController } from './backoffice.controller';
+import { BackofficeService } from './backoffice.service';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Field, Unit, Step, Quiz])],
+  controllers: [BackofficeController],
+  providers: [BackofficeService],
+})
+export class BackofficeModule {}

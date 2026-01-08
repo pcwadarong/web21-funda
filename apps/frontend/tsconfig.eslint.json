@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "src",
+    "src/**/*",
+    ".storybook",
+    ".storybook/**/*",
+    "vite.config.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts",
+    "vitest.shims.d.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": true
+  }
+}

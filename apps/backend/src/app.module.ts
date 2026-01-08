@@ -1,13 +1,27 @@
-import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
-import { typeOrmConfig } from "./typeorm.config";
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { BackofficeModule } from './backoffice/backoffice.module';
+import { createTypeOrmOptions } from './config/typeorm.config';
+import { ProgressModule } from './progress/progress.module';
+import { RoadmapModule } from './roadmap/roadmap.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
-    // TODO: db 연결 설정
-    // TypeOrmModule.forRoot(typeOrmConfig),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV ?? 'local'}`, '.env'],
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: createTypeOrmOptions,
+    }),
+    RoadmapModule,
+    ProgressModule,
+    BackofficeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

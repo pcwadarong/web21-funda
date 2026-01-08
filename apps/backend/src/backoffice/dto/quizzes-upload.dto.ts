@@ -1,0 +1,31 @@
+export interface QuizJsonlRow {
+  field_slug: string;
+  field_name: string;
+  field_description?: string;
+  unit_title: string;
+  unit_description?: string;
+  unit_order_index?: number;
+  step_title: string;
+  step_description?: string;
+  step_order_index?: number;
+  is_checkpoint?: boolean;
+  step_is_checkpoint?: boolean;
+  type: string;
+  question: string;
+  content: unknown;
+  answer: unknown;
+  explanation?: string;
+  difficulty?: number;
+}
+
+export interface UploadSummary {
+  processed: number;
+  fieldsCreated: number;
+  fieldsUpdated: number;
+  unitsCreated: number;
+  unitsUpdated: number;
+  stepsCreated: number;
+  stepsUpdated: number;
+  quizzesCreated: number;
+  quizzesUpdated: number;
+}

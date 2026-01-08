@@ -4,6 +4,11 @@ import { Repository } from 'typeorm';
 
 import type { FieldUnitsResponse } from './dto/field-units.dto';
 import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
+import type {
+  MatchingPair,
+  QuizSubmissionRequest,
+  QuizSubmissionResponse,
+} from './dto/quiz-submission.dto';
 import { Field, Quiz, Step } from './entities';
 
 @Injectable()
@@ -60,6 +65,52 @@ export class RoadmapService {
     });
 
     return quizzes.map(quiz => this.toQuizResponse(quiz));
+  }
+
+  /**
+   * 퀴즈 정답 제출을 검증한다.
+   * @param quizId 퀴즈 ID
+   * @param payload 사용자가 제출한 답안
+   * @returns 채점 결과와 정답 정보
+   */
+  async submitQuiz(
+    quizId: number,
+    payload: QuizSubmissionRequest,
+  ): Promise<QuizSubmissionResponse> {
+    const quiz = await this.quizRepository.findOne({
+      where: { id: quizId },
+      select: { id: true, type: true, answer: true, explanation: true },
+    });
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found.');
+    }
+
+    if (quiz.type === 'MATCHING') {
+      const correctPairs = this.getMatchingAnswer(quiz.answer);
+      const isCorrect = this.isCorrectMatching(payload.selectedPairs, correctPairs);
+
+      return {
+        quiz_id: quiz.id,
+        is_correct: isCorrect,
+        solution: {
+          ...(correctPairs.length > 0 ? { correct_pairs: correctPairs } : {}),
+          explanation: quiz.explanation ?? null,
+        },
+      };
+    }
+
+    const correctOptionId = this.getOptionAnswer(quiz.answer);
+    const isCorrect = this.isCorrectOption(payload.selectedOptionId, correctOptionId);
+
+    return {
+      quiz_id: quiz.id,
+      is_correct: isCorrect,
+      solution: {
+        ...(correctOptionId ? { correct_option_id: correctOptionId } : {}),
+        explanation: quiz.explanation ?? null,
+      },
+    };
   }
 
   /**
@@ -173,6 +224,30 @@ export class RoadmapService {
   }
 
   /**
+   * answer raw 값을 객체로 변환한다(문자열 JSON도 허용).
+   * @param raw answer 원본 값
+   * @returns answer 객체 (없으면 null)
+   */
+  private toAnswerObject(raw: unknown): Record<string, unknown> | null {
+    if (this.isPlainObject(raw)) {
+      return raw;
+    }
+
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (this.isPlainObject(parsed)) {
+          return parsed;
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * CODE 타입 메타데이터를 content의 최상위 code/language로부터 정규화한다.
    * @param value content 객체
    * @returns 정규화된 code_metadata (없으면 undefined)
@@ -202,6 +277,97 @@ export class RoadmapService {
       return { left, right };
     }
     return undefined;
+  }
+
+  /**
+   * matching 쌍 배열을 정규화한다.
+   * @param value 쌍 배열 값
+   * @returns 정규화된 쌍 배열
+   */
+  private normalizePairs(value: unknown): MatchingPair[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const pairs = value
+      .map(pair => {
+        if (!this.isPlainObject(pair)) return null;
+        const item = pair as Record<string, unknown>;
+        const left = this.toString(item.left);
+        const right = this.toString(item.right);
+        if (left !== null && right !== null) {
+          return { left, right };
+        }
+        return null;
+      })
+      .filter((p): p is MatchingPair => p !== null);
+
+    return pairs.length > 0 ? pairs : undefined;
+  }
+
+  /**
+   * 객관식 정답을 추출한다.
+   * @param answer 정답 원본 값
+   * @returns 정답 옵션 ID 또는 null
+   */
+  private getOptionAnswer(answer: unknown): string | null {
+    const answerObject = this.toAnswerObject(answer);
+    if (!answerObject) return null;
+    return this.toString(answerObject.correct_option_id ?? answerObject.option_id);
+  }
+
+  /**
+   * 매칭형 정답을 추출한다.
+   * @param answer 정답 원본 값
+   * @returns 정규화된 정답 쌍 배열
+   */
+  private getMatchingAnswer(answer: unknown): MatchingPair[] {
+    const answerObject = this.toAnswerObject(answer);
+    if (!answerObject) return [];
+    return (
+      this.normalizePairs(
+        answerObject.correct_pairs ?? answerObject.pairs ?? answerObject.matching,
+      ) ?? []
+    );
+  }
+
+  /**
+   * 객관식 정답을 비교한다.
+   * @param submitted 제출된 옵션 ID
+   * @param correct 정답 옵션 ID
+   * @returns 정답 여부
+   */
+  private isCorrectOption(submitted: unknown, correct: string | null): boolean {
+    if (!correct) return false;
+    const submittedId = this.toString(submitted);
+    return submittedId !== null && submittedId === correct;
+  }
+
+  /**
+   * 매칭형 정답을 비교한다.
+   * @param submittedPairs 제출된 쌍 목록
+   * @param correctPairs 정답 쌍 목록
+   * @returns 정답 여부
+   */
+  private isCorrectMatching(
+    submittedPairs: MatchingPair[] | undefined,
+    correctPairs: MatchingPair[],
+  ): boolean {
+    const normalizedSubmitted = this.normalizePairs(submittedPairs);
+    if (!normalizedSubmitted || normalizedSubmitted.length !== correctPairs.length) {
+      return false;
+    }
+
+    const normalizeKey = (pair: MatchingPair) => `${pair.left}|||${pair.right}`;
+    const expectedSet = new Set(correctPairs.map(normalizeKey));
+    const submittedSet = new Set(normalizedSubmitted.map(normalizeKey));
+
+    if (expectedSet.size !== submittedSet.size) {
+      return false;
+    }
+
+    for (const key of submittedSet) {
+      if (!expectedSet.has(key)) return false;
+    }
+
+    return true;
   }
 
   /**
@@ -245,6 +411,17 @@ export class RoadmapService {
    */
   private isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  /**
+   * 안전하게 문자열로 변환한다.
+   * @param value 변환할 값
+   * @returns 문자열 또는 null
+   */
+  private toString(value: unknown): string | null {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    return null;
   }
 
   /**

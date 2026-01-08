@@ -11,12 +11,14 @@ describe('RoadmapService', () => {
   let stepRepository: Partial<Repository<Step>>;
   let findFieldMock: jest.Mock<Promise<Field | null>, [FindOneOptions<Field>]>;
   let findStepMock: jest.Mock<Promise<Step | null>, [FindOneOptions<Step>]>;
+  let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
   let createQueryBuilderMock: jest.Mock;
   let quizFindMock: jest.Mock;
 
   beforeEach(() => {
     findFieldMock = jest.fn();
     findStepMock = jest.fn();
+    findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
     fieldRepository = {
@@ -25,6 +27,7 @@ describe('RoadmapService', () => {
     quizRepository = {
       createQueryBuilder: createQueryBuilderMock,
       find: quizFindMock,
+      findOne: findQuizMock,
     };
     stepRepository = {
       findOne: findStepMock,
@@ -207,5 +210,66 @@ describe('RoadmapService', () => {
     findStepMock.mockResolvedValue(null);
 
     await expect(service.getQuizzesByStepId(99)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('객관식 정답을 채점한다', async () => {
+    findQuizMock.mockResolvedValue({
+      id: 10,
+      type: 'MCQ',
+      answer: { correct_option_id: 'c2' },
+      explanation: '설명입니다.',
+    } as Quiz);
+
+    const result = await service.submitQuiz(10, { selectedOptionId: 'c2' });
+
+    expect(result).toEqual({
+      quiz_id: 10,
+      is_correct: true,
+      solution: {
+        correct_option_id: 'c2',
+        explanation: '설명입니다.',
+      },
+    });
+  });
+
+  it('매칭 정답을 채점한다', async () => {
+    findQuizMock.mockResolvedValue({
+      id: 11,
+      type: 'MATCHING',
+      answer: {
+        correct_pairs: [
+          { left: 'div p', right: 'div의 모든 자손 p' },
+          { left: 'div > p', right: 'div의 직계 자식 p' },
+        ],
+      },
+      explanation: '매칭 설명',
+    } as Quiz);
+
+    const result = await service.submitQuiz(11, {
+      selectedPairs: [
+        { left: 'div > p', right: 'div의 직계 자식 p' },
+        { left: 'div p', right: 'div의 모든 자손 p' },
+      ],
+    });
+
+    expect(result).toEqual({
+      quiz_id: 11,
+      is_correct: true,
+      solution: {
+        correct_pairs: [
+          { left: 'div p', right: 'div의 모든 자손 p' },
+          { left: 'div > p', right: 'div의 직계 자식 p' },
+        ],
+        explanation: '매칭 설명',
+      },
+    });
+  });
+
+  it('퀴즈가 없으면 예외를 던진다', async () => {
+    findQuizMock.mockResolvedValue(null);
+
+    await expect(service.submitQuiz(999, { selectedOptionId: 'c1' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

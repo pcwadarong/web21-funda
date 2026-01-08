@@ -10,7 +10,6 @@ import type { Theme } from '@/styles/theme';
 
 // TODO: FETCH Roadmap data (/api/fields/{fieldSlug}/roadmap)
 const FIELD_INFO = {
-  id: 1,
   name: 'Frontend',
   slug: 'fe',
 } as const;
@@ -63,7 +62,7 @@ const ROADMAP_UNITS: readonly RoadmapUnit[] = [
   },
 ];
 
-const isLoggedIn = true; // TODO: 실제 로그인 상태로 변경
+const isLoggedIn = false; // TODO: 실제 로그인 상태로 변경
 
 export const Roadmap = () => {
   const theme = useTheme();

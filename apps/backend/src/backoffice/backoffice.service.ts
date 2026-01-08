@@ -244,7 +244,6 @@ export class BackofficeService {
         title,
         orderIndex,
         isCheckpoint,
-        isCompleted: false,
       });
       await repository.save(step);
       return { entity: step, created: true };

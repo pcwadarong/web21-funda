@@ -31,6 +31,19 @@ export class UserStepStatus {
   @Column({ name: 'is_completed', type: 'boolean', default: false })
   isCompleted!: boolean;
 
+  @Column({
+    name: 'success_rate',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    transformer: {
+      to: (value?: number | null) => value ?? null,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
+  successRate?: number | null;
+
   @Column({ name: 'best_score', type: 'int', nullable: true })
   bestScore?: number | null;
 

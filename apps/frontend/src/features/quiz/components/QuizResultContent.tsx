@@ -128,7 +128,7 @@ const placeholderStyle = (theme: Theme) => css`
   width: 200px;
   height: 200px;
   background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.large};
+  border-radius: ${theme.borderRadius.medium};
 `;
 
 const metricsContainerStyle = css`
@@ -171,7 +171,7 @@ const metricTitleStyle = (theme: Theme) => css`
 const metricValueContainerStyle = (theme: Theme) => css`
   background-color: ${theme.colors.grayscale[50]};
   width: 100%;
-  border-radius: ${theme.borderRadius.small};
+  border-radius: ${theme.borderRadius.medium};
   display: flex;
   flex: 1;
   align-items: center;

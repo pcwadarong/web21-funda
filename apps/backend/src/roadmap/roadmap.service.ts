@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse } from './dto/field-units.dto';
+import type { FirstUnitResponse } from './dto/first-unit.dto';
 import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
 import type {
   MatchingPair,
@@ -92,6 +93,40 @@ export class RoadmapService {
         title: unit.title,
         orderIndex: unit.orderIndex,
       })),
+    };
+  }
+
+  /**
+   * 필드의 첫 번째 유닛을 조회한다.
+   * @param fieldSlug 필드 슬러그
+   * @returns 필드 정보와 첫 유닛
+   */
+  async getFirstUnitByFieldSlug(fieldSlug: string): Promise<FirstUnitResponse> {
+    const field = await this.fieldRepository
+      .createQueryBuilder('field')
+      .leftJoinAndSelect('field.units', 'unit')
+      .where('field.slug = :slug', { slug: fieldSlug })
+      .orderBy('unit.orderIndex', 'ASC')
+      .getOne();
+
+    if (!field) {
+      throw new NotFoundException('Field not found.');
+    }
+
+    const firstUnit = (field.units ?? [])[0] ?? null;
+
+    return {
+      field: {
+        name: field.name,
+        slug: field.slug,
+      },
+      unit: firstUnit
+        ? {
+            id: firstUnit.id,
+            title: firstUnit.title,
+            orderIndex: firstUnit.orderIndex,
+          }
+        : null,
     };
   }
 

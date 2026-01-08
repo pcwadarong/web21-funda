@@ -94,6 +94,24 @@ describe('RoadmapService', () => {
     expect(roadmapQueryBuilderMock.orderBy).toHaveBeenCalledWith('unit.orderIndex', 'ASC');
   });
 
+  it('필드 첫 번째 유닛을 응답한다', async () => {
+    roadmapQueryBuilderMock.getOne.mockResolvedValue({
+      name: 'Frontend',
+      slug: 'fe',
+      units: [
+        { id: 1, title: 'HTML', orderIndex: 1 },
+        { id: 2, title: 'CSS', orderIndex: 2 },
+      ],
+    } as Field);
+
+    const result = await service.getFirstUnitByFieldSlug('fe');
+
+    expect(result).toEqual({
+      field: { name: 'Frontend', slug: 'fe' },
+      unit: { id: 1, title: 'HTML', orderIndex: 1 },
+    });
+  });
+
   it('필드/유닛/스텝과 퀴즈 개수를 응답한다', async () => {
     const field = {
       name: '프론트엔드',

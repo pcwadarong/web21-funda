@@ -18,7 +18,12 @@ export const Learn = () => {
           <div css={stickyHeaderWrapperStyle(theme)} ref={headerRef}>
             <div css={[headerSectionStyle(), stickyHeaderStyle(theme)]}>
               <div css={headerContentStyle}>
-                <div css={unitTextStyle(theme)}>{activeUnit.name}</div>
+                <Link to="/learn/roadmap">
+                  <div css={unitTextStyle(theme)}>
+                    <SVGIcon icon="ArrowLeft" size="md" />
+                    {activeUnit.name} 로드맵
+                  </div>
+                </Link>
                 <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
               </div>
               <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
@@ -222,6 +227,9 @@ const unitTextStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${colors.light.grayscale[400]};
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 
 const titleTextStyle = (theme: Theme) => css`

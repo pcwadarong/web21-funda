@@ -5,7 +5,6 @@ import SVGIcon from '@/comp/SVGIcon';
 import { UnitCard } from '@/feat/roadmap/components/UnitCard';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
 import { useStorage } from '@/hooks/useStorage';
-import { Sidebar } from '@/layouts/Sidebar';
 import type { Theme } from '@/styles/theme';
 
 // TODO: FETCH Roadmap data (/api/fields/{fieldSlug}/roadmap)
@@ -93,7 +92,6 @@ export const Roadmap = () => {
 
   return (
     <div css={containerStyle}>
-      <Sidebar />
       <main css={mainStyle(theme)}>
         <section css={heroStyle}>
           <div css={heroTopStyle}>

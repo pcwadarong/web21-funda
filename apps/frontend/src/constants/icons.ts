@@ -8,6 +8,7 @@ import Data from '@/assets/field-icons/data.svg?react';
 import Frontend from '@/assets/field-icons/frontend.svg?react';
 import Game from '@/assets/field-icons/game.svg?react';
 import Mobile from '@/assets/field-icons/mobile.svg?react';
+import Lock from '@/assets/lock.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
 import Start from '@/assets/start.svg?react';
 
@@ -24,6 +25,7 @@ export const IconMap = {
   ArrowLeft,
   NextArrow,
   Start,
+  Lock,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

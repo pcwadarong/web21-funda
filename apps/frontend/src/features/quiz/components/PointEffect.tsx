@@ -1,4 +1,5 @@
 import { css, keyframes } from '@emotion/react';
+import { motion, type Variants } from 'framer-motion';
 
 import type { Theme } from '@/styles/theme';
 
@@ -6,15 +7,42 @@ interface PointEffectProps {
   points: number;
 }
 
-export const PointEffect = ({ points }: PointEffectProps) => (
-  <div css={containerStyle}>
-    <div css={starContainerStyle}>
-      <span css={starStyle}>🌟</span>
+export const PointEffect = ({ points }: PointEffectProps) => {
+  // Glow 라인 애니메이션 Variants (세로선 -> 가로 확장)
+  const lineVariants: Variants = {
+    // 초기 상태: 투명함, 세로로 길고 얇은 막대 모양
+    hidden: {
+      opacity: 0,
+      scaleY: 0,
+      width: '2px',
+      filter: 'blur(2px)',
+    },
+    // 애니메이션 이후 상태: 세로로 긴 직사각형
+    visible: {
+      opacity: [0, 1, 1],
+      scaleY: [0, 1.2, 1.2], // 가로로 퍼짐
+      width: ['2px', '10px', '80vw'], // [시작, 세로완료까지 유지, 가로확장]
+      background: 'radial-gradient(#7659EA 0%, #000 70%)', // 방사형 그라디언트
+      filter: ['blur(2px)', 'blur(8px)', 'blur(60px)'],
+      transition: {
+        duration: 0.9,
+        times: [0, 0.3, 1], // 각 단계별 시간 비중
+        ease: 'easeInOut',
+      },
+    },
+  };
+
+  return (
+    <div css={containerStyle}>
+      <motion.div css={glowLineStyle} variants={lineVariants} initial="hidden" animate="visible" />
+      <div css={starContainerStyle}>
+        <span css={starStyle}>🌟</span>
+      </div>
+      <div css={labelStyle}>POINT</div>
+      <div css={pointsStyle}>{points}</div>
     </div>
-    <div css={labelStyle}>POINT</div>
-    <div css={pointsStyle}>{points}</div>
-  </div>
-);
+  );
+};
 
 const starShineAnimation = keyframes`
   0%, 100% {
@@ -45,6 +73,13 @@ const starContainerStyle = css`
   display: flex;
   align-items: center;
   justify-content: center;
+`;
+
+const glowLineStyle = css`
+  position: absolute;
+  width: 80vw;
+  height: 90vh;
+  z-index: 1;
 `;
 
 const starStyle = css`

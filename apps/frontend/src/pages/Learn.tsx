@@ -70,8 +70,8 @@ export const Learn = () => {
                     <div key={step.id} css={positionStyle}>
                       <div css={lessonStackStyle}>
                         <Link
-                          // TODO: quiz 페이지 라우팅 주소 확인 필요
-                          to={`/quiz/${step.id}`}
+                          // TODO: localStorage에 step_id 추가 필요
+                          to="/quiz"
                           css={[
                             lessonItemStyle(theme),
                             step.status === 'completed' && completedLessonStyle(theme),

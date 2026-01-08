@@ -1,8 +1,8 @@
 import { css, useTheme } from '@emotion/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import lockIcon from '@/assets/lock.svg';
-import startIcon from '@/assets/start.svg';
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import type { LessonItem } from '@/feat/learn/types';
@@ -10,78 +10,181 @@ import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
 // TODO: FETCH
-const SECTION_INFO = {
-  unit: '자료구조와 알고리즘',
-  title: '자료구조',
-  id: '2',
-} as const;
+interface LessonSection {
+  id: string;
+  name: string;
+  title: string;
+  steps: readonly LessonItem[];
+}
 
-const LESSON_ITEMS: readonly LessonItem[] = [
-  { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
-  { id: 'array', name: '배열', status: 'completed', type: 'normal' },
-  { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
-  { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
-  { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
-  { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
-  { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
+const UNITS: readonly LessonSection[] = [
+  {
+    id: '2',
+    name: '자료구조와 알고리즘',
+    title: '자료구조',
+    steps: [
+      { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
+      { id: 'array', name: '배열', status: 'completed', type: 'normal' },
+      { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
+      { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
+      { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
+      { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
+      { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
+    ],
+  },
+  {
+    id: '3',
+    name: '자료구조와 알고리즘',
+    title: '정렬과 탐색',
+    steps: [
+      { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
+      { id: 'array', name: '배열', status: 'completed', type: 'normal' },
+      { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
+      { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
+      { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
+      { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
+      { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
+    ],
+  },
+  {
+    id: '4',
+    name: '자료구조와 알고리즘',
+    title: '그래프',
+    steps: [
+      { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
+      { id: 'array', name: '배열', status: 'completed', type: 'normal' },
+      { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
+      { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
+      { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
+      { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
+      { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
+    ],
+  },
 ];
 
 export const Learn = () => {
   const theme = useTheme();
+  const [activeUnitId, setActiveUnitId] = useState(UNITS[0]?.id ?? '');
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const unitRefs = useRef(new Map<string, HTMLElement>());
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const activeUnit = useMemo(
+    () => UNITS.find(unit => unit.id === activeUnitId) ?? UNITS[0],
+    [activeUnitId],
+  );
+
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    if (!root) return;
+    let ticking = false;
+
+    const updateActiveUnit = () => {
+      const headerHeight = headerRef.current?.offsetHeight ?? 0;
+      const scrollTop = root.scrollTop + headerHeight + 1;
+      let nextId = UNITS[0]?.id ?? '';
+      unitRefs.current.forEach((element, id) => {
+        if (element.offsetTop <= scrollTop) {
+          nextId = id;
+        }
+      });
+      setActiveUnitId(prev => (prev === nextId ? prev : nextId));
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(() => {
+          updateActiveUnit();
+          ticking = false;
+        });
+      }
+    };
+
+    updateActiveUnit();
+    root.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      root.removeEventListener('scroll', onScroll);
+    };
+  }, []);
 
   return (
     <div css={mainStyle}>
-      <div css={centerSectionStyle}>
-        <div css={centerSectionInnerStyle}>
-          <div css={headerSectionStyle(theme)}>
-            <div css={headerContentStyle}>
-              <div css={unitTextStyle(theme)}>{SECTION_INFO.unit}</div>
-              <div css={titleTextStyle(theme)}>{SECTION_INFO.title}</div>
+      <div css={centerSectionStyle} ref={scrollContainerRef}>
+        {activeUnit && (
+          <div css={stickyHeaderWrapperStyle(theme)} ref={headerRef}>
+            <div css={[headerSectionStyle(), stickyHeaderStyle(theme)]}>
+              <div css={headerContentStyle}>
+                <div css={unitTextStyle(theme)}>{activeUnit.name}</div>
+                <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
+              </div>
+              <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
+                학습 개요
+              </Link>
             </div>
-            <Link to={`overview/${SECTION_INFO.id}`} css={overviewButtonStyle(theme)}>
-              학습 개요
-            </Link>
           </div>
+        )}
 
-          <div css={lessonsContainerStyle}>
-            {LESSON_ITEMS.map(lesson => {
-              const isDisabled = lesson.status === 'locked' || lesson.type === 'checkpoint';
+        <div css={centerSectionInnerStyle}>
+          {UNITS.map(unit => (
+            <section
+              key={unit.id}
+              css={sectionBlockStyle}
+              ref={element => {
+                if (!element) {
+                  unitRefs.current.delete(unit.id);
+                  return;
+                }
+                unitRefs.current.set(unit.id, element);
+              }}
+              data-unit-id={unit.id}
+            >
+              <div css={unitDividerStyle(theme)}>
+                <span css={unitDividerLineStyle(theme)} />
+                <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
+                <span css={unitDividerLineStyle(theme)} />
+              </div>
+              <div css={lessonsContainerStyle}>
+                {unit.steps.map(step => {
+                  const isDisabled = step.status === 'locked' || step.type === 'checkpoint';
 
-              if (isDisabled) {
-                return (
-                  <div key={lesson.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
-                    <span css={lessonIconStyle}>
-                      <img src={lockIcon} alt="잠김" css={iconImageStyle} />
-                    </span>
-                    <div css={lessonNameStyle(theme)}>{lesson.name}</div>
-                  </div>
-                );
-              }
+                  if (isDisabled) {
+                    return (
+                      <div key={step.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                        <span css={lessonIconStyle}>
+                          <img src={lockIcon} alt="잠김" css={iconImageStyle} />
+                        </span>
+                        <div css={lessonNameStyle(theme)}>{step.name}</div>
+                      </div>
+                    );
+                  }
 
-              return (
-                <Link
-                  key={lesson.id}
-                  // TODO: 하드코딩 삭제
-                  to="/quiz/1/1"
-                  css={[
-                    lessonItemStyle(theme),
-                    lesson.status === 'completed' && completedLessonStyle(theme),
-                    lesson.status === 'active' && activeLessonStyle(theme),
-                  ]}
-                >
-                  <span css={lessonIconStyle}>
-                    {lesson.status === 'completed' && (
-                      <SVGIcon icon="Check" aria-hidden="true" size="lg" />
-                    )}
-                    {lesson.status === 'active' && (
-                      <img src={startIcon} alt="활성" css={iconImageStyle} />
-                    )}
-                  </span>
-                  <div css={lessonNameStyle(theme)}>{lesson.name}</div>
-                </Link>
-              );
-            })}
-          </div>
+                  return (
+                    <Link
+                      key={step.id}
+                      // TODO: 하드코딩 삭제
+                      to="/quiz/1/1"
+                      css={[
+                        lessonItemStyle(theme),
+                        step.status === 'completed' && completedLessonStyle(theme),
+                        step.status === 'active' && activeLessonStyle(theme),
+                      ]}
+                    >
+                      <span css={lessonIconStyle}>
+                        {step.status === 'completed' && (
+                          <SVGIcon icon="Check" aria-hidden="true" size="lg" />
+                        )}
+                        {step.status === 'active' && (
+                          <SVGIcon icon="Start" aria-hidden="true" size="lg" />
+                        )}
+                      </span>
+                      <div css={lessonNameStyle(theme)}>{step.name}</div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       </div>
 
@@ -96,6 +199,8 @@ const mainStyle = css`
   gap: 24px;
   padding: 24px;
   overflow: hidden;
+  height: 100vh;
+  min-height: 0;
 
   @media (max-width: 768px) {
     padding-bottom: 80px;
@@ -108,6 +213,9 @@ const centerSectionStyle = css`
   flex: 1;
   min-width: 0;
   position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 36px;
 `;
 
 const centerSectionInnerStyle = css`
@@ -117,17 +225,69 @@ const centerSectionInnerStyle = css`
   margin: 0 auto;
   width: 100%;
   max-width: 40rem;
-  overflow-y: auto;
+  padding-bottom: 24px;
 `;
 
-const headerSectionStyle = (theme: Theme) => css`
+const sectionBlockStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const stickyHeaderWrapperStyle = (theme: Theme) => css`
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(
+    180deg,
+    ${theme.colors.surface.default} 0%,
+    ${theme.colors.surface.default} 70%,
+    transparent 100%
+  );
+`;
+
+const stickyHeaderStyle = (theme: Theme) => css`
+  width: 100%;
+  max-width: 40rem;
+  background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgba(123, 111, 249, 1) 100%);
+  box-shadow: 0 12px 20px rgba(20, 20, 43, 0.12);
+  border-radius: ${theme.borderRadius.large};
+  overflow: hidden;
+`;
+
+const unitDividerStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem;
+  color: ${theme.colors.text.weak};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  letter-spacing: 0.02em;
+`;
+
+const unitDividerLineStyle = (theme: Theme) => css`
+  flex: 1;
+  height: 1px;
+  background: ${theme.colors.border.default};
+  opacity: 0.8;
+`;
+
+const unitDividerTextStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.weak};
+  white-space: nowrap;
+`;
+
+const headerSectionStyle = () => css`
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24px 32px;
-  background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgba(123, 111, 249, 1) 100%);
-  border-radius: ${theme.borderRadius.large};
 `;
 
 const headerContentStyle = css`

@@ -1,29 +1,39 @@
 import { NotFoundException } from '@nestjs/common';
 import { type FindOneOptions, Repository } from 'typeorm';
 
-import { Field, Quiz } from './entities';
+import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
 
 describe('RoadmapService', () => {
   let service: RoadmapService;
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
-  let findOneMock: jest.Mock<Promise<Field | null>, [FindOneOptions<Field>]>;
+  let stepRepository: Partial<Repository<Step>>;
+  let findFieldMock: jest.Mock<Promise<Field | null>, [FindOneOptions<Field>]>;
+  let findStepMock: jest.Mock<Promise<Step | null>, [FindOneOptions<Step>]>;
   let createQueryBuilderMock: jest.Mock;
+  let quizFindMock: jest.Mock;
 
   beforeEach(() => {
-    findOneMock = jest.fn();
+    findFieldMock = jest.fn();
+    findStepMock = jest.fn();
     createQueryBuilderMock = jest.fn();
+    quizFindMock = jest.fn();
     fieldRepository = {
-      findOne: findOneMock,
+      findOne: findFieldMock,
     };
     quizRepository = {
       createQueryBuilder: createQueryBuilderMock,
+      find: quizFindMock,
+    };
+    stepRepository = {
+      findOne: findStepMock,
     };
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
+      stepRepository as Repository<Step>,
     );
   });
 
@@ -50,7 +60,7 @@ describe('RoadmapService', () => {
       ],
     } as Field;
 
-    findOneMock.mockResolvedValue(field);
+    findFieldMock.mockResolvedValue(field);
 
     const queryBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -88,8 +98,114 @@ describe('RoadmapService', () => {
   });
 
   it('필드를 찾지 못하면 예외를 던진다', async () => {
-    findOneMock.mockResolvedValue(null);
+    findFieldMock.mockResolvedValue(null);
 
     await expect(service.getUnitsByFieldSlug('fe')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('스텝별 퀴즈 목록을 응답한다', async () => {
+    findStepMock.mockResolvedValue({ id: 1 } as Step);
+    quizFindMock.mockResolvedValue([
+      {
+        id: 1,
+        type: 'MCQ',
+        question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
+        content: {
+          question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
+          options: [
+            { id: 'c1', text: '<main>' },
+            { id: 'c2', text: '<footer>' },
+            { id: 'c3', text: '<aside>' },
+          ],
+        },
+      },
+      {
+        id: 2,
+        type: 'MATCHING',
+        question: '시멘틱 태그 매칭',
+        content: {
+          left: ['<header>', '<nav>', '<article>', '<aside>'],
+          right: [
+            '문서/섹션의 머리말(제목, 소개 등)',
+            '내비게이션 링크 모음',
+            '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+            '보조 콘텐츠(사이드바, 관련 링크 등)',
+          ],
+        },
+      },
+      {
+        id: 3,
+        type: 'CODE',
+        question: '네비게이션 영역을 의미하는 시멘틱 요소는?',
+        content: JSON.stringify({
+          code: '<{{BLANK}}>\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n</{{BLANK}}>',
+          options: [
+            { id: 'c1', text: 'div' },
+            { id: 'c2', text: 'nav' },
+            { id: 'c3', text: 'section' },
+            { id: 'c4', text: 'article' },
+            { id: 'c5', text: 'span' },
+          ],
+          language: 'html',
+        }),
+      },
+    ] as Quiz[]);
+
+    const result = await service.getQuizzesByStepId(1);
+
+    expect(result).toHaveLength(3);
+    expect(result[0]).toMatchObject({
+      id: 1,
+      type: 'MCQ',
+      content: {
+        question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
+        options: [
+          { id: 'c1', text: '<main>' },
+          { id: 'c2', text: '<footer>' },
+          { id: 'c3', text: '<aside>' },
+        ],
+      },
+    });
+    expect(result[1]).toMatchObject({
+      id: 2,
+      type: 'MATCHING',
+      content: {
+        question: '시멘틱 태그 매칭',
+        matching_metadata: {
+          left: ['<header>', '<nav>', '<article>', '<aside>'],
+          right: [
+            '문서/섹션의 머리말(제목, 소개 등)',
+            '내비게이션 링크 모음',
+            '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+            '보조 콘텐츠(사이드바, 관련 링크 등)',
+          ],
+        },
+      },
+    });
+    expect(result[2]).toMatchObject({
+      id: 3,
+      type: 'CODE',
+      content: {
+        question: '네비게이션 영역을 의미하는 시멘틱 요소는?',
+        options: [
+          { id: 'c1', text: 'div' },
+          { id: 'c2', text: 'nav' },
+          { id: 'c3', text: 'section' },
+          { id: 'c4', text: 'article' },
+          { id: 'c5', text: 'span' },
+        ],
+        code_metadata: {
+          language: 'html',
+          snippet:
+            '<{{BLANK}}>\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n</{{BLANK}}>',
+        },
+      },
+    });
+  });
+
+  it('스텝을 찾지 못하면 예외를 던진다', async () => {
+    findStepMock.mockResolvedValue(null);
+
+    await expect(service.getQuizzesByStepId(99)).rejects.toBeInstanceOf(NotFoundException);
   });
 });

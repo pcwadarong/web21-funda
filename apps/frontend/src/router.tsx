@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 
-import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { LearnLayout } from '@/layouts/LearnLayout';
+import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { AuthCheck } from '@/pages/AuthCheck';
 import { Error } from '@/pages/Error';
 import { InitialFields } from '@/pages/InitialFields';

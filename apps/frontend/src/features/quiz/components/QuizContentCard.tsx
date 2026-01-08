@@ -133,6 +133,7 @@ const reportButtonStyle = (theme: Theme) => css`
   align-items: center;
   justify-content: space-between;
   padding: 0 14px;
+  color: ${theme.colors.text.weak};
   background: transparent;
   border: 1px solid ${theme.colors.border.default};
   border-radius: ${theme.borderRadius.xlarge};

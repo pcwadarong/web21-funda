@@ -1,15 +1,17 @@
-// 완료된 스텝들을 기록
-export interface FieldProgress {
-  field_id: number;
-  solved_steps: number[];
+//각 필드 별 마지막으로 푼 유닛
+export interface LastSolvedUnit {
+  field_slug: string;
+  unit_id: number;
 }
+
 // 학습 진행 데이터
 export interface Progress {
   heart: number;
-  last_solved_unit_id: number;
-  classification: FieldProgress[];
+  last_solved_unit_id: LastSolvedUnit[];
 }
-
+export interface StepHistory {
+  solved_step_history: number[];
+}
 // 메인 페이지 UI 상태 데이터
 export interface UIState {
   last_viewed: {
@@ -23,13 +25,15 @@ export interface UIState {
 export interface QuizStorageData {
   progress: Progress;
   ui_state: UIState;
+  solved_step_history: number[];
 }
 
 const STORAGE_KEY = 'QUIZ_V1';
 
 // 스토리지 기본 값 데이터 설정
 const DEFAULT_STATE: QuizStorageData = {
-  progress: { heart: 5, last_solved_unit_id: 0, classification: [] },
+  progress: { heart: 5, last_solved_unit_id: [] },
+  solved_step_history: [],
   ui_state: {
     last_viewed: { field_slug: 'FE', unit_id: 1 },
     current_quiz_step_id: 0,
@@ -78,5 +82,45 @@ export const storageUtil = {
     };
     storageUtil.set(updated);
     return updated;
+  },
+  addStepHistory: (stepId: number): QuizStorageData => {
+    const current = storageUtil.get();
+
+    // 기존 배열을 Set으로 변환 (중복 제거)
+    const historySet = new Set(current.solved_step_history);
+
+    // 새로운 stepId 추가
+    historySet.add(stepId);
+
+    // 다시 배열로 변환하여 업데이트
+    const updated = {
+      ...current,
+      solved_step_history: Array.from(historySet),
+    };
+    storageUtil.set(updated);
+    return updated;
+  },
+  /**
+   * 특정 필드의 마지막 완료 유닛 업데이트
+   * @example storageUtil.updateLastSolvedUnit('FE', 3)
+   */
+  updateLastSolvedUnit: (fieldSlug: string, unitId: number): QuizStorageData => {
+    const current = storageUtil.get();
+    const lastSolvedList = [...current.progress.last_solved_unit_id];
+
+    // 1. 해당 필드가 이미 있는지 확인
+    const index = lastSolvedList.findIndex(item => item.field_slug === fieldSlug);
+
+    if (index > -1) {
+      // 2. 이미 있다면 해당 필드의 unit_id 업데이트
+      lastSolvedList[index] = { field_slug: fieldSlug, unit_id: unitId };
+    } else {
+      // 3. 없다면 새로 추가
+      lastSolvedList.push({ field_slug: fieldSlug, unit_id: unitId });
+    }
+
+    return storageUtil.update('progress', {
+      last_solved_unit_id: lastSolvedList,
+    });
   },
 };

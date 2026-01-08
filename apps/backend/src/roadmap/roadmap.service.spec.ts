@@ -220,7 +220,11 @@ describe('RoadmapService', () => {
       explanation: '설명입니다.',
     } as Quiz);
 
-    const result = await service.submitQuiz(10, { selectedOptionId: 'c2' });
+    const result = await service.submitQuiz(10, {
+      question_id: 10,
+      type: 'MCQ',
+      selection: { option_id: 'c2' },
+    });
 
     expect(result).toEqual({
       quiz_id: 10,
@@ -246,10 +250,14 @@ describe('RoadmapService', () => {
     } as Quiz);
 
     const result = await service.submitQuiz(11, {
-      selectedPairs: [
-        { left: 'div > p', right: 'div의 직계 자식 p' },
-        { left: 'div p', right: 'div의 모든 자손 p' },
-      ],
+      question_id: 11,
+      type: 'MATCHING',
+      selection: {
+        pairs: [
+          { left: 'div > p', right: 'div의 직계 자식 p' },
+          { left: 'div p', right: 'div의 모든 자손 p' },
+        ],
+      },
     });
 
     expect(result).toEqual({
@@ -268,8 +276,12 @@ describe('RoadmapService', () => {
   it('퀴즈가 없으면 예외를 던진다', async () => {
     findQuizMock.mockResolvedValue(null);
 
-    await expect(service.submitQuiz(999, { selectedOptionId: 'c1' })).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.submitQuiz(999, {
+        question_id: 999,
+        type: 'MCQ',
+        selection: { option_id: 'c1' },
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

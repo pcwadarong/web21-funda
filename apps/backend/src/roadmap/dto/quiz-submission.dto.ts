@@ -4,8 +4,12 @@ export interface MatchingPair {
 }
 
 export interface QuizSubmissionRequest {
-  selectedOptionId?: string;
-  selectedPairs?: MatchingPair[];
+  question_id: number;
+  type: string;
+  selection: {
+    option_id?: string;
+    pairs?: MatchingPair[];
+  };
 }
 
 export interface QuizSubmissionResponse {

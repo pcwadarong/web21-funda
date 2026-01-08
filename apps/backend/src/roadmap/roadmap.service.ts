@@ -88,7 +88,7 @@ export class RoadmapService {
 
     if (quiz.type === 'MATCHING') {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
-      const isCorrect = this.isCorrectMatching(payload.selectedPairs, correctPairs);
+      const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
       return {
         quiz_id: quiz.id,
@@ -101,7 +101,7 @@ export class RoadmapService {
     }
 
     const correctOptionId = this.getOptionAnswer(quiz.answer);
-    const isCorrect = this.isCorrectOption(payload.selectedOptionId, correctOptionId);
+    const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
     return {
       quiz_id: quiz.id,

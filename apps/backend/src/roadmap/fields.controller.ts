@@ -1,6 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 
 import type { FieldListResponse } from './dto/field-list.dto';
+import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse } from './dto/field-units.dto';
 import { RoadmapService } from './roadmap.service';
 
@@ -16,5 +17,12 @@ export class FieldsController {
   @Get(':fieldSlug/units')
   async getUnitsByFieldSlug(@Param('fieldSlug') fieldSlug: string): Promise<FieldUnitsResponse> {
     return this.roadmapService.getUnitsByFieldSlug(fieldSlug);
+  }
+
+  @Get(':fieldSlug/roadmap')
+  async getRoadmapByFieldSlug(
+    @Param('fieldSlug') fieldSlug: string,
+  ): Promise<FieldRoadmapResponse> {
+    return this.roadmapService.getRoadmapByFieldSlug(fieldSlug);
   }
 }

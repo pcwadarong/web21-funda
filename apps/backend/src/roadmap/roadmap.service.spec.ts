@@ -9,6 +9,12 @@ describe('RoadmapService', () => {
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
+  let roadmapQueryBuilderMock: {
+    leftJoinAndSelect: jest.Mock;
+    where: jest.Mock;
+    orderBy: jest.Mock;
+    getOne: jest.Mock;
+  };
   let findFieldsMock: jest.Mock<Promise<Field[]>>;
   let findFieldMock: jest.Mock<Promise<Field | null>, [FindOneOptions<Field>]>;
   let findStepMock: jest.Mock<Promise<Step | null>, [FindOneOptions<Step>]>;
@@ -23,9 +29,16 @@ describe('RoadmapService', () => {
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
+    roadmapQueryBuilderMock = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn(),
+    };
     fieldRepository = {
       find: findFieldsMock,
       findOne: findFieldMock,
+      createQueryBuilder: jest.fn().mockReturnValue(roadmapQueryBuilderMock),
     };
     quizRepository = {
       createQueryBuilder: createQueryBuilderMock,
@@ -57,6 +70,28 @@ describe('RoadmapService', () => {
         { slug: 'be', name: 'Backend', description: null },
       ],
     });
+  });
+
+  it('필드 로드맵(유닛 리스트)을 응답한다', async () => {
+    roadmapQueryBuilderMock.getOne.mockResolvedValue({
+      name: 'Frontend',
+      slug: 'fe',
+      units: [
+        { id: 2, title: 'JS', orderIndex: 2 },
+        { id: 1, title: 'HTML', orderIndex: 1 },
+      ],
+    } as Field);
+
+    const result = await service.getRoadmapByFieldSlug('fe');
+
+    expect(result).toEqual({
+      field: { name: 'Frontend', slug: 'fe' },
+      units: [
+        { id: 2, title: 'JS', orderIndex: 2 },
+        { id: 1, title: 'HTML', orderIndex: 1 },
+      ],
+    });
+    expect(roadmapQueryBuilderMock.orderBy).toHaveBeenCalledWith('unit.orderIndex', 'ASC');
   });
 
   it('필드/유닛/스텝과 퀴즈 개수를 응답한다', async () => {

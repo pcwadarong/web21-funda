@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldUnitsResponse } from './dto/field-units.dto';
 import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
 import type {
@@ -21,6 +22,25 @@ export class RoadmapService {
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
   ) {}
+
+  /**
+   * 분야 목록을 조회한다.
+   * @returns 분야 리스트
+   */
+  async getFields(): Promise<FieldListResponse> {
+    const fields = await this.fieldRepository.find({
+      select: ['slug', 'name', 'description'],
+      order: { id: 'ASC' },
+    });
+
+    return {
+      fields: fields.map(field => ({
+        slug: field.slug,
+        name: field.name,
+        description: field.description ?? null,
+      })),
+    };
+  }
 
   /**
    * 필드 슬러그 기준으로 유닛/스텝과 퀴즈 개수를 조회한다.

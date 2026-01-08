@@ -1,11 +1,17 @@
 import { Controller, Get, Param } from '@nestjs/common';
 
+import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldUnitsResponse } from './dto/field-units.dto';
 import { RoadmapService } from './roadmap.service';
 
 @Controller('fields')
 export class FieldsController {
   constructor(private readonly roadmapService: RoadmapService) {}
+
+  @Get()
+  async getFields(): Promise<FieldListResponse> {
+    return this.roadmapService.getFields();
+  }
 
   @Get(':fieldSlug/units')
   async getUnitsByFieldSlug(@Param('fieldSlug') fieldSlug: string): Promise<FieldUnitsResponse> {

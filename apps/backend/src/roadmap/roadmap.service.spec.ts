@@ -9,6 +9,7 @@ describe('RoadmapService', () => {
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
+  let findFieldsMock: jest.Mock<Promise<Field[]>>;
   let findFieldMock: jest.Mock<Promise<Field | null>, [FindOneOptions<Field>]>;
   let findStepMock: jest.Mock<Promise<Step | null>, [FindOneOptions<Step>]>;
   let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
@@ -16,12 +17,14 @@ describe('RoadmapService', () => {
   let quizFindMock: jest.Mock;
 
   beforeEach(() => {
+    findFieldsMock = jest.fn();
     findFieldMock = jest.fn();
     findStepMock = jest.fn();
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
     fieldRepository = {
+      find: findFieldsMock,
       findOne: findFieldMock,
     };
     quizRepository = {
@@ -38,6 +41,22 @@ describe('RoadmapService', () => {
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
     );
+  });
+
+  it('분야 리스트를 응답한다', async () => {
+    findFieldsMock.mockResolvedValue([
+      { slug: 'fe', name: 'Frontend', description: '프론트엔드' } as Field,
+      { slug: 'be', name: 'Backend', description: null } as Field,
+    ]);
+
+    const result = await service.getFields();
+
+    expect(result).toEqual({
+      fields: [
+        { slug: 'fe', name: 'Frontend', description: '프론트엔드' },
+        { slug: 'be', name: 'Backend', description: null },
+      ],
+    });
   });
 
   it('필드/유닛/스텝과 퀴즈 개수를 응답한다', async () => {

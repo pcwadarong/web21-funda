@@ -89,18 +89,24 @@ const starStyle = css`
 `;
 
 const labelStyle = (theme: Theme) => css`
-  padding: 8px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: ${theme.colors.primary.surface};
+  padding: 0.25rem 1.25rem;
+  box-shadow: 0 2px 4px ${theme.colors.primary.light};
+  font-size: ${theme.typography['20Bold'].fontSize};
+  font-weight: ${theme.typography['20Bold'].fontWeight};
+  border-radius: ${theme.borderRadius.large};
+  background: #09071087;
+  color: ${theme.colors.primary.light};
   letter-spacing: 2px;
 `;
 
-const pointsStyle = css`
-  font-size: 72px;
+const pointsStyle = (theme: Theme) => css`
+  font-size: 9rem;
   font-weight: 700;
-  color: #a29aff;
-  text-shadow: 0 0 20px rgba(162, 154, 255, 0.6);
+  background: linear-gradient(to bottom, #d4cef9 40%, #897afcff 60%, #9ec3ffff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px ${theme.colors.primary.light});
+  display: inline-block;
 `;

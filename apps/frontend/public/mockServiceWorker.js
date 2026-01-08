@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 /* tslint:disable */
 
 /**

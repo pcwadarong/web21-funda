@@ -4,6 +4,7 @@ import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { LearnLayout } from '@/layouts/LearnLayout';
 import { AuthCheck } from '@/pages/AuthCheck';
 import { Error } from '@/pages/Error';
+import { InitialFields } from '@/pages/InitialFields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
@@ -19,7 +20,10 @@ export const router = createBrowserRouter([
     path: '/',
     element: <Landing />,
   },
-
+  {
+    path: '/initial-fields',
+    element: <InitialFields />,
+  },
   {
     path: '/admin/quizzes/upload',
     element: <AdminQuizUpload />,

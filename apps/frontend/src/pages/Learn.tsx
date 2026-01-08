@@ -2,7 +2,6 @@ import { css, useTheme } from '@emotion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import lockIcon from '@/assets/lock.svg';
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import type { LessonItem } from '@/feat/learn/types';
@@ -126,7 +125,7 @@ export const Learn = () => {
         )}
 
         <div css={centerSectionInnerStyle}>
-          {UNITS.map(unit => (
+          {UNITS.map((unit, unitIndex) => (
             <section
               key={unit.id}
               css={sectionBlockStyle}
@@ -144,42 +143,50 @@ export const Learn = () => {
                 <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
                 <span css={unitDividerLineStyle(theme)} />
               </div>
-              <div css={lessonsContainerStyle}>
-                {unit.steps.map(step => {
+              <div css={lessonsContainerStyle(unit.steps.length)}>
+                {unit.steps.map((step, index) => {
                   const isDisabled = step.status === 'locked' || step.type === 'checkpoint';
+                  const positionStyle = lessonPositionStyle(index, unitIndex);
 
                   if (isDisabled) {
                     return (
-                      <div key={step.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
-                        <span css={lessonIconStyle}>
-                          <img src={lockIcon} alt="잠김" css={iconImageStyle} />
-                        </span>
-                        <div css={lessonNameStyle(theme)}>{step.name}</div>
+                      <div key={step.id} css={positionStyle}>
+                        <div css={lessonStackStyle}>
+                          <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                            <span css={lessonIconStyle}>
+                              <SVGIcon icon="Lock" aria-hidden="true" size="xl" />
+                            </span>
+                          </div>
+                          <div css={lessonNamePillStyle(theme)}>{step.name}</div>
+                        </div>
                       </div>
                     );
                   }
 
                   return (
-                    <Link
-                      key={step.id}
-                      // TODO: 하드코딩 삭제
-                      to="/quiz/1/1"
-                      css={[
-                        lessonItemStyle(theme),
-                        step.status === 'completed' && completedLessonStyle(theme),
-                        step.status === 'active' && activeLessonStyle(theme),
-                      ]}
-                    >
-                      <span css={lessonIconStyle}>
-                        {step.status === 'completed' && (
-                          <SVGIcon icon="Check" aria-hidden="true" size="lg" />
-                        )}
-                        {step.status === 'active' && (
-                          <SVGIcon icon="Start" aria-hidden="true" size="lg" />
-                        )}
-                      </span>
-                      <div css={lessonNameStyle(theme)}>{step.name}</div>
-                    </Link>
+                    <div key={step.id} css={positionStyle}>
+                      <div css={lessonStackStyle}>
+                        <Link
+                          // TODO: 하드코딩 삭제
+                          to="/quiz/1/1"
+                          css={[
+                            lessonItemStyle(theme),
+                            step.status === 'completed' && completedLessonStyle(theme),
+                            step.status === 'active' && activeLessonStyle(theme),
+                          ]}
+                        >
+                          <span css={lessonIconStyle}>
+                            {step.status === 'completed' && (
+                              <SVGIcon icon="Check" aria-hidden="true" size="xl" />
+                            )}
+                            {step.status === 'active' && (
+                              <SVGIcon icon="Start" aria-hidden="true" size="xl" />
+                            )}
+                          </span>
+                        </Link>
+                        <div css={lessonNamePillStyle(theme)}>{step.name}</div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -282,6 +289,22 @@ const unitDividerTextStyle = (theme: Theme) => css`
   white-space: nowrap;
 `;
 
+const oddLeftPositions = [400, 300, 380, 450, 360, 270, 190];
+const evenLeftPositions = [190, 290, 210, 140, 220, 310, 400];
+
+const lessonPositionStyle = (index: number, unitIndex: number) => {
+  const isOddUnit = unitIndex % 2 === 0;
+  const positions = isOddUnit ? oddLeftPositions : evenLeftPositions;
+  const left = positions[index % positions.length];
+
+  return css`
+    position: absolute;
+    top: ${index * 152}px;
+    left: ${left}px;
+    transform: translateX(-50%);
+  `;
+};
+
 const headerSectionStyle = () => css`
   position: relative;
   display: flex;
@@ -321,70 +344,91 @@ const overviewButtonStyle = (theme: Theme) => css`
   align-self: flex-end;
 `;
 
-const lessonsContainerStyle = css`
+const lessonsContainerStyle = (count: number) => css`
+  position: relative;
+  min-height: ${count * 160}px;
+  padding: 8px 0 24px;
+`;
+
+const lessonStackStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  flex: 1;
-  min-height: 0;
+  align-items: center;
+  gap: 18px;
 `;
 
 const lessonItemStyle = (theme: Theme) => css`
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
+  justify-content: center;
+  padding: 20px;
   background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.medium};
-  border: 2px solid ${theme.colors.border.default};
+  border-radius: 30px;
   transition: all 150ms ease;
-  text-align: left;
-  width: 100%;
+  text-align: center;
+  width: 84px;
+  height: 79px;
   text-decoration: none;
 
   &:hover {
     transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const completedLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
-  color: ${theme.colors.text.strong};
+  color: ${theme.colors.primary.main};
+  box-shadow: 0 8px 0 ${theme.colors.primary.main};
+
+  &:active {
+    box-shadow: 0 0.4rem 0 ${theme.colors.primary.main};
+  }
 `;
 
 const activeLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
   border-color: ${theme.colors.primary.dark};
   color: ${colors.light.grayscale[50]};
+  box-shadow: 0 8px 0 ${theme.colors.primary.dark};
+
+  &:active {
+    box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark};
+  }
 `;
 
 const lockedLessonStyle = (theme: Theme) => css`
-  background: ${theme.colors.surface.default};
-  border-color: ${theme.colors.border.default};
-  color: ${theme.colors.text.strong};
+  background: ${colors.light.grayscale[300]};
+  color: ${theme.colors.text.light};
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: 0 8px 0 ${theme.colors.text.light};
+
+  &:active {
+    box-shadow: 0 0.4rem 0 ${theme.colors.text.light};
+  }
 `;
 
 const lessonIconStyle = css`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
 `;
 
-const iconImageStyle = css`
-  width: 24px;
-  height: 24px;
-`;
-
-const lessonNameStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['20Bold'].fontSize};
-  line-height: ${theme.typography['20Bold'].lineHeight};
-  font-weight: ${theme.typography['20Bold'].fontWeight};
-  color: inherit;
+const lessonNamePillStyle = (theme: Theme) => css`
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: ${theme.colors.surface.strong};
+  color: ${theme.colors.text.light};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  box-shadow: 0 8px 20px rgba(20, 20, 43, 0.12);
 `;

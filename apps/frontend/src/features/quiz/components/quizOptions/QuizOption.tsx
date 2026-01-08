@@ -1,16 +1,8 @@
 import { css, useTheme } from '@emotion/react';
 
+import * as S from '@/feat/quiz/components/quizOptions/QuizOption.styles';
+import type { QuizOptionProps } from '@/features/quiz//types';
 import type { Theme } from '@/styles/theme';
-
-interface QuizOptionProps {
-  label: string;
-  option: string;
-  isSelected: boolean;
-  isCorrect?: boolean;
-  isWrong?: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-}
 
 export const QuizOption = ({
   label,
@@ -26,11 +18,12 @@ export const QuizOption = ({
   return (
     <button
       css={[
-        optionStyle(theme),
-        isSelected && selectedOptionStyle(theme),
-        isCorrect && correctOptionStyle(theme),
-        isWrong && wrongOptionStyle(theme),
-        disabled && disabledOptionStyle,
+        optionBaseStyle(theme),
+        S.commonHoverStyle(theme),
+        isSelected && S.selectedOptionStyle(theme),
+        isCorrect && S.correctOptionStyle(theme),
+        isWrong && S.wrongOptionStyle(theme),
+        disabled && S.disabledOptionStyle,
       ]}
       onClick={onClick}
       disabled={disabled}
@@ -41,7 +34,7 @@ export const QuizOption = ({
   );
 };
 
-const optionStyle = (theme: Theme) => css`
+const optionBaseStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   gap: 16px;
@@ -53,32 +46,6 @@ const optionStyle = (theme: Theme) => css`
   transition: all 150ms ease;
   text-align: left;
   width: 100%;
-
-  &:hover:not(:disabled) {
-    border-color: ${theme.colors.primary.main};
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const selectedOptionStyle = (theme: Theme) => css`
-  border-color: ${theme.colors.primary.main};
-  background: ${theme.colors.primary.surface};
-`;
-
-const correctOptionStyle = (theme: Theme) => css`
-  border-color: ${theme.colors.success.main};
-  background: ${theme.colors.success.light};
-`;
-
-const wrongOptionStyle = (theme: Theme) => css`
-  border-color: ${theme.colors.error.main};
-  background: ${theme.colors.error.surface};
-`;
-
-const disabledOptionStyle = css`
-  cursor: not-allowed;
-  opacity: 0.6;
 `;
 
 const optionLabelStyle = (

@@ -14,16 +14,28 @@ export const CodeBlock = ({ children, language = 'JavaScript' }: CodeBlockProps)
 
   // 백엔드에서 받은 데이터의 엔터를 구분하여 처리
   const formatCode = (content: React.ReactNode): React.ReactNode => {
-    if (typeof content === 'string') {
-      // 문자열인 경우 엔터(\n)를 <br>로 변환
-      return content.split('\n').map((line, index, array) => (
-        <span key={index}>
-          {line}
-          {index < array.length - 1 && <br />}
-        </span>
-      ));
-    }
-    return content;
+    if (typeof content !== 'string') return content;
+
+    const lines = content.split('\n');
+
+    const formattedLines = lines.map((line, index) => {
+      const parts = line.trim().split(/({{BLANK}})/g);
+      const lineContent = parts.map((part, pIdx) => {
+        // {{BLANK}} 패턴을 만나면 회색 박스(BlankBox) 반환
+        if (part === '{{BLANK}}')
+          return <span key={`blank-${index}-${pIdx}`} css={blankBoxStyle(theme)} />;
+        return part;
+      });
+
+      // 일반 텍스트인 경우 엔터(\n)를 <br>로 변환
+      return (
+        <div key={index} style={{ minHeight: '1.5em' }}>
+          {lineContent}
+        </div>
+      );
+    });
+
+    return formattedLines;
   };
 
   return (
@@ -75,4 +87,16 @@ const codeStyle = (theme: Theme) => css`
   color: ${colors.light.grayscale[50]};
   white-space: pre-wrap;
   word-wrap: break-word;
+`;
+
+const blankBoxStyle = (theme: Theme) => css`
+  display: inline-block;
+  width: 80px;
+  height: 1.5em;
+  background-color: ${colors.light.grayscale[600]};
+  border-radius: ${theme.borderRadius.xsmall};
+  vertical-align: middle;
+  margin: 0 4px;
+  cursor: none;
+  user-select: none;
 `;

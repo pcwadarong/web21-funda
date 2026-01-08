@@ -1,12 +1,11 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
-import checkIcon from '@/assets/check.svg';
 import lockIcon from '@/assets/lock.svg';
 import startIcon from '@/assets/start.svg';
+import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import type { LessonItem } from '@/feat/learn/types';
-import { Sidebar } from '@/layouts/Sidebar';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
@@ -31,75 +30,65 @@ export const Learn = () => {
   const theme = useTheme();
 
   return (
-    <div css={containerStyle}>
-      <Sidebar />
-      <main css={mainStyle}>
-        <div css={centerSectionStyle}>
-          <div css={centerSectionInnerStyle}>
-            <div css={headerSectionStyle(theme)}>
-              <div css={headerContentStyle}>
-                <div css={unitTextStyle(theme)}>{SECTION_INFO.unit}</div>
-                <div css={titleTextStyle(theme)}>{SECTION_INFO.title}</div>
-              </div>
-              <Link to={`overview/${SECTION_INFO.id}`} css={overviewButtonStyle(theme)}>
-                학습 개요
-              </Link>
+    <div css={mainStyle}>
+      <div css={centerSectionStyle}>
+        <div css={centerSectionInnerStyle}>
+          <div css={headerSectionStyle(theme)}>
+            <div css={headerContentStyle}>
+              <div css={unitTextStyle(theme)}>{SECTION_INFO.unit}</div>
+              <div css={titleTextStyle(theme)}>{SECTION_INFO.title}</div>
             </div>
+            <Link to={`overview/${SECTION_INFO.id}`} css={overviewButtonStyle(theme)}>
+              학습 개요
+            </Link>
+          </div>
 
-            <div css={lessonsContainerStyle}>
-              {LESSON_ITEMS.map(lesson => {
-                const isDisabled = lesson.status === 'locked' || lesson.type === 'checkpoint';
+          <div css={lessonsContainerStyle}>
+            {LESSON_ITEMS.map(lesson => {
+              const isDisabled = lesson.status === 'locked' || lesson.type === 'checkpoint';
 
-                if (isDisabled) {
-                  return (
-                    <div key={lesson.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
-                      <span css={lessonIconStyle}>
-                        <img src={lockIcon} alt="잠김" css={iconImageStyle} />
-                      </span>
-                      <div css={lessonNameStyle(theme)}>{lesson.name}</div>
-                    </div>
-                  );
-                }
-
+              if (isDisabled) {
                 return (
-                  <Link
-                    key={lesson.id}
-                    // TODO: 하드코딩 삭제
-                    to="/quiz/1/1"
-                    css={[
-                      lessonItemStyle(theme),
-                      lesson.status === 'completed' && completedLessonStyle(theme),
-                      lesson.status === 'active' && activeLessonStyle(theme),
-                    ]}
-                  >
+                  <div key={lesson.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
                     <span css={lessonIconStyle}>
-                      {lesson.status === 'completed' && (
-                        <img src={checkIcon} alt="완료" css={iconImageStyle} />
-                      )}
-                      {lesson.status === 'active' && (
-                        <img src={startIcon} alt="활성" css={iconImageStyle} />
-                      )}
+                      <img src={lockIcon} alt="잠김" css={iconImageStyle} />
                     </span>
                     <div css={lessonNameStyle(theme)}>{lesson.name}</div>
-                  </Link>
+                  </div>
                 );
-              })}
-            </div>
+              }
+
+              return (
+                <Link
+                  key={lesson.id}
+                  // TODO: 하드코딩 삭제
+                  to="/quiz/1/1"
+                  css={[
+                    lessonItemStyle(theme),
+                    lesson.status === 'completed' && completedLessonStyle(theme),
+                    lesson.status === 'active' && activeLessonStyle(theme),
+                  ]}
+                >
+                  <span css={lessonIconStyle}>
+                    {lesson.status === 'completed' && (
+                      <SVGIcon icon="Check" aria-hidden="true" size="lg" />
+                    )}
+                    {lesson.status === 'active' && (
+                      <img src={startIcon} alt="활성" css={iconImageStyle} />
+                    )}
+                  </span>
+                  <div css={lessonNameStyle(theme)}>{lesson.name}</div>
+                </Link>
+              );
+            })}
           </div>
         </div>
+      </div>
 
-        <LearnRightSidebar />
-      </main>
+      <LearnRightSidebar />
     </div>
   );
 };
-
-const containerStyle = css`
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-`;
 
 const mainStyle = css`
   display: flex;

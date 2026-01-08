@@ -8,6 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest --project unit",
+    "test:watch": "vitest --project unit --watch",
+    "test:coverage": "vitest --project unit --coverage",
+    "test:storybook": "vitest --project storybook",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -15,6 +19,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "framer-motion": "^12.23.26",
+    "msw": "^2.12.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1",
@@ -51,5 +56,10 @@
     "vite": "^7.2.4",
     "vite-plugin-svgr": "^4.5.0",
     "vitest": "^4.0.15"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

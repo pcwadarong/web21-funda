@@ -1,15 +1,16 @@
 import { createBrowserRouter } from 'react-router-dom';
 
 import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
+import { LearnLayout } from '@/layouts/LearnLayout';
 import { AuthCheck } from '@/pages/AuthCheck';
 import { Error } from '@/pages/Error';
-import { Fields } from '@/pages/Fields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
 import { Overview } from '@/pages/Overview';
 import { Quiz } from '@/pages/Quiz';
 import { QuizResult } from '@/pages/QuizResult';
+import { SelectField } from '@/pages/SelectField';
 import { ServicePreparation } from '@/pages/ServicePreparation';
 import { Streak } from '@/pages/Streak';
 
@@ -18,10 +19,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <Landing />,
   },
-  {
-    path: '/fields',
-    element: <Fields />,
-  },
+
   {
     path: '/admin/quizzes/upload',
     element: <AdminQuizUpload />,
@@ -32,18 +30,28 @@ export const router = createBrowserRouter([
   },
   {
     path: '/learn',
-    element: <Learn />,
+    element: <LearnLayout />,
+    children: [
+      {
+        index: true, // 그냥 /learn 접속 시
+        element: <Learn />,
+      },
+      {
+        path: 'select-field', // /learn/select-field 접속 시
+        element: <SelectField />, // 사이드바는 유지된 채 중앙만 SelectField로 바뀜
+      },
+    ],
   },
   {
     path: '/overview/:unitId',
     element: <Overview />,
   },
   {
-    path: '/quiz/:unitId/:stepId',
+    path: '/quiz',
     element: <Quiz />,
   },
   {
-    path: '/quiz/:unitId/:stepId/result',
+    path: '/quiz/result',
     element: <QuizResult />,
   },
   {

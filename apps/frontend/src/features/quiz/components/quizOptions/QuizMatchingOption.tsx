@@ -1,0 +1,62 @@
+import { css, useTheme } from '@emotion/react';
+
+import * as S from '@/feat/quiz/components/quizOptions/QuizOption.styles';
+import type { QuizOptionProps } from '@/features/quiz/types';
+import type { Theme } from '@/styles/theme';
+
+export const QuizMatchingOption = ({
+  option,
+  isSelected,
+  isMatched,
+  isCorrect,
+  isWrong,
+  onClick,
+  disabled,
+}: QuizOptionProps) => {
+  const theme = useTheme();
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      css={[
+        matchingBaseStyle(theme),
+        S.commonHoverStyle(theme),
+        isSelected && S.selectedOptionStyle(theme),
+        isMatched && matchedStyle(theme),
+        isCorrect && S.correctOptionStyle(theme),
+        isWrong && S.wrongOptionStyle(theme),
+        disabled && S.disabledOptionStyle,
+      ]}
+    >
+      <span css={matchingTextStyle(theme)}>{option}</span>
+    </button>
+  );
+};
+
+const matchingBaseStyle = (theme: Theme) => css`
+  width: 100%;
+  padding: 24px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${theme.colors.surface.strong};
+  border: 2px solid ${theme.colors.border.default};
+  border-radius: ${theme.borderRadius.medium};
+  cursor: pointer;
+  transition: all 150ms ease;
+  min-height: 80px;
+`;
+
+const matchingTextStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Bold'].fontSize};
+  color: ${theme.colors.text.strong};
+  text-align: center;
+`;
+
+const matchedStyle = (theme: Theme) => css`
+  opacity: 0.7;
+  background: ${theme.colors.surface.default};
+  border-style: dashed;
+`;

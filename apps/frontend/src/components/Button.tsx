@@ -83,17 +83,17 @@ const secondaryStyle = (theme: Theme) => css`
   background: ${colors.light.grayscale[50]};
   color: ${colors.light.grayscale[700]};
   border: 2px solid ${theme.colors.primary.surface};
-  box-shadow: 0 10px 0 ${theme.colors.primary.light};
+  box-shadow: 0 0.5rem 0 ${theme.colors.border.default};
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 0 ${theme.colors.primary.surface};
+    box-shadow: 0 0.7rem 0 ${theme.colors.border.default};
     filter: brightness(0.99);
   }
 
   &:active {
     transform: translateY(0);
-    box-shadow: 0 8px 0 ${theme.colors.primary.surface};
+    box-shadow: 0 0.4rem 0 ${theme.colors.border.default};
   }
 `;
 

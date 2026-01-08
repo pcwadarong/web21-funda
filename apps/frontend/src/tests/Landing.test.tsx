@@ -37,13 +37,13 @@ describe('Landing 컴포넌트 테스트', () => {
     expect(button).toBeInTheDocument();
   });
 
-  it('"사용해 보기" 버튼 클릭 시 /fields로 이동한다', () => {
+  it('"사용해 보기" 버튼 클릭 시 /initial-fields로 이동한다', () => {
     renderLanding();
 
     const button = screen.getByText('사용해 보기');
     fireEvent.click(button);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/fields');
+    expect(mockNavigate).toHaveBeenCalledWith('/initial-fields');
   });
 
   it('"전 이미 계정이 있어요" 버튼이 렌더링된다', () => {

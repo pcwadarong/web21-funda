@@ -4,83 +4,78 @@ import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
-import type { LessonItem } from '@/feat/learn/types';
+import type { LessonItem, LessonSection, UnitsResponse } from '@/feat/learn/types';
+import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
-// TODO: FETCH
-interface LessonSection {
-  id: string;
-  name: string;
-  title: string;
-  steps: readonly LessonItem[];
-}
-
-const UNITS: readonly LessonSection[] = [
-  {
-    id: '2',
-    name: '자료구조와 알고리즘',
-    title: '자료구조',
-    steps: [
-      { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
-      { id: 'array', name: '배열', status: 'completed', type: 'normal' },
-      { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
-      { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
-      { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
-      { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
-      { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
-    ],
-  },
-  {
-    id: '3',
-    name: '자료구조와 알고리즘',
-    title: '정렬과 탐색',
-    steps: [
-      { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
-      { id: 'array', name: '배열', status: 'completed', type: 'normal' },
-      { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
-      { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
-      { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
-      { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
-      { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
-    ],
-  },
-  {
-    id: '4',
-    name: '자료구조와 알고리즘',
-    title: '그래프',
-    steps: [
-      { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
-      { id: 'array', name: '배열', status: 'completed', type: 'normal' },
-      { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
-      { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
-      { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
-      { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
-      { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
-    ],
-  },
-];
-
 export const Learn = () => {
   const theme = useTheme();
-  const [activeUnitId, setActiveUnitId] = useState(UNITS[0]?.id ?? '');
+  const { uiState } = useStorage();
+  const [units, setUnits] = useState<LessonSection[]>([]);
+  const [activeUnitId, setActiveUnitId] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const unitRefs = useRef(new Map<string, HTMLElement>());
   const headerRef = useRef<HTMLDivElement | null>(null);
   const activeUnit = useMemo(
-    () => UNITS.find(unit => unit.id === activeUnitId) ?? UNITS[0],
-    [activeUnitId],
+    () => units.find(unit => unit.id === activeUnitId) ?? units[0],
+    [activeUnitId, units],
   );
 
   useEffect(() => {
+    const fieldSlug = uiState.last_viewed.field_slug;
+    let isMounted = true;
+
+    const fetchUnits = async () => {
+      const response = await fetch(`/api/fields/${fieldSlug}/units`);
+      const data = (await response.json()) as UnitsResponse;
+      if (!isMounted) return;
+
+      const mapped = data.units
+        .sort((a, b) => a.orderIndex - b.orderIndex)
+        .map(unit => ({
+          id: String(unit.id),
+          name: data.field.name,
+          title: unit.title,
+          steps: unit.steps
+            .sort((a, b) => a.orderIndex - b.orderIndex)
+            .map(step => {
+              const status: LessonItem['status'] = step.isLocked
+                ? 'locked'
+                : step.isCompleted
+                  ? 'completed'
+                  : 'active';
+              const type: LessonItem['type'] = step.isCheckpoint ? 'checkpoint' : 'normal';
+
+              return {
+                id: String(step.id),
+                name: step.title,
+                status,
+                type,
+              };
+            }),
+        }));
+
+      setUnits(mapped);
+      setActiveUnitId(mapped[0]?.id ?? '');
+    };
+
+    fetchUnits();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [uiState.last_viewed.field_slug]);
+
+  useEffect(() => {
     const root = scrollContainerRef.current;
-    if (!root) return;
+    if (!root || units.length === 0) return;
     let ticking = false;
 
     const updateActiveUnit = () => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
       const scrollTop = root.scrollTop + headerHeight + 1;
-      let nextId = UNITS[0]?.id ?? '';
+      let nextId = units[0]?.id ?? '';
       unitRefs.current.forEach((element, id) => {
         if (element.offsetTop <= scrollTop) {
           nextId = id;
@@ -105,7 +100,7 @@ export const Learn = () => {
     return () => {
       root.removeEventListener('scroll', onScroll);
     };
-  }, []);
+  }, [units]);
 
   return (
     <div css={mainStyle}>
@@ -125,7 +120,7 @@ export const Learn = () => {
         )}
 
         <div css={centerSectionInnerStyle}>
-          {UNITS.map((unit, unitIndex) => (
+          {units.map((unit, unitIndex) => (
             <section
               key={unit.id}
               css={sectionBlockStyle}

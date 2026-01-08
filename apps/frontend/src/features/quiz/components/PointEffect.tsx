@@ -1,6 +1,7 @@
-import { css, keyframes } from '@emotion/react';
+import { css } from '@emotion/react';
 import { motion, type Variants } from 'framer-motion';
 
+import Star from '@/assets/star3d.svg?react';
 import type { Theme } from '@/styles/theme';
 
 interface PointEffectProps {
@@ -62,7 +63,7 @@ export const PointEffect = ({ points }: PointEffectProps) => {
         animate="visible"
       >
         <motion.div variants={itemVariants} css={starContainerStyle}>
-          <span css={starStyle}>🌟</span>
+          <Star />
         </motion.div>
 
         <motion.div variants={itemVariants} css={labelStyle}>
@@ -76,21 +77,6 @@ export const PointEffect = ({ points }: PointEffectProps) => {
     </div>
   );
 };
-
-const starShineAnimation = keyframes`
-  0%, 100% {
-    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
-  }
-  25% {
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 1));
-  }
-  50% {
-    filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1));
-  }
-  75% {
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 1));
-  }
-`;
 
 const containerStyle = css`
   position: relative;
@@ -108,12 +94,6 @@ const glowLineStyle = css`
   width: 80vw;
   height: 90vh;
   z-index: 1;
-`;
-
-const starStyle = css`
-  font-size: 120px;
-  animation: ${starShineAnimation} 1s ease-in-out infinite;
-  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
 `;
 
 const contentWrapperStyle = css`

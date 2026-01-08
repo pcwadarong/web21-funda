@@ -1,6 +1,5 @@
 import { css, useTheme } from '@emotion/react';
 
-import startIcon from '@/assets/start.svg';
 import SVGIcon from '@/comp/SVGIcon';
 import type { RoadmapUnit, UnitStatus, UnitVariant } from '@/feat/roadmap/types';
 import type { Theme } from '@/styles/theme';
@@ -44,7 +43,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
         {effectiveStatus !== 'normal' && (
           <div css={statusBadgeStyle(theme, effectiveStatus)}>
             {effectiveStatus === 'completed' && <SVGIcon icon="Check" size="xs" />}
-            {effectiveStatus === 'active' && <img src={startIcon} alt="" css={statusIconStyle} />}
+            {effectiveStatus === 'active' && <SVGIcon icon="Start" size="xs" color="black" />}
             <span>{getStatusLabel(effectiveStatus)}</span>
           </div>
         )}
@@ -139,11 +138,6 @@ const statusBadgeStyle = (theme: Theme, status: UnitStatus) => css`
   white-space: nowrap;
 `;
 
-const statusIconStyle = css`
-  width: 12px;
-  height: 12px;
-`;
-
 const dividerStyle = (theme: Theme) => css`
   height: 1px;
   background: ${theme.colors.border.default};
@@ -174,7 +168,7 @@ const progressLabelWrapStyle = css`
 
 const progressLabelGroupStyle = css`
   position: absolute;
-  top: 0;
+  top: -3px;
   left: 0;
   right: 0;
   display: flex;
@@ -211,12 +205,12 @@ const progressFillStyle = (theme: Theme, status: UnitStatus, progress: number) =
 `;
 
 const scoreTitleStyle = css`
+  position: absolute;
+  top: -3px;
+  right: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  right: 7px;
-  top: 0;
 `;
 
 const scoreBadgeStyle = (theme: Theme, status: UnitStatus) => css`

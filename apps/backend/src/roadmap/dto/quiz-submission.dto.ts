@@ -4,7 +4,7 @@ export interface MatchingPair {
 }
 
 export interface QuizSubmissionRequest {
-  question_id: number;
+  quiz_id: number;
   type: string;
   selection: {
     option_id?: string;

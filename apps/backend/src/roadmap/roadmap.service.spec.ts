@@ -221,7 +221,7 @@ describe('RoadmapService', () => {
     } as Quiz);
 
     const result = await service.submitQuiz(10, {
-      question_id: 10,
+      quiz_id: 10,
       type: 'MCQ',
       selection: { option_id: 'c2' },
     });
@@ -250,7 +250,7 @@ describe('RoadmapService', () => {
     } as Quiz);
 
     const result = await service.submitQuiz(11, {
-      question_id: 11,
+      quiz_id: 11,
       type: 'MATCHING',
       selection: {
         pairs: [
@@ -278,7 +278,7 @@ describe('RoadmapService', () => {
 
     await expect(
       service.submitQuiz(999, {
-        question_id: 999,
+        quiz_id: 999,
         type: 'MCQ',
         selection: { option_id: 'c1' },
       }),

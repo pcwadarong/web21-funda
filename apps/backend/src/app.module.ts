@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { BackofficeModule } from './backoffice/backoffice.module';
 import { createTypeOrmOptions } from './config/typeorm.config';
+import { ProgressModule } from './progress/progress.module';
+import { RoadmapModule } from './roadmap/roadmap.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -16,6 +19,9 @@ import { AppService } from './app.service';
       inject: [ConfigService],
       useFactory: createTypeOrmOptions,
     }),
+    RoadmapModule,
+    ProgressModule,
+    BackofficeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

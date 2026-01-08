@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 
+import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { LearnLayout } from '@/layouts/LearnLayout';
 import { AuthCheck } from '@/pages/AuthCheck';
 import { Error } from '@/pages/Error';
@@ -19,6 +20,10 @@ export const router = createBrowserRouter([
     element: <Landing />,
   },
 
+  {
+    path: '/admin/quizzes/upload',
+    element: <AdminQuizUpload />,
+  },
   {
     path: '/login',
     element: <Login />,

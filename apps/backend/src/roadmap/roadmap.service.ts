@@ -113,11 +113,8 @@ export class RoadmapService {
         : quiz.question;
 
     const options = this.normalizeOptions(rawObject.options);
-    const codeMetadata =
-      this.normalizeCodeMetadata(rawObject.code_metadata) ?? this.normalizeInlineCode(rawObject);
-    const matchingMetadata = this.normalizeMatchingMetadata(
-      rawObject.matching_metadata ?? rawObject,
-    );
+    const codeMetadata = this.normalizeCodeMetadata(rawObject);
+    const matchingMetadata = this.normalizeMatchingMetadata(rawObject);
 
     return {
       question,
@@ -180,27 +177,11 @@ export class RoadmapService {
    * @param value content 객체
    * @returns 정규화된 code_metadata (없으면 undefined)
    */
-  private normalizeInlineCode(value: Record<string, unknown>) {
+  private normalizeCodeMetadata(value: Record<string, unknown>) {
     const code = value.code;
     const language = value.language;
     if (typeof code === 'string') {
       return typeof language === 'string' ? { language, snippet: code } : { snippet: code };
-    }
-    return undefined;
-  }
-
-  /**
-   * CODE 타입 메타데이터를 정규화한다.
-   * @param value code_metadata 원본 값
-   * @returns 정규화된 code_metadata (없으면 undefined)
-   */
-  private normalizeCodeMetadata(value: unknown) {
-    if (!this.isPlainObject(value)) return undefined;
-    const item = value as Record<string, unknown>;
-    const language = item.language;
-    const snippet = item.snippet;
-    if (typeof snippet === 'string' && snippet.length > 0) {
-      return typeof language === 'string' ? { language, snippet } : { snippet };
     }
     return undefined;
   }

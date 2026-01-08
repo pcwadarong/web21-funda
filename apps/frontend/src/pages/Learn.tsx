@@ -1,123 +1,15 @@
 import { css, useTheme } from '@emotion/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
-import type { LessonItem, LessonSection, UnitsResponse } from '@/feat/learn/types';
-import { useStorage } from '@/hooks/useStorage';
+import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
 export const Learn = () => {
   const theme = useTheme();
-  const { uiState } = useStorage();
-  const [units, setUnits] = useState<LessonSection[]>([]);
-  const [activeUnitId, setActiveUnitId] = useState('');
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const unitRefs = useRef(new Map<string, HTMLElement>());
-  const headerRef = useRef<HTMLDivElement | null>(null);
-  const activeUnit = useMemo(
-    () => units.find(unit => unit.id === activeUnitId) ?? units[0],
-    [activeUnitId, units],
-  );
-
-  useEffect(() => {
-    const fieldSlug = uiState.last_viewed.field_slug;
-    let isMounted = true;
-
-    const fetchUnits = async () => {
-      const response = await fetch(`/api/fields/${fieldSlug}/units`);
-      const data = (await response.json()) as UnitsResponse;
-      if (!isMounted) return;
-
-      const mapped = data.units
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-        .map(unit => ({
-          id: String(unit.id),
-          name: data.field.name,
-          title: unit.title,
-          steps: unit.steps
-            .sort((a, b) => a.orderIndex - b.orderIndex)
-            .map(step => {
-              const status: LessonItem['status'] = step.isLocked
-                ? 'locked'
-                : step.isCompleted
-                  ? 'completed'
-                  : 'active';
-              const type: LessonItem['type'] = step.isCheckpoint ? 'checkpoint' : 'normal';
-
-              return {
-                id: String(step.id),
-                name: step.title,
-                status,
-                type,
-              };
-            }),
-        }));
-
-      setUnits(mapped);
-      setActiveUnitId(mapped[0]?.id ?? '');
-    };
-
-    fetchUnits();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [uiState.last_viewed.field_slug]);
-
-  useEffect(() => {
-    const root = scrollContainerRef.current;
-    if (!root || units.length === 0) return;
-    let ticking = false;
-
-    const updateActiveUnit = () => {
-      const headerHeight = headerRef.current?.offsetHeight ?? 0;
-      const scrollTop = root.scrollTop + headerHeight + 1;
-      let nextId = units[0]?.id ?? '';
-      unitRefs.current.forEach((element, id) => {
-        if (element.offsetTop <= scrollTop) {
-          nextId = id;
-        }
-      });
-      setActiveUnitId(prev => (prev === nextId ? prev : nextId));
-    };
-
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(() => {
-          updateActiveUnit();
-          ticking = false;
-        });
-      }
-    };
-
-    updateActiveUnit();
-    root.addEventListener('scroll', onScroll, { passive: true });
-
-    return () => {
-      root.removeEventListener('scroll', onScroll);
-    };
-  }, [units]);
-
-  useEffect(() => {
-    // TODO: storage의 last_solved_unit_id로 스크롤 위치 이동하도록 수정 필요
-    const root = scrollContainerRef.current;
-    if (!root || units.length === 0) return;
-
-    const targetUnitId = uiState.last_viewed.unit_id;
-    if (targetUnitId <= 1) return;
-
-    const element = unitRefs.current.get(String(targetUnitId));
-    if (!element) return;
-
-    const headerHeight = headerRef.current?.offsetHeight ?? 0;
-    root.scrollTo({
-      top: Math.max(0, element.offsetTop - headerHeight),
-    });
-  }, [uiState.last_viewed.unit_id, units]);
+  const { units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } = useLearnUnits();
 
   return (
     <div css={mainStyle}>
@@ -141,13 +33,7 @@ export const Learn = () => {
             <section
               key={unit.id}
               css={sectionBlockStyle}
-              ref={element => {
-                if (!element) {
-                  unitRefs.current.delete(unit.id);
-                  return;
-                }
-                unitRefs.current.set(unit.id, element);
-              }}
+              ref={registerUnitRef(unit.id)}
               data-unit-id={unit.id}
             >
               <div css={unitDividerStyle(theme)}>

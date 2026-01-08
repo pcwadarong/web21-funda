@@ -192,7 +192,7 @@ export const Quiz = () => {
         <QuizContentCard
           question={currentQuiz}
           status={currentQuestionStatus}
-          selectedAnswer={selectedAnswers[currentQuizIndex]}
+          selectedAnswer={selectedAnswers[currentQuizIndex] ?? null}
           onAnswerChange={handleAnswerChange}
           isSubmitDisabled={isCheckDisabled}
           onCheck={handleCheckAnswer}

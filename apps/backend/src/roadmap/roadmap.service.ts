@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import type { FieldListResponse } from './dto/field-list.dto';
+import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse } from './dto/field-units.dto';
 import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
 import type {
@@ -23,6 +25,25 @@ export class RoadmapService {
   ) {}
 
   /**
+   * 분야 목록을 조회한다.
+   * @returns 분야 리스트
+   */
+  async getFields(): Promise<FieldListResponse> {
+    const fields = await this.fieldRepository.find({
+      select: ['slug', 'name', 'description'],
+      order: { id: 'ASC' },
+    });
+
+    return {
+      fields: fields.map(field => ({
+        slug: field.slug,
+        name: field.name,
+        description: field.description ?? null,
+      })),
+    };
+  }
+
+  /**
    * 필드 슬러그 기준으로 유닛/스텝과 퀴즈 개수를 조회한다.
    * @param fieldSlug 필드 슬러그
    * @returns 필드와 유닛/스텝 정보
@@ -42,6 +63,36 @@ export class RoadmapService {
     const quizCountByStepId = await this.getQuizCountByStepId(steps.map(step => step.id));
 
     return this.buildFieldUnitsResponse(field, units, quizCountByStepId);
+  }
+
+  /**
+   * 필드 슬러그 기준으로 로드맵(유닛 리스트)을 조회한다.
+   * @param fieldSlug 필드 슬러그
+   * @returns 필드와 유닛 목록
+   */
+  async getRoadmapByFieldSlug(fieldSlug: string): Promise<FieldRoadmapResponse> {
+    const field = await this.fieldRepository
+      .createQueryBuilder('field')
+      .leftJoinAndSelect('field.units', 'unit')
+      .where('field.slug = :slug', { slug: fieldSlug })
+      .orderBy('unit.orderIndex', 'ASC')
+      .getOne();
+
+    if (!field) {
+      throw new NotFoundException('Field not found.');
+    }
+
+    return {
+      field: {
+        name: field.name,
+        slug: field.slug,
+      },
+      units: (field.units ?? []).map(unit => ({
+        id: unit.id,
+        title: unit.title,
+        orderIndex: unit.orderIndex,
+      })),
+    };
   }
 
   /**

@@ -1,3 +1,4 @@
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import { PointEffect } from '@/feat/quiz/components/PointEffect';
@@ -23,11 +24,20 @@ export const QuizResult = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [showPointEffect]);
-
-  if (showPointEffect) return <PointEffect points={RESULT_DATA.xp} />;
+  }, []);
 
   return (
-    <QuizResultContent resultData={RESULT_DATA} isLogin={isLogin} isFirstToday={isFirstToday} />
+    <AnimatePresence mode="wait">
+      {showPointEffect ? (
+        <PointEffect key="point-effect" points={RESULT_DATA.xp} />
+      ) : (
+        <QuizResultContent
+          key="result-content"
+          resultData={RESULT_DATA}
+          isLogin={isLogin}
+          isFirstToday={isFirstToday}
+        />
+      )}
+    </AnimatePresence>
   );
 };

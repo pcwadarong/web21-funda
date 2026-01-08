@@ -77,9 +77,10 @@ export const QuizResultContent = ({
       <div css={metricsContainerStyle}>
         {METRIC_ITEMS.map(item => (
           <div key={item.key} css={metricCardStyle(theme, item.color)}>
-            <div css={metricTitleStyle(theme, item.color)}>{item.title}</div>
+            <div css={metricTitleStyle(theme)}>{item.title}</div>
             <div css={metricValueContainerStyle}>
               <span css={item.iconStyle}>{item.icon}</span>
+
               <span css={metricValueStyle(theme, item.color)}>
                 {item.key === 'xp'
                   ? resultData.xp
@@ -145,36 +146,34 @@ const metricCardStyle = (theme: Theme, color: 'purple' | 'green' | 'gray') => cs
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
+  padding: 5px;
+  align-items: center;
+  height: 124px;
+  justify-content: space-between;
   background: ${color === 'purple'
-    ? theme.colors.primary.surface
+    ? theme.colors.primary.main
     : color === 'green'
-      ? theme.colors.success.light
-      : theme.colors.surface.default};
-  border: 2px solid
-    ${color === 'purple'
-      ? theme.colors.primary.main
-      : color === 'green'
-        ? theme.colors.success.main
-        : theme.colors.border.default};
+      ? theme.colors.success.main
+      : theme.colors.grayscale[500]};
+
   border-radius: ${theme.borderRadius.medium};
 `;
 
-const metricTitleStyle = (theme: Theme, color: 'purple' | 'green' | 'gray') => css`
+const metricTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${color === 'purple'
-    ? theme.colors.primary.dark
-    : color === 'green'
-      ? theme.colors.success.main
-      : theme.colors.text.default};
+  color: ${theme.colors.grayscale[50]};
+  margin-bottom: 5px;
   text-align: center;
 `;
 
-const metricValueContainerStyle = css`
+const metricValueContainerStyle = (theme: Theme) => css`
+  background-color: ${theme.colors.grayscale[50]};
+  width: 100%;
+  border-radius: ${theme.borderRadius.small};
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -188,7 +187,7 @@ const metricValueStyle = (theme: Theme, color: 'purple' | 'green' | 'gray') => c
     ? theme.colors.primary.dark
     : color === 'green'
       ? theme.colors.success.main
-      : theme.colors.text.default};
+      : theme.colors.grayscale[500]};
 `;
 
 const buttonsContainerStyle = css`

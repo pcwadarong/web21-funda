@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/comp/Button';
+import SVGIcon from '@/comp/SVGIcon';
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
 import type { AnswerType, QuestionStatus, QuizQuestion } from '@/feat/quiz/types';
 import { useModal } from '@/store/modalStore';
@@ -39,6 +40,7 @@ export const QuizContentCard = ({
           css={reportButtonStyle(theme)}
           onClick={() => openModal('오류 신고', <div>신고 폼</div>)}
         >
+          <SVGIcon icon="vector" size="sm" />
           신고
         </button>
       </div>
@@ -101,11 +103,13 @@ const headerStyle = css`
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
+  padding: 20px 0;
 `;
 const titleStyle = (theme: Theme) => css`
   font-size: 24px;
   font-weight: 700;
   color: ${theme.colors.text.strong};
+  margin: 0;
 `;
 const footerStyle = css`
   display: flex;
@@ -122,10 +126,15 @@ const explanationStyle = (theme: Theme) => css`
   border-radius: 8px;
 `;
 const reportButtonStyle = (theme: Theme) => css`
-  padding: 4px 12px;
   font-size: 12px;
-  background: ${theme.colors.surface.default};
+  width: 72px;
+  height: 33px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: transparent;
   border: 1px solid ${theme.colors.border.default};
-  border-radius: 4px;
+  border-radius: ${theme.borderRadius.xlarge};
   cursor: pointer;
 `;

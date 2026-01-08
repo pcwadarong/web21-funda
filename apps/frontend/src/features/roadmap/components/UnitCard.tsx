@@ -66,7 +66,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
         {effectiveStatus !== 'normal' && (
           <div css={statusBadgeStyle(theme, effectiveStatus)}>
             {effectiveStatus === 'completed' && <SVGIcon icon="Check" size="xs" />}
-            {effectiveStatus === 'active' && <SVGIcon icon="Start" size="xs" color="black" />}
+            {effectiveStatus === 'active' && <SVGIcon icon="Start" size="xs" />}
             <span>{getStatusLabel(effectiveStatus)}</span>
           </div>
         )}

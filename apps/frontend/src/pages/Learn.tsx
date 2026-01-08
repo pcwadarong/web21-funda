@@ -102,6 +102,23 @@ export const Learn = () => {
     };
   }, [units]);
 
+  useEffect(() => {
+    // TODO: storage의 last_solved_unit_id로 스크롤 위치 이동하도록 수정 필요
+    const root = scrollContainerRef.current;
+    if (!root || units.length === 0) return;
+
+    const targetUnitId = uiState.last_viewed.unit_id;
+    if (targetUnitId <= 1) return;
+
+    const element = unitRefs.current.get(String(targetUnitId));
+    if (!element) return;
+
+    const headerHeight = headerRef.current?.offsetHeight ?? 0;
+    root.scrollTo({
+      top: Math.max(0, element.offsetTop - headerHeight),
+    });
+  }, [uiState.last_viewed.unit_id, units]);
+
   return (
     <div css={mainStyle}>
       <div css={centerSectionStyle} ref={scrollContainerRef}>
@@ -162,8 +179,8 @@ export const Learn = () => {
                     <div key={step.id} css={positionStyle}>
                       <div css={lessonStackStyle}>
                         <Link
-                          // TODO: 하드코딩 삭제
-                          to="/quiz/1/1"
+                          // TODO: quiz 페이지 라우팅 주소 확인 필요
+                          to={`/quiz/${step.id}`}
                           css={[
                             lessonItemStyle(theme),
                             step.status === 'completed' && completedLessonStyle(theme),

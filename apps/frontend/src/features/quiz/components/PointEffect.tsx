@@ -10,19 +10,17 @@ interface PointEffectProps {
 export const PointEffect = ({ points }: PointEffectProps) => {
   // Glow 라인 애니메이션 Variants (세로선 -> 가로 확장)
   const lineVariants: Variants = {
-    // 초기 상태: 투명함, 세로로 길고 얇은 막대 모양
     hidden: {
       opacity: 0,
       scaleY: 0,
       width: '2px',
       filter: 'blur(2px)',
     },
-    // 애니메이션 이후 상태: 세로로 긴 직사각형
     visible: {
       opacity: [0, 1, 1],
-      scaleY: [0, 1.2, 1.2], // 가로로 퍼짐
+      scaleY: [0, 1.2, 1.2],
       width: ['2px', '10px', '80vw'], // [시작, 세로완료까지 유지, 가로확장]
-      background: 'radial-gradient(#7659EA 0%, #000 70%)', // 방사형 그라디언트
+      background: 'radial-gradient(#7659EA 0%, #000 70%)',
       filter: ['blur(2px)', 'blur(8px)', 'blur(60px)'],
       transition: {
         duration: 0.9,
@@ -32,14 +30,49 @@ export const PointEffect = ({ points }: PointEffectProps) => {
     },
   };
 
+  // 콘텐츠 순차 등장 Variants
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        delayChildren: 0.6, // 라인이 가로로 퍼질 때쯤 시작
+        staggerChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 30, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.5, ease: 'easeOut' },
+    },
+  };
+
   return (
     <div css={containerStyle}>
       <motion.div css={glowLineStyle} variants={lineVariants} initial="hidden" animate="visible" />
-      <div css={starContainerStyle}>
-        <span css={starStyle}>🌟</span>
-      </div>
-      <div css={labelStyle}>POINT</div>
-      <div css={pointsStyle}>{points}</div>
+      <motion.div
+        css={contentWrapperStyle}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} css={starContainerStyle}>
+          <span css={starStyle}>🌟</span>
+        </motion.div>
+
+        <motion.div variants={itemVariants} css={labelStyle}>
+          POINT
+        </motion.div>
+
+        <motion.div variants={itemVariants} css={pointsStyle}>
+          {points}
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
@@ -60,19 +93,14 @@ const starShineAnimation = keyframes`
 `;
 
 const containerStyle = css`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
   min-height: 100vh;
   background: #000;
-`;
-
-const starContainerStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
 `;
 
 const glowLineStyle = css`
@@ -86,6 +114,19 @@ const starStyle = css`
   font-size: 120px;
   animation: ${starShineAnimation} 1s ease-in-out infinite;
   filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+`;
+
+const contentWrapperStyle = css`
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const starContainerStyle = css`
+  margin-bottom: 20px;
 `;
 
 const labelStyle = (theme: Theme) => css`

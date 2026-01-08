@@ -154,7 +154,6 @@ describe('RoadmapService', () => {
 
     expect(result.field).toEqual({ name: '프론트엔드', slug: 'fe' });
     expect(result.units.map(unit => unit.id)).toEqual([1, 2]);
-    expect(result.units).toHaveLength(2);
 
     const unit1 = result.units[0];
     const unit2 = result.units[1];
@@ -162,14 +161,18 @@ describe('RoadmapService', () => {
       throw new Error('응답에 유닛이 있어야 합니다.');
     }
 
-    expect(unit1.steps.map(step => step.id)).toEqual([10]);
-    expect(unit2.steps.map(step => step.id)).toEqual([11, 12]);
-    expect(unit1.steps[0]?.quizCount).toBe(5);
-    expect(unit2.steps[0]?.quizCount).toBe(4);
-    expect(unit2.steps[1]?.quizCount).toBe(6);
-    expect(unit2.steps[1]?.isCheckpoint).toBe(true);
-    expect(unit2.steps[1]?.isCompleted).toBe(false);
-    expect(unit2.steps[1]?.isLocked).toBe(false);
+    // 유닛1: 스텝 1개 + 플레이스홀더 4개 + 중간/최종 점검 → 총 7개
+    expect(unit1.steps).toHaveLength(7);
+    expect(unit1.steps.filter(step => step.id === 10).length).toBe(1);
+    expect(unit1.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    expect(unit1.steps.find(step => step.id === 10)?.quizCount).toBe(5);
+
+    // 유닛2: 스텝 2개 + 플레이스홀더 3개 + 중간/최종 점검 → 총 7개
+    expect(unit2.steps).toHaveLength(7);
+    expect(unit2.steps.filter(step => step.id === 11 || step.id === 12).length).toBe(2);
+    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    expect(unit2.steps.find(step => step.id === 11)?.quizCount).toBe(4);
+    expect(unit2.steps.find(step => step.id === 12)?.quizCount).toBe(6);
   });
 
   it('필드를 찾지 못하면 예외를 던진다', async () => {

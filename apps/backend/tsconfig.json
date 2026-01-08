@@ -3,7 +3,8 @@
   "extends": "@repo/typescript-config/backend.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "eslint.config.mjs"]

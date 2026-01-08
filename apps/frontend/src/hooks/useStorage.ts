@@ -17,12 +17,25 @@ export const useStorage = () => {
     const updated = storageUtil.update('ui_state', newUIState);
     setStorageData(updated);
   }, []);
+  //  퀴즈 히스토리
+  const addStepHistory = useCallback((stepId: number) => {
+    const updated = storageUtil.addStepHistory(stepId);
+    setStorageData(updated);
+  }, []);
 
+  // 특정 필드별 마지막 유닛 업데이트
+  const updateLastSolvedUnit = useCallback((fieldSlug: string, unitId: number) => {
+    const updated = storageUtil.updateLastSolvedUnit(fieldSlug, unitId);
+    setStorageData(updated);
+  }, []);
   return {
     storageData,
     progress: storageData.progress,
     uiState: storageData.ui_state,
+    solvedStepHistory: storageData.solved_step_history,
     updateProgress,
     updateUIState,
+    addStepHistory,
+    updateLastSolvedUnit,
   };
 };

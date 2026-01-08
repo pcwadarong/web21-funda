@@ -1,7 +1,8 @@
 import { css } from '@emotion/react';
 import { motion, type Variants } from 'framer-motion';
 
-import Star from '@/assets/star3d.svg?react';
+import BigStar from '@/assets/star3d.svg?react';
+import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 interface PointEffectProps {
@@ -103,6 +104,44 @@ export const PointEffect = ({ points }: PointEffectProps) => {
     },
   };
 
+  const STAR_COUNT = 4;
+  const DOT_COUNT = 12;
+
+  // [별 파티클-SVG] 8개의 작은 별 파티클이 각기 다른 방향으로 퍼지도록
+  const particles = [
+    ...Array.from({ length: STAR_COUNT }).map((_, i) => ({
+      id: `star-${i}`,
+      type: 'star',
+      angle: i * 90 + (Math.random() * 40 - 20), // 4방향 + 약간의 랜덤
+      distance: Math.random() * 150 + 180,
+      size: Math.random() * 50 + 30,
+    })),
+    ...Array.from({ length: DOT_COUNT }).map((_, i) => ({
+      id: `dot-${i}`,
+      type: 'dot',
+      angle: i * (360 / DOT_COUNT) + (Math.random() * 20 - 10),
+      distance: Math.random() * 200 + 120,
+      size: Math.random() * 10 + 5,
+    })),
+  ];
+
+  const particleVariants: Variants = {
+    hidden: { x: 0, y: 0, scale: 0, opacity: 0 },
+    visible: (custom: { angle: number; distance: number }) => ({
+      // 삼각함수를 이용해 각도 방향으로 발사
+      x: Math.cos((custom.angle * Math.PI) / 180) * custom.distance,
+      y: Math.sin((custom.angle * Math.PI) / 180) * custom.distance,
+      scale: [0, 1, 0.5, 0],
+      opacity: [0, 1, 1, 0],
+      transition: {
+        delay: 0.8,
+        duration: 1.5,
+        times: [0, 0.1, 0.7, 1],
+        ease: [0.22, 1, 0.36, 1],
+      },
+    }),
+  };
+
   // [텍스트] 라벨 및 포인트 숫자의 기본 등장 효과
   const textItemVariants: Variants = {
     hidden: { y: 30, opacity: 0 },
@@ -145,8 +184,31 @@ export const PointEffect = ({ points }: PointEffectProps) => {
             animate="visible"
             exit="exit"
           />
+          {/* 파티클 */}
+          {particles.map(p => (
+            <motion.div
+              key={p.id}
+              custom={p}
+              variants={particleVariants}
+              initial="hidden"
+              animate="visible"
+              css={particleStyle(p.type === 'dot', p.size)}
+            >
+              {p.type === 'star' ? (
+                <SVGIcon
+                  icon="Star"
+                  style={{
+                    width: `${p.size}px`,
+                    height: `${p.size}px`,
+                    display: 'block',
+                  }}
+                />
+              ) : null}
+            </motion.div>
+          ))}
+          {/* 메인 별 이미지 */}
           <motion.div variants={starSvgVariants} exit="exit">
-            <Star />
+            <BigStar />
           </motion.div>
         </motion.div>
 
@@ -231,6 +293,21 @@ const coreGlowStyle = css`
   z-index: 3;
   pointer-events: none;
   transform-origin: center center;
+`;
+
+const particleStyle = (isDot: boolean, size: number) => css`
+  position: absolute;
+  z-index: 5;
+  color: #e6e4ffff;
+  ${isDot &&
+  css`
+    width: ${size}px;
+    height: ${size}px;
+    background: radial-gradient(circle, #fff 0%, rgba(177, 99, 255, 0.8) 60%, transparent 100%);
+    border-radius: 50%;
+    filter: blur(2px);
+    box-shadow: 0 0 10px #b163ff;
+  `};
 `;
 
 const labelStyle = (theme: Theme) => css`

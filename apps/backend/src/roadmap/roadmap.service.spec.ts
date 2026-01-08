@@ -216,7 +216,7 @@ describe('RoadmapService', () => {
     findQuizMock.mockResolvedValue({
       id: 10,
       type: 'MCQ',
-      answer: { correct_option_id: 'c2' },
+      answer: { value: 'c2' },
       explanation: '설명입니다.',
     } as Quiz);
 
@@ -241,7 +241,7 @@ describe('RoadmapService', () => {
       id: 11,
       type: 'MATCHING',
       answer: {
-        correct_pairs: [
+        pairs: [
           { left: 'div p', right: 'div의 모든 자손 p' },
           { left: 'div > p', right: 'div의 직계 자식 p' },
         ],
@@ -253,10 +253,7 @@ describe('RoadmapService', () => {
       quiz_id: 11,
       type: 'MATCHING',
       selection: {
-        pairs: [
-          { left: 'div > p', right: 'div의 직계 자식 p' },
-          { left: 'div p', right: 'div의 모든 자손 p' },
-        ],
+        pairs: [{ left: 'div > p', right: 'div의 직계 자식 p' }],
       },
     });
 

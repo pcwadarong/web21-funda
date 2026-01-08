@@ -86,7 +86,9 @@ export class RoadmapService {
       throw new NotFoundException('Quiz not found.');
     }
 
-    if (quiz.type === 'MATCHING') {
+    const quizType = quiz.type?.toUpperCase();
+
+    if (quizType === 'MATCHING') {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
@@ -280,29 +282,6 @@ export class RoadmapService {
   }
 
   /**
-   * matching 쌍 배열을 정규화한다.
-   * @param value 쌍 배열 값
-   * @returns 정규화된 쌍 배열
-   */
-  private normalizePairs(value: unknown): MatchingPair[] | undefined {
-    if (!Array.isArray(value)) return undefined;
-    const pairs = value
-      .map(pair => {
-        if (!this.isPlainObject(pair)) return null;
-        const item = pair as Record<string, unknown>;
-        const left = this.toString(item.left);
-        const right = this.toString(item.right);
-        if (left !== null && right !== null) {
-          return { left, right };
-        }
-        return null;
-      })
-      .filter((p): p is MatchingPair => p !== null);
-
-    return pairs.length > 0 ? pairs : undefined;
-  }
-
-  /**
    * 객관식 정답을 추출한다.
    * @param answer 정답 원본 값
    * @returns 정답 옵션 ID 또는 null
@@ -310,7 +289,9 @@ export class RoadmapService {
   private getOptionAnswer(answer: unknown): string | null {
     const answerObject = this.toAnswerObject(answer);
     if (!answerObject) return null;
-    return this.toString(answerObject.correct_option_id ?? answerObject.option_id);
+    return this.toCleanString(
+      answerObject.value ?? answerObject.correct_option_id ?? answerObject.option_id,
+    );
   }
 
   /**
@@ -323,7 +304,10 @@ export class RoadmapService {
     if (!answerObject) return [];
     return (
       this.normalizePairs(
-        answerObject.correct_pairs ?? answerObject.pairs ?? answerObject.matching,
+        answerObject.pairs ??
+          answerObject.correct_pairs ??
+          answerObject.matching ??
+          answerObject.value,
       ) ?? []
     );
   }
@@ -336,7 +320,7 @@ export class RoadmapService {
    */
   private isCorrectOption(submitted: unknown, correct: string | null): boolean {
     if (!correct) return false;
-    const submittedId = this.toString(submitted);
+    const submittedId = this.toCleanString(submitted);
     return submittedId !== null && submittedId === correct;
   }
 
@@ -351,23 +335,36 @@ export class RoadmapService {
     correctPairs: MatchingPair[],
   ): boolean {
     const normalizedSubmitted = this.normalizePairs(submittedPairs);
-    if (!normalizedSubmitted || normalizedSubmitted.length !== correctPairs.length) {
+    if (!normalizedSubmitted || normalizedSubmitted.length === 0) {
       return false;
     }
 
     const normalizeKey = (pair: MatchingPair) => `${pair.left}|||${pair.right}`;
     const expectedSet = new Set(correctPairs.map(normalizeKey));
-    const submittedSet = new Set(normalizedSubmitted.map(normalizeKey));
+    return normalizedSubmitted.every(pair => expectedSet.has(normalizeKey(pair)));
+  }
 
-    if (expectedSet.size !== submittedSet.size) {
-      return false;
-    }
+  /**
+   * 문자열 배열값을 정규화한다(트림 포함).
+   * @param value 변환할 값
+   * @returns 문자열 배열(유효하지 않으면 빈 배열)
+   */
+  private normalizePairs(value: unknown): MatchingPair[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const pairs = value
+      .map(pair => {
+        if (!this.isPlainObject(pair)) return null;
+        const item = pair as Record<string, unknown>;
+        const left = this.toCleanString(item.left);
+        const right = this.toCleanString(item.right);
+        if (left !== null && right !== null) {
+          return { left, right };
+        }
+        return null;
+      })
+      .filter((p): p is MatchingPair => p !== null);
 
-    for (const key of submittedSet) {
-      if (!expectedSet.has(key)) return false;
-    }
-
-    return true;
+    return pairs.length > 0 ? pairs : undefined;
   }
 
   /**
@@ -414,39 +411,24 @@ export class RoadmapService {
   }
 
   /**
-   * 안전하게 문자열로 변환한다.
+   * 안전하게 문자열로 변환하고 공백을 제거한다.
    * @param value 변환할 값
    * @returns 문자열 또는 null
    */
-  private toString(value: unknown): string | null {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number') return String(value);
+  private toCleanString(value: unknown): string | null {
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number') return String(value).trim();
     return null;
   }
 
   /**
-   * 문자열 배열인지 확인한다.
-   * @param value 검사할 값
-   * @returns 문자열 배열 여부
-   */
-  private isStringArray(value: unknown): value is string[] {
-    return Array.isArray(value) && value.every(item => typeof item === 'string');
-  }
-
-  /**
-   * 배열 값을 문자열 배열로 변환한다.
+   * 배열을 문자열 배열로 정규화한다(트림 포함).
    * @param value 변환할 값
    * @returns 문자열 배열(유효하지 않으면 빈 배열)
    */
   private toStringArray(value: unknown): string[] {
     if (!Array.isArray(value)) return [];
-    return value
-      .map(item => {
-        if (typeof item === 'string') return item;
-        if (item === null || item === undefined) return null;
-        return String(item);
-      })
-      .filter((v): v is string => typeof v === 'string');
+    return value.map(item => this.toCleanString(item)).filter((v): v is string => v !== null);
   }
 
   /**

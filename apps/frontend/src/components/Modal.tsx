@@ -1,6 +1,6 @@
 import { css, useTheme } from '@emotion/react';
 
-import type { Theme } from '../styles/theme';
+import type { Theme } from '@/styles/theme';
 
 interface ModalProps {
   title: string;

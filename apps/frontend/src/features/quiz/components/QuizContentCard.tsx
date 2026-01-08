@@ -1,12 +1,10 @@
 import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/comp/Button';
+import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
+import type { AnswerType, QuestionStatus, QuizQuestion } from '@/feat/quiz/types';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
-
-import type { AnswerType, QuestionStatus, QuizQuestion } from '../types';
-
-import { QuizRenderer } from './QuizRenderer';
 
 interface QuizContentCardProps {
   question: QuizQuestion;

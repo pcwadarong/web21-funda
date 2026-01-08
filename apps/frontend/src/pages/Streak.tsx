@@ -2,9 +2,9 @@ import { css, useTheme } from '@emotion/react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../components/Button';
-import type { Theme } from '../styles/theme';
-import { palette } from '../styles/token';
+import { Button } from '@/comp/Button';
+import type { Theme } from '@/styles/theme';
+import { palette } from '@/styles/token';
 
 // TODO: 실제 날짜에 맞춰서 정렬되도록 수정
 const streakData = {

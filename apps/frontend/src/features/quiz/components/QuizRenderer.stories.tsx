@@ -5,11 +5,9 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { expect } from 'vitest';
 
+import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
+import type { AnswerType, QuizQuestion } from '@/feat/quiz/types';
 import { lightTheme } from '@/styles/theme';
-
-import type { AnswerType, QuizQuestion } from '../types';
-
-import { QuizRenderer } from './QuizRenderer';
 
 const StatefulRenderer = ({ question }: { question: QuizQuestion }) => {
   const [selected, setSelected] = useState<AnswerType | null>(null);

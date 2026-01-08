@@ -1,9 +1,8 @@
-import type { AnswerType, QuizComponentProps, QuizQuestion, QuizType } from '../types';
-
-import { QuizCode } from './quizType/QuizCode';
-import { QuizMatching } from './quizType/QuizMatching';
-import { QuizMCQ } from './quizType/QuizMCQ';
-import { QuizOX } from './quizType/QuizOX';
+import { QuizCode } from '@/feat/quiz/components/quizType/QuizCode';
+import { QuizMatching } from '@/feat/quiz/components/quizType/QuizMatching';
+import { QuizMCQ } from '@/feat/quiz/components/quizType/QuizMCQ';
+import { QuizOX } from '@/feat/quiz/components/quizType/QuizOX';
+import type { AnswerType, QuizComponentProps, QuizQuestion, QuizType } from '@/feat/quiz/types';
 
 interface QuizRendererProps {
   question: QuizQuestion;

@@ -2,9 +2,8 @@ import { ThemeProvider } from '@emotion/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
 import { lightTheme } from '@/styles/theme';
-
-import { QuizRenderer } from './QuizRenderer';
 
 vi.mock('./quizType/QuizMCQ', () => ({
   QuizMCQ: (props: { disabled: boolean; showResult: boolean }) => (

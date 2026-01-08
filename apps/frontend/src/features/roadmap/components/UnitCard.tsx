@@ -4,18 +4,41 @@ import SVGIcon from '@/comp/SVGIcon';
 import type { RoadmapUnit, UnitStatus, UnitVariant } from '@/feat/roadmap/types';
 import type { Theme } from '@/styles/theme';
 
+/**
+ * 유닛 카드 컴포넌트 Props
+ */
 interface UnitCardProps {
+  /** 유닛 데이터 */
   unit: RoadmapUnit;
+  /** 로그인 여부 (비로그인 시 상태/배지/진행률을 숨김) */
   isLoggedIn: boolean;
+  /** 카드 클릭 핸들러 (있을 때만 인터랙션 활성화) */
   onClick?: () => void;
 }
 
+/**
+ * 로드맵 유닛 카드
+ * - 상태(완료/학습중/기본)에 따라 배지/보더 컬러를 변경합니다.
+ * - 로그인 상태에서만 진행률/정답률을 표시합니다.
+ */
 export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
   const theme = useTheme();
+  /**
+   * 비로그인 시 상태를 normal로 고정해 UI를 단순화합니다.
+   */
   const effectiveStatus: UnitStatus = isLoggedIn ? (unit.status ?? 'normal') : 'normal';
+  /**
+   * 유닛 카드 표시 타입 (full: 진행률/정답률 포함)
+   */
   const effectiveVariant: UnitVariant = unit.variant ?? 'compact';
+  /**
+   * 진행률/정답률 기본값 처리
+   */
   const progressValue = unit.progress ?? 0;
   const scoreValue = unit.score ?? 0;
+  /**
+   * 클릭 핸들러가 있을 때만 인터랙션 스타일/키보드 접근성 활성화
+   */
   const isInteractive = Boolean(onClick);
 
   return (

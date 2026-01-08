@@ -64,6 +64,11 @@ const ROADMAP_UNITS: readonly RoadmapUnit[] = [
 
 const isLoggedIn = false; // TODO: 실제 로그인 상태로 변경
 
+/**
+ * 로드맵 페이지
+ * - 선택한 분야의 학습 유닛과 진행률을 보여줍니다.
+ * - 유닛 카드 클릭 시 학습 페이지로 이동하며 최근 조회 상태를 저장합니다.
+ */
 export const Roadmap = () => {
   const theme = useTheme();
   const completedUnits = ROADMAP_UNITS.filter(unit => unit.progress === 100).length;
@@ -71,6 +76,11 @@ export const Roadmap = () => {
   const navigate = useNavigate();
   const { updateUIState } = useStorage();
 
+  /**
+   * 유닛 카드 클릭 처리
+   * @param fieldSlug 선택한 분야의 슬러그
+   * @param unitId 선택한 유닛 ID
+   */
   const handleClick = (fieldSlug: string, unitId: number) => {
     updateUIState({
       last_viewed: {

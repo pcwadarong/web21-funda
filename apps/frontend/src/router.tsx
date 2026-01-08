@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 
-import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { LearnLayout } from '@/layouts/LearnLayout';
+import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { AuthCheck } from '@/pages/AuthCheck';
 import { Error } from '@/pages/Error';
 import { InitialFields } from '@/pages/InitialFields';
@@ -34,10 +34,6 @@ export const router = createBrowserRouter([
     element: <Login />,
   },
   {
-    path: '/roadmap',
-    element: <Roadmap />,
-  },
-  {
     path: '/learn',
     element: <LearnLayout />,
     children: [
@@ -48,6 +44,10 @@ export const router = createBrowserRouter([
       {
         path: 'select-field', // /learn/select-field 접속 시
         element: <SelectField />, // 사이드바는 유지된 채 중앙만 SelectField로 바뀜
+      },
+      {
+        path: 'roadmap',
+        element: <Roadmap />,
       },
     ],
   },

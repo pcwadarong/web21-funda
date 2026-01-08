@@ -1,87 +1,100 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
-import lockIcon from '@/assets/lock.svg';
-import startIcon from '@/assets/start.svg';
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
-import type { LessonItem } from '@/feat/learn/types';
+import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
-// TODO: FETCH
-const SECTION_INFO = {
-  unit: '자료구조와 알고리즘',
-  title: '자료구조',
-  id: '2',
-} as const;
-
-const LESSON_ITEMS: readonly LessonItem[] = [
-  { id: 'array-basics', name: '배열 기초', status: 'completed', type: 'normal' },
-  { id: 'array', name: '배열', status: 'completed', type: 'normal' },
-  { id: 'big-o', name: 'Big O 표기법', status: 'active', type: 'normal' },
-  { id: 'mid-check', name: '중간 점검', status: 'locked', type: 'checkpoint' },
-  { id: 'time-complexity', name: '시간 복잡도', status: 'active', type: 'normal' },
-  { id: 'hash-table', name: '해시 테이블', status: 'active', type: 'normal' },
-  { id: 'final-check', name: '최종 점검', status: 'locked', type: 'checkpoint' },
-];
-
 export const Learn = () => {
   const theme = useTheme();
+  const { units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } = useLearnUnits();
 
   return (
     <div css={mainStyle}>
-      <div css={centerSectionStyle}>
-        <div css={centerSectionInnerStyle}>
-          <div css={headerSectionStyle(theme)}>
-            <div css={headerContentStyle}>
-              <div css={unitTextStyle(theme)}>{SECTION_INFO.unit}</div>
-              <div css={titleTextStyle(theme)}>{SECTION_INFO.title}</div>
-            </div>
-            <Link to={`overview/${SECTION_INFO.id}`} css={overviewButtonStyle(theme)}>
-              학습 개요
-            </Link>
-          </div>
-
-          <div css={lessonsContainerStyle}>
-            {LESSON_ITEMS.map(lesson => {
-              const isDisabled = lesson.status === 'locked' || lesson.type === 'checkpoint';
-
-              if (isDisabled) {
-                return (
-                  <div key={lesson.id} css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
-                    <span css={lessonIconStyle}>
-                      <img src={lockIcon} alt="잠김" css={iconImageStyle} />
-                    </span>
-                    <div css={lessonNameStyle(theme)}>{lesson.name}</div>
+      <div css={centerSectionStyle} ref={scrollContainerRef}>
+        {activeUnit && (
+          <div css={stickyHeaderWrapperStyle(theme)} ref={headerRef}>
+            <div css={[headerSectionStyle(), stickyHeaderStyle(theme)]}>
+              <div css={headerContentStyle}>
+                <Link to="/learn/roadmap">
+                  <div css={unitTextStyle(theme)}>
+                    <SVGIcon icon="ArrowLeft" size="md" />
+                    {activeUnit.name} 로드맵
                   </div>
-                );
-              }
-
-              return (
-                <Link
-                  key={lesson.id}
-                  // TODO: 하드코딩 삭제
-                  to="/quiz/1/1"
-                  css={[
-                    lessonItemStyle(theme),
-                    lesson.status === 'completed' && completedLessonStyle(theme),
-                    lesson.status === 'active' && activeLessonStyle(theme),
-                  ]}
-                >
-                  <span css={lessonIconStyle}>
-                    {lesson.status === 'completed' && (
-                      <SVGIcon icon="Check" aria-hidden="true" size="lg" />
-                    )}
-                    {lesson.status === 'active' && (
-                      <img src={startIcon} alt="활성" css={iconImageStyle} />
-                    )}
-                  </span>
-                  <div css={lessonNameStyle(theme)}>{lesson.name}</div>
                 </Link>
-              );
-            })}
+                <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
+              </div>
+              <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
+                학습 개요
+              </Link>
+            </div>
           </div>
+        )}
+
+        <div css={centerSectionInnerStyle}>
+          {units.map((unit, unitIndex) => (
+            <section
+              key={unit.id}
+              css={sectionBlockStyle}
+              ref={registerUnitRef(unit.id)}
+              data-unit-id={unit.id}
+            >
+              <div css={unitDividerStyle(theme)}>
+                <span css={unitDividerLineStyle(theme)} />
+                <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
+                <span css={unitDividerLineStyle(theme)} />
+              </div>
+              <div css={lessonsContainerStyle(unit.steps.length)}>
+                {unit.steps.map((step, index) => {
+                  const isDisabled = step.status === 'locked' || step.type === 'checkpoint';
+                  const positionStyle = lessonPositionStyle(index, unitIndex);
+
+                  if (isDisabled) {
+                    return (
+                      <div key={step.id} css={positionStyle}>
+                        <div css={lessonStackStyle}>
+                          <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                            <span css={lessonIconStyle}>
+                              <SVGIcon icon="Lock" aria-hidden="true" size="xl" />
+                            </span>
+                          </div>
+                          <div css={lessonNamePillStyle(theme)}>{step.name}</div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={step.id} css={positionStyle}>
+                      <div css={lessonStackStyle}>
+                        <Link
+                          // TODO: localStorage에 step_id 추가 필요
+                          to="/quiz"
+                          css={[
+                            lessonItemStyle(theme),
+                            step.status === 'completed' && completedLessonStyle(theme),
+                            step.status === 'active' && activeLessonStyle(theme),
+                          ]}
+                        >
+                          <span css={lessonIconStyle}>
+                            {step.status === 'completed' && (
+                              <SVGIcon icon="Check" aria-hidden="true" size="xl" />
+                            )}
+                            {step.status === 'active' && (
+                              <SVGIcon icon="Start" aria-hidden="true" size="xl" />
+                            )}
+                          </span>
+                        </Link>
+                        <div css={lessonNamePillStyle(theme)}>{step.name}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       </div>
 
@@ -96,6 +109,8 @@ const mainStyle = css`
   gap: 24px;
   padding: 24px;
   overflow: hidden;
+  height: 100vh;
+  min-height: 0;
 
   @media (max-width: 768px) {
     padding-bottom: 80px;
@@ -108,6 +123,9 @@ const centerSectionStyle = css`
   flex: 1;
   min-width: 0;
   position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 36px;
 `;
 
 const centerSectionInnerStyle = css`
@@ -117,17 +135,85 @@ const centerSectionInnerStyle = css`
   margin: 0 auto;
   width: 100%;
   max-width: 40rem;
-  overflow-y: auto;
+  padding-bottom: 24px;
 `;
 
-const headerSectionStyle = (theme: Theme) => css`
+const sectionBlockStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const stickyHeaderWrapperStyle = (theme: Theme) => css`
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(
+    180deg,
+    ${theme.colors.surface.default} 0%,
+    ${theme.colors.surface.default} 70%,
+    transparent 100%
+  );
+`;
+
+const stickyHeaderStyle = (theme: Theme) => css`
+  width: 100%;
+  max-width: 40rem;
+  background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgba(123, 111, 249, 1) 100%);
+  box-shadow: 0 12px 20px rgba(20, 20, 43, 0.12);
+  border-radius: ${theme.borderRadius.large};
+  overflow: hidden;
+`;
+
+const unitDividerStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem;
+  color: ${theme.colors.text.weak};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  letter-spacing: 0.02em;
+`;
+
+const unitDividerLineStyle = (theme: Theme) => css`
+  flex: 1;
+  height: 1px;
+  background: ${theme.colors.border.default};
+  opacity: 0.8;
+`;
+
+const unitDividerTextStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.weak};
+  white-space: nowrap;
+`;
+
+const oddLeftPositions = [400, 300, 380, 450, 360, 270, 190];
+const evenLeftPositions = [190, 290, 210, 140, 220, 310, 400];
+
+const lessonPositionStyle = (index: number, unitIndex: number) => {
+  const isOddUnit = unitIndex % 2 === 0;
+  const positions = isOddUnit ? oddLeftPositions : evenLeftPositions;
+  const left = positions[index % positions.length];
+
+  return css`
+    position: absolute;
+    top: ${index * 152}px;
+    left: ${left}px;
+    transform: translateX(-50%);
+  `;
+};
+
+const headerSectionStyle = () => css`
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 24px 32px;
-  background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgba(123, 111, 249, 1) 100%);
-  border-radius: ${theme.borderRadius.large};
 `;
 
 const headerContentStyle = css`
@@ -141,6 +227,9 @@ const unitTextStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${colors.light.grayscale[400]};
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 
 const titleTextStyle = (theme: Theme) => css`
@@ -161,70 +250,91 @@ const overviewButtonStyle = (theme: Theme) => css`
   align-self: flex-end;
 `;
 
-const lessonsContainerStyle = css`
+const lessonsContainerStyle = (count: number) => css`
+  position: relative;
+  min-height: ${count * 160}px;
+  padding: 8px 0 24px;
+`;
+
+const lessonStackStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  flex: 1;
-  min-height: 0;
+  align-items: center;
+  gap: 18px;
 `;
 
 const lessonItemStyle = (theme: Theme) => css`
-  position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
+  justify-content: center;
+  padding: 20px;
   background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.medium};
-  border: 2px solid ${theme.colors.border.default};
+  border-radius: 30px;
   transition: all 150ms ease;
-  text-align: left;
-  width: 100%;
+  text-align: center;
+  width: 84px;
+  height: 79px;
   text-decoration: none;
 
   &:hover {
     transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
 const completedLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
-  color: ${theme.colors.text.strong};
+  color: ${theme.colors.primary.main};
+  box-shadow: 0 8px 0 ${theme.colors.primary.main};
+
+  &:active {
+    box-shadow: 0 0.4rem 0 ${theme.colors.primary.main};
+  }
 `;
 
 const activeLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
   border-color: ${theme.colors.primary.dark};
   color: ${colors.light.grayscale[50]};
+  box-shadow: 0 8px 0 ${theme.colors.primary.dark};
+
+  &:active {
+    box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark};
+  }
 `;
 
 const lockedLessonStyle = (theme: Theme) => css`
-  background: ${theme.colors.surface.default};
-  border-color: ${theme.colors.border.default};
-  color: ${theme.colors.text.strong};
+  background: ${colors.light.grayscale[300]};
+  color: ${theme.colors.text.light};
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: 0 8px 0 ${theme.colors.text.light};
+
+  &:active {
+    box-shadow: 0 0.4rem 0 ${theme.colors.text.light};
+  }
 `;
 
 const lessonIconStyle = css`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
 `;
 
-const iconImageStyle = css`
-  width: 24px;
-  height: 24px;
-`;
-
-const lessonNameStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['20Bold'].fontSize};
-  line-height: ${theme.typography['20Bold'].lineHeight};
-  font-weight: ${theme.typography['20Bold'].fontWeight};
-  color: inherit;
+const lessonNamePillStyle = (theme: Theme) => css`
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: ${theme.colors.surface.strong};
+  color: ${theme.colors.text.light};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  box-shadow: 0 8px 20px rgba(20, 20, 43, 0.12);
 `;

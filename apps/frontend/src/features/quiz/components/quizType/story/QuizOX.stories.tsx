@@ -1,33 +1,29 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from '@storybook/test';
+import { within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { expect } from 'vitest';
 
-import { QuizCode } from '@/feat/quiz/components/quizType/QuizCode';
-import type { CodeContent } from '@/feat/quiz/types';
+import { QuizOX } from '@/feat/quiz/components/quizType/QuizOX';
+import type { DefaultContent } from '@/feat/quiz/types';
 import { lightTheme } from '@/styles/theme';
 
-const mockContent: CodeContent = {
-  question: 'data-state가 "open"인 요소만 선택하려고 합니다. 빈칸에 들어갈 선택자를 고르세요.',
+const mockContent: DefaultContent = {
+  question: '테스트 문제',
   options: [
-    { id: 'c1', text: '[data-state="open"]' },
-    { id: 'c2', text: '[data-state^="open"]' },
-    { id: 'c3', text: '[data-state*="open"]' },
-    { id: 'c4', text: '[data-state$="open"]' },
+    { id: 'o', text: 'O' },
+    { id: 'x', text: 'X' },
   ],
-  code_metadata: {
-    language: 'css',
-    snippet: '{{BLANK}} {\n  opacity: 1;\n}',
-  },
 };
 
-const meta: Meta<typeof QuizCode> = {
-  title: 'Features/Quiz/QuizCode',
-  component: QuizCode,
+const meta: Meta<typeof QuizOX> = {
+  title: 'Features/Quiz/QuizOX',
+  component: QuizOX,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: '코드 퀴즈 컴포넌트입니다. 코드 스니펫과 함께 선택지를 제공합니다.',
+        component: 'OX 퀴즈 컴포넌트입니다. O 또는 X 중 하나를 선택합니다.',
       },
     },
   },
@@ -35,7 +31,7 @@ const meta: Meta<typeof QuizCode> = {
   decorators: [
     Story => (
       <ThemeProvider theme={lightTheme}>
-        <div style={{ width: '600px' }}>
+        <div style={{ width: '400px' }}>
           <Story />
         </div>
       </ThemeProvider>
@@ -44,7 +40,7 @@ const meta: Meta<typeof QuizCode> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof QuizCode>;
+type Story = StoryObj<typeof QuizOX>;
 
 export const Default: Story = {
   args: {
@@ -56,10 +52,20 @@ export const Default: Story = {
   },
 };
 
-export const Selected: Story = {
+export const SelectedO: Story = {
   args: {
     content: mockContent,
-    selectedAnswer: 'c2',
+    selectedAnswer: 'o',
+    showResult: false,
+    onAnswerChange: () => {},
+    disabled: false,
+  },
+};
+
+export const SelectedX: Story = {
+  args: {
+    content: mockContent,
+    selectedAnswer: 'x',
     showResult: false,
     onAnswerChange: () => {},
     disabled: false,
@@ -69,7 +75,7 @@ export const Selected: Story = {
 export const ShowResult: Story = {
   args: {
     content: mockContent,
-    selectedAnswer: 'c1',
+    selectedAnswer: 'o',
     showResult: true,
     onAnswerChange: () => {},
     disabled: false,
@@ -95,9 +101,9 @@ export const Interactive: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const option = canvas.getByText('[data-state="open"]');
+    const optionO = canvas.getByText('O');
 
-    await userEvent.click(option);
-    await expect(args.onAnswerChange).toHaveBeenCalledWith('c1');
+    await userEvent.click(optionO);
+    await expect(args.onAnswerChange).toHaveBeenCalledWith('o');
   },
 };

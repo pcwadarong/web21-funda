@@ -2,11 +2,9 @@ import { ThemeProvider } from '@emotion/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { QuizContentCard } from '@/feat/quiz/components/QuizContentCard';
+import type { QuizQuestion } from '@/feat/quiz/types';
 import { lightTheme } from '@/styles/theme';
-
-import type { QuizQuestion } from '../types';
-
-import { QuizContentCard } from './QuizContentCard';
 
 const openModalMock = vi.fn();
 

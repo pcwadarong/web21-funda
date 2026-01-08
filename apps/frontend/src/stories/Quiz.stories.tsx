@@ -1,7 +1,9 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from '@storybook/test';
+import { within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { expect } from 'vitest';
 
 import { Quiz } from '@/pages/Quiz';
 import { ModalProvider } from '@/store/modalStore';

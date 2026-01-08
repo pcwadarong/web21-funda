@@ -1,27 +1,32 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from '@storybook/test';
+import { within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { expect } from 'vitest';
 
-import { QuizOX } from '@/feat/quiz/components/quizType/QuizOX';
+import { QuizMCQ } from '@/feat/quiz/components/quizType/QuizMCQ';
 import type { DefaultContent } from '@/feat/quiz/types';
 import { lightTheme } from '@/styles/theme';
 
 const mockContent: DefaultContent = {
   question: '테스트 문제',
   options: [
-    { id: 'o', text: 'O' },
-    { id: 'x', text: 'X' },
+    { id: 'c1', text: '첫 번째 선택지' },
+    { id: 'c2', text: '두 번째 선택지' },
+    { id: 'c3', text: '세 번째 선택지' },
+    { id: 'c4', text: '네 번째 선택지' },
   ],
 };
 
-const meta: Meta<typeof QuizOX> = {
-  title: 'Features/Quiz/QuizOX',
-  component: QuizOX,
+const meta: Meta<typeof QuizMCQ> = {
+  title: 'Features/Quiz/QuizMCQ',
+  component: QuizMCQ,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: 'OX 퀴즈 컴포넌트입니다. O 또는 X 중 하나를 선택합니다.',
+        component:
+          '객관식(Multiple Choice Question) 퀴즈 컴포넌트입니다. 여러 선택지 중 하나를 선택합니다.',
       },
     },
   },
@@ -29,7 +34,7 @@ const meta: Meta<typeof QuizOX> = {
   decorators: [
     Story => (
       <ThemeProvider theme={lightTheme}>
-        <div style={{ width: '400px' }}>
+        <div style={{ width: '500px' }}>
           <Story />
         </div>
       </ThemeProvider>
@@ -38,7 +43,7 @@ const meta: Meta<typeof QuizOX> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof QuizOX>;
+type Story = StoryObj<typeof QuizMCQ>;
 
 export const Default: Story = {
   args: {
@@ -50,20 +55,10 @@ export const Default: Story = {
   },
 };
 
-export const SelectedO: Story = {
+export const Selected: Story = {
   args: {
     content: mockContent,
-    selectedAnswer: 'o',
-    showResult: false,
-    onAnswerChange: () => {},
-    disabled: false,
-  },
-};
-
-export const SelectedX: Story = {
-  args: {
-    content: mockContent,
-    selectedAnswer: 'x',
+    selectedAnswer: 'c2',
     showResult: false,
     onAnswerChange: () => {},
     disabled: false,
@@ -73,7 +68,7 @@ export const SelectedX: Story = {
 export const ShowResult: Story = {
   args: {
     content: mockContent,
-    selectedAnswer: 'o',
+    selectedAnswer: 'c1',
     showResult: true,
     onAnswerChange: () => {},
     disabled: false,
@@ -99,9 +94,9 @@ export const Interactive: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const optionO = canvas.getByText('O');
+    const option = canvas.getByText('첫 번째 선택지');
 
-    await userEvent.click(optionO);
-    await expect(args.onAnswerChange).toHaveBeenCalledWith('o');
+    await userEvent.click(option);
+    await expect(args.onAnswerChange).toHaveBeenCalledWith('c1');
   },
 };

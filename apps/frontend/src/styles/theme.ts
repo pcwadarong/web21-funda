@@ -1,5 +1,5 @@
-import { borderRadius, colors } from './token';
-import { typography } from './typography';
+import { borderRadius, colors } from '@/styles/token';
+import { typography } from '@/styles/typography';
 
 export const lightTheme = {
   colors: colors.light,

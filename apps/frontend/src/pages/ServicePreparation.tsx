@@ -2,8 +2,8 @@ import { css, useTheme } from '@emotion/react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '../components/Button';
-import type { Theme } from '../styles/theme';
+import { Button } from '@/comp/Button';
+import type { Theme } from '@/styles/theme';
 
 export const ServicePreparation = () => {
   const theme = useTheme();

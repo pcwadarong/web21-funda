@@ -1,13 +1,13 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from '@storybook/test';
+import { within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { expect } from 'vitest';
 
+import { QuizContentCard } from '@/feat/quiz/components/QuizContentCard';
+import type { QuizQuestion } from '@/feat/quiz/types';
 import { ModalProvider } from '@/store/modalStore';
 import { lightTheme } from '@/styles/theme';
-
-import type { QuizQuestion } from '../types';
-
-import { QuizContentCard } from './QuizContentCard';
 
 const sampleQuestion: QuizQuestion = {
   id: 1,

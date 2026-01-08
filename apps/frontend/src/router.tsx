@@ -9,6 +9,7 @@ import { Login } from '@/pages/Login';
 import { Overview } from '@/pages/Overview';
 import { Quiz } from '@/pages/Quiz';
 import { QuizResult } from '@/pages/QuizResult';
+import { Roadmap } from '@/pages/Roadmap';
 import { ServicePreparation } from '@/pages/ServicePreparation';
 import { Streak } from '@/pages/Streak';
 
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    path: '/roadmap',
+    element: <Roadmap />,
   },
   {
     path: '/learn',

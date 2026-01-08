@@ -1,10 +1,19 @@
 import { ThemeProvider } from '@emotion/react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { InitialFields } from '@/pages/InitialFields';
 import { lightTheme } from '@/styles/theme';
+
+// SVGIcon 모킹 (vite-plugin-svgr 환경 문제 회피)
+vi.mock('@/comp/SVGIcon', () => ({
+  default: ({ icon }: { icon: string }) => <span data-testid={`icon-${icon}`} />,
+}));
+
+// useStorage 모킹
+vi.mock('@/hooks/useStorage', () => ({
+  useStorage: () => ({ updateUIState: vi.fn() }),
+}));
 
 // useNavigate 모킹
 const mockNavigate = vi.fn();
@@ -16,6 +25,9 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+// 모킹 후 컴포넌트 import (hoisting 문제 방지)
+const { InitialFields } = await import('@/pages/InitialFields');
+
 const renderFields = () =>
   render(
     <ThemeProvider theme={lightTheme}>
@@ -25,8 +37,9 @@ const renderFields = () =>
     </ThemeProvider>,
   );
 
-describe('Fields 컴포넌트 테스트', () => {
-  beforeEach(() => {
+describe('InitialFields 컴포넌트 테스트', () => {
+  afterEach(() => {
+    cleanup();
     mockNavigate.mockClear();
   });
 
@@ -39,17 +52,16 @@ describe('Fields 컴포넌트 테스트', () => {
     expect(screen.getByText('CS 기초')).toBeInTheDocument();
   });
 
-  it('필드 버튼 클릭 시 토글이 잘된다', () => {
+  it('필드 라벨 클릭 시 선택된다', () => {
     renderFields();
 
-    const frontendButton = screen.getByText('프론트엔드').closest('button');
+    const frontendLabel = screen.getByText('프론트엔드').closest('label');
+    const frontendRadio = frontendLabel?.querySelector('input[type="radio"]') as HTMLInputElement;
 
-    // 처음에는 체크마크가 없음
-    expect(frontendButton).not.toHaveTextContent('✓');
+    expect(frontendRadio.checked).toBe(false);
 
-    // 클릭하여 선택 (체크마크 표시)
-    fireEvent.click(frontendButton!);
-    expect(frontendButton).toHaveTextContent('✓');
+    fireEvent.click(frontendLabel!);
+    expect(frontendRadio.checked).toBe(true);
   });
 
   it('선택 전에는 "선택 완료하고 시작하기" 버튼이 비활성화된다', () => {
@@ -62,35 +74,29 @@ describe('Fields 컴포넌트 테스트', () => {
   it('필드 선택 후 버튼이 활성화되고 클릭 시 /quiz으로 이동한다', () => {
     renderFields();
 
-    const frontendButton = screen.getByText('프론트엔드').closest('button');
+    const frontendLabel = screen.getByText('프론트엔드').closest('label');
     const completeButton = screen.getByText('선택 완료하고 시작하기');
 
-    // 필드 선택
-    fireEvent.click(frontendButton!);
-
-    // 버튼 활성화 확인
+    fireEvent.click(frontendLabel!);
     expect(completeButton).not.toBeDisabled();
 
-    // 버튼 클릭
     fireEvent.click(completeButton);
-
-    // /quiz으로 이동 확인
     expect(mockNavigate).toHaveBeenCalledWith('/quiz');
   });
 
-  it('필드를 변경하면 이전 선택은 해제된다', () => {
+  it('필드를 변경하면 이전 선택은 해제된다 (radio 동작)', () => {
     renderFields();
 
-    const frontendRadio = screen.getByLabelText('프론트엔드') as HTMLInputElement;
-    const backendRadio = screen.getByLabelText('백엔드') as HTMLInputElement;
+    const frontendLabel = screen.getByText('프론트엔드').closest('label');
+    const backendLabel = screen.getByText('백엔드').closest('label');
+    const frontendRadio = frontendLabel?.querySelector('input[type="radio"]') as HTMLInputElement;
+    const backendRadio = backendLabel?.querySelector('input[type="radio"]') as HTMLInputElement;
 
-    // 프론트엔드 선택
-    fireEvent.click(frontendRadio);
+    fireEvent.click(frontendLabel!);
     expect(frontendRadio.checked).toBe(true);
 
-    // 백엔드로 변경
-    fireEvent.click(backendRadio);
+    fireEvent.click(backendLabel!);
     expect(backendRadio.checked).toBe(true);
-    expect(frontendRadio.checked).toBe(false); // 기존 선택 해제 확인
+    expect(frontendRadio.checked).toBe(false);
   });
 });

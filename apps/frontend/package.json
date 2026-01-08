@@ -8,6 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "vitest --project unit",
+    "test:watch": "vitest --project unit --watch",
+    "test:coverage": "vitest --project unit --coverage",
+    "test:storybook": "vitest --project storybook",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

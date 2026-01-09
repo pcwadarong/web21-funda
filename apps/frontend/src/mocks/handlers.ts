@@ -277,4 +277,57 @@ export const handlers = [
       ],
     });
   }),
+  http.get('/api/fields/:fieldSlug/units/first', ({ params }) => {
+    const fieldSlug = String(params.fieldSlug ?? '');
+
+    return HttpResponse.json({
+      field: {
+        name: '프론트엔드',
+        slug: fieldSlug,
+      },
+      unit: {
+        id: 1,
+        title: 'HTML 기초',
+        orderIndex: 1,
+        steps: [
+          {
+            id: 101,
+            title: 'HTML 구조 이해',
+            orderIndex: 1,
+            quizCount: 5,
+            isCheckpoint: false,
+            isCompleted: true,
+            isLocked: false,
+          },
+        ],
+      },
+    });
+  }),
+  http.get('/api/fields/:fieldSlug/roadmap', () =>
+    HttpResponse.json({
+      field: {
+        name: '프론트엔드',
+      },
+      units: [
+        {
+          id: 1,
+          title: 'HTML 기초',
+          description: 'HTML 기초를 학습합니다',
+          progress: 50,
+          score: 85,
+          status: 'active',
+          variant: 'full',
+        },
+        {
+          id: 2,
+          title: 'CSS 기초',
+          description: 'CSS 기초를 학습합니다',
+          progress: 0,
+          score: 0,
+          status: 'normal',
+          variant: 'compact',
+        },
+      ],
+    }),
+  ),
 ];

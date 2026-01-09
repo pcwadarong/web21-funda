@@ -4,32 +4,21 @@ import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
-import type { IconMapTypes } from '@/constants/icons';
 import { useStorage } from '@/hooks/useStorage';
+import { type Field, fieldService } from '@/services/fieldService';
 import type { Theme } from '@/styles/theme';
-
-interface StudyFieldResponse {
-  slug: string;
-  name: string;
-  description: string;
-  icon: IconMapTypes;
-}
 
 export const InitialFields = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const { updateUIState } = useStorage();
-  const [fields, setFields] = useState<StudyFieldResponse[]>([]);
+  const [fields, setFields] = useState<Field[]>([]);
 
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
     const fetchFields = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/fields`);
-        if (!response.ok) throw new Error('데이터 로드 실패');
-
-        const data = await response.json();
+        const data = await fieldService.getFields();
         setFields(data.fields);
       } catch (error) {
         console.error('API Error:', error);
@@ -43,16 +32,27 @@ export const InitialFields = () => {
     setSelectedField(prev => (prev === slug ? null : slug));
   }, []);
 
-  const handleComplete = useCallback(() => {
-    if (!selectedField) return; // null 체크
+  const handleComplete = useCallback(async () => {
+    if (!selectedField) return;
+
+    try {
+      const data = await fieldService.getFirstUnit(selectedField);
+
+      if (data.unit && data.unit.steps[0]) {
+        const firstStepId = data.unit.steps[0].id;
+
+        updateUIState({
+          current_quiz_step_id: firstStepId,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch first unit:', error);
+      // 에러 발생 시 기본값 설정
+      updateUIState({
+        current_quiz_step_id: 1,
+      });
+    }
     navigate('/quiz');
-    // TODO: API 호출해서 실제 첫 번째 스텝으로 수정
-    updateUIState({
-      last_viewed: {
-        field_slug: selectedField,
-        unit_id: 1,
-      },
-    });
   }, [navigate, selectedField, updateUIState]);
 
   return (

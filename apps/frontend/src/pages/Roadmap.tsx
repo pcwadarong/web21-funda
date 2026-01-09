@@ -6,6 +6,7 @@ import SVGIcon from '@/comp/SVGIcon';
 import { UnitCard } from '@/feat/roadmap/components/UnitCard';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
 import { useStorage } from '@/hooks/useStorage';
+import { fieldService } from '@/services/fieldService';
 import type { Theme } from '@/styles/theme';
 
 // const units: readonly RoadmapUnit[] = [
@@ -72,15 +73,14 @@ export const Roadmap = () => {
 
   const fieldSlug = uiState.last_viewed?.field_slug;
 
-  const [field, setField] = useState();
+  const [field, setField] = useState<string>();
   const [units, setUnits] = useState<RoadmapUnit[]>([]);
 
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
     const fetchFields = async () => {
+      if (!fieldSlug) return;
       try {
-        const response = await fetch(`${API_BASE_URL}/fields/${fieldSlug}/roadmap`);
-        const data = await response.json();
+        const data = await fieldService.getFieldRoadmap(fieldSlug);
         setUnits(data.units);
         setField(data.field.name);
       } catch (error) {
@@ -89,7 +89,7 @@ export const Roadmap = () => {
     };
 
     fetchFields();
-  }, []);
+  }, [fieldSlug]);
 
   /**
    * 유닛 카드 클릭 처리

@@ -1,21 +1,6 @@
 import { useMemo, useState } from 'react';
 
-type UploadSummary = {
-  processed: number;
-  fieldsCreated: number;
-  fieldsUpdated: number;
-  unitsCreated: number;
-  unitsUpdated: number;
-  stepsCreated: number;
-  stepsUpdated: number;
-  quizzesCreated: number;
-  quizzesUpdated: number;
-};
-
-type UploadResponse =
-  | { summary: UploadSummary }
-  | { message: string; frontendPath?: string; error?: string }
-  | { error: string };
+import { adminService, type UploadResponse } from '@/services/adminService';
 
 const cardStyle: React.CSSProperties = {
   maxWidth: 820,
@@ -77,9 +62,6 @@ const preStyle: React.CSSProperties = {
   maxHeight: 360,
 };
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
-const uploadUrl = `${apiBaseUrl}/admin/quizzes/upload`;
-
 export function AdminQuizUpload() {
   const [status, setStatus] = useState('대기 중');
   const [result, setResult] = useState<UploadResponse | null>(null);
@@ -100,34 +82,12 @@ export function AdminQuizUpload() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     setBusy(true);
     setStatus('업로드 중...');
     setResult(null);
 
     try {
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
-      });
-      const text = await response.text();
-      let parsed: UploadResponse;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        parsed = { error: text || '응답을 해석할 수 없습니다.' };
-      }
-
-      if (!response.ok) {
-        const message =
-          (parsed as { message?: string }).message ||
-          (parsed as { error?: string }).error ||
-          '업로드 실패';
-        throw new Error(message);
-      }
-
+      const parsed = await adminService.uploadQuizzes(file);
       setStatus('업로드 완료');
       setResult(parsed);
     } catch (error) {

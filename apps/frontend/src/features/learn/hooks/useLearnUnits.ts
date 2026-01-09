@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { LessonItem, LessonSection, UnitsResponse } from '@/feat/learn/types';
+import type { LessonItem, LessonSection } from '@/feat/learn/types';
 import { useStorage } from '@/hooks/useStorage';
+import { fieldService } from '@/services/fieldService';
 
 /**
  * Learn 페이지에서 사용할 유닛/스텝 데이터와 스크롤 상태를 관리합니다.
@@ -40,38 +41,40 @@ export const useLearnUnits = () => {
     let isMounted = true;
 
     const fetchUnits = async () => {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
-      const response = await fetch(`${API_BASE_URL}/fields/${fieldSlug}/units`);
-      const data = (await response.json()) as UnitsResponse;
-      if (!isMounted) return;
+      try {
+        const data = await fieldService.getFieldUnits(fieldSlug);
+        if (!isMounted) return;
 
-      const mapped = data.units
-        .sort((a, b) => a.orderIndex - b.orderIndex)
-        .map(unit => ({
-          id: String(unit.id),
-          name: data.field.name,
-          title: unit.title,
-          steps: unit.steps
-            .sort((a, b) => a.orderIndex - b.orderIndex)
-            .map(step => {
-              const status: LessonItem['status'] = step.isLocked
-                ? 'locked'
-                : step.isCompleted
-                  ? 'completed'
-                  : 'active';
-              const type: LessonItem['type'] = step.isCheckpoint ? 'checkpoint' : 'normal';
+        const mapped = data.units
+          .sort((a, b) => a.orderIndex - b.orderIndex)
+          .map(unit => ({
+            id: String(unit.id),
+            name: data.field.name,
+            title: unit.title,
+            steps: unit.steps
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map(step => {
+                const status: LessonItem['status'] = step.isLocked
+                  ? 'locked'
+                  : step.isCompleted
+                    ? 'completed'
+                    : 'active';
+                const type: LessonItem['type'] = step.isCheckpoint ? 'checkpoint' : 'normal';
 
-              return {
-                id: String(step.id),
-                name: step.title,
-                status,
-                type,
-              };
-            }),
-        }));
+                return {
+                  id: String(step.id),
+                  name: step.title,
+                  status,
+                  type,
+                };
+              }),
+          }));
 
-      setUnits(mapped);
-      setActiveUnitId(mapped[0]?.id ?? '');
+        setUnits(mapped);
+        setActiveUnitId(mapped[0]?.id ?? '');
+      } catch (error) {
+        console.error('Failed to fetch units:', error);
+      }
     };
 
     fetchUnits();

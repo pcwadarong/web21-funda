@@ -330,4 +330,87 @@ export const handlers = [
       ],
     }),
   ),
+  http.get('/api/steps/:stepId/quizzes', () =>
+    HttpResponse.json([
+      {
+        id: 1,
+        type: 'ox',
+        content: {
+          question: ':nth-child(2)는 같은 타입(type)의 두 번째 요소만 선택한다.',
+          options: [
+            { id: 'o', text: 'O' },
+            { id: 'x', text: 'X' },
+          ],
+        },
+      },
+      {
+        id: 2,
+        type: 'mcq',
+        content: {
+          question: ':not(.active)는 어떤 요소를 선택하는가?',
+          options: [
+            { id: 'c1', text: 'active 클래스를 가진 요소' },
+            { id: 'c2', text: 'active 클래스를 가지지 않은 요소' },
+            { id: 'c3', text: 'active 클래스를 가진 자식 요소' },
+            { id: 'c4', text: 'active 클래스를 가진 형제 요소' },
+          ],
+        },
+      },
+      {
+        id: 3,
+        type: 'matching',
+        content: {
+          question: '선택자와 의미를 올바르게 연결하세요.',
+          matching_metadata: {
+            left: ['div p', 'div > p', 'h1 + p', 'h1 ~ p'],
+            right: [
+              'div의 모든 자손 p',
+              'div의 직계 자식 p',
+              'h1 바로 다음 p',
+              'h1 뒤의 모든 형제 p',
+            ],
+          },
+        },
+      },
+      {
+        id: 4,
+        type: 'code',
+        content: {
+          question:
+            'data-state가 "open"인 요소만 선택하려고 합니다. 빈칸에 들어갈 선택자를 고르세요.',
+          options: [
+            { id: 'c1', text: '[data-state="open"]' },
+            { id: 'c2', text: '[data-state^="open"]' },
+            { id: 'c3', text: '[data-state*="open"]' },
+            { id: 'c4', text: '[data-state$="open"]' },
+          ],
+          code_metadata: {
+            language: 'css',
+            snippet: '{{BLANK}} {\n  opacity: 1;\n}',
+          },
+        },
+      },
+      {
+        id: 5,
+        type: 'mcq',
+        content: {
+          question: '가상 요소(pseudo-element)로 올바른 것은?',
+          options: [
+            { id: 'c1', text: ':hover' },
+            { id: 'c2', text: '::before' },
+            { id: 'c3', text: ':nth-child(2)' },
+            { id: 'c4', text: ':not(.a)' },
+          ],
+        },
+      },
+    ]),
+  ),
+  http.post('/api/quizzes/:quizId/submissions', () =>
+    HttpResponse.json({
+      solution: {
+        explanation: '정답입니다!',
+        correct_option_id: 'o',
+      },
+    }),
+  ),
 ];

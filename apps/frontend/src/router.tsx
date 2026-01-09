@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, redirect } from 'react-router-dom';
 
 import { LearnLayout } from '@/layouts/LearnLayout';
 import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
@@ -15,6 +15,15 @@ import { Roadmap } from '@/pages/Roadmap';
 import { SelectField } from '@/pages/SelectField';
 import { ServicePreparation } from '@/pages/ServicePreparation';
 import { Streak } from '@/pages/Streak';
+
+const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
+
+// 보호된 페이지를 위한 공통 로더
+// 로그인이 안 되어 있다면 로그인 페이지로 강제 이동
+const protectedLoader = () => {
+  if (!isLoggedIn) return redirect('/login');
+  return null;
+};
 
 export const router = createBrowserRouter([
   {
@@ -38,12 +47,12 @@ export const router = createBrowserRouter([
     element: <LearnLayout />,
     children: [
       {
-        index: true, // 그냥 /learn 접속 시
+        index: true,
         element: <Learn />,
       },
       {
-        path: 'select-field', // /learn/select-field 접속 시
-        element: <SelectField />, // 사이드바는 유지된 채 중앙만 SelectField로 바뀜
+        path: 'select-field',
+        element: <SelectField />,
       },
       {
         path: 'roadmap',
@@ -70,10 +79,12 @@ export const router = createBrowserRouter([
   {
     path: '/streak',
     element: <Streak />,
+    loader: protectedLoader,
   },
   {
     path: '/leaderboard/:groupId',
     element: <ServicePreparation />,
+    loader: protectedLoader,
   },
   {
     path: '/setting',
@@ -82,6 +93,7 @@ export const router = createBrowserRouter([
   {
     path: '/profile/:userId',
     element: <ServicePreparation />,
+    loader: protectedLoader,
   },
   {
     path: '*',

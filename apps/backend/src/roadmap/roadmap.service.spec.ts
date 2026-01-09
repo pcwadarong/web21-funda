@@ -99,17 +99,46 @@ describe('RoadmapService', () => {
       name: 'Frontend',
       slug: 'fe',
       units: [
-        { id: 1, title: 'HTML', orderIndex: 1 },
+        {
+          id: 1,
+          title: 'HTML',
+          orderIndex: 1,
+          steps: [
+            { id: 10, title: '태그', orderIndex: 1, isCheckpoint: false },
+            { id: 11, title: '속성', orderIndex: 2, isCheckpoint: false },
+          ],
+        },
         { id: 2, title: 'CSS', orderIndex: 2 },
       ],
     } as Field);
+
+    const queryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        { stepId: 10, quizCount: '5' },
+        { stepId: 11, quizCount: '4' },
+      ]),
+    };
+    createQueryBuilderMock.mockReturnValue(queryBuilder as never);
 
     const result = await service.getFirstUnitByFieldSlug('fe');
 
     expect(result).toEqual({
       field: { name: 'Frontend', slug: 'fe' },
-      unit: { id: 1, title: 'HTML', orderIndex: 1 },
+      unit: {
+        id: 1,
+        title: 'HTML',
+        orderIndex: 1,
+        steps: expect.any(Array),
+      },
     });
+    expect(result.unit?.steps).toHaveLength(7);
+    expect(result.unit?.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    expect(result.unit?.steps.find(step => step.id === 10)?.quizCount).toBe(5);
+    expect(result.unit?.steps.find(step => step.id === 11)?.quizCount).toBe(4);
   });
 
   it('필드/유닛/스텝과 퀴즈 개수를 응답한다', async () => {

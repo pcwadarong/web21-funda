@@ -84,7 +84,7 @@ export const handlers = [
               orderIndex: 2,
               quizCount: 4,
               isCheckpoint: false,
-              isCompleted: false,
+              isCompleted: true,
               isLocked: false,
             },
             {
@@ -93,7 +93,7 @@ export const handlers = [
               orderIndex: 3,
               quizCount: 4,
               isCheckpoint: false,
-              isCompleted: false,
+              isCompleted: true,
               isLocked: false,
             },
             {
@@ -103,7 +103,7 @@ export const handlers = [
               quizCount: 6,
               isCheckpoint: true,
               isCompleted: false,
-              isLocked: true,
+              isLocked: false,
             },
             {
               id: 105,

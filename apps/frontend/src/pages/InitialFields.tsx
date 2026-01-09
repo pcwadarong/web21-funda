@@ -8,29 +8,12 @@ import type { IconMapTypes } from '@/constants/icons';
 import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
-// interface StudyField {
-//   id: string;
-//   name: string;
-//   icon: IconMapTypes;
-
-// }
 interface StudyFieldResponse {
   slug: string;
   name: string;
   description: string;
   icon: IconMapTypes;
 }
-// TODO: /api/fields 연동
-// const STUDY_FIELDS: StudyField[] = [
-//   { id: 'frontend', name: '프론트엔드', icon: 'Frontend' },
-//   { id: 'backend', name: '백엔드', icon: 'Backend' },
-//   { id: 'mobile', name: '모바일', icon: 'Mobile' },
-//   { id: 'cs', name: 'CS 기초', icon: 'ComputerScience' },
-//   { id: 'algorithm', name: '알고리즘', icon: 'Algorithm' },
-//   { id: 'game', name: '게임 개발', icon: 'Game' },
-//   { id: 'data', name: '데이터/AI 기초', icon: 'Data' },
-//   { id: 'devops', name: '데브옵스', icon: 'Cloud' },
-// ] as const;
 
 export const InitialFields = () => {
   const theme = useTheme();

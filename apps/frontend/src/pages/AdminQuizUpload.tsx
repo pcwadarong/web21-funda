@@ -77,6 +77,14 @@ const preStyle: React.CSSProperties = {
   maxHeight: 360,
 };
 
+const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
+const apiBaseUrl = rawApiBaseUrl
+  ? rawApiBaseUrl.endsWith('/api')
+    ? rawApiBaseUrl
+    : `${rawApiBaseUrl}/api`
+  : '/api';
+const uploadUrl = `${apiBaseUrl}/admin/quizzes/upload`;
+
 export function AdminQuizUpload() {
   const [status, setStatus] = useState('대기 중');
   const [result, setResult] = useState<UploadResponse | null>(null);
@@ -105,7 +113,7 @@ export function AdminQuizUpload() {
     setResult(null);
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/quizzes/upload', {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });

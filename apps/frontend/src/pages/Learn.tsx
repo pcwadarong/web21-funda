@@ -133,6 +133,11 @@ const centerSectionStyle = css`
   min-height: 0;
   overflow-y: auto;
   padding-bottom: 36px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const centerSectionInnerStyle = css`

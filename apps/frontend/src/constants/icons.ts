@@ -12,6 +12,7 @@ import Lock from '@/assets/lock.svg?react';
 import Logo from '@/assets/logo.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
 import Report from '@/assets/Report.svg?react';
+import RoundStar from '@/assets/round-star.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
 import Fire from '@/assets/sidebar-icons/fire.svg?react';
@@ -23,8 +24,12 @@ import Setting from '@/assets/sidebar-icons/setting.svg?react';
 import Streak from '@/assets/sidebar-icons/streak.svg?react';
 import Star from '@/assets/star.svg?react';
 import Start from '@/assets/start.svg?react';
+import Timer from '@/assets/timer.svg?react';
+import Graph from '@/assets/upward-graph.svg?react';
 
 export const IconMap = {
+  ArrowLeft,
+  Check,
   Algorithm,
   Backend,
   Cloud,
@@ -33,23 +38,24 @@ export const IconMap = {
   Frontend,
   Game,
   Mobile,
-  Check,
-  ArrowLeft,
-  NextArrow,
-  Start,
   Lock,
-  Star,
-  Report,
-  Fire,
   Logo,
+  NextArrow,
+  Report,
+  RoundStar,
+  Book,
+  Diamond,
+  Fire,
+  Heart,
   Learn,
   Profile,
   Ranking,
   Setting,
   Streak,
-  Diamond,
-  Heart,
-  Book,
+  Star,
+  Start,
+  Timer,
+  Graph,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

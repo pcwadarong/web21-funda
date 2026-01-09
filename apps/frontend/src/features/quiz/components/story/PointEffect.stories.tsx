@@ -7,7 +7,7 @@ import { PointEffect } from '@/feat/quiz/components/PointEffect';
 import { lightTheme } from '@/styles/theme';
 
 const meta: Meta<typeof PointEffect> = {
-  title: 'Pages/PointEffect',
+  title: 'Features/Quiz/PointEffect',
   component: PointEffect,
   parameters: {
     layout: 'fullscreen',

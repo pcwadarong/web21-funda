@@ -31,69 +31,69 @@ export const router = createBrowserRouter([
     element: <Landing />,
   },
   {
-    path: '/initial-fields',
-    element: <InitialFields />,
-  },
-  {
-    path: '/admin/quizzes/upload',
-    element: <AdminQuizUpload />,
-  },
-  {
     path: '/login',
     element: <Login />,
   },
   {
+    path: '/auth/check',
+    element: <AuthCheck />,
+  },
+
+  // 학습 + 레이아웃 통일
+  {
     path: '/learn',
     element: <LearnLayout />,
     children: [
-      {
-        index: true,
-        element: <Learn />,
-      },
-      {
-        path: 'select-field',
-        element: <SelectField />,
-      },
-      {
-        path: 'roadmap',
-        element: <Roadmap />,
-      },
+      { index: true, element: <Learn /> },
+      { path: 'select-field', element: <SelectField /> },
+      { path: 'roadmap', element: <Roadmap /> },
     ],
   },
   {
     path: '/overview/:unitId',
     element: <Overview />,
   },
+
+  // 퀴즈 관련 (Quiz)
   {
     path: '/quiz',
-    element: <Quiz />,
+    children: [
+      { index: true, element: <Quiz /> }, // /quiz
+      { path: 'result', element: <QuizResult /> }, // /quiz/result
+    ],
   },
+
+  // 사용자 및 소셜 (User)
   {
-    path: '/quiz/result',
-    element: <QuizResult />,
-  },
-  {
-    path: '/auth/check',
-    element: <AuthCheck />,
-  },
-  {
-    path: '/streak',
-    element: <Streak />,
     loader: protectedLoader,
+    children: [
+      { path: '/streak', element: <Streak /> },
+      { path: '/leaderboard/:groupId', element: <ServicePreparation /> },
+      { path: '/profile/:userId', element: <ServicePreparation /> },
+    ],
   },
+
+  // 4. 관리자 (Admin)
   {
-    path: '/leaderboard/:groupId',
-    element: <ServicePreparation />,
-    loader: protectedLoader,
+    path: '/admin',
+    children: [
+      {
+        path: 'quizzes',
+        children: [
+          { path: 'upload', element: <AdminQuizUpload /> }, // /admin/quizzes/upload
+        ],
+      },
+    ],
   },
+
+  // 기타 설정 및 공통
   {
     path: '/setting',
     element: <ServicePreparation />,
   },
   {
-    path: '/profile/:userId',
-    element: <ServicePreparation />,
-    loader: protectedLoader,
+    path: '/initial-fields',
+    element: <InitialFields />,
   },
   {
     path: '*',

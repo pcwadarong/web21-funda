@@ -15,10 +15,10 @@ export const Learn = () => {
   const navigate = useNavigate();
   const { units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } = useLearnUnits();
   const handleComplete = useCallback(
-    (stepid: number) => {
+    (stepId: number) => {
       navigate('/quiz');
       updateUIState({
-        current_quiz_step_id: stepid,
+        current_quiz_step_id: stepId,
       });
     },
     [navigate, updateUIState],
@@ -68,9 +68,7 @@ export const Learn = () => {
                       <div key={step.id} css={positionStyle}>
                         <div css={lessonStackStyle}>
                           <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
-                            <span css={lessonIconStyle}>
-                              <SVGIcon icon="Lock" aria-hidden="true" size="xl" />
-                            </span>
+                            <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
                           </div>
                           <div css={lessonNamePillStyle(theme)}>{step.name}</div>
                         </div>
@@ -89,14 +87,12 @@ export const Learn = () => {
                             step.status === 'active' && activeLessonStyle(theme),
                           ]}
                         >
-                          <span css={lessonIconStyle}>
-                            {step.status === 'completed' && (
-                              <SVGIcon icon="Check" aria-hidden="true" size="xl" />
-                            )}
-                            {step.status === 'active' && (
-                              <SVGIcon icon="Start" aria-hidden="true" size="xl" />
-                            )}
-                          </span>
+                          {step.status === 'completed' && (
+                            <SVGIcon icon="Check" aria-hidden="true" size="lg" />
+                          )}
+                          {step.status === 'active' && (
+                            <SVGIcon icon="Start" aria-hidden="true" size="lg" />
+                          )}
                         </div>
                         <div css={lessonNamePillStyle(theme)}>{step.name}</div>
                       </div>
@@ -118,7 +114,7 @@ const mainStyle = css`
   display: flex;
   flex: 1;
   gap: 24px;
-  padding: 24px;
+  padding: 24px 24px 0 24px;
   overflow: hidden;
   height: 100vh;
   min-height: 0;
@@ -213,7 +209,7 @@ const lessonPositionStyle = (index: number, unitIndex: number) => {
 
   return css`
     position: absolute;
-    top: ${index * 152}px;
+    top: ${index * 130}px;
     left: ${left}px;
     transform: translateX(-50%);
   `;
@@ -263,7 +259,7 @@ const overviewButtonStyle = (theme: Theme) => css`
 
 const lessonsContainerStyle = (count: number) => css`
   position: relative;
-  min-height: ${count * 160}px;
+  min-height: ${count * 130}px;
   padding: 8px 0 24px;
 `;
 
@@ -283,8 +279,8 @@ const lessonItemStyle = (theme: Theme) => css`
   border-radius: 30px;
   transition: all 150ms ease;
   text-align: center;
-  width: 84px;
-  height: 79px;
+  width: 4.5rem;
+  height: 4rem;
   text-decoration: none;
 
   &:hover {
@@ -329,16 +325,6 @@ const lockedLessonStyle = (theme: Theme) => css`
     box-shadow: 0 0.4rem 0 ${theme.colors.text.light};
   }
 `;
-
-const lessonIconStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-`;
-
 const lessonNamePillStyle = (theme: Theme) => css`
   padding: 6px 14px;
   border-radius: 999px;

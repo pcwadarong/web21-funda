@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
-import type { FirstUnitResponse } from './dto/first-unit.dto';
+import type { FirstUnitResponse, UnitSummary } from './dto/first-unit.dto';
 import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
 import type {
   MatchingPair,
@@ -108,6 +108,7 @@ export class RoadmapService {
     const field = await this.fieldRepository
       .createQueryBuilder('field')
       .leftJoinAndSelect('field.units', 'unit')
+      .leftJoinAndSelect('unit.steps', 'step')
       .where('field.slug = :slug', { slug: fieldSlug })
       .orderBy('unit.orderIndex', 'ASC')
       .getOne();
@@ -116,20 +117,26 @@ export class RoadmapService {
       throw new NotFoundException('Field not found.');
     }
 
-    const firstUnit = (field.units ?? [])[0] ?? null;
+    const firstUnit = this.sortByOrderIndex(field.units ?? [])[0] ?? null;
+    const steps = firstUnit?.steps ?? [];
+    const quizCountByStepId = await this.getQuizCountByStepId(steps.map(step => step.id));
+
+    let unitSummary: UnitSummary | null = null;
+    if (firstUnit) {
+      unitSummary = {
+        id: firstUnit.id,
+        title: firstUnit.title,
+        orderIndex: firstUnit.orderIndex,
+        steps: this.buildUnitStepsWithCheckpoints(steps, quizCountByStepId),
+      };
+    }
 
     return {
       field: {
         name: field.name,
         slug: field.slug,
       },
-      unit: firstUnit
-        ? {
-            id: firstUnit.id,
-            title: firstUnit.title,
-            orderIndex: firstUnit.orderIndex,
-          }
-        : null,
+      unit: unitSummary,
     };
   }
 

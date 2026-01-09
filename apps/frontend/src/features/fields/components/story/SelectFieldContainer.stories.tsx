@@ -1,9 +1,7 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { expect, userEvent, within } from '@storybook/test';
 import { MemoryRouter } from 'react-router-dom';
-import { expect } from 'vitest';
 
 import { SelectFieldContainer } from '@/feat/fields/components/SelectFieldContainer';
 import type { Field } from '@/services/fieldService';

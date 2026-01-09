@@ -1,8 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { expect } from 'vitest';
+import { expect, userEvent, within } from '@storybook/test';
 
 import { QuizMCQ } from '@/feat/quiz/components/quizType/QuizMCQ';
 import type { DefaultContent } from '@/feat/quiz/types';

@@ -1,8 +1,7 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { within } from '@testing-library/react';
+import { expect, within } from '@storybook/test';
 import { MemoryRouter } from 'react-router-dom';
-import { expect } from 'vitest';
 
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import type { QuizQuestion } from '@/feat/quiz/types';
@@ -61,42 +60,42 @@ const meta: Meta<typeof QuizContainer> = {
 export default meta;
 type Story = StoryObj<typeof QuizContainer>;
 
-/** 1. 초기 상태: 아무것도 선택하지 않았을 때 */
+/** 1. 초기 상태: 정답 확인 버튼 비활성화 검증 */
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const checkButton = canvas.getByText('정답 확인');
+    const checkButton = canvas.getByRole('button', { name: /정답 확인/i });
     await expect(checkButton).toBeDisabled();
   },
 };
 
-/** 2. 옵션 선택 상태: 버튼이 활성화된 UI를 시뮬레이션 */
+/** 2. 옵션 선택 상태: 버튼 활성화 검증 */
 export const SelectOption: Story = {
   args: {
-    selectedAnswers: ['O'], // 이미 선택된 상태로 주입
-    isCheckDisabled: false, // 버튼 활성화 상태 주입
+    selectedAnswers: ['O'],
+    isCheckDisabled: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const checkButton = canvas.getByText('정답 확인');
+    const checkButton = canvas.getByRole('button', { name: /정답 확인/i });
     await expect(checkButton).not.toBeDisabled();
   },
 };
 
-/** 3. 정답 확인 중 상태: 로딩 UI 확인 */
+/** 3. 로딩 상태: '확인 중' 텍스트 검증 */
 export const CheckAnswerLoading: Story = {
   args: {
     selectedAnswers: ['O'],
-    currentQuestionStatus: 'checking', // 로딩 중 상태 주입
+    currentQuestionStatus: 'checking',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // View 컴포넌트 내부 로직에 따라 '정답 확인 중..' 텍스트가 노출되는지 확인
+    // ✅ 정규표현식을 사용하여 텍스트 포함 여부 확인
     await expect(canvas.getByText(/확인 중/)).toBeInTheDocument();
   },
 };
 
-/** 4. 정답 확인 완료 상태: 해설 및 다음 버튼 노출 */
+/** 4. 완료 상태: 해설 노출 검증 */
 export const AnswerChecked: Story = {
   args: {
     currentQuestionStatus: 'checked',
@@ -108,5 +107,10 @@ export const AnswerChecked: Story = {
       },
     ],
     questionStatuses: ['checked'],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // 해설 텍스트가 화면에 나타나는지 확인
+    await expect(canvas.getByText(/생태계가 큽니다/)).toBeInTheDocument();
   },
 };

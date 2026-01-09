@@ -47,6 +47,7 @@ export const Default: Story = {
   args: {
     content: mockContent,
     selectedAnswer: null,
+    correctAnswer: null,
     showResult: false,
     onAnswerChange: () => {},
     disabled: false,
@@ -58,10 +59,11 @@ export const WithPairs: Story = {
     content: mockContent,
     selectedAnswer: {
       pairs: [
-        { left: 'div p', right: 'div의 모든 자손 p' },
-        { left: 'div > p', right: 'div의 직계 자식 p' },
+        { leftIndex: 0, rightIndex: 0 },
+        { leftIndex: 1, rightIndex: 1 },
       ],
     },
+    correctAnswer: null,
     showResult: false,
     onAnswerChange: () => {},
     disabled: false,
@@ -73,10 +75,18 @@ export const ShowResult: Story = {
     content: mockContent,
     selectedAnswer: {
       pairs: [
-        { left: 'div p', right: 'div의 모든 자손 p' },
-        { left: 'div > p', right: 'h1 바로 다음 p' },
-        { left: 'h1 + p', right: 'div의 직계 자식 p' },
-        { left: 'h1 ~ p', right: 'h1 뒤의 모든 형제 p' },
+        { leftIndex: 0, rightIndex: 0 },
+        { leftIndex: 1, rightIndex: 2 },
+        { leftIndex: 2, rightIndex: 1 },
+        { leftIndex: 3, rightIndex: 3 },
+      ],
+    },
+    correctAnswer: {
+      pairs: [
+        { leftIndex: 0, rightIndex: 0 },
+        { leftIndex: 1, rightIndex: 1 },
+        { leftIndex: 2, rightIndex: 2 },
+        { leftIndex: 3, rightIndex: 3 },
       ],
     },
     showResult: true,
@@ -94,6 +104,7 @@ export const Disabled: Story = {
   args: {
     content: mockContent,
     selectedAnswer: null,
+    correctAnswer: null,
     showResult: false,
     onAnswerChange: () => {},
     disabled: true,
@@ -104,6 +115,7 @@ export const Interactive: Story = {
   args: {
     content: mockContent,
     selectedAnswer: null,
+    correctAnswer: null,
     showResult: false,
     onAnswerChange: () => {},
     disabled: false,
@@ -126,8 +138,9 @@ export const DuplicateMatchingPrevention: Story = {
   args: {
     content: mockContent,
     selectedAnswer: {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }],
     },
+    correctAnswer: null,
     showResult: false,
     onAnswerChange: () => {},
     disabled: false,

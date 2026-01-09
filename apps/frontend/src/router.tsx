@@ -50,8 +50,9 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: '/overview/:unitId',
-    element: <Overview />,
+    path: '/learn/overview/:unitId',
+    // element: <Overview />,
+    element: <ServicePreparation />,
   },
 
   // 퀴즈 관련 (Quiz)
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
   // 기타 설정 및 공통
   {
     path: '/setting',
+    // element: <Setting />,
     element: <ServicePreparation />,
   },
   {

@@ -291,7 +291,7 @@ export const handlers = [
         orderIndex: 1,
         steps: [
           {
-            id: 101,
+            id: 1,
             title: 'HTML 구조 이해',
             orderIndex: 1,
             quizCount: 5,

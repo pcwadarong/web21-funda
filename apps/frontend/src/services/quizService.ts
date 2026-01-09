@@ -38,6 +38,6 @@ export const quizService = {
     quizId: number,
     payload: QuizSubmissionRequest,
   ): Promise<QuizSubmissionResponse> {
-    return apiFetch.post<QuizSubmissionResponse>(`/quizzes/${quizId}/submissions/`, payload);
+    return apiFetch.post<QuizSubmissionResponse>(`/quizzes/${quizId}/submissions`, payload);
   },
 };

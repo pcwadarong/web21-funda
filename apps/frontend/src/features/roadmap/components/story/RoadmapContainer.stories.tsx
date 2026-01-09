@@ -1,7 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { fn } from 'storybook/test';
 
 import { RoadmapContainer } from '@/feat/roadmap/components/RoadmapContainer';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
@@ -68,7 +67,7 @@ const meta: Meta<typeof RoadmapContainer> = {
     fieldName: '프론트엔드',
     units: mockUnits,
     isLoggedIn: false,
-    onUnitClick: fn(),
+    onUnitClick: () => {},
   },
 };
 

@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { fn } from 'storybook/test';
 import { expect } from 'vitest';
 
 import { SelectFieldContainer } from '@/feat/fields/components/SelectFieldContainer';
@@ -56,7 +55,7 @@ const meta: Meta<typeof SelectFieldContainer> = {
   ],
   args: {
     fields: mockFields,
-    onFieldClick: fn(),
+    onFieldClick: () => {},
   },
 };
 

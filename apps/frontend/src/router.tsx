@@ -8,7 +8,6 @@ import { InitialFields } from '@/pages/InitialFields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
-import { Overview } from '@/pages/Overview';
 import { Quiz } from '@/pages/Quiz';
 import { QuizResult } from '@/pages/QuizResult';
 import { Roadmap } from '@/pages/Roadmap';

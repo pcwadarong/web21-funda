@@ -2,7 +2,6 @@ import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { fn } from 'storybook/test';
 import { expect } from 'vitest';
 
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
@@ -44,7 +43,6 @@ const meta: Meta<typeof QuizContainer> = {
       </ThemeProvider>
     ),
   ],
-  // 공통 기본 args 설정
   args: {
     quizzes: mockQuizzes,
     currentQuizIndex: 0,
@@ -54,9 +52,9 @@ const meta: Meta<typeof QuizContainer> = {
     questionStatuses: ['idle'],
     isCheckDisabled: true,
     isLastQuestion: false,
-    handleAnswerChange: fn(),
+    handleAnswerChange: () => {},
     handleCheckAnswer: async () => {},
-    handleNextQuestion: fn(),
+    handleNextQuestion: () => {},
   },
 };
 

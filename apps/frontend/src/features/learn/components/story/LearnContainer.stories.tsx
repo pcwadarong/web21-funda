@@ -1,7 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { fn } from 'storybook/test';
 
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import type { LessonSection } from '@/feat/learn/types';
@@ -177,7 +176,7 @@ const meta: Meta<typeof LearnContainer> = {
     scrollContainerRef: { current: null },
     headerRef: { current: null },
     registerUnitRef: () => () => {},
-    onStepClick: fn(),
+    onStepClick: () => {},
   },
 };
 

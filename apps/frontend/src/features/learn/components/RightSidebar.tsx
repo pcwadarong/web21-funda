@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { useStorage } from '@/hooks/useStorage';
+import { useAuthStore } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 // TODO: 유저 정보 수정
@@ -20,20 +21,19 @@ const TODAY_GOALS = [
   { id: 'lessons', label: '2개의 완벽한 레슨 끝내기', current: 2, target: 2 },
 ] as const;
 
-const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
-
 export const LearnRightSidebar = () => {
   const theme = useTheme();
   const { progress, uiState } = useStorage();
+
+  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
   const heartCount = isLoggedIn ? USER_STATS.learningDays : progress.heart;
 
   return (
     <aside css={rightSectionStyle}>
-      <div css={statsContainerStyle}>
+      <div css={statsContainerStyle(isLoggedIn)}>
         <Link to="/learn/select-field" css={rightSidebarLinkStyle}>
-          <div css={statContainerStyle}>
+          <div css={statContainerStyle(theme)}>
             <span css={statIconStyle}>
-              {/* TODO: 각 field의 해당하는 SVG 아이콘으로 반영되도록 변경 필요 */}
               <SVGIcon icon="Frontend" size="md" />
             </span>
             <span css={statValueStyle(theme)}>{uiState.last_viewed.field_slug.toUpperCase()}</span>
@@ -41,13 +41,13 @@ export const LearnRightSidebar = () => {
         </Link>
         {isLoggedIn && (
           <>
-            <div css={statContainerStyle}>
+            <div css={statContainerStyle(theme)}>
               <span css={statIconStyle}>
                 <SVGIcon icon="Diamond" size="md" />
               </span>
               <span css={statValueStyle(theme)}>{USER_STATS.diamond}</span>
             </div>
-            <div css={statContainerStyle}>
+            <div css={statContainerStyle(theme)}>
               <span css={statIconStyle}>
                 <SVGIcon icon="Streak" size="md" />
               </span>
@@ -56,7 +56,7 @@ export const LearnRightSidebar = () => {
           </>
         )}
 
-        <div css={statContainerStyle}>
+        <div css={statContainerStyle(theme)}>
           <span css={statIconStyle}>
             <SVGIcon icon="Heart" size="lg" />
           </span>
@@ -93,12 +93,15 @@ export const LearnRightSidebar = () => {
               <div key={goal.id} css={goalItemStyle}>
                 <div css={goalLabelContainerStyle}>
                   <span css={goalLabelStyle(theme)}>{goal.label}</span>
-                  <span css={goalProgressStyle(theme)}>
+                  <span css={goalLabelStyle(theme)}>
                     {goal.current}/{goal.target}
                   </span>
                 </div>
                 <div css={progressBarContainerStyle(theme)}>
-                  <div css={progressBarStyle(theme, (goal.current / goal.target) * 100)} />
+                  <div
+                    css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
+                    role="progressbar"
+                  />
                 </div>
               </div>
             ))}
@@ -119,7 +122,6 @@ const rightSectionStyle = css`
   gap: 16px;
   width: 320px;
   min-width: 320px;
-  overflow-y: auto;
   padding-right: 8px;
 
   @media (max-width: 1024px) {
@@ -127,10 +129,10 @@ const rightSectionStyle = css`
   }
 `;
 
-const statsContainerStyle = css`
+const statsContainerStyle = (isLoggedIn: boolean) => css`
   display: flex;
   align-items: center;
-  justify-content: ${isLoggedIn ? 'space-between' : 'normal'};
+  justify-content: ${isLoggedIn ? 'space-between' : 'flex-start'};
   gap: 8px;
 `;
 
@@ -142,6 +144,7 @@ const statContainerStyle = (theme: Theme) => css`
   gap: 8px;
   align-items: center;
   justify-content: center;
+  color: ${theme.colors.text.default};
   padding: 8px;
   border-radius: ${theme.borderRadius.small};
 
@@ -158,15 +161,11 @@ const statIconStyle = css`
 
 const rightSidebarLinkStyle = css`
   text-decoration: none;
-  color: inherit;
 `;
 
 const statValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
   font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.text.default};
-  margin-right: 8px;
 `;
 
 const cardStyle = (theme: Theme) => css`
@@ -188,7 +187,6 @@ const cardHeaderStyle = css`
 const cardIconStyle = css`
   display: flex;
   align-items: center;
-  font-size: 20px;
 `;
 
 const cardTitleStyle = (theme: Theme) => css`
@@ -204,7 +202,6 @@ const reviewBadgeStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   border-radius: ${theme.borderRadius.small};
   font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   text-align: center;
 `;
@@ -224,7 +221,6 @@ const goalItemStyle = css`
 const goalLabelContainerStyle = css`
   display: flex;
   justify-content: space-between;
-  gap: 8px;
 `;
 
 const goalLabelStyle = (theme: Theme) => css`
@@ -232,13 +228,6 @@ const goalLabelStyle = (theme: Theme) => css`
   line-height: ${theme.typography['12Medium'].lineHeight};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${theme.colors.text.default};
-`;
-
-const goalProgressStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.text.weak};
 `;
 
 const progressBarContainerStyle = (theme: Theme) => css`
@@ -254,5 +243,5 @@ const progressBarStyle = (theme: Theme, percentage: number) => css`
   height: 100%;
   background: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.small};
-  transition: width 150ms ease;
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
 `;

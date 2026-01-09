@@ -22,7 +22,8 @@ export const SelectField = () => {
   useEffect(() => {
     const fetchFields = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/fields');
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
+        const response = await fetch(`${apiBaseUrl}/fields`);
         const data = await response.json();
         setFields(data.fields);
       } catch (error) {

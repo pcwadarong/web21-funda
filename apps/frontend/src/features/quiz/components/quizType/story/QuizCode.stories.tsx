@@ -23,7 +23,7 @@ const mockContent: CodeContent = {
 };
 
 const meta: Meta<typeof QuizCode> = {
-  title: 'Features/Quiz/QuizCode',
+  title: 'Features/Quiz/Types/QuizCode',
   component: QuizCode,
   parameters: {
     layout: 'centered',

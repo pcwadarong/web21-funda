@@ -17,7 +17,7 @@ const mockContent: MatchingContent = {
 };
 
 const meta: Meta<typeof QuizMatching> = {
-  title: 'Features/Quiz/QuizMatching',
+  title: 'Features/Quiz/Types/QuizMatching',
   component: QuizMatching,
   parameters: {
     layout: 'centered',

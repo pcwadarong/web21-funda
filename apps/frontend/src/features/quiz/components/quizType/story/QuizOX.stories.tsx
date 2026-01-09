@@ -17,7 +17,7 @@ const mockContent: DefaultContent = {
 };
 
 const meta: Meta<typeof QuizOX> = {
-  title: 'Features/Quiz/QuizOX',
+  title: 'Features/Quiz/Types/QuizOX',
   component: QuizOX,
   parameters: {
     layout: 'centered',

@@ -8,7 +8,7 @@ import { QuizOXOption } from '@/feat/quiz/components/quizOptions/QuizOXOption';
 import { lightTheme } from '@/styles/theme';
 
 const meta: Meta<typeof QuizOXOption> = {
-  title: 'Features/Quiz/QuizOXOption',
+  title: 'Features/Quiz/Options/QuizOXOption',
   component: QuizOXOption,
   parameters: {
     layout: 'centered',

@@ -19,7 +19,7 @@ const mockContent: DefaultContent = {
 };
 
 const meta: Meta<typeof QuizMCQ> = {
-  title: 'Features/Quiz/QuizMCQ',
+  title: 'Features/Quiz/Types/QuizMCQ',
   component: QuizMCQ,
   parameters: {
     layout: 'centered',

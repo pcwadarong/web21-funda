@@ -1,8 +1,14 @@
 import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/comp/Button';
+import SVGIcon from '@/comp/SVGIcon';
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
-import type { AnswerType, QuestionStatus, QuizQuestion } from '@/feat/quiz/types';
+import type {
+  AnswerType,
+  CorrectAnswerType,
+  QuestionStatus,
+  QuizQuestion,
+} from '@/feat/quiz/types';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
 
@@ -10,6 +16,8 @@ interface QuizContentCardProps {
   question: QuizQuestion;
   status: QuestionStatus;
   selectedAnswer: AnswerType | null;
+  correctAnswer: CorrectAnswerType | null;
+  explanation: string;
   onAnswerChange: (answer: any) => void;
   isSubmitDisabled: boolean;
   onCheck: () => void;
@@ -23,6 +31,8 @@ export const QuizContentCard = ({
   selectedAnswer,
   onAnswerChange,
   isSubmitDisabled,
+  correctAnswer,
+  explanation,
   onCheck,
   onNext,
   isLast,
@@ -39,6 +49,7 @@ export const QuizContentCard = ({
           css={reportButtonStyle(theme)}
           onClick={() => openModal('오류 신고', <div>신고 폼</div>)}
         >
+          <SVGIcon icon="Vector" size="sm" />
           신고
         </button>
       </div>
@@ -46,15 +57,16 @@ export const QuizContentCard = ({
       <QuizRenderer
         question={question}
         selectedAnswer={selectedAnswer}
+        correctAnswer={correctAnswer ?? null}
         onAnswerChange={onAnswerChange}
         showResult={showResult}
         disabled={status !== 'idle'}
       />
 
-      {showResult && (
+      {showResult && explanation && (
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
-          <span>문제 해설 내용이 여기에 노출됩니다.</span>
+          <span>{explanation}</span>
         </div>
       )}
 
@@ -101,11 +113,13 @@ const headerStyle = css`
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
+  padding: 20px 0;
 `;
 const titleStyle = (theme: Theme) => css`
   font-size: 24px;
   font-weight: 700;
   color: ${theme.colors.text.strong};
+  margin: 0;
 `;
 const footerStyle = css`
   display: flex;
@@ -122,10 +136,16 @@ const explanationStyle = (theme: Theme) => css`
   border-radius: 8px;
 `;
 const reportButtonStyle = (theme: Theme) => css`
-  padding: 4px 12px;
   font-size: 12px;
-  background: ${theme.colors.surface.default};
+  width: 72px;
+  height: 33px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  color: ${theme.colors.text.weak};
+  background: transparent;
   border: 1px solid ${theme.colors.border.default};
-  border-radius: 4px;
+  border-radius: ${theme.borderRadius.xlarge};
   cursor: pointer;
 `;

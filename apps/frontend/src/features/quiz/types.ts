@@ -10,8 +10,14 @@ export interface QuizOption {
   text: string; // 화면에 보여줄 텍스트
 }
 
-/** 매칭 문제의 쌍(Pair) 구조 */
+/** 매칭 문제의 쌍(Pair) 구조 (인덱스 기반 - 컴포넌트 내부에서 사용) */
 export interface MatchingPair {
+  leftIndex: number;
+  rightIndex: number;
+}
+
+/** 매칭 문제의 쌍(Pair) 구조 (텍스트 기반 - api 응답용) */
+export interface MatchingPairTextBased {
   left: string;
   right: string;
 }
@@ -61,6 +67,7 @@ export type QuizQuestion =
 
 /** 퀴즈 유형별 정답 데이터 타입 정의 */
 export type AnswerType = string | { pairs: MatchingPair[] } | null;
+export type CorrectAnswerType = string | { pairs: MatchingPair[] | MatchingPairTextBased[] | null };
 
 /** 정답 및 해설 구조 */
 export interface QuizSolution {
@@ -82,6 +89,7 @@ export interface QuizSolution {
 export interface QuizComponentProps {
   content: QuizQuestion['content'];
   selectedAnswer: AnswerType | null;
+  correctAnswer: CorrectAnswerType | null;
   onAnswerChange: (answer: AnswerType) => void;
   showResult: boolean;
   disabled: boolean;

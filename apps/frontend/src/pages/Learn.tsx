@@ -1,16 +1,28 @@
 import { css, useTheme } from '@emotion/react';
-import { Link } from 'react-router-dom';
+import { useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
+import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
 export const Learn = () => {
   const theme = useTheme();
+  const { updateUIState } = useStorage();
+  const navigate = useNavigate();
   const { units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } = useLearnUnits();
-
+  const handleComplete = useCallback(
+    (stepid: number) => {
+      navigate('/quiz');
+      updateUIState({
+        current_quiz_step_id: stepid,
+      });
+    },
+    [navigate, updateUIState],
+  );
   return (
     <div css={mainStyle}>
       <div css={centerSectionStyle} ref={scrollContainerRef}>
@@ -69,9 +81,8 @@ export const Learn = () => {
                   return (
                     <div key={step.id} css={positionStyle}>
                       <div css={lessonStackStyle}>
-                        <Link
-                          // TODO: localStorage에 step_id 추가 필요
-                          to="/quiz"
+                        <div
+                          onClick={() => handleComplete(Number(step.id))}
                           css={[
                             lessonItemStyle(theme),
                             step.status === 'completed' && completedLessonStyle(theme),
@@ -86,7 +97,7 @@ export const Learn = () => {
                               <SVGIcon icon="Start" aria-hidden="true" size="xl" />
                             )}
                           </span>
-                        </Link>
+                        </div>
                         <div css={lessonNamePillStyle(theme)}>{step.name}</div>
                       </div>
                     </div>

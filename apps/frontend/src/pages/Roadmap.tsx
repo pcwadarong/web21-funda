@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
@@ -7,59 +8,53 @@ import type { RoadmapUnit } from '@/feat/roadmap/types';
 import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
-// TODO: FETCH Roadmap data (/api/fields/{fieldSlug}/roadmap)
-const FIELD_INFO = {
-  name: 'Frontend',
-  slug: 'fe',
-} as const;
-
-const ROADMAP_UNITS: readonly RoadmapUnit[] = [
-  {
-    id: 1,
-    title: 'HTML & CSS 기초',
-    description: '웹의 기본 구조와 스타일링',
-    progress: 100,
-    score: 92,
-    status: 'completed',
-    variant: 'full',
-  },
-  {
-    id: 2,
-    title: 'JavaScript 기초',
-    description: '프로그래밍의 기본 개념',
-    progress: 100,
-    score: 88,
-    status: 'completed',
-    variant: 'full',
-  },
-  {
-    id: 3,
-    title: '자료구조와 알고리즘',
-    description: '컴퓨터 과학의 기초를 마스터하세요',
-    progress: 45,
-    score: 85,
-    status: 'active',
-    variant: 'full',
-  },
-  {
-    id: 4,
-    title: 'DOM 조작',
-    description: '웹 페이지를 동적으로 제어하기',
-    progress: 0,
-    score: 0,
-    status: 'normal',
-    variant: 'compact',
-  },
-  {
-    id: 5,
-    title: '비동기 프로그래밍',
-    description: 'Promise, async/await 마스터',
-    progress: 0,
-    score: 0,
-    status: 'normal',
-    variant: 'compact',
-  },
-];
+// const units: readonly RoadmapUnit[] = [
+//   {
+//     id: 1,
+//     title: 'HTML & CSS 기초',
+//     description: '웹의 기본 구조와 스타일링',
+//     progress: 100,
+//     score: 92,
+//     status: 'completed',
+//     variant: 'full',
+//   },
+//   {
+//     id: 2,
+//     title: 'JavaScript 기초',
+//     description: '프로그래밍의 기본 개념',
+//     progress: 100,
+//     score: 88,
+//     status: 'completed',
+//     variant: 'full',
+//   },
+//   {
+//     id: 3,
+//     title: '자료구조와 알고리즘',
+//     description: '컴퓨터 과학의 기초를 마스터하세요',
+//     progress: 45,
+//     score: 85,
+//     status: 'active',
+//     variant: 'full',
+//   },
+//   {
+//     id: 4,
+//     title: 'DOM 조작',
+//     description: '웹 페이지를 동적으로 제어하기',
+//     progress: 0,
+//     score: 0,
+//     status: 'normal',
+//     variant: 'compact',
+//   },
+//   {
+//     id: 5,
+//     title: '비동기 프로그래밍',
+//     description: 'Promise, async/await 마스터',
+//     progress: 0,
+//     score: 0,
+//     status: 'normal',
+//     variant: 'compact',
+//   },
+// ];
 
 const isLoggedIn = false; // TODO: 실제 로그인 상태로 변경
 
@@ -70,17 +65,38 @@ const isLoggedIn = false; // TODO: 실제 로그인 상태로 변경
  */
 export const Roadmap = () => {
   const theme = useTheme();
-  const completedUnits = ROADMAP_UNITS.filter(unit => unit.progress === 100).length;
-  const progressPercent = Math.round((completedUnits / ROADMAP_UNITS.length) * 100);
+  // const completedUnits = units.filter(unit => unit.progress === 100).length;
+  // const progressPercent = Math.round((completedUnits / units.length) * 100);
   const navigate = useNavigate();
-  const { updateUIState } = useStorage();
+  const { updateUIState, uiState } = useStorage();
+
+  const fieldSlug = uiState.last_viewed?.field_slug;
+
+  const [field, setField] = useState();
+  const [units, setUnits] = useState<RoadmapUnit[]>([]);
+
+  useEffect(() => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+    const fetchFields = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/fields/${fieldSlug}/roadmap`);
+        const data = await response.json();
+        setUnits(data.units);
+        setField(data.field.name);
+      } catch (error) {
+        console.error('Failed to fetch fields:', error);
+      }
+    };
+
+    fetchFields();
+  }, []);
 
   /**
    * 유닛 카드 클릭 처리
    * @param fieldSlug 선택한 분야의 슬러그
    * @param unitId 선택한 유닛 ID
    */
-  const handleClick = (fieldSlug: string, unitId: number) => {
+  const handleClick = (unitId: number) => {
     updateUIState({
       last_viewed: {
         field_slug: fieldSlug,
@@ -102,26 +118,26 @@ export const Roadmap = () => {
           </div>
           <div css={heroTopStyle}>
             <div css={heroTitleStyle}>
-              <span css={heroLabelStyle(theme)}>{FIELD_INFO.name} 로드맵</span>
+              <span css={heroLabelStyle(theme)}>{field} 로드맵</span>
               <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
             </div>
-            {isLoggedIn && (
+            {/* {isLoggedIn && (
               <div css={progressSummaryStyle(theme)}>
                 <span css={progressValueStyle(theme)}>{progressPercent}%</span>
                 <span css={progressMetaStyle(theme)}>
-                  {completedUnits}/{ROADMAP_UNITS.length} 완료
+                  {completedUnits}/{units.length} 완료
                 </span>
               </div>
-            )}
+            )} */}
           </div>
         </section>
         <section css={gridStyle}>
-          {ROADMAP_UNITS.map(unit => (
+          {units.map(unit => (
             <UnitCard
               key={unit.id}
               unit={unit}
               isLoggedIn={isLoggedIn}
-              onClick={() => handleClick(FIELD_INFO.slug, unit.id)}
+              onClick={() => handleClick(unit.id)}
             />
           ))}
         </section>
@@ -189,26 +205,26 @@ const backLinkStyle = (theme: Theme) => css`
   gap: 6px;
 `;
 
-const progressSummaryStyle = (theme: Theme) => css`
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  color: ${theme.colors.text.strong};
-`;
+// const progressSummaryStyle = (theme: Theme) => css`
+//   display: flex;
+//   align-items: baseline;
+//   gap: 10px;
+//   color: ${theme.colors.text.strong};
+// `;
 
-const progressValueStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['24Bold'].fontSize};
-  line-height: ${theme.typography['24Bold'].lineHeight};
-  font-weight: ${theme.typography['24Bold'].fontWeight};
-  color: ${theme.colors.primary.main};
-`;
+// const progressValueStyle = (theme: Theme) => css`
+//   font-size: ${theme.typography['24Bold'].fontSize};
+//   line-height: ${theme.typography['24Bold'].lineHeight};
+//   font-weight: ${theme.typography['24Bold'].fontWeight};
+//   color: ${theme.colors.primary.main};
+// `;
 
-const progressMetaStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.text.weak};
-`;
+// const progressMetaStyle = (theme: Theme) => css`
+//   font-size: ${theme.typography['12Medium'].fontSize};
+//   line-height: ${theme.typography['12Medium'].lineHeight};
+//   font-weight: ${theme.typography['12Medium'].fontWeight};
+//   color: ${theme.colors.text.weak};
+// `;
 
 const heroTitleStyle = css`
   display: flex;

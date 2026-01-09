@@ -2,11 +2,18 @@ import { QuizCode } from '@/feat/quiz/components/quizType/QuizCode';
 import { QuizMatching } from '@/feat/quiz/components/quizType/QuizMatching';
 import { QuizMCQ } from '@/feat/quiz/components/quizType/QuizMCQ';
 import { QuizOX } from '@/feat/quiz/components/quizType/QuizOX';
-import type { AnswerType, QuizComponentProps, QuizQuestion, QuizType } from '@/feat/quiz/types';
+import type {
+  AnswerType,
+  CorrectAnswerType,
+  QuizComponentProps,
+  QuizQuestion,
+  QuizType,
+} from '@/feat/quiz/types';
 
 interface QuizRendererProps {
   question: QuizQuestion;
   selectedAnswer: AnswerType | null;
+  correctAnswer: CorrectAnswerType | null;
   onAnswerChange: (answer: any) => void;
   showResult: boolean;
   disabled: boolean;

@@ -77,12 +77,7 @@ const preStyle: React.CSSProperties = {
   maxHeight: 360,
 };
 
-const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
-const apiBaseUrl = rawApiBaseUrl
-  ? rawApiBaseUrl.endsWith('/api')
-    ? rawApiBaseUrl
-    : `${rawApiBaseUrl}/api`
-  : '/api';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
 const uploadUrl = `${apiBaseUrl}/admin/quizzes/upload`;
 
 export function AdminQuizUpload() {

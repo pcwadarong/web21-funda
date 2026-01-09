@@ -4,8 +4,8 @@ import { Repository } from 'typeorm';
 
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
-import type { FieldUnitsResponse } from './dto/field-units.dto';
-import type { FirstUnitResponse } from './dto/first-unit.dto';
+import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
+import type { FirstUnitResponse, UnitSummary } from './dto/first-unit.dto';
 import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
 import type {
   MatchingPair,
@@ -16,6 +16,9 @@ import { Field, Quiz, Step } from './entities';
 
 @Injectable()
 export class RoadmapService {
+  // TODO(임시): DB에 없는 체크포인트/플레이스홀더 스텝을 음수 ID로 생성한다.
+  private checkpointIdSeed = -1;
+
   constructor(
     @InjectRepository(Field)
     private readonly fieldRepository: Repository<Field>,
@@ -105,6 +108,7 @@ export class RoadmapService {
     const field = await this.fieldRepository
       .createQueryBuilder('field')
       .leftJoinAndSelect('field.units', 'unit')
+      .leftJoinAndSelect('unit.steps', 'step')
       .where('field.slug = :slug', { slug: fieldSlug })
       .orderBy('unit.orderIndex', 'ASC')
       .getOne();
@@ -113,20 +117,26 @@ export class RoadmapService {
       throw new NotFoundException('Field not found.');
     }
 
-    const firstUnit = (field.units ?? [])[0] ?? null;
+    const firstUnit = this.sortByOrderIndex(field.units ?? [])[0] ?? null;
+    const steps = firstUnit?.steps ?? [];
+    const quizCountByStepId = await this.getQuizCountByStepId(steps.map(step => step.id));
+
+    let unitSummary: UnitSummary | null = null;
+    if (firstUnit) {
+      unitSummary = {
+        id: firstUnit.id,
+        title: firstUnit.title,
+        orderIndex: firstUnit.orderIndex,
+        steps: this.buildUnitStepsWithCheckpoints(steps, quizCountByStepId),
+      };
+    }
 
     return {
       field: {
         name: field.name,
         slug: field.slug,
       },
-      unit: firstUnit
-        ? {
-            id: firstUnit.id,
-            title: firstUnit.title,
-            orderIndex: firstUnit.orderIndex,
-          }
-        : null,
+      unit: unitSummary,
     };
   }
 
@@ -474,17 +484,83 @@ export class RoadmapService {
         id: unit.id,
         title: unit.title,
         orderIndex: unit.orderIndex,
-        steps: this.sortByOrderIndex(unit.steps ?? []).map(step => ({
-          id: step.id,
-          title: step.title,
-          orderIndex: step.orderIndex,
-          quizCount: quizCountByStepId.get(step.id) ?? 0,
-          isCheckpoint: step.isCheckpoint,
-          isCompleted: false,
-          isLocked: false,
-        })),
+        steps: this.buildUnitStepsWithCheckpoints(unit.steps ?? [], quizCountByStepId),
       })),
     };
+  }
+
+  /**
+   * TODO(임시): 유닛 스텝을 최소 5개로 채우고 중간/최종 점검 스텝을 삽입한다.
+   * - 실제 스텝: 실제 스텝 정보 + 퀴즈 개수
+   * - 플레이스홀더: 부족분을 "제작 중"으로 채운다.
+   * - 체크포인트: 중간/최종 점검 스텝은 퀴즈 수 없이 표시만 한다.
+   */
+  private buildUnitStepsWithCheckpoints(
+    steps: Step[],
+    quizCountByStepId: Map<number, number>,
+  ): StepSummary[] {
+    const sortedSteps = this.sortByOrderIndex(steps);
+    const baseStepSummaries: Array<StepSummary & { isPlaceholder?: boolean }> = sortedSteps.map(
+      step => ({
+        id: step.id,
+        title: step.title,
+        orderIndex: step.orderIndex,
+        quizCount: quizCountByStepId.get(step.id) ?? 0,
+        isCheckpoint: step.isCheckpoint,
+        isCompleted: false,
+        isLocked: false,
+      }),
+    );
+
+    // 부족분을 플레이스홀더로 채워 기본 5개를 맞춘다.
+    while (baseStepSummaries.length < 5) {
+      baseStepSummaries.push({
+        id: this.nextVirtualId(),
+        title: '제작 중',
+        orderIndex: baseStepSummaries.length + 1,
+        quizCount: 0,
+        isCheckpoint: false,
+        isCompleted: false,
+        isLocked: false,
+        isPlaceholder: true,
+      });
+    }
+
+    const newSteps: StepSummary[] = [];
+    let orderIndex = 1;
+
+    baseStepSummaries.forEach((step, idx) => {
+      newSteps.push({
+        ...step,
+        orderIndex: orderIndex++,
+      });
+
+      // 3번째 위치에 중간 점검 삽입 (2번째 스텝 뒤)
+      if (idx === 1) {
+        newSteps.push(this.createCheckpointStep('중간 점검', orderIndex++));
+      }
+    });
+
+    // 마지막 위치에 최종 점검 삽입
+    newSteps.push(this.createCheckpointStep('최종 점검', orderIndex++));
+
+    return newSteps;
+  }
+
+  private createCheckpointStep(title: string, orderIndex: number): StepSummary {
+    return {
+      id: this.nextVirtualId(),
+      title,
+      orderIndex,
+      quizCount: 0,
+      isCheckpoint: true,
+      isCompleted: false,
+      isLocked: false,
+    };
+  }
+
+  private nextVirtualId(): number {
+    return this.checkpointIdSeed--;
   }
 
   /**

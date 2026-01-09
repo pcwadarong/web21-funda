@@ -58,6 +58,7 @@ describe('QuizRenderer', () => {
           content: { question: 'Q', options: [{ id: 'c1', text: 'A' }] },
         }}
         selectedAnswer={null}
+        correctAnswer={null}
         onAnswerChange={vi.fn()}
         showResult={false}
         disabled={false}
@@ -82,6 +83,7 @@ describe('QuizRenderer', () => {
           },
         }}
         selectedAnswer={null}
+        correctAnswer={null}
         onAnswerChange={vi.fn()}
         showResult={false}
         disabled={false}
@@ -104,6 +106,7 @@ describe('QuizRenderer', () => {
           },
         }}
         selectedAnswer={null}
+        correctAnswer={null}
         onAnswerChange={vi.fn()}
         showResult={false}
         disabled={true}
@@ -127,6 +130,7 @@ describe('QuizRenderer', () => {
           },
         }}
         selectedAnswer={null}
+        correctAnswer={null}
         onAnswerChange={vi.fn()}
         showResult={true}
         disabled={true}
@@ -144,6 +148,7 @@ describe('QuizRenderer', () => {
         // TS 타입상 불가능하지만, 런타임 안전성 체크
         question={{ id: 1, type: 'unknown', content: { question: 'Q', options: [] } } as any}
         selectedAnswer={null}
+        correctAnswer={null}
         onAnswerChange={vi.fn()}
         showResult={false}
         disabled={false}

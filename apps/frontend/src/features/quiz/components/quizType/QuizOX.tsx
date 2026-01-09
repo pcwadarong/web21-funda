@@ -6,21 +6,23 @@ import type { DefaultContent, QuizComponentProps } from '@/feat/quiz/types';
 export const QuizOX = ({
   content,
   selectedAnswer,
+  correctAnswer,
   onAnswerChange,
   showResult,
   disabled = false,
 }: QuizComponentProps) => {
   const { options } = content as DefaultContent;
 
-  // TODO: 실제 API 데이터의 answer 필드와 매칭 필요
-  const mockCorrectAnswer = 'x';
+  const correctAnswerId = correctAnswer as string | null;
 
   return (
     <div css={oxWrapperStyle}>
       {options.map(option => {
         const isSelected = selectedAnswer === option.id;
-        const isCorrectOption = showResult && option.id === mockCorrectAnswer;
-        const isWrongOption = showResult && isSelected && option.id !== mockCorrectAnswer;
+        const isCorrectOption =
+          showResult && correctAnswerId !== null && option.id === correctAnswerId;
+        const isWrongOption =
+          showResult && isSelected && correctAnswerId !== null && option.id !== correctAnswerId;
 
         return (
           <QuizOXOption

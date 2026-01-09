@@ -8,7 +8,8 @@ import { useStorage } from '@/hooks/useStorage';
 export const Learn = () => {
   const { updateUIState } = useStorage();
   const navigate = useNavigate();
-  const { units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } = useLearnUnits();
+  const { field, units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } =
+    useLearnUnits();
 
   const handleStepClick = useCallback(
     (stepId: number) => {
@@ -22,6 +23,7 @@ export const Learn = () => {
 
   return (
     <LearnContainer
+      field={field}
       units={units}
       activeUnit={activeUnit}
       scrollContainerRef={scrollContainerRef}

@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
 
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
-import type { LessonSection } from '@/feat/learn/types';
+import type { UnitType } from '@/feat/learn/types';
 import { ModalProvider } from '@/store/modalStore';
 import { lightTheme } from '@/styles/theme';
 
-const mockUnits: LessonSection[] = [
+const mockUnits: UnitType[] = [
   {
     id: 1,
     title: 'HTML 기초',
@@ -28,7 +28,7 @@ const mockUnits: LessonSection[] = [
         orderIndex: 2,
         quizCount: 4,
         isCheckpoint: false,
-        isCompleted: false,
+        isCompleted: true,
         isLocked: false,
       },
       {
@@ -37,7 +37,7 @@ const mockUnits: LessonSection[] = [
         orderIndex: 3,
         quizCount: 4,
         isCheckpoint: false,
-        isCompleted: false,
+        isCompleted: true,
         isLocked: false,
       },
       {
@@ -47,7 +47,7 @@ const mockUnits: LessonSection[] = [
         quizCount: 6,
         isCheckpoint: true,
         isCompleted: false,
-        isLocked: true,
+        isLocked: false,
       },
       {
         id: 105,

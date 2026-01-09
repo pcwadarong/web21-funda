@@ -1,17 +1,20 @@
 export type LessonType = 'normal' | 'checkpoint';
 
-export interface LessonItem {
+export interface stepType {
   id: number;
-  name: string;
-  status: 'completed' | 'active' | 'locked';
-  type: LessonType;
+  title: string;
+  orderIndex: number;
+  quizCount: number;
+  isCheckpoint: boolean;
+  isCompleted: boolean;
+  isLocked: boolean;
 }
 
-export interface LessonSection {
+export interface UnitType {
   id: number;
-  name: string;
   title: string;
-  steps: readonly LessonItem[];
+  orderIndex: number;
+  steps: readonly stepType[];
 }
 
 export interface UnitsResponse {
@@ -19,18 +22,5 @@ export interface UnitsResponse {
     name: string;
     slug: string;
   };
-  units: Array<{
-    id: number;
-    title: string;
-    orderIndex: number;
-    steps: Array<{
-      id: number;
-      title: string;
-      orderIndex: number;
-      quizCount: number;
-      isCheckpoint: boolean;
-      isCompleted: boolean;
-      isLocked: boolean;
-    }>;
-  }>;
+  units: readonly UnitType[];
 }

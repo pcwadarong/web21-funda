@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
-import type { LessonSection } from '@/feat/learn/types';
+import type { UnitType } from '@/feat/learn/types';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
 interface LearnContainerProps {
-  units: LessonSection[];
-  activeUnit: LessonSection | undefined;
+  field: string;
+  units: UnitType[];
+  activeUnit: UnitType | undefined;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   headerRef: React.RefObject<HTMLDivElement | null>;
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
@@ -17,6 +18,7 @@ interface LearnContainerProps {
 }
 
 export const LearnContainer = ({
+  field,
   units,
   activeUnit,
   scrollContainerRef,
@@ -36,7 +38,7 @@ export const LearnContainer = ({
                 <Link to="/learn/roadmap">
                   <div css={unitTextStyle(theme)}>
                     <SVGIcon icon="ArrowLeft" size="md" />
-                    {activeUnit.name} 로드맵
+                    {field} 로드맵
                   </div>
                 </Link>
                 <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
@@ -63,17 +65,16 @@ export const LearnContainer = ({
               </div>
               <div css={lessonsContainerStyle(unit.steps.length)}>
                 {unit.steps.map((step, index) => {
-                  const isDisabled = step.status === 'locked' || step.type === 'checkpoint';
                   const positionStyle = lessonPositionStyle(index, unitIndex);
 
-                  if (isDisabled) {
+                  if (step.isLocked) {
                     return (
                       <div key={step.id} css={positionStyle}>
                         <div css={lessonStackStyle}>
                           <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
                             <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
                           </div>
-                          <div css={lessonNamePillStyle(theme)}>{step.name}</div>
+                          <div css={lessonNamePillStyle(theme)}>{step.title}</div>
                         </div>
                       </div>
                     );
@@ -83,20 +84,22 @@ export const LearnContainer = ({
                     <div key={step.id} css={positionStyle}>
                       <div css={lessonStackStyle}>
                         <div
-                          onClick={() => onStepClick(Number(step.id))}
+                          onClick={() => !step.isLocked && onStepClick(Number(step.id))}
                           css={[
                             lessonItemStyle(theme),
-                            step.status === 'completed' && completedLessonStyle(theme),
-                            step.status === 'active' && activeLessonStyle(theme),
+                            step.isCompleted && completedLessonStyle(theme),
+                            step.isLocked && step.isCheckpoint && lockedLessonStyle(theme),
+                            !step.isCompleted && !step.isLocked && activeLessonStyle(theme),
                           ]}
+                          style={{ cursor: step.isLocked ? 'not-allowed' : 'pointer' }}
                         >
                           <SVGIcon
-                            icon={step.status === 'completed' ? 'Check' : 'Start'}
+                            icon={step.isCompleted ? 'Check' : step.isLocked ? 'Lock' : 'Start'}
                             aria-hidden="true"
                             size="lg"
                           />
                         </div>
-                        <div css={lessonNamePillStyle(theme)}>{step.name}</div>
+                        <div css={lessonNamePillStyle(theme)}>{step.title}</div>
                       </div>
                     </div>
                   );

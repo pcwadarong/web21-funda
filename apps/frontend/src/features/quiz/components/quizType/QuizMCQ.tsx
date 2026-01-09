@@ -7,21 +7,22 @@ export const QuizMCQ = ({
   content,
   selectedAnswer,
   showResult,
+  correctAnswer,
   onAnswerChange,
   disabled = false,
 }: QuizComponentProps) => {
   const mcqContent = content as DefaultContent;
 
-  // TODO: 실제 API 데이터의 answer 필드와 매칭 필요
-  const mockCorrectAnswer = 'c1';
-  const isCorrect = selectedAnswer === mockCorrectAnswer;
+  const correctAnswerId = correctAnswer as string | null;
+  const isCorrect = selectedAnswer === correctAnswerId;
 
   return (
     <div css={optionsWrapperStyle}>
       {mcqContent.options.map((option, index) => {
         const isSelected = selectedAnswer === option.id;
-        const isCorrectOption = showResult && option.id === mockCorrectAnswer;
-        const isWrongOption = showResult && isSelected && !isCorrect;
+        const isCorrectOption =
+          showResult && correctAnswerId !== null && option.id === correctAnswerId;
+        const isWrongOption = showResult && isSelected && correctAnswerId !== null && !isCorrect;
 
         return (
           <QuizOption

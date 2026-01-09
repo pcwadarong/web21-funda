@@ -1,8 +1,10 @@
 import { css, useTheme } from '@emotion/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import type { IconMapTypes } from '@/constants/icons';
+import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
 interface StudyField {
@@ -15,11 +17,12 @@ interface StudyField {
 export const SelectField = () => {
   const theme = useTheme();
   const [fields, setFields] = useState<StudyField[]>([]);
-
+  const navigate = useNavigate();
+  const { updateUIState } = useStorage();
   useEffect(() => {
     const fetchFields = async () => {
       try {
-        const response = await fetch('/api/fields');
+        const response = await fetch('http://localhost:3000/api/fields');
         const data = await response.json();
         setFields(data.fields);
       } catch (error) {
@@ -29,6 +32,18 @@ export const SelectField = () => {
 
     fetchFields();
   }, []);
+  const handleComplete = useCallback(
+    (fieldSlug: string) => {
+      navigate('/learn/roadmap');
+      updateUIState({
+        last_viewed: {
+          field_slug: fieldSlug,
+          unit_id: 1,
+        },
+      });
+    },
+    [navigate, updateUIState],
+  );
 
   return (
     <main css={mainStyle}>
@@ -38,12 +53,16 @@ export const SelectField = () => {
       </div>
       <div css={gridStyle}>
         {fields.map(field => (
-          <label key={field.slug} css={fieldLabelStyle(theme)}>
+          <label
+            key={field.slug}
+            onClick={() => handleComplete(field.slug)}
+            css={fieldLabelStyle(theme)}
+          >
             <div css={fieldNameWrapper}>
               <span css={fieldNameStyle(theme)}>{field.name}</span>
               <SVGIcon icon={field.icon} size="lg" />
             </div>
-            <span>{field.description}</span>
+            <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
             <div css={goLoadmap(theme)}>
               <span>로드맵 보기</span>
 
@@ -105,7 +124,12 @@ const fieldLabelStyle = (theme: Theme) => css`
 
   color: ${theme.colors.text.default};
 `;
-
+const fieldDescriptionStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Medium'].fontSize};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  color: ${theme.colors.grayscale[700]};
+`;
 const fieldNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
@@ -120,8 +144,8 @@ const fieldNameWrapper = css`
 const goLoadmap = (theme: Theme) => css`
   display: flex;
   align-items: center;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  line-height: ${theme.typography['12Medium'].lineHeight};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  line-height: ${theme.typography['16Medium'].lineHeight};
   color: ${theme.colors.primary.dark};
 `;

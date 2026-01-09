@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
@@ -8,39 +8,69 @@ import type { IconMapTypes } from '@/constants/icons';
 import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
-interface StudyField {
-  id: string;
+// interface StudyField {
+//   id: string;
+//   name: string;
+//   icon: IconMapTypes;
+
+// }
+interface StudyFieldResponse {
+  slug: string;
   name: string;
+  description: string;
   icon: IconMapTypes;
 }
-
 // TODO: /api/fields 연동
-const STUDY_FIELDS: StudyField[] = [
-  { id: 'frontend', name: '프론트엔드', icon: 'Frontend' },
-  { id: 'backend', name: '백엔드', icon: 'Backend' },
-  { id: 'mobile', name: '모바일', icon: 'Mobile' },
-  { id: 'cs', name: 'CS 기초', icon: 'ComputerScience' },
-  { id: 'algorithm', name: '알고리즘', icon: 'Algorithm' },
-  { id: 'game', name: '게임 개발', icon: 'Game' },
-  { id: 'data', name: '데이터/AI 기초', icon: 'Data' },
-  { id: 'devops', name: '데브옵스', icon: 'Cloud' },
-] as const;
+// const STUDY_FIELDS: StudyField[] = [
+//   { id: 'frontend', name: '프론트엔드', icon: 'Frontend' },
+//   { id: 'backend', name: '백엔드', icon: 'Backend' },
+//   { id: 'mobile', name: '모바일', icon: 'Mobile' },
+//   { id: 'cs', name: 'CS 기초', icon: 'ComputerScience' },
+//   { id: 'algorithm', name: '알고리즘', icon: 'Algorithm' },
+//   { id: 'game', name: '게임 개발', icon: 'Game' },
+//   { id: 'data', name: '데이터/AI 기초', icon: 'Data' },
+//   { id: 'devops', name: '데브옵스', icon: 'Cloud' },
+// ] as const;
 
 export const InitialFields = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const { updateUIState } = useStorage();
+  const [fields, setFields] = useState<StudyFieldResponse[]>([]);
 
-  const handleFieldChange = useCallback((fieldId: string) => {
-    setSelectedField(prev => (prev === fieldId ? null : fieldId));
+  useEffect(() => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+    const fetchFields = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/fields`);
+        if (!response.ok) throw new Error('데이터 로드 실패');
+
+        const data = await response.json();
+        setFields(data.fields);
+      } catch (error) {
+        console.error('API Error:', error);
+      }
+    };
+
+    fetchFields();
+  }, []);
+
+  const handleFieldChange = useCallback((slug: string) => {
+    setSelectedField(prev => (prev === slug ? null : slug));
   }, []);
 
   const handleComplete = useCallback(() => {
+    if (!selectedField) return; // null 체크
     navigate('/quiz');
     // TODO: API 호출해서 실제 첫 번째 스텝으로 수정
-    updateUIState({ current_quiz_step_id: 1 });
-  }, [navigate]);
+    updateUIState({
+      last_viewed: {
+        field_slug: selectedField,
+        unit_id: 1,
+      },
+    });
+  }, [navigate, selectedField, updateUIState]);
 
   return (
     <div css={containerStyle()}>
@@ -48,16 +78,16 @@ export const InitialFields = () => {
         <h1 css={titleStyle(theme)}>어떤 분야를 공부하고 싶나요?</h1>
         <p css={instructionStyle(theme)}>학습을 시작하고 싶은 분야를 1개 선택해주세요.</p>
         <div css={gridStyle}>
-          {STUDY_FIELDS.map(field => {
-            const isSelected = selectedField === field.id;
+          {fields.map(field => {
+            const isSelected = selectedField === field.slug;
             return (
-              <label key={field.id} css={fieldLabelStyle(theme, isSelected)}>
+              <label key={field.slug} css={fieldLabelStyle(theme, isSelected)}>
                 <input
                   type="radio"
                   name="studyField"
-                  value={field.id}
+                  value={field.slug}
                   checked={isSelected}
-                  onChange={() => handleFieldChange(field.id)}
+                  onChange={() => handleFieldChange(field.slug)}
                   css={radioInputStyle}
                 />
                 {isSelected && (

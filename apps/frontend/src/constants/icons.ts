@@ -22,6 +22,7 @@ import Setting from '@/assets/sidebar-icons/setting.svg?react';
 import Streak from '@/assets/sidebar-icons/streak.svg?react';
 import Star from '@/assets/star.svg?react';
 import Start from '@/assets/start.svg?react';
+import Vector from '@/assets/vector.svg?react';
 
 export const IconMap = {
   Algorithm,
@@ -38,6 +39,7 @@ export const IconMap = {
   Start,
   Lock,
   Star,
+  Vector,
   Fire,
   Logo,
   Learn,

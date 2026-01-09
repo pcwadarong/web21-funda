@@ -17,6 +17,7 @@ export const useStorage = () => {
     const updated = storageUtil.update('ui_state', newUIState);
     setStorageData(updated);
   }, []);
+
   //  퀴즈 히스토리
   const addStepHistory = useCallback((stepId: number) => {
     const updated = storageUtil.addStepHistory(stepId);

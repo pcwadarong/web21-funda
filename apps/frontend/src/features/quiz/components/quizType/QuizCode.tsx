@@ -9,6 +9,7 @@ export const QuizCode = ({
   content,
   selectedAnswer,
   showResult,
+  correctAnswer,
   onAnswerChange,
   disabled = false,
 }: QuizComponentProps) => {
@@ -17,9 +18,8 @@ export const QuizCode = ({
   const codeContent = content as CodeContent;
   const { code_metadata, options } = codeContent;
 
-  // TODO: 실제 API 데이터의 answer 필드와 매칭 필요 (현재는 임시로 0번)
-  const mockCorrectAnswer = 'c2';
-  const isCorrect = selectedAnswer === mockCorrectAnswer;
+  const correctAnswerId = correctAnswer as string | null;
+  const isCorrect = selectedAnswer === correctAnswerId;
 
   return (
     <div css={quizCardStyle(theme)}>
@@ -32,8 +32,9 @@ export const QuizCode = ({
       <div css={optionsWrapperStyle}>
         {options.map((option, index) => {
           const isSelected = selectedAnswer === option.id;
-          const isCorrectOption = showResult && option.id === mockCorrectAnswer;
-          const isWrongOption = showResult && isSelected && !isCorrect;
+          const isCorrectOption =
+            showResult && correctAnswerId !== null && option.id === correctAnswerId;
+          const isWrongOption = showResult && isSelected && correctAnswerId !== null && !isCorrect;
 
           return (
             <QuizOption

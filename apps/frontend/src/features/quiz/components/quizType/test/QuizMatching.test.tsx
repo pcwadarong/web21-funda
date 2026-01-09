@@ -14,49 +14,24 @@ const mockContent: MatchingContent = {
   },
 };
 
-// 테스트용 정답 데이터 (mockContent와 일치)
-const mockCorrectPairs: MatchingPair[] = [
+// 테스트용 정답 데이터 (텍스트 기반 - 서버 응답 시뮬레이션)
+// 컴포넌트 내부에서 인덱스 기반으로 자동 변환됨
+// left[0]='div p' ↔ right[0]='div의 모든 자손 p'
+// left[1]='div > p' ↔ right[1]='div의 직계 자식 p'
+// left[2]='h1 + p' ↔ right[2]='h1 바로 다음 p'
+// left[3]='h1 ~ p' ↔ right[3]='h1 뒤의 모든 형제 p'
+const mockCorrectPairsTextBased = [
   { left: 'div p', right: 'div의 모든 자손 p' },
   { left: 'div > p', right: 'div의 직계 자식 p' },
   { left: 'h1 + p', right: 'h1 바로 다음 p' },
   { left: 'h1 ~ p', right: 'h1 뒤의 모든 형제 p' },
-];
-
-// useMemo를 모킹하여 QuizMatching 컴포넌트 내부의 mockCorrectPairs를 테스트용 데이터로 대체
-vi.mock('react', async () => {
-  const actual = await vi.importActual('react');
-
-  const originalUseMemo = actual.useMemo as <T>(factory: () => T, deps: unknown[]) => T;
-
-  return {
-    ...actual,
-    useMemo: vi.fn((factory, deps) => {
-      // QuizMatching 컴포넌트 내부의 mockCorrectPairs useMemo를 모킹
-      // deps가 빈 배열이고 factory가 함수이며, 결과가 MatchingPair[] 배열인 경우
-      if (Array.isArray(deps) && deps.length === 0 && typeof factory === 'function') {
-        const result = factory();
-        // MatchingPair[] 배열인지 확인 (간단한 휴리스틱)
-        if (
-          Array.isArray(result) &&
-          result.length > 0 &&
-          typeof result[0] === 'object' &&
-          result[0] !== null &&
-          'left' in result[0] &&
-          'right' in result[0]
-        ) {
-          return mockCorrectPairs;
-        }
-      }
-      // 그 외의 경우는 원래 useMemo 사용
-      return originalUseMemo(factory, deps);
-    }),
-  };
-});
+] as unknown as MatchingPair[]; // 서버 응답이 텍스트 기반이므로 타입 단언 사용
 
 const renderQuizMatching = (props = {}) => {
   const defaultProps = {
     content: mockContent,
     selectedAnswer: null,
+    correctAnswer: { pairs: mockCorrectPairsTextBased }, // 서버 응답 시뮬레이션 (텍스트 기반)
     showResult: false,
     onAnswerChange: vi.fn(),
     disabled: false,
@@ -118,26 +93,26 @@ describe('QuizMatching 컴포넌트 테스트', () => {
     const handleAnswerChange = vi.fn();
     renderQuizMatching({ onAnswerChange: handleAnswerChange });
 
-    const leftOption = screen.getByText('div p');
-    const rightOption = screen.getByText('div의 모든 자손 p');
+    const leftOption = screen.getByText('div p'); // left[0]
+    const rightOption = screen.getByText('div의 모든 자손 p'); // right[0]
 
     fireEvent.click(leftOption);
     fireEvent.click(rightOption);
 
     expect(handleAnswerChange).toHaveBeenCalledWith({
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }],
     });
   });
 
   it('이미 매칭된 항목 클릭 시 매칭이 해제된다', () => {
     const handleAnswerChange = vi.fn();
     const selectedAnswer: AnswerType = {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }],
     };
 
     renderQuizMatching({ selectedAnswer, onAnswerChange: handleAnswerChange });
 
-    const leftOption = screen.getByText('div p');
+    const leftOption = screen.getByText('div p'); // left[0]
     fireEvent.click(leftOption);
 
     expect(handleAnswerChange).toHaveBeenCalledWith({ pairs: [] });
@@ -146,11 +121,12 @@ describe('QuizMatching 컴포넌트 테스트', () => {
   it('중복 매칭 방지: left-A가 right-B와 매칭된 상태에서 left-A를 다시 클릭하고 right-C를 클릭하면 기존 매칭이 해제되고 새로운 매칭으로 교체된다', () => {
     const handleAnswerChange = vi.fn();
     let currentPairs: AnswerType = {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }], // left[0]='div p' ↔ right[0]='div의 모든 자손 p'
     };
 
     const { rerender } = renderQuizMatching({
       selectedAnswer: currentPairs,
+      correctAnswer: { pairs: mockCorrectPairsTextBased },
       onAnswerChange: (answer: AnswerType) => {
         currentPairs = answer;
         handleAnswerChange(answer);
@@ -159,6 +135,7 @@ describe('QuizMatching 컴포넌트 테스트', () => {
             <QuizMatching
               content={mockContent}
               selectedAnswer={currentPairs}
+              correctAnswer={{ pairs: mockCorrectPairsTextBased }}
               showResult={false}
               onAnswerChange={handleAnswerChange}
               disabled={false}
@@ -168,7 +145,7 @@ describe('QuizMatching 컴포넌트 테스트', () => {
       },
     });
 
-    // left-A(div p)를 다시 클릭 (기존 매칭 해제)
+    // left-A(div p, index=0)를 다시 클릭 (기존 매칭 해제)
     const leftA = screen.getByText('div p');
     fireEvent.click(leftA);
 
@@ -178,24 +155,25 @@ describe('QuizMatching 컴포넌트 테스트', () => {
     // left-A를 다시 클릭 (임시 선택)
     fireEvent.click(leftA);
 
-    // right-C(div의 직계 자식 p) 클릭
+    // right-C(div의 직계 자식 p, index=1) 클릭
     const rightC = screen.getByText('div의 직계 자식 p');
     fireEvent.click(rightC);
 
-    // 두 번째 호출: 새로운 매칭 생성
+    // 두 번째 호출: 새로운 매칭 생성 (left[0] ↔ right[1])
     expect(handleAnswerChange).toHaveBeenNthCalledWith(2, {
-      pairs: [{ left: 'div p', right: 'div의 직계 자식 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 1 }],
     });
   });
 
   it('중복 매칭 방지: right-B가 left-A와 매칭된 상태에서 right-B를 다시 클릭하고 left-C를 클릭하면 기존 매칭이 해제되고 새로운 매칭으로 교체된다', () => {
     const handleAnswerChange = vi.fn();
     let currentPairs: AnswerType = {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }], // left[0]='div p' ↔ right[0]='div의 모든 자손 p'
     };
 
     const { rerender } = renderQuizMatching({
       selectedAnswer: currentPairs,
+      correctAnswer: { pairs: mockCorrectPairsTextBased },
       onAnswerChange: (answer: AnswerType) => {
         currentPairs = answer;
         handleAnswerChange(answer);
@@ -204,6 +182,7 @@ describe('QuizMatching 컴포넌트 테스트', () => {
             <QuizMatching
               content={mockContent}
               selectedAnswer={currentPairs}
+              correctAnswer={{ pairs: mockCorrectPairsTextBased }}
               showResult={false}
               onAnswerChange={handleAnswerChange}
               disabled={false}
@@ -213,7 +192,7 @@ describe('QuizMatching 컴포넌트 테스트', () => {
       },
     });
 
-    // right-B(div의 모든 자손 p)를 다시 클릭 (기존 매칭 해제)
+    // right-B(right[0]='div의 모든 자손 p')를 다시 클릭 (기존 매칭 해제)
     const rightB = screen.getByText('div의 모든 자손 p');
     fireEvent.click(rightB);
 
@@ -223,35 +202,39 @@ describe('QuizMatching 컴포넌트 테스트', () => {
     // right-B를 다시 클릭 (임시 선택)
     fireEvent.click(rightB);
 
-    // left-C(div > p) 클릭
+    // left-C(left[1]='div > p') 클릭
     const leftC = screen.getByText('div > p');
     fireEvent.click(leftC);
 
-    // 두 번째 호출: 새로운 매칭 생성
+    // 두 번째 호출: 새로운 매칭 생성 (left[1] ↔ right[0])
     expect(handleAnswerChange).toHaveBeenNthCalledWith(2, {
-      pairs: [{ left: 'div > p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 1, rightIndex: 0 }],
     });
   });
 
   it('selectedAnswer에 pairs가 있을 때 매칭된 항목이 표시된다', () => {
     const selectedAnswer: AnswerType = {
       pairs: [
-        { left: 'div p', right: 'div의 모든 자손 p' },
-        { left: 'div > p', right: 'div의 직계 자식 p' },
+        { leftIndex: 0, rightIndex: 0 }, // left[0]='div p' ↔ right[0]='div의 모든 자손 p'
+        { leftIndex: 1, rightIndex: 1 }, // left[1]='div > p' ↔ right[1]='div의 직계 자식 p'
       ],
     };
 
-    renderQuizMatching({ selectedAnswer });
+    renderQuizMatching({ selectedAnswer, correctAnswer: { pairs: mockCorrectPairsTextBased } });
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
   });
 
   it('showResult가 true일 때 정답/오답 상태가 표시된다', () => {
     const selectedAnswer: AnswerType = {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }], // 정답: left[0] ↔ right[0]
     };
 
-    renderQuizMatching({ selectedAnswer, showResult: true });
+    renderQuizMatching({
+      selectedAnswer,
+      correctAnswer: { pairs: mockCorrectPairsTextBased },
+      showResult: true,
+    });
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
   });
@@ -259,22 +242,30 @@ describe('QuizMatching 컴포넌트 테스트', () => {
   it('showResult가 true일 때 SVG 라인이 렌더링된다', () => {
     const selectedAnswer: AnswerType = {
       pairs: [
-        { left: 'div p', right: 'div의 모든 자손 p' },
-        { left: 'div > p', right: 'div의 직계 자식 p' },
+        { leftIndex: 0, rightIndex: 0 }, // left[0] ↔ right[0]
+        { leftIndex: 1, rightIndex: 1 }, // left[1] ↔ right[1]
       ],
     };
 
-    const { container } = renderQuizMatching({ selectedAnswer, showResult: true });
+    const { container } = renderQuizMatching({
+      selectedAnswer,
+      correctAnswer: { pairs: mockCorrectPairsTextBased },
+      showResult: true,
+    });
     const svg = container.querySelector('svg');
     expect(svg).toBeInTheDocument();
   });
 
   it('리사이즈 시 ResizeObserver가 설정된다', () => {
     const selectedAnswer: AnswerType = {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }],
     };
 
-    const { unmount } = renderQuizMatching({ selectedAnswer, showResult: true });
+    const { unmount } = renderQuizMatching({
+      selectedAnswer,
+      correctAnswer: { pairs: mockCorrectPairsTextBased },
+      showResult: true,
+    });
 
     // ResizeObserver가 생성되고 observe가 호출되었는지 확인
     expect(observeSpy).toHaveBeenCalled();
@@ -309,6 +300,7 @@ describe('QuizMatching 컴포넌트 테스트', () => {
 
     const { rerender } = renderQuizMatching({
       selectedAnswer: currentPairs,
+      correctAnswer: { pairs: mockCorrectPairsTextBased },
       onAnswerChange: (answer: AnswerType) => {
         currentPairs = answer;
         handleAnswerChange(answer);
@@ -317,6 +309,7 @@ describe('QuizMatching 컴포넌트 테스트', () => {
             <QuizMatching
               content={mockContent}
               selectedAnswer={currentPairs}
+              correctAnswer={{ pairs: mockCorrectPairsTextBased }}
               showResult={false}
               onAnswerChange={handleAnswerChange}
               disabled={false}
@@ -326,22 +319,22 @@ describe('QuizMatching 컴포넌트 테스트', () => {
       },
     });
 
-    // 첫 번째 쌍
-    fireEvent.click(screen.getByText('div p'));
-    fireEvent.click(screen.getByText('div의 모든 자손 p'));
+    // 첫 번째 쌍: left[0] ↔ right[0]
+    fireEvent.click(screen.getByText('div p')); // left[0]
+    fireEvent.click(screen.getByText('div의 모든 자손 p')); // right[0]
 
     expect(handleAnswerChange).toHaveBeenNthCalledWith(1, {
-      pairs: [{ left: 'div p', right: 'div의 모든 자손 p' }],
+      pairs: [{ leftIndex: 0, rightIndex: 0 }],
     });
 
-    // 두 번째 쌍
-    fireEvent.click(screen.getByText('div > p'));
-    fireEvent.click(screen.getByText('div의 직계 자식 p'));
+    // 두 번째 쌍: left[1] ↔ right[1]
+    fireEvent.click(screen.getByText('div > p')); // left[1]
+    fireEvent.click(screen.getByText('div의 직계 자식 p')); // right[1]
 
     expect(handleAnswerChange).toHaveBeenNthCalledWith(2, {
       pairs: [
-        { left: 'div p', right: 'div의 모든 자손 p' },
-        { left: 'div > p', right: 'div의 직계 자식 p' },
+        { leftIndex: 0, rightIndex: 0 },
+        { leftIndex: 1, rightIndex: 1 },
       ],
     });
   });

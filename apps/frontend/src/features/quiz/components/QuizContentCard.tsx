@@ -3,7 +3,12 @@ import { css, useTheme } from '@emotion/react';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
-import type { AnswerType, QuestionStatus, QuizQuestion } from '@/feat/quiz/types';
+import type {
+  AnswerType,
+  CorrectAnswerType,
+  QuestionStatus,
+  QuizQuestion,
+} from '@/feat/quiz/types';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
 
@@ -11,6 +16,8 @@ interface QuizContentCardProps {
   question: QuizQuestion;
   status: QuestionStatus;
   selectedAnswer: AnswerType | null;
+  correctAnswer: CorrectAnswerType | null;
+  explanation: string;
   onAnswerChange: (answer: any) => void;
   isSubmitDisabled: boolean;
   onCheck: () => void;
@@ -24,6 +31,8 @@ export const QuizContentCard = ({
   selectedAnswer,
   onAnswerChange,
   isSubmitDisabled,
+  correctAnswer,
+  explanation,
   onCheck,
   onNext,
   isLast,
@@ -48,15 +57,16 @@ export const QuizContentCard = ({
       <QuizRenderer
         question={question}
         selectedAnswer={selectedAnswer}
+        correctAnswer={correctAnswer ?? null}
         onAnswerChange={onAnswerChange}
         showResult={showResult}
         disabled={status !== 'idle'}
       />
 
-      {showResult && (
+      {showResult && explanation && (
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
-          <span>문제 해설 내용이 여기에 노출됩니다.</span>
+          <span>{explanation}</span>
         </div>
       )}
 

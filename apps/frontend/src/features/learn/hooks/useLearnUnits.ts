@@ -7,7 +7,7 @@ import { useStorage } from '@/hooks/useStorage';
  * Learn 페이지에서 사용할 유닛/스텝 데이터와 스크롤 상태를 관리합니다.
  */
 export const useLearnUnits = () => {
-  const { uiState } = useStorage();
+  const { uiState, solvedStepHistory } = useStorage();
   const [units, setUnits] = useState<LessonSection[]>([]);
   const [activeUnitId, setActiveUnitId] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -19,15 +19,29 @@ export const useLearnUnits = () => {
     [activeUnitId, units],
   );
 
+  // 비로그인 상태일 때, storage에서 solved step history를 가져와서 units에 반영되도록
+  useEffect(() => {
+    const solvedSet = new Set(solvedStepHistory);
+    setUnits(prev =>
+      prev.map(unit => ({
+        ...unit,
+        steps: unit.steps.map(step =>
+          solvedSet.has(Number(step.id)) ? { ...step, status: 'completed' } : step,
+        ),
+      })),
+    );
+  }, [solvedStepHistory]);
+
   /**
    * field_slug를 기준으로 유닛/스텝 데이터를 요청하고 상태로 매핑합니다.
    */
   useEffect(() => {
-    const fieldSlug = uiState.last_viewed.field_slug;
+    const fieldSlug = uiState.last_viewed?.field_slug;
     let isMounted = true;
 
     const fetchUnits = async () => {
-      const response = await fetch(`/api/fields/${fieldSlug}/units`);
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+      const response = await fetch(`${API_BASE_URL}/fields/${fieldSlug}/units`);
       const data = (await response.json()) as UnitsResponse;
       if (!isMounted) return;
 

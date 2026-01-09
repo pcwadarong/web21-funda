@@ -12,6 +12,7 @@ import Lock from '@/assets/lock.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
 import Star from '@/assets/star.svg?react';
 import Start from '@/assets/start.svg?react';
+import vector from '@/assets/vector.svg?react';
 
 export const IconMap = {
   Algorithm,
@@ -28,6 +29,7 @@ export const IconMap = {
   Start,
   Lock,
   Star,
+  vector,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

@@ -121,7 +121,7 @@ export const Quiz = () => {
    * 서버 통신 후 상태를 'checked'로 변경합니다.
    */
   const handleCheckAnswer = useCallback(async () => {
-    if (!currentAnswer) return;
+    if (!currentQuiz || !currentAnswer) return;
     setCurrentQuestionStatus('checking');
 
     try {
@@ -194,6 +194,7 @@ export const Quiz = () => {
    * 다음 문제로 이동하거나 결과 페이지로 이동하는 핸들러
    */
   const handleNextQuestion = useCallback(() => {
+    if (!currentQuiz) return;
     if (isLastQuestion) {
       navigate(`/quiz/result`);
       addStepHistory(currentQuiz.id);

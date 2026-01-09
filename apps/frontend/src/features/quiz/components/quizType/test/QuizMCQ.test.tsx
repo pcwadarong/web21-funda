@@ -20,6 +20,7 @@ const renderQuizMCQ = (props = {}) => {
   const defaultProps = {
     content: mockContent,
     selectedAnswer: null,
+    correctAnswer: null,
     showResult: false,
     onAnswerChange: vi.fn(),
     disabled: false,

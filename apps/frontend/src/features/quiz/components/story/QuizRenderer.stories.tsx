@@ -20,6 +20,7 @@ const StatefulRenderer = ({ question }: { question: QuizQuestion }) => {
       <QuizRenderer
         question={question}
         selectedAnswer={selected}
+        correctAnswer={null}
         onAnswerChange={setSelected}
         showResult={false}
         disabled={false}

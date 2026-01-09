@@ -45,6 +45,8 @@ const renderCard = (overrides: Partial<React.ComponentProps<typeof QuizContentCa
         question={baseQuestion}
         status="idle"
         selectedAnswer={null}
+        correctAnswer={null}
+        explanation="문제 해설 내용이 여기에 노출됩니다."
         onAnswerChange={vi.fn()}
         isSubmitDisabled
         onCheck={vi.fn()}

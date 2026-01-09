@@ -11,6 +11,7 @@ import Mobile from '@/assets/field-icons/mobile.svg?react';
 import Lock from '@/assets/lock.svg?react';
 import Logo from '@/assets/logo.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
+import Report from '@/assets/Report.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
 import Fire from '@/assets/sidebar-icons/fire.svg?react';
@@ -22,7 +23,6 @@ import Setting from '@/assets/sidebar-icons/setting.svg?react';
 import Streak from '@/assets/sidebar-icons/streak.svg?react';
 import Star from '@/assets/star.svg?react';
 import Start from '@/assets/start.svg?react';
-import Vector from '@/assets/vector.svg?react';
 
 export const IconMap = {
   Algorithm,
@@ -39,7 +39,7 @@ export const IconMap = {
   Start,
   Lock,
   Star,
-  Vector,
+  Report,
   Fire,
   Logo,
   Learn,

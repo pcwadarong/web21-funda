@@ -49,7 +49,7 @@ export const QuizContentCard = ({
           css={reportButtonStyle(theme)}
           onClick={() => openModal('오류 신고', <div>신고 폼</div>)}
         >
-          <SVGIcon icon="Vector" size="sm" />
+          <SVGIcon icon="Report" size="sm" />
           신고
         </button>
       </div>

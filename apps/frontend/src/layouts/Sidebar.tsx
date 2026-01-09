@@ -1,13 +1,14 @@
 import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
+import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
-  { id: 'learn', label: '학습하기', icon: '🏠', path: '/learn' },
-  { id: 'ranking', label: '랭킹', icon: '🏆', path: '/leaderboard/1' },
-  { id: 'profile', label: '프로필', icon: '👤', path: '/profile/1' },
-  { id: 'settings', label: '설정', icon: '⚙️', path: '/setting' },
+  { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
+  { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard/1' },
+  { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile/1' },
+  { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
 // TODO: 유저 정보 추가
@@ -17,6 +18,8 @@ const USER_INFO = {
   xp: 1250,
 } as const;
 
+const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
+
 export const Sidebar = () => {
   const theme = useTheme();
   // TODO: 현재 페이지에 따라 활성화된 메뉴 아이템 추가
@@ -25,7 +28,9 @@ export const Sidebar = () => {
   return (
     <aside css={sidebarStyle(theme)}>
       <Link to="/learn" css={logoSectionStyle}>
-        <span css={logoIconStyle}>🐼</span>
+        <span css={logoIconStyle}>
+          <SVGIcon icon="Logo" size="xl" />
+        </span>
         <span css={logoTextStyle(theme)}>Funda</span>
       </Link>
 
@@ -33,24 +38,29 @@ export const Sidebar = () => {
         {NAV_ITEMS.map(item => (
           <Link
             key={item.id}
-            to={item.path}
+            to={!isLoggedIn && item.path !== '/learn' ? '/login' : item.path}
             css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
           >
-            <span css={navIconStyle}>{item.icon}</span>
+            <span css={navIconStyle}>
+              <SVGIcon icon={`${item.icon}`} size="md" />
+            </span>
             <span css={navLabelStyle(theme)}>{item.label}</span>
           </Link>
         ))}
       </nav>
-
-      <div css={userSectionStyle(theme)}>
-        <div css={avatarStyle(theme)}>👤</div>
-        <div css={userInfoStyle}>
-          <div css={userNameStyle(theme)}>{USER_INFO.name}</div>
-          <div css={userLevelStyle(theme)}>
-            Lv. {USER_INFO.level} · {USER_INFO.xp} XP
+      {isLoggedIn && (
+        <div css={userSectionStyle(theme)}>
+          <div css={avatarStyle(theme)}>
+            <SVGIcon icon="Profile" size="md" />
+          </div>
+          <div css={userInfoStyle}>
+            <div css={userNameStyle(theme)}>{USER_INFO.name}</div>
+            <div css={userLevelStyle(theme)}>
+              Lv. {USER_INFO.level} · {USER_INFO.xp} XP
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 };
@@ -101,6 +111,10 @@ const logoSectionStyle = css`
 const logoIconStyle = css`
   font-size: 24px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 
   @media (max-width: 1024px) {
     flex: 1;

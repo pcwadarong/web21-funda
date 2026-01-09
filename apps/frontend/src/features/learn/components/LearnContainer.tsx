@@ -12,7 +12,7 @@ interface LearnContainerProps {
   activeUnit: LessonSection | undefined;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   headerRef: React.RefObject<HTMLDivElement | null>;
-  registerUnitRef: (unitId: string) => (element: HTMLElement | null) => void;
+  registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
   onStepClick: (stepId: number) => void;
 }
 

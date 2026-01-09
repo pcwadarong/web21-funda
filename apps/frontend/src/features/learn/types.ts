@@ -1,14 +1,14 @@
 export type LessonType = 'normal' | 'checkpoint';
 
 export interface LessonItem {
-  id: string;
+  id: number;
   name: string;
   status: 'completed' | 'active' | 'locked';
   type: LessonType;
 }
 
 export interface LessonSection {
-  id: string;
+  id: number;
   name: string;
   title: string;
   steps: readonly LessonItem[];

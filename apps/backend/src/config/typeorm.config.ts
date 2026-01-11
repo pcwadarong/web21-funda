@@ -17,6 +17,6 @@ export const createTypeOrmOptions = (config: ConfigService): DataSourceOptions =
   password: config.get<string>('DB_PASSWORD', ''),
   database: config.get<string>('DB_NAME', 'app'),
   entities: [Field, Unit, Step, Quiz, UserQuizStatus, UserStepStatus, UserStepAttempt, SolveLog],
-  synchronize: true,
+  synchronize: false,
   logging: config.get<string>('NODE_ENV') !== 'production',
 });

@@ -25,6 +25,9 @@ export class Field {
   @Column({ type: 'text', nullable: true })
   description?: string | null;
 
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  icon?: string | null;
+
   @OneToMany(() => Unit, unit => unit.field)
   units?: Unit[];
 

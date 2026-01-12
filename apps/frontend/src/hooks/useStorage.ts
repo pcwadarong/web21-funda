@@ -37,9 +37,10 @@ export const useStorage = () => {
   }, []);
 
   // 퀴즈 시작 시간 가져오기
-  const getQuizStartedAt = useCallback((stepId: number) => {
-    return storageUtil.getQuizStartedAt(stepId);
-  }, []);
+  const getQuizStartedAt = useCallback(
+    (stepId: number) => storageUtil.getQuizStartedAt(stepId),
+    [],
+  );
 
   return {
     storageData,

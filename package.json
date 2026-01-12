@@ -7,6 +7,12 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "migration:generate:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:generate",
+    "migration:create:docker": "sh -c \"docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:create src/migrations/$MIGRATION_NAME\"",
+    "migration:run:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:run",
+    "migration:revert:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:revert",
+    "migration:show:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:show",
+    "seed:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend seed",
     "postinstall": "husky install"
   },
   "devDependencies": {

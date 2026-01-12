@@ -7,9 +7,9 @@ import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
-  xp: number;
-  successRate: number;
-  timeTaken: string;
+  xpGained: number | null;
+  successRate: number | null;
+  durationMs: string | null;
 }
 
 const METRIC_CONFIG = (theme: Theme) =>
@@ -18,7 +18,7 @@ const METRIC_CONFIG = (theme: Theme) =>
       key: 'xp',
       title: '획득 XP',
       icon: 'Star' as const,
-      getValue: (data: QuizResultData) => data.xp,
+      getValue: (data: QuizResultData) => (data.xpGained != null ? data.xpGained : '-'),
       styles: {
         bg: theme.colors.primary.main,
         text: theme.colors.primary.dark,
@@ -29,7 +29,7 @@ const METRIC_CONFIG = (theme: Theme) =>
       key: 'successRate',
       title: '성공률',
       icon: 'Graph' as const,
-      getValue: (data: QuizResultData) => `${data.successRate}%`,
+      getValue: (data: QuizResultData) => (data.successRate != null ? `${data.successRate}%` : '—'),
       styles: {
         bg: theme.colors.success.main,
         text: theme.colors.success.main,
@@ -37,10 +37,10 @@ const METRIC_CONFIG = (theme: Theme) =>
       },
     },
     {
-      key: 'timeTaken',
+      key: 'durationMs',
       title: '소요 시간',
       icon: 'Timer' as const,
-      getValue: (data: QuizResultData) => data.timeTaken,
+      getValue: (data: QuizResultData) => data.durationMs ?? '—',
       styles: {
         bg: theme.colors.grayscale[500],
         text: theme.colors.grayscale[500],
@@ -121,6 +121,7 @@ const titleStyle = (theme: Theme) => css`
   ${theme.typography['32Bold']};
   color: ${theme.colors.primary.main};
   margin: 0;
+  text-align: center;
 `;
 
 const placeholderStyle = (theme: Theme) => css`

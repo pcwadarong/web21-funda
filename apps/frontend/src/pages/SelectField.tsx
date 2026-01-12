@@ -3,28 +3,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
-import type { IconMapTypes } from '@/constants/icons';
 import { useStorage } from '@/hooks/useStorage';
+import { type Field, fieldService } from '@/services/fieldService';
 import type { Theme } from '@/styles/theme';
-
-interface StudyField {
-  slug: string;
-  name: string;
-  description: string;
-  icon: IconMapTypes;
-}
 
 export const SelectField = () => {
   const theme = useTheme();
-  const [fields, setFields] = useState<StudyField[]>([]);
+  const [fields, setFields] = useState<Field[]>([]);
   const navigate = useNavigate();
   const { updateUIState } = useStorage();
   useEffect(() => {
     const fetchFields = async () => {
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api';
-        const response = await fetch(`${apiBaseUrl}/fields`);
-        const data = await response.json();
+        const data = await fieldService.getFields();
         setFields(data.fields);
       } catch (error) {
         console.error('Failed to fetch fields:', error);

@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
+import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
@@ -11,36 +12,42 @@ interface QuizResultData {
   timeTaken: string;
 }
 
-const METRIC_ITEMS = [
-  {
-    key: 'xp' as const,
-    title: '획득 XP',
-    icon: '⭐',
-    color: 'purple' as const,
-    iconStyle: css`
-      font-size: 24px;
-    `,
-  },
-  {
-    key: 'successRate' as const,
-    title: '성공률',
-    icon: '↑',
-    color: 'green' as const,
-    iconStyle: css`
-      font-size: 24px;
-      color: #02d05c;
-    `,
-  },
-  {
-    key: 'timeTaken' as const,
-    title: '소요 시간',
-    icon: '🕐',
-    color: 'gray' as const,
-    iconStyle: css`
-      font-size: 24px;
-    `,
-  },
-] as const;
+const METRIC_CONFIG = (theme: Theme) =>
+  [
+    {
+      key: 'xp',
+      title: '획득 XP',
+      icon: 'Star' as const,
+      getValue: (data: QuizResultData) => data.xp,
+      styles: {
+        bg: theme.colors.primary.main,
+        text: theme.colors.primary.dark,
+        iconColor: theme.colors.primary.main,
+      },
+    },
+    {
+      key: 'successRate',
+      title: '성공률',
+      icon: 'Graph' as const,
+      getValue: (data: QuizResultData) => `${data.successRate}%`,
+      styles: {
+        bg: theme.colors.success.main,
+        text: theme.colors.success.main,
+        iconColor: theme.colors.success.main,
+      },
+    },
+    {
+      key: 'timeTaken',
+      title: '소요 시간',
+      icon: 'Timer' as const,
+      getValue: (data: QuizResultData) => data.timeTaken,
+      styles: {
+        bg: theme.colors.grayscale[500],
+        text: theme.colors.grayscale[500],
+        iconColor: theme.colors.grayscale[500],
+      },
+    },
+  ] as const;
 
 interface QuizResultContentProps {
   resultData: QuizResultData;
@@ -55,14 +62,9 @@ export const QuizResultContent = ({
 }: QuizResultContentProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const config = METRIC_CONFIG(theme);
 
-  const handleContinue = useCallback(() => {
-    if (!isLogin) navigate('/auth/check');
-    else if (isFirstToday) navigate('/streak');
-    else navigate('/learn');
-  }, [isLogin, isFirstToday, navigate]);
-
-  const handleGoToMain = useCallback(() => {
+  const handleNavigation = useCallback(() => {
     if (!isLogin) navigate('/auth/check');
     else if (isFirstToday) navigate('/streak');
     else navigate('/learn');
@@ -71,22 +73,22 @@ export const QuizResultContent = ({
   return (
     <div css={containerStyle}>
       <h1 css={titleStyle(theme)}>LESSON COMPLETE!</h1>
-
       <div css={placeholderStyle(theme)} />
 
       <div css={metricsContainerStyle}>
-        {METRIC_ITEMS.map(item => (
-          <div key={item.key} css={metricCardStyle(theme, item.color)}>
+        {config.map(item => (
+          <div key={item.key} css={metricCardStyle(theme, item.styles.bg)}>
             <div css={metricTitleStyle(theme)}>{item.title}</div>
-            <div css={metricValueContainerStyle}>
-              <span css={item.iconStyle}>{item.icon}</span>
-
-              <span css={metricValueStyle(theme, item.color)}>
-                {item.key === 'xp'
-                  ? resultData.xp
-                  : item.key === 'successRate'
-                    ? `${resultData.successRate}%`
-                    : resultData.timeTaken}
+            <div css={metricValueContainerStyle(theme, item.styles.bg)}>
+              <SVGIcon
+                icon={item.icon}
+                size="lg"
+                css={css`
+                  color: ${item.styles.iconColor};
+                `}
+              />
+              <span css={metricValueStyle(theme, item.styles.text)}>
+                {item.getValue(resultData)}
               </span>
             </div>
           </div>
@@ -94,10 +96,10 @@ export const QuizResultContent = ({
       </div>
 
       <div css={buttonsContainerStyle}>
-        <Button variant="primary" onClick={handleContinue} css={continueButtonStyle}>
+        <Button variant="primary" onClick={handleNavigation} css={fullWidth}>
           학습 계속하기
         </Button>
-        <Button variant="secondary" onClick={handleGoToMain} css={mainButtonStyle}>
+        <Button variant="secondary" onClick={handleNavigation} css={fullWidth}>
           메인 페이지로 이동하기
         </Button>
       </div>
@@ -116,12 +118,9 @@ const containerStyle = css`
 `;
 
 const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['32Bold'].fontSize};
-  line-height: ${theme.typography['32Bold'].lineHeight};
-  font-weight: ${theme.typography['32Bold'].fontWeight};
+  ${theme.typography['32Bold']};
   color: ${theme.colors.primary.main};
   margin: 0;
-  text-align: center;
 `;
 
 const placeholderStyle = (theme: Theme) => css`
@@ -135,40 +134,31 @@ const metricsContainerStyle = css`
   display: flex;
   gap: 16px;
   width: 100%;
-  max-width: 600px;
-
+  max-width: 35rem;
   @media (max-width: 768px) {
     flex-direction: column;
   }
 `;
 
-const metricCardStyle = (theme: Theme, color: 'purple' | 'green' | 'gray') => css`
+const metricCardStyle = (theme: Theme, bgColor: string) => css`
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 5px;
   align-items: center;
-  height: 124px;
   justify-content: space-between;
-  background: ${color === 'purple'
-    ? theme.colors.primary.main
-    : color === 'green'
-      ? theme.colors.success.main
-      : theme.colors.grayscale[500]};
-
+  background: ${bgColor};
   border-radius: ${theme.borderRadius.medium};
 `;
 
 const metricTitleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
-  font-weight: ${theme.typography['16Medium'].fontWeight};
+  ${theme.typography['16Medium']};
   color: ${theme.colors.grayscale[50]};
-  margin-bottom: 5px;
   text-align: center;
+  padding: 0.2rem 0 0.4rem;
 `;
 
-const metricValueContainerStyle = (theme: Theme) => css`
+const metricValueContainerStyle = (theme: Theme, bgColor: string) => css`
   background-color: ${theme.colors.grayscale[50]};
   width: 100%;
   border-radius: ${theme.borderRadius.medium};
@@ -177,17 +167,15 @@ const metricValueContainerStyle = (theme: Theme) => css`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  border: 1px solid ${bgColor};
+  padding: 2rem 0;
 `;
 
-const metricValueStyle = (theme: Theme, color: 'purple' | 'green' | 'gray') => css`
+const metricValueStyle = (theme: Theme, textColor: string) => css`
   font-size: ${theme.typography['24Bold'].fontSize};
   line-height: ${theme.typography['24Bold'].lineHeight};
   font-weight: ${theme.typography['24Bold'].fontWeight};
-  color: ${color === 'purple'
-    ? theme.colors.primary.dark
-    : color === 'green'
-      ? theme.colors.success.main
-      : theme.colors.grayscale[500]};
+  color: ${textColor};
 `;
 
 const buttonsContainerStyle = css`
@@ -198,10 +186,6 @@ const buttonsContainerStyle = css`
   max-width: 400px;
 `;
 
-const continueButtonStyle = css`
-  width: 100%;
-`;
-
-const mainButtonStyle = css`
+const fullWidth = css`
   width: 100%;
 `;

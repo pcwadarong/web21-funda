@@ -12,7 +12,7 @@ import type {
   QuizQuestion,
 } from '@/feat/quiz/types';
 import { useStorage } from '@/hooks/useStorage';
-// import { quizService } from '@/services/quizService';
+import { quizService } from '@/services/quizService';
 
 /**
  * 퀴즈 풀이 페이지 컴포넌트
@@ -24,16 +24,20 @@ export const Quiz = () => {
   const navigate = useNavigate();
   const { unitId, stepId } = useParams<{ unitId: string; stepId: string }>();
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
+
   /** 현재 풀이 중인 퀴즈의 인덱스 */
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<AnswerType[]>([]);
+
   /** 각 문제별 풀이 완료 여부 상태 배열 */
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
+
   /** 현재 화면에 표시된 퀴즈의 진행 상태 */
   const [currentQuestionStatus, setCurrentQuestionStatus] = useState<QuestionStatus>('idle');
+
   /** 각 문제별 정답 및 해설 저장 */
   const [quizSolutions, setQuizSolutions] = useState<
-    Array<{ correctAnswer: CorrectAnswerType; explanation: string } | null>
+    Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>
   >(new Array(quizzes.length).fill(null));
 
   // localStorage에서 필드 슬러그 가져오기
@@ -46,13 +50,7 @@ export const Quiz = () => {
         return;
       }
       try {
-        // units 데이터 가져오기
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
-        // quizzes 데이터 가져오기
-        const quizzesResponse = await fetch(`${API_BASE_URL}/steps/${step_id}/quizzes`);
-        if (!quizzesResponse.ok) throw new Error('Quizzes 데이터 로드 실패');
-
-        const quizzesData = await quizzesResponse.json();
+        const quizzesData = await quizService.getQuizzesByStep(step_id);
 
         setQuizzes(quizzesData);
 
@@ -129,28 +127,17 @@ export const Quiz = () => {
         currentQuiz.type === 'matching'
           ? {
               quiz_id: currentQuiz.id,
-              type: 'MATCHING',
+              type: 'MATCHING' as const,
               selection: { pairs: (currentAnswer as { pairs: MatchingPair[] }).pairs },
             }
           : {
               quiz_id: currentQuiz.id,
-              type: currentQuiz.type.toUpperCase(),
+              type: currentQuiz.type.toUpperCase() as 'MCQ' | 'OX' | 'CODE',
               selection: { option_id: currentAnswer as string },
             };
 
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
-      const res = await fetch(`${API_BASE_URL}/quizzes/${currentQuiz.id}/submissions/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('정답 확인 실패');
-
-      const result = await res.json();
-      const correctAnswer = result.solution?.correct_pairs
+      const result = await quizService.submitQuiz(currentQuiz.id, payload);
+      const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
         ? { pairs: result.solution.correct_pairs }
         : (result.solution?.correct_option_id ?? null);
 
@@ -178,13 +165,6 @@ export const Quiz = () => {
         return newStatuses;
       });
     }
-
-    setCurrentQuestionStatus('checked');
-    setQuestionStatuses(prev => {
-      const newStatuses = [...prev];
-      newStatuses[currentQuizIndex] = 'checked';
-      return newStatuses;
-    });
   }, [currentAnswer, currentQuiz, currentQuizIndex]);
 
   /** 마지막 문제 여부 */

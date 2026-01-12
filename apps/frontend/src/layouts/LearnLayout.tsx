@@ -6,7 +6,7 @@ import { Sidebar } from '@/layouts/Sidebar';
 export const LearnLayout = () => (
   <div css={containerStyle}>
     <Sidebar />
-    {/* 이곳에 Learn,SelectField 가 이 자리에 사용됌 */}
+    {/* Learn,SelectField */}
     <Outlet />
   </div>
 );

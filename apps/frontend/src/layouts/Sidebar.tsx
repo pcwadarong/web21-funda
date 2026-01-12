@@ -38,7 +38,7 @@ export const Sidebar = () => {
         {NAV_ITEMS.map(item => (
           <Link
             key={item.id}
-            to={!isLoggedIn && item.path !== '/learn' ? '/login' : item.path}
+            to={item.path}
             css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
           >
             <span css={navIconStyle}>

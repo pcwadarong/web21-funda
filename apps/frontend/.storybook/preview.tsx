@@ -3,7 +3,7 @@ import type { Preview } from '@storybook/react-vite';
 
 import { darkTheme, lightTheme } from '@/styles/theme';
 
-import '@/src/styles/main.css';
+import '@/styles/main.css';
 
 const preview: Preview = {
   parameters: {

@@ -1,5 +1,3 @@
-import type { ApiSuccessResponse } from '@/types/api';
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 /**
@@ -27,8 +25,7 @@ async function baseRequest<T>(
     throw new Error(errorData.message || `API Error: ${response.statusText}`);
   }
 
-  const result: ApiSuccessResponse<T> = await response.json();
-  return result.data;
+  return response.json() as Promise<T>;
 }
 
 /**

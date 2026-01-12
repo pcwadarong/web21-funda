@@ -1,13 +1,6 @@
-// 서버 응답의 공통 포맷
-export interface ApiSuccessResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
-// 에러 응답 포맷
+// 에러 응답 포맷 (백엔드에서 에러 발생 시 반환되는 구조)
 export interface ApiErrorResponse {
-  success: false;
   message: string;
-  code?: string;
+  statusCode?: number;
+  error?: string;
 }

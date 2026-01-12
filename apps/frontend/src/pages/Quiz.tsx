@@ -86,9 +86,6 @@ export const Quiz = () => {
     fetchQuizzes();
   }, [step_id]);
 
-  if (isLoading) return <QuizLoadingView />;
-  if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
-
   /** 새로고침 시, 한 문제라도 제출했다면 경고 */
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -226,6 +223,10 @@ export const Quiz = () => {
     step_id,
     getQuizStartedAt,
   ]);
+
+  // 조건부 렌더링은 모든 hooks 호출 후에 배치
+  if (isLoading) return <QuizLoadingView />;
+  if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
 
   return (
     <QuizContainer

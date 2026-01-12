@@ -35,6 +35,9 @@ export const Quiz = () => {
   /** 각 문제별 풀이 완료 여부 상태 배열 */
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
 
+  /** 문제 하나라도 풀었을 때 */
+  const hasProgress = questionStatuses.some(status => status !== 'idle');
+
   /** 현재 풀이 중인 퀴즈의 인덱스 */
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
 
@@ -50,6 +53,7 @@ export const Quiz = () => {
   /** localStorage에서 필드 슬러그 가져오기 */
   const step_id = uiState.current_quiz_step_id;
 
+  /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
     const fetchQuizzes = async () => {
       if (!step_id) return;
@@ -71,6 +75,21 @@ export const Quiz = () => {
     };
     fetchQuizzes();
   }, [step_id]);
+
+  /** 새로고침 시, 한 문제라도 제출했다면 경고 */
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasProgress) return;
+
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasProgress]);
 
   // 정답 확인 버튼 활성화 여부 계산
   const isCheckDisabled = useMemo(() => {

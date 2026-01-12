@@ -1,5 +1,5 @@
 export function formatDuration(durationMs?: number | null): string {
-  if (durationMs == null || durationMs < 0) return '—';
+  if (durationMs == null || durationMs < 0) return '-';
 
   const totalSeconds = Math.floor(durationMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);

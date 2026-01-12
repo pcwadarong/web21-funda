@@ -1,4 +1,4 @@
-import type { MatchingPair, QuizQuestion } from '@/feat/quiz/types';
+import type { MatchingPair, QuizQuestion, StepCompletionResult } from '@/feat/quiz/types';
 
 import { apiFetch } from './api';
 
@@ -21,12 +21,6 @@ export interface QuizSubmissionResponse {
 
 export interface StepCompletionPayload {
   startedAt: number; // ms timestamp
-}
-
-export interface StepCompletionResult {
-  successRate: number;
-  xpGained: number;
-  durationMs: number;
 }
 
 export const quizService = {

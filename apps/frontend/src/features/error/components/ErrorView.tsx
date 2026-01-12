@@ -7,14 +7,18 @@ interface ErrorViewProps {
   title: string;
   description: string | React.ReactNode;
   primaryButtonText?: string;
-  onButtonClick?: () => void;
+  onPrimaryButtonClick?: () => void;
+  secondaryButtonText?: string;
+  onSecondaryButtonClick?: () => void;
 }
 
 export const ErrorView = ({
   title,
   description,
   primaryButtonText = '메인 페이지로 이동',
-  onButtonClick,
+  onPrimaryButtonClick,
+  secondaryButtonText,
+  onSecondaryButtonClick,
 }: ErrorViewProps) => {
   const theme = useTheme();
 
@@ -23,9 +27,16 @@ export const ErrorView = ({
       <h1 css={titleStyle(theme)}>{title}</h1>
       <p css={descriptionStyle(theme)}>{description}</p>
       <div css={buttonGroupStyle}>
-        {onButtonClick && (
+        {onSecondaryButtonClick && (
           <div css={buttonWrapperStyle}>
-            <Button variant="primary" onClick={onButtonClick} fullWidth>
+            <Button variant="secondary" onClick={onSecondaryButtonClick} fullWidth>
+              {secondaryButtonText || '다시 시도'}
+            </Button>
+          </div>
+        )}
+        {onPrimaryButtonClick && (
+          <div css={buttonWrapperStyle}>
+            <Button variant="primary" onClick={onPrimaryButtonClick} fullWidth>
               {primaryButtonText}
             </Button>
           </div>

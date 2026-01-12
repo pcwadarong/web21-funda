@@ -16,7 +16,11 @@ vi.mock('@/store/modalStore', async () => {
   };
 });
 
-vi.mock('./QuizRenderer', () => ({
+vi.mock('@/comp/SVGIcon', () => ({
+  default: () => <span data-testid="svg-icon" />,
+}));
+
+vi.mock('@/feat/quiz/components/QuizRenderer', () => ({
   QuizRenderer: (props: { disabled: boolean; showResult: boolean }) => (
     <div
       data-testid="quiz-renderer"

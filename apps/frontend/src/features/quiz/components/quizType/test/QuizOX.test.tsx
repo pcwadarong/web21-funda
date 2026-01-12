@@ -80,9 +80,13 @@ describe('QuizOX 컴포넌트 테스트', () => {
   });
 
   it('showResult가 true일 때 정답/오답 상태가 표시되고 클릭이 막힌다', () => {
-    // QuizOX 내부 mockCorrectAnswer = 'x'
     const handleAnswerChange = vi.fn();
-    renderQuizOX({ selectedAnswer: 'o', showResult: true, onAnswerChange: handleAnswerChange });
+    renderQuizOX({
+      selectedAnswer: 'o',
+      correctAnswer: 'x',
+      showResult: true,
+      onAnswerChange: handleAnswerChange,
+    });
 
     const buttonO = screen.getByRole('button', { name: 'O' });
     const buttonX = screen.getByRole('button', { name: 'X' });

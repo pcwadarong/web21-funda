@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
 import { lightTheme } from '@/styles/theme';
 
-vi.mock('./quizType/QuizMCQ', () => ({
+vi.mock('@/feat/quiz/components/quizType/QuizMCQ', () => ({
   QuizMCQ: (props: { disabled: boolean; showResult: boolean }) => (
     <div
       data-testid="mcq"
@@ -15,7 +15,7 @@ vi.mock('./quizType/QuizMCQ', () => ({
   ),
 }));
 
-vi.mock('./quizType/QuizOX', () => ({
+vi.mock('@/feat/quiz/components/quizType/QuizOX', () => ({
   QuizOX: (props: { disabled: boolean; showResult: boolean }) => (
     <div
       data-testid="ox"
@@ -25,7 +25,7 @@ vi.mock('./quizType/QuizOX', () => ({
   ),
 }));
 
-vi.mock('./quizType/QuizCode', () => ({
+vi.mock('@/feat/quiz/components/quizType/QuizCode', () => ({
   QuizCode: (props: { disabled: boolean; showResult: boolean }) => (
     <div
       data-testid="code"
@@ -35,7 +35,7 @@ vi.mock('./quizType/QuizCode', () => ({
   ),
 }));
 
-vi.mock('./quizType/QuizMatching', () => ({
+vi.mock('@/feat/quiz/components/quizType/QuizMatching', () => ({
   QuizMatching: (props: { disabled: boolean; showResult: boolean }) => (
     <div
       data-testid="matching"

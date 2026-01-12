@@ -10,7 +10,7 @@ export const ServicePreparation = () => {
   const navigate = useNavigate();
 
   const handleNavigate = useCallback(() => {
-    navigate('/');
+    navigate('/learn');
   }, [navigate]);
 
   return (

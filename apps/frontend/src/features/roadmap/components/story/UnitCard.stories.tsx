@@ -21,7 +21,7 @@ const baseUnit: RoadmapUnit = {
 };
 
 const meta: Meta<UnitCardProps> = {
-  title: 'Roadmap/UnitCard',
+  title: 'Features/Roadmap/UnitCard',
   component: UnitCard,
   parameters: {
     layout: 'centered',

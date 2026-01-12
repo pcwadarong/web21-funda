@@ -8,7 +8,6 @@ import { InitialFields } from '@/pages/InitialFields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
-import { Overview } from '@/pages/Overview';
 import { Quiz } from '@/pages/Quiz';
 import { QuizResult } from '@/pages/QuizResult';
 import { Roadmap } from '@/pages/Roadmap';
@@ -50,8 +49,9 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: '/overview/:unitId',
-    element: <Overview />,
+    path: '/learn/overview/:unitId',
+    // element: <Overview />,
+    element: <ServicePreparation />,
   },
 
   // 퀴즈 관련 (Quiz)
@@ -89,6 +89,7 @@ export const router = createBrowserRouter([
   // 기타 설정 및 공통
   {
     path: '/setting',
+    // element: <Setting />,
     element: <ServicePreparation />,
   },
   {

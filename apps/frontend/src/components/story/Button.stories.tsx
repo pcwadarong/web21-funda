@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
-import { fn } from 'storybook/test';
 
 import { Button } from '@/comp/Button';
 
@@ -41,7 +40,7 @@ const meta: Meta<ButtonProps> = {
   args: {
     buttonText: 'Button',
     fullWidth: true,
-    onClick: fn(),
+    onClick: () => {},
   },
 };
 

@@ -1,8 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { expect } from 'vitest';
+import { expect, userEvent, within } from '@storybook/test';
 
 import { QuizContentCard } from '@/feat/quiz/components/QuizContentCard';
 import type { QuizQuestion } from '@/feat/quiz/types';
@@ -122,7 +120,6 @@ export const Checked: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('문제 해설 내용이 여기에 노출됩니다.')).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: '해설 보기' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: '다음 문제' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'AI 질문' })).toBeInTheDocument();

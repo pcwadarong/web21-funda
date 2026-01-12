@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { LessonItem, LessonSection } from '@/feat/learn/types';
+import type { UnitType } from '@/feat/learn/types';
 import { useStorage } from '@/hooks/useStorage';
 import { fieldService } from '@/services/fieldService';
 
@@ -9,11 +9,12 @@ import { fieldService } from '@/services/fieldService';
  */
 export const useLearnUnits = () => {
   const { uiState, solvedStepHistory } = useStorage();
-  const [units, setUnits] = useState<LessonSection[]>([]);
-  const [activeUnitId, setActiveUnitId] = useState('');
+  const [field, setField] = useState('');
+  const [units, setUnits] = useState<UnitType[]>([]);
+  const [activeUnitId, setActiveUnitId] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
-  const unitRefs = useRef(new Map<string, HTMLElement>());
+  const unitRefs = useRef(new Map<number, HTMLElement>());
 
   const activeUnit = useMemo(
     () => units.find(unit => unit.id === activeUnitId) ?? units[0],
@@ -45,33 +46,9 @@ export const useLearnUnits = () => {
         const data = await fieldService.getFieldUnits(fieldSlug);
         if (!isMounted) return;
 
-        const mapped = data.units
-          .sort((a, b) => a.orderIndex - b.orderIndex)
-          .map(unit => ({
-            id: String(unit.id),
-            name: data.field.name,
-            title: unit.title,
-            steps: unit.steps
-              .sort((a, b) => a.orderIndex - b.orderIndex)
-              .map(step => {
-                const status: LessonItem['status'] = step.isLocked
-                  ? 'locked'
-                  : step.isCompleted
-                    ? 'completed'
-                    : 'active';
-                const type: LessonItem['type'] = step.isCheckpoint ? 'checkpoint' : 'normal';
-
-                return {
-                  id: String(step.id),
-                  name: step.title,
-                  status,
-                  type,
-                };
-              }),
-          }));
-
-        setUnits(mapped);
-        setActiveUnitId(mapped[0]?.id ?? '');
+        setField(data.field.name);
+        setUnits(data.units ?? []);
+        setActiveUnitId(data.units[0]?.id ?? null);
       } catch (error) {
         console.error('Failed to fetch units:', error);
       }
@@ -135,7 +112,7 @@ export const useLearnUnits = () => {
     const targetUnitId = uiState.last_viewed.unit_id;
     if (targetUnitId <= 1) return;
 
-    const element = unitRefs.current.get(String(targetUnitId));
+    const element = unitRefs.current.get(targetUnitId);
     if (!element) return;
 
     const headerHeight = headerRef.current?.offsetHeight ?? 0;
@@ -149,7 +126,7 @@ export const useLearnUnits = () => {
    * @param unitId 유닛 ID
    */
   const registerUnitRef = useCallback(
-    (unitId: string) => (element: HTMLElement | null) => {
+    (unitId: number) => (element: HTMLElement | null) => {
       if (!element) {
         unitRefs.current.delete(unitId);
         return;
@@ -160,6 +137,7 @@ export const useLearnUnits = () => {
   );
 
   return {
+    field,
     units,
     activeUnit,
     scrollContainerRef,

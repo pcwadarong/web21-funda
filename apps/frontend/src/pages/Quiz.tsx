@@ -1,9 +1,7 @@
-import { css } from '@emotion/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-import { QuizContentCard } from '@/feat/quiz/components/QuizContentCard';
-import { QuizHeader } from '@/feat/quiz/components/QuizHeader';
+import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import type {
   AnswerType,
   CorrectAnswerType,
@@ -22,76 +20,61 @@ import { quizService } from '@/services/quizService';
 export const Quiz = () => {
   const { uiState, addStepHistory } = useStorage();
   const navigate = useNavigate();
-  const { unitId, stepId } = useParams<{ unitId: string; stepId: string }>();
+
+  /** 불러온 문제 배열 */
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
 
-  /** 현재 풀이 중인 퀴즈의 인덱스 */
-  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  /** 각 문제별 정답 및 해설 저장 */
+  const [quizSolutions, setQuizSolutions] = useState<
+    Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>
+  >([]);
+
+  /** 사용자가 입력한 답변 배열 */
   const [selectedAnswers, setSelectedAnswers] = useState<AnswerType[]>([]);
 
   /** 각 문제별 풀이 완료 여부 상태 배열 */
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
 
+  /** 현재 풀이 중인 퀴즈의 인덱스 */
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+
+  /** 현재 활성화된 퀴즈 객체 */
+  const currentQuiz = quizzes[currentQuizIndex];
+
   /** 현재 화면에 표시된 퀴즈의 진행 상태 */
   const [currentQuestionStatus, setCurrentQuestionStatus] = useState<QuestionStatus>('idle');
 
-  /** 각 문제별 정답 및 해설 저장 */
-  const [quizSolutions, setQuizSolutions] = useState<
-    Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>
-  >(new Array(quizzes.length).fill(null));
+  /** 현재 활성화된 퀴즈에 대해 사용자가 입력한 답변 */
+  const currentAnswer = selectedAnswers[currentQuizIndex];
 
-  // localStorage에서 필드 슬러그 가져오기
+  /** localStorage에서 필드 슬러그 가져오기 */
   const step_id = uiState.current_quiz_step_id;
 
   useEffect(() => {
     const fetchQuizzes = async () => {
-      if (!step_id) {
-        console.error('step_id 없습니다');
-        return;
-      }
+      if (!step_id) return;
       try {
         const quizzesData = await quizService.getQuizzesByStep(step_id);
-
         setQuizzes(quizzesData);
-
         setSelectedAnswers(new Array(quizzesData.length).fill(null));
         setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
-
         setQuizSolutions(new Array(quizzesData.length).fill(null));
       } catch (error) {
         console.error('API Error:', error);
       }
     };
-
     fetchQuizzes();
   }, [step_id]);
 
-  /** 현재 활성화된 퀴즈 객체 */
-  const currentQuiz = quizzes[currentQuizIndex];
-
-  /** 현재 활성화된 퀴즈에 대해 사용자가 입력한 답변 */
-  const currentAnswer = selectedAnswers[currentQuizIndex];
-
-  /**
-   * 정답 확인 버튼의 비활성화 여부를 계산합니다.
-   * - 정답 확인 중이거나 이미 완료된 경우 비활성화
-   * - 답변이 없는 경우 비활성화
-   * - 매칭형 퀴즈의 경우 모든 선지가 연결되지 않으면 비활성화
-   * * @type {boolean}
-   */
-
+  // 정답 확인 버튼 활성화 여부 계산
   const isCheckDisabled = useMemo(() => {
-    if (!currentQuiz) return true;
-    if (currentQuestionStatus !== 'idle') return true;
-    if (currentAnswer === null) return true;
+    if (!currentQuiz || currentQuestionStatus !== 'idle' || currentAnswer === null) return true;
 
+    // 매칭형: metadata의 left 개수와 현재 pairs의 개수가 정확히 일치해야 함
     if (currentQuiz.type === 'matching') {
-      // 매칭형: metadata의 left 개수와 현재 pairs의 개수가 정확히 일치해야 함
       const matchingAnswer = currentAnswer as { pairs: MatchingPair[] };
       const totalRequired = currentQuiz.content.matching_metadata?.left?.length;
-      const currentPairsCount = matchingAnswer.pairs?.length || 0;
-
-      return totalRequired !== currentPairsCount;
+      return totalRequired !== (matchingAnswer.pairs?.length || 0);
     }
 
     // 일반형(MCQ, OX, CODE): 데이터가 존재하기만 하면 활성화
@@ -149,21 +132,15 @@ export const Quiz = () => {
         };
         return newSolutions;
       });
-
       setCurrentQuestionStatus('checked');
       setQuestionStatuses(prev => {
         const newStatuses = [...prev];
         newStatuses[currentQuizIndex] = 'checked';
         return newStatuses;
       });
-    } catch (_error) {
-      // 에러 발생 시에도 상태를 checked로 변경하여 사용자가 다음 문제로 넘어갈 수 있도록 함
+    } catch {
+      // 에러 발생 시에도 다음 문제로 넘어갈 수 있도록 함
       setCurrentQuestionStatus('checked');
-      setQuestionStatuses(prev => {
-        const newStatuses = [...prev];
-        newStatuses[currentQuizIndex] = 'checked';
-        return newStatuses;
-      });
     }
   }, [currentAnswer, currentQuiz, currentQuizIndex]);
 
@@ -184,51 +161,21 @@ export const Quiz = () => {
       // 다음 문제가 이미 풀었던 문제라면 해당 상태를 유지, 아니면 'idle'
       setCurrentQuestionStatus(questionStatuses[nextIndex] || 'idle');
     }
-  }, [isLastQuestion, navigate, unitId, stepId, questionStatuses, currentQuizIndex]);
-  if (!quizzes || quizzes.length === 0 || !currentQuiz) {
-    return (
-      <div css={containerStyle}>
-        <div style={{ padding: '20px' }}>데이터를 불러오는 중입니다...</div>
-      </div>
-    );
-  }
+  }, [isLastQuestion, navigate, questionStatuses, currentQuizIndex, addStepHistory, currentQuiz]);
+
   return (
-    <div css={containerStyle}>
-      <QuizHeader
-        currentStep={currentQuizIndex + 1}
-        totalSteps={quizzes.length}
-        completedSteps={questionStatuses.filter(s => s === 'checked').length}
-      />
-      <main css={mainStyle}>
-        <QuizContentCard
-          question={currentQuiz}
-          status={currentQuestionStatus}
-          selectedAnswer={selectedAnswers[currentQuizIndex] ?? null}
-          correctAnswer={quizSolutions[currentQuizIndex]?.correctAnswer ?? null}
-          explanation={quizSolutions[currentQuizIndex]?.explanation ?? ''}
-          onAnswerChange={handleAnswerChange}
-          isSubmitDisabled={isCheckDisabled}
-          onCheck={handleCheckAnswer}
-          onNext={handleNextQuestion}
-          isLast={isLastQuestion}
-        />
-      </main>
-    </div>
+    <QuizContainer
+      quizzes={quizzes}
+      currentQuizIndex={currentQuizIndex}
+      currentQuestionStatus={currentQuestionStatus}
+      selectedAnswers={selectedAnswers}
+      quizSolutions={quizSolutions}
+      questionStatuses={questionStatuses}
+      isCheckDisabled={isCheckDisabled}
+      isLastQuestion={isLastQuestion}
+      handleAnswerChange={handleAnswerChange}
+      handleCheckAnswer={handleCheckAnswer}
+      handleNextQuestion={handleNextQuestion}
+    />
   );
 };
-
-const containerStyle = css`
-  display: flex;
-  flex-direction: column;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-`;
-const mainStyle = css`
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  overflow-y: auto;
-  padding: 24px;
-`;

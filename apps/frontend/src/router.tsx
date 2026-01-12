@@ -3,7 +3,7 @@ import { createBrowserRouter, redirect } from 'react-router-dom';
 import { LearnLayout } from '@/layouts/LearnLayout';
 import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
 import { AuthCheck } from '@/pages/AuthCheck';
-import { Error } from '@/pages/Error';
+import { GlobalError } from '@/pages/GlobalError';
 import { InitialFields } from '@/pages/InitialFields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
@@ -98,6 +98,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Error />,
+    element: <GlobalError />,
   },
 ]);

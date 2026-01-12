@@ -1,30 +1,35 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import type { Theme } from '@/styles/theme';
 
-export const Error = () => {
-  const theme = useTheme();
-  const navigate = useNavigate();
+interface ErrorViewProps {
+  title: string;
+  description: string | React.ReactNode;
+  primaryButtonText?: string;
+  onButtonClick?: () => void;
+}
 
-  const handleNavigate = useCallback(() => {
-    navigate('/');
-  }, [navigate]);
+export const ErrorView = ({
+  title,
+  description,
+  primaryButtonText = '메인 페이지로 이동',
+  onButtonClick,
+}: ErrorViewProps) => {
+  const theme = useTheme();
 
   return (
     <div css={containerStyle()}>
-      <h1 css={titleStyle(theme)}>페이지를 찾을 수 없습니다.</h1>
-      <p css={descriptionStyle(theme)}>
-        요청하신 페이지가 존재하지 않거나
-        <br />
-        접근할 수 없는 페이지입니다.
-      </p>
-      <div css={buttonWrapperStyle}>
-        <Button variant="primary" onClick={handleNavigate} fullWidth>
-          메인 페이지로 이동
-        </Button>
+      <h1 css={titleStyle(theme)}>{title}</h1>
+      <p css={descriptionStyle(theme)}>{description}</p>
+      <div css={buttonGroupStyle}>
+        {onButtonClick && (
+          <div css={buttonWrapperStyle}>
+            <Button variant="primary" onClick={onButtonClick} fullWidth>
+              {primaryButtonText}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -57,6 +62,14 @@ const descriptionStyle = (theme: Theme) => css`
   margin: 0;
   text-align: center;
   max-width: 400px;
+`;
+
+const buttonGroupStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 300px;
 `;
 
 const buttonWrapperStyle = css`

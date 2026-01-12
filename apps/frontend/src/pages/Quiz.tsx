@@ -18,7 +18,7 @@ import { quizService } from '@/services/quizService';
  * * @returns {JSX.Element | null} 퀴즈 화면 레이아웃
  */
 export const Quiz = () => {
-  const { uiState, addStepHistory } = useStorage();
+  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt } = useStorage();
   const navigate = useNavigate();
 
   /** 불러온 문제 배열 */
@@ -59,9 +59,7 @@ export const Quiz = () => {
       if (!step_id) return;
 
       /** 퀴즈 시작 시간 저장 */
-      const storageKey = `quiz_started_at_${step_id}`;
-      const existing = localStorage.getItem(storageKey);
-      if (!existing) localStorage.setItem(storageKey, String(Date.now()));
+      setQuizStartedAt(step_id);
 
       try {
         const quizzesData = await quizService.getQuizzesByStep(step_id);
@@ -179,14 +177,14 @@ export const Quiz = () => {
     if (!currentQuiz) return;
     if (isLastQuestion) {
       try {
-        const startedAt = localStorage.getItem('quizStartedAt');
+        const startedAt = getQuizStartedAt(step_id);
         if (!startedAt) {
           navigate('/quiz/error');
           return;
         }
 
         const result = await quizService.completeStep(step_id, {
-          startedAt: Number(startedAt),
+          startedAt,
         });
 
         navigate('/quiz/result', {
@@ -203,7 +201,16 @@ export const Quiz = () => {
       // 다음 문제가 이미 풀었던 문제라면 해당 상태를 유지, 아니면 'idle'
       setCurrentQuestionStatus(questionStatuses[nextIndex] || 'idle');
     }
-  }, [isLastQuestion, navigate, questionStatuses, currentQuizIndex, addStepHistory, currentQuiz]);
+  }, [
+    isLastQuestion,
+    navigate,
+    questionStatuses,
+    currentQuizIndex,
+    addStepHistory,
+    currentQuiz,
+    step_id,
+    getQuizStartedAt,
+  ]);
 
   return (
     <QuizContainer

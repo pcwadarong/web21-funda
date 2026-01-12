@@ -29,6 +29,18 @@ export const useStorage = () => {
     const updated = storageUtil.updateLastSolvedUnit(fieldSlug, unitId);
     setStorageData(updated);
   }, []);
+
+  // 퀴즈 시작 시간 설정
+  const setQuizStartedAt = useCallback((stepId: number, timestamp?: number) => {
+    const updated = storageUtil.setQuizStartedAt(stepId, timestamp);
+    setStorageData(updated);
+  }, []);
+
+  // 퀴즈 시작 시간 가져오기
+  const getQuizStartedAt = useCallback((stepId: number) => {
+    return storageUtil.getQuizStartedAt(stepId);
+  }, []);
+
   return {
     storageData,
     progress: storageData.progress,
@@ -38,5 +50,7 @@ export const useStorage = () => {
     updateUIState,
     addStepHistory,
     updateLastSolvedUnit,
+    setQuizStartedAt,
+    getQuizStartedAt,
   };
 };

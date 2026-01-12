@@ -1,9 +1,9 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
@@ -60,15 +60,32 @@ export const QuizResultContent = ({
   isLogin,
   isFirstToday,
 }: QuizResultContentProps) => {
+  const { uiState, updateUIState } = useStorage();
   const theme = useTheme();
   const navigate = useNavigate();
   const config = METRIC_CONFIG(theme);
 
-  const handleNavigation = useCallback(() => {
-    if (!isLogin) navigate('/auth/check');
+  const handleMainNavigation = () => {
+    if (!isLogin)
+      navigate('/auth/check', {
+        state: { from: '/learn' },
+      });
     else if (isFirstToday) navigate('/streak');
     else navigate('/learn');
-  }, [isLogin, isFirstToday, navigate]);
+  };
+  const handleNextNavigation = () => {
+    if (!isLogin)
+      navigate('/auth/check', {
+        state: { from: '/quiz' },
+      });
+    else if (isFirstToday) navigate('/streak');
+    else {
+      navigate('/quiz');
+      updateUIState({
+        current_quiz_step_id: uiState.current_quiz_step_id + 1,
+      });
+    }
+  };
 
   return (
     <div css={containerStyle}>
@@ -96,10 +113,10 @@ export const QuizResultContent = ({
       </div>
 
       <div css={buttonsContainerStyle}>
-        <Button variant="primary" onClick={handleNavigation} css={fullWidth}>
+        <Button variant="primary" onClick={handleNextNavigation} css={fullWidth}>
           학습 계속하기
         </Button>
-        <Button variant="secondary" onClick={handleNavigation} css={fullWidth}>
+        <Button variant="secondary" onClick={handleMainNavigation} css={fullWidth}>
           메인 페이지로 이동하기
         </Button>
       </div>

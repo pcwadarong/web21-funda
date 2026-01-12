@@ -1,21 +1,21 @@
 import { createBrowserRouter, redirect } from 'react-router-dom';
 
 import { LearnLayout } from '@/layouts/LearnLayout';
-import { AdminQuizUpload } from '@/pages/AdminQuizUpload';
-import { AuthCheck } from '@/pages/AuthCheck';
-import { GlobalError } from '@/pages/GlobalError';
-import { InitialFields } from '@/pages/InitialFields';
+import { AdminQuizUpload } from '@/pages/admin/AdminQuizUpload';
+import { AuthCheck } from '@/pages/auth/AuthCheck';
+import { Login } from '@/pages/auth/Login';
+import { GlobalError } from '@/pages/common/GlobalError';
+import { NotFound } from '@/pages/common/NotFound';
+import { ServicePreparation } from '@/pages/common/ServicePreparation';
 import { Landing } from '@/pages/Landing';
-import { Learn } from '@/pages/Learn';
-import { Login } from '@/pages/Login';
-import { NotFound } from '@/pages/NotFound';
-import { Quiz } from '@/pages/Quiz';
-import { QuizResult } from '@/pages/QuizResult';
-import { QuizResultError } from '@/pages/QuizResultError';
-import { Roadmap } from '@/pages/Roadmap';
-import { SelectField } from '@/pages/SelectField';
-import { ServicePreparation } from '@/pages/ServicePreparation';
-import { Streak } from '@/pages/Streak';
+import { InitialFields } from '@/pages/learn/InitialFields';
+import { Learn } from '@/pages/learn/Learn';
+import { Roadmap } from '@/pages/learn/Roadmap';
+import { SelectField } from '@/pages/learn/SelectField';
+import { Quiz } from '@/pages/quiz/Quiz';
+import { QuizResult } from '@/pages/quiz/QuizResult';
+import { QuizResultError } from '@/pages/quiz/QuizResultError';
+import { Streak } from '@/pages/quiz/Streak';
 
 const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
 

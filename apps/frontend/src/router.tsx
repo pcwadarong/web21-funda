@@ -8,6 +8,7 @@ import { InitialFields } from '@/pages/InitialFields';
 import { Landing } from '@/pages/Landing';
 import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
+import { NotFound } from '@/pages/NotFound';
 import { Quiz } from '@/pages/Quiz';
 import { QuizResult } from '@/pages/QuizResult';
 import { QuizResultError } from '@/pages/QuizResultError';
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <Landing />,
+    errorElement: <GlobalError />,
   },
   {
     path: '/login',
@@ -100,6 +102,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <GlobalError />,
+    element: <NotFound />,
   },
 ]);

@@ -6,15 +6,18 @@ export const GlobalError = () => {
   const navigate = useNavigate();
   return (
     <ErrorView
-      title="페이지를 찾을 수 없습니다."
+      title="서비스 이용에 불편을 드려 죄송합니다."
       description={
         <>
-          요청하신 페이지가 존재하지 않거나
+          일시적인 오류가 발생했습니다.
           <br />
-          접근할 수 없는 페이지입니다.
+          잠시 후 다시 시도해 주세요.
         </>
       }
+      primaryButtonText="메인으로 이동"
       onPrimaryButtonClick={() => navigate('/learn')}
+      secondaryButtonText="다시 시도"
+      onSecondaryButtonClick={() => window.location.reload()}
     />
   );
 };

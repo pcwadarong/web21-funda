@@ -19,6 +19,16 @@ export interface QuizSubmissionResponse {
   };
 }
 
+export interface StepCompletionPayload {
+  startedAt: number; // ms timestamp
+}
+
+export interface StepCompletionResult {
+  successRate: number;
+  xpGained: number;
+  durationMs: number;
+}
+
 export const quizService = {
   /**
    * 특정 스텝의 퀴즈 목록을 가져옵니다.
@@ -39,5 +49,18 @@ export const quizService = {
     payload: QuizSubmissionRequest,
   ): Promise<QuizSubmissionResponse> {
     return apiFetch.post<QuizSubmissionResponse>(`/quizzes/${quizId}/submissions`, payload);
+  },
+
+  /**
+   * 이 step의 모든 quiz 풀이가 끝났음을 서버에 확정하는 요청
+   * @param stepId 스텝 ID
+   * @param payload 퀴즈 시작 시간
+   * @returns 퀴즈 결과 (소요 시간, 획득 xp, 성공률)
+   */
+  async completeStep(
+    stepId: number,
+    payload: StepCompletionPayload,
+  ): Promise<StepCompletionResult> {
+    return apiFetch.post<StepCompletionResult>(`/steps/${stepId}/completion`, payload);
   },
 };

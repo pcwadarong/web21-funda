@@ -175,11 +175,28 @@ export const Quiz = () => {
   /**
    * 다음 문제로 이동하거나 결과 페이지로 이동하는 핸들러
    */
-  const handleNextQuestion = useCallback(() => {
+  const handleNextQuestion = useCallback(async () => {
     if (!currentQuiz) return;
     if (isLastQuestion) {
-      navigate(`/quiz/result`);
-      addStepHistory(currentQuiz.id);
+      try {
+        const startedAt = localStorage.getItem('quizStartedAt');
+        if (!startedAt) {
+          navigate('/quiz/error');
+          return;
+        }
+
+        const result = await quizService.completeStep(step_id, {
+          startedAt: Number(startedAt),
+        });
+
+        navigate('/quiz/result', {
+          state: result,
+        });
+
+        addStepHistory(currentQuiz.id);
+      } catch {
+        navigate('/quiz/error');
+      }
     } else {
       const nextIndex = currentQuizIndex + 1;
       setCurrentQuizIndex(nextIndex);

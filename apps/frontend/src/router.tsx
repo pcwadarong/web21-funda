@@ -10,6 +10,7 @@ import { Learn } from '@/pages/Learn';
 import { Login } from '@/pages/Login';
 import { Quiz } from '@/pages/Quiz';
 import { QuizResult } from '@/pages/QuizResult';
+import { QuizResultError } from '@/pages/QuizResultError';
 import { Roadmap } from '@/pages/Roadmap';
 import { SelectField } from '@/pages/SelectField';
 import { ServicePreparation } from '@/pages/ServicePreparation';
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Quiz /> }, // /quiz
       { path: 'result', element: <QuizResult /> }, // /quiz/result
+      { path: 'error', element: <QuizResultError /> }, // /quiz/error
     ],
   },
 

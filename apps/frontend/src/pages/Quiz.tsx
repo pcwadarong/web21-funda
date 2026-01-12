@@ -53,6 +53,12 @@ export const Quiz = () => {
   useEffect(() => {
     const fetchQuizzes = async () => {
       if (!step_id) return;
+
+      /** 퀴즈 시작 시간 저장 */
+      const storageKey = `quiz_started_at_${step_id}`;
+      const existing = localStorage.getItem(storageKey);
+      if (!existing) localStorage.setItem(storageKey, String(Date.now()));
+
       try {
         const quizzesData = await quizService.getQuizzesByStep(step_id);
         setQuizzes(quizzesData);

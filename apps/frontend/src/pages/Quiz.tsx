@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
+import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
+import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
 import type {
   AnswerType,
   CorrectAnswerType,
@@ -19,6 +21,8 @@ import { quizService } from '@/services/quizService';
  */
 export const Quiz = () => {
   const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt } = useStorage();
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const navigate = useNavigate();
 
   /** 불러온 문제 배열 */
@@ -53,26 +57,37 @@ export const Quiz = () => {
   /** localStorage에서 필드 슬러그 가져오기 */
   const step_id = uiState.current_quiz_step_id;
 
+  /**
+   * 퀴즈 데이터 가져오기
+   */
+  const fetchQuizzes = async () => {
+    if (!step_id) return;
+    setIsLoading(true);
+    setLoadError(false);
+
+    /** 퀴즈 시작 시간 저장 */
+    setQuizStartedAt(step_id);
+
+    try {
+      const quizzesData = await quizService.getQuizzesByStep(step_id);
+      setQuizzes(quizzesData);
+      setSelectedAnswers(new Array(quizzesData.length).fill(null));
+      setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
+      setQuizSolutions(new Array(quizzesData.length).fill(null));
+    } catch {
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      if (!step_id) return;
-
-      /** 퀴즈 시작 시간 저장 */
-      setQuizStartedAt(step_id);
-
-      try {
-        const quizzesData = await quizService.getQuizzesByStep(step_id);
-        setQuizzes(quizzesData);
-        setSelectedAnswers(new Array(quizzesData.length).fill(null));
-        setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
-        setQuizSolutions(new Array(quizzesData.length).fill(null));
-      } catch (error) {
-        console.error('API Error:', error);
-      }
-    };
     fetchQuizzes();
   }, [step_id]);
+
+  if (isLoading) return <QuizLoadingView />;
+  if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
 
   /** 새로고침 시, 한 문제라도 제출했다면 경고 */
   useEffect(() => {

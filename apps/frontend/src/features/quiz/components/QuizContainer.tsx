@@ -38,13 +38,7 @@ export const QuizContainer = ({
 }: QuizContainerProps) => {
   const currentQuiz = quizzes[currentQuizIndex];
 
-  if (!quizzes || quizzes.length === 0 || !currentQuiz) {
-    return (
-      <div css={containerStyle}>
-        <div style={{ padding: '20px' }}>데이터를 불러오는 중입니다...</div>
-      </div>
-    );
-  }
+  if (!currentQuiz) return null;
 
   return (
     <div css={containerStyle}>

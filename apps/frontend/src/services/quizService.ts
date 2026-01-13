@@ -12,6 +12,7 @@ export interface QuizSubmissionRequest {
 }
 
 export interface QuizSubmissionResponse {
+  is_correct: boolean;
   solution: {
     explanation: string;
     correct_option_id?: string;

@@ -70,6 +70,25 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: funda-storybook
+    working_dir: /workspace
+    ports:
+      - '6006:6006'
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - frontend_node_modules:/workspace/apps/frontend/node_modules
+      - pnpm_store:/root/.local/share/pnpm/store
+    environment:
+      - NODE_ENV=development
+    command: >
+      sh -c "pnpm install
+      && pnpm --filter frontend storybook"
+
 volumes:
   mysql_data:
   root_node_modules:

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
+import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
+import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
 import type {
   AnswerType,
   CorrectAnswerType,
@@ -18,7 +20,9 @@ import { quizService } from '@/services/quizService';
  * * @returns {JSX.Element | null} 퀴즈 화면 레이아웃
  */
 export const Quiz = () => {
-  const { uiState, addStepHistory } = useStorage();
+  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt } = useStorage();
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const navigate = useNavigate();
 
   /** 불러온 문제 배열 */
@@ -35,6 +39,9 @@ export const Quiz = () => {
   /** 각 문제별 풀이 완료 여부 상태 배열 */
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
 
+  /** 문제 하나라도 풀었을 때 */
+  const hasProgress = questionStatuses.some(status => status !== 'idle');
+
   /** 현재 풀이 중인 퀴즈의 인덱스 */
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
 
@@ -50,21 +57,49 @@ export const Quiz = () => {
   /** localStorage에서 필드 슬러그 가져오기 */
   const step_id = uiState.current_quiz_step_id;
 
+  /**
+   * 퀴즈 데이터 가져오기
+   */
+  const fetchQuizzes = async () => {
+    if (!step_id) return;
+    setIsLoading(true);
+    setLoadError(false);
+
+    /** 퀴즈 시작 시간 저장 */
+    setQuizStartedAt(step_id);
+
+    try {
+      const quizzesData = await quizService.getQuizzesByStep(step_id);
+      setQuizzes(quizzesData);
+      setSelectedAnswers(new Array(quizzesData.length).fill(null));
+      setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
+      setQuizSolutions(new Array(quizzesData.length).fill(null));
+    } catch {
+      setLoadError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      if (!step_id) return;
-      try {
-        const quizzesData = await quizService.getQuizzesByStep(step_id);
-        setQuizzes(quizzesData);
-        setSelectedAnswers(new Array(quizzesData.length).fill(null));
-        setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
-        setQuizSolutions(new Array(quizzesData.length).fill(null));
-      } catch (error) {
-        console.error('API Error:', error);
-      }
-    };
     fetchQuizzes();
   }, [step_id]);
+
+  /** 새로고침 시, 한 문제라도 제출했다면 경고 */
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasProgress) return;
+
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasProgress]);
 
   // 정답 확인 버튼 활성화 여부 계산
   const isCheckDisabled = useMemo(() => {
@@ -150,18 +185,48 @@ export const Quiz = () => {
   /**
    * 다음 문제로 이동하거나 결과 페이지로 이동하는 핸들러
    */
-  const handleNextQuestion = useCallback(() => {
+  const handleNextQuestion = useCallback(async () => {
     if (!currentQuiz) return;
     if (isLastQuestion) {
-      navigate(`/quiz/result`);
-      addStepHistory(currentQuiz.id);
+      try {
+        const startedAt = getQuizStartedAt(step_id);
+        if (!startedAt) {
+          navigate('/quiz/error');
+          return;
+        }
+
+        const result = await quizService.completeStep(step_id, {
+          startedAt,
+        });
+
+        navigate('/quiz/result', {
+          state: result,
+        });
+
+        addStepHistory(currentQuiz.id);
+      } catch {
+        navigate('/quiz/error');
+      }
     } else {
       const nextIndex = currentQuizIndex + 1;
       setCurrentQuizIndex(nextIndex);
       // 다음 문제가 이미 풀었던 문제라면 해당 상태를 유지, 아니면 'idle'
       setCurrentQuestionStatus(questionStatuses[nextIndex] || 'idle');
     }
-  }, [isLastQuestion, navigate, questionStatuses, currentQuizIndex, addStepHistory, currentQuiz]);
+  }, [
+    isLastQuestion,
+    navigate,
+    questionStatuses,
+    currentQuizIndex,
+    addStepHistory,
+    currentQuiz,
+    step_id,
+    getQuizStartedAt,
+  ]);
+
+  // 조건부 렌더링은 모든 hooks 호출 후에 배치
+  if (isLoading) return <QuizLoadingView />;
+  if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
 
   return (
     <QuizContainer

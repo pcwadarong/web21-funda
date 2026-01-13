@@ -1,4 +1,4 @@
-import type { MatchingPair, QuizQuestion } from '@/feat/quiz/types';
+import type { MatchingPair, QuizQuestion, StepCompletionResult } from '@/feat/quiz/types';
 
 import { apiFetch } from './api';
 
@@ -17,6 +17,10 @@ export interface QuizSubmissionResponse {
     correct_option_id?: string;
     correct_pairs?: MatchingPair[];
   };
+}
+
+export interface StepCompletionPayload {
+  startedAt: number; // ms timestamp
 }
 
 export const quizService = {
@@ -39,5 +43,18 @@ export const quizService = {
     payload: QuizSubmissionRequest,
   ): Promise<QuizSubmissionResponse> {
     return apiFetch.post<QuizSubmissionResponse>(`/quizzes/${quizId}/submissions`, payload);
+  },
+
+  /**
+   * 이 step의 모든 quiz 풀이가 끝났음을 서버에 확정하는 요청
+   * @param stepId 스텝 ID
+   * @param payload 퀴즈 시작 시간
+   * @returns 퀴즈 결과 (소요 시간, 획득 xp, 성공률)
+   */
+  async completeStep(
+    stepId: number,
+    payload: StepCompletionPayload,
+  ): Promise<StepCompletionResult> {
+    return apiFetch.post<StepCompletionResult>(`/steps/${stepId}/completion`, payload);
   },
 };

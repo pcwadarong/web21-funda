@@ -172,4 +172,43 @@ describe('ProgressService', () => {
     expect(result.durationSeconds).toBeGreaterThanOrEqual(expectedDuration - 1);
     expect(result.durationSeconds).toBeLessThanOrEqual(expectedDuration + 2);
   });
+
+  it('요청한 stepAttemptId가 있으면 해당 시도를 우선 완료한다', async () => {
+    const startedAt = new Date(Date.now() - 5_000);
+
+    stepFindOneMock.mockResolvedValue({ id: 7 } as Step);
+    stepAttemptFindOneMock.mockImplementation(({ where }) => {
+      if (where?.id === 30) {
+        return Promise.resolve({
+          id: 30,
+          userId: 1,
+          step: { id: 7 },
+          attemptNo: 2,
+          totalQuizzes: 2,
+          startedAt,
+          status: StepAttemptStatus.IN_PROGRESS,
+        } as UserStepAttempt);
+      }
+      return Promise.resolve(null);
+    });
+    solveLogFindMock.mockResolvedValue([{ isCorrect: true } as SolveLog]);
+    stepStatusFindOneMock.mockResolvedValue(null);
+
+    const result = await service.completeStepAttempt({
+      userId: 1,
+      stepId: 7,
+      stepAttemptId: 30,
+    });
+
+    expect(stepAttemptFindOneMock).toHaveBeenCalledWith({
+      where: { id: 30, userId: 1, step: { id: 7 }, status: StepAttemptStatus.IN_PROGRESS },
+    });
+    expect(result).toMatchObject({
+      score: 3,
+      correctCount: 1,
+      totalQuizzes: 2,
+    });
+    const savedAttempt = stepAttemptSaveMock.mock.calls[0][0] as UserStepAttempt;
+    expect(savedAttempt.id).toBe(30);
+  });
 });

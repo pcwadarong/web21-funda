@@ -1,7 +1,8 @@
-import { Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -69,6 +70,20 @@ export class ProgressController {
     description:
       '진행 중인 시도(in_progress)를 완료 상태로 변경하고 점수/XP/성공률/소요 시간을 계산해 반환한다.',
   })
+  @ApiBody({
+    description: '옵션: 완료 처리할 stepAttemptId (없으면 최신 진행 중 시도 사용)',
+    schema: {
+      type: 'object',
+      properties: {
+        stepAttemptId: {
+          type: 'integer',
+          example: 12,
+          description: '명시적으로 완료할 스텝 시도 ID',
+        },
+      },
+      required: [],
+    },
+  })
   @ApiOkResponse({
     description: '스텝 풀이 완료',
     schema: {
@@ -94,6 +109,7 @@ export class ProgressController {
   @UseGuards(JwtAccessGuard)
   async completeStep(
     @Param('stepId', ParseIntPipe) stepId: number,
+    @Body() body: { stepAttemptId?: number },
     @Req() req: Request & { user?: JwtPayload },
   ) {
     const userId = req.user?.sub;
@@ -104,6 +120,7 @@ export class ProgressController {
     const completion = await this.progressService.completeStepAttempt({
       userId,
       stepId,
+      stepAttemptId: body.stepAttemptId,
     });
 
     return {

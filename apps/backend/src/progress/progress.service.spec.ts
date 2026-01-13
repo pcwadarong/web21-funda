@@ -26,7 +26,7 @@ describe('ProgressService', () => {
     expect(result).toEqual({
       score: 0,
       correctCount: 0,
-      totalQuestions: 0,
+      totalQuizzes: 0,
       successRate: 0,
     });
   });
@@ -47,7 +47,7 @@ describe('ProgressService', () => {
     // 점수 계산: (3+2) + (3-1) + (3+2) = 12
     expect(result.score).toBe(12);
     expect(result.correctCount).toBe(2);
-    expect(result.totalQuestions).toBe(3);
+    expect(result.totalQuizzes).toBe(3);
     expect(result.successRate).toBeCloseTo((2 / 3) * 100);
   });
 });

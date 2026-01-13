@@ -30,12 +30,12 @@ export class ProgressService {
       return {
         score: 0,
         correctCount: 0,
-        totalQuestions: 0,
+        totalQuizzes: 0,
         successRate: 0,
       };
     }
 
-    const totalQuestions = logs.length;
+    const totalQuizzes = logs.length;
     const correctCount = logs.filter(log => log.isCorrect).length;
 
     // 기본 3점 + 보너스(확장 시)
@@ -50,12 +50,12 @@ export class ProgressService {
       return accumulator + baseScore + correctnessBonus + difficultyBonus + speedBonus;
     }, 0);
 
-    const successRate = totalQuestions === 0 ? 0 : (correctCount / totalQuestions) * 100;
+    const successRate = totalQuizzes === 0 ? 0 : (correctCount / totalQuizzes) * 100;
 
     return {
       score,
       correctCount,
-      totalQuestions,
+      totalQuizzes,
       successRate,
     };
   }
@@ -83,6 +83,6 @@ export interface ScoreCalculationOptions {
 export interface StepAttemptScore {
   score: number;
   correctCount: number;
-  totalQuestions: number;
+  totalQuizzes: number;
   successRate: number;
 }

@@ -86,7 +86,7 @@ describe('useLearnUnits Hook', () => {
       expect(result.current.units.length).toBe(1);
     });
 
-    const completedStep = result.current.units[0].steps.find(step => step.id === 2);
+    const completedStep = result.current.units[0]!.steps.find(step => step.id === 2);
     expect(completedStep?.isCompleted).toBe(true);
   });
 
@@ -99,7 +99,7 @@ describe('useLearnUnits Hook', () => {
       expect(result.current.units.length).toBe(1);
     });
 
-    const completedStep = result.current.units[0].steps.find(step => step.id === 2);
+    const completedStep = result.current.units[0]!.steps.find(step => step.id === 2);
     expect(completedStep?.isCompleted).toBe(false);
   });
 

@@ -1,5 +1,12 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
+interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  result: T;
+}
+
 /**
  * 전역 요청 함수 (기본 토대)
  */
@@ -19,13 +26,22 @@ async function baseRequest<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // NestJS 에러(4xx, 5xx) 감지기
+  const responseBody = (await response.json().catch(() => null)) as ApiResponse<T> | null;
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API Error: ${response.statusText}`);
+    const errorMessage = responseBody?.message || `API Error: ${response.statusText}`;
+    throw new Error(errorMessage);
   }
 
-  return response.json() as Promise<T>;
+  if (!responseBody) {
+    throw new Error('API 응답 본문이 비어 있습니다.');
+  }
+
+  if (!responseBody.success) {
+    throw new Error(responseBody.message || '요청에 실패했습니다.');
+  }
+
+  return responseBody.result;
 }
 
 /**

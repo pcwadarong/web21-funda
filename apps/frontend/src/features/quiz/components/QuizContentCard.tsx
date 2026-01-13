@@ -66,7 +66,7 @@ export const QuizContentCard = ({
       {showResult && explanation && (
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
-          <span>{explanation}</span>
+          <span css={explanationTextStyle(theme)}>{explanation}</span>
         </div>
       )}
 
@@ -140,6 +140,13 @@ const explanationStyle = (theme: Theme) => css`
   padding: 16px;
   background: ${theme.colors.surface.default};
   border-radius: 8px;
+`;
+
+const explanationTextStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  color: ${theme.colors.text.default};
 `;
 
 const reportButtonStyle = (theme: Theme) => css`

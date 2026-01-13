@@ -1,14 +1,19 @@
 import { NotFoundException } from '@nestjs/common';
 import { type FindOneOptions, Repository } from 'typeorm';
 
+import { CodeFormatter } from '../common/utils/code-formatter';
+
 import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
+
+jest.mock('../common/utils/code-formatter');
 
 describe('RoadmapService', () => {
   let service: RoadmapService;
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
+  let codeFormatter: Partial<CodeFormatter>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -21,6 +26,7 @@ describe('RoadmapService', () => {
   let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
   let createQueryBuilderMock: jest.Mock;
   let quizFindMock: jest.Mock;
+  let formatMock: jest.Mock;
 
   beforeEach(() => {
     findFieldsMock = jest.fn();
@@ -29,6 +35,7 @@ describe('RoadmapService', () => {
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
+    formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -48,11 +55,15 @@ describe('RoadmapService', () => {
     stepRepository = {
       findOne: findStepMock,
     };
+    codeFormatter = {
+      format: formatMock,
+    };
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
+      codeFormatter as CodeFormatter,
     );
   });
 
@@ -199,7 +210,8 @@ describe('RoadmapService', () => {
     // 유닛2: 스텝 2개 + 플레이스홀더 3개 + 중간/최종 점검 → 총 7개
     expect(unit2.steps).toHaveLength(7);
     expect(unit2.steps.filter(step => step.id === 11 || step.id === 12).length).toBe(2);
-    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    // 실제 스텝 중 하나(id: 12)가 체크포인트이므로 총 3개 (실제 스텝 1개 + 중간/최종 점검 2개)
+    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(3);
     expect(unit2.steps.find(step => step.id === 11)?.quizCount).toBe(4);
     expect(unit2.steps.find(step => step.id === 12)?.quizCount).toBe(6);
   });
@@ -308,6 +320,10 @@ describe('RoadmapService', () => {
         },
       },
     });
+    expect(formatMock).toHaveBeenCalledWith(
+      '<{{BLANK}}>\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n</{{BLANK}}>',
+      'html',
+    );
   });
 
   it('스텝을 찾지 못하면 예외를 던진다', async () => {

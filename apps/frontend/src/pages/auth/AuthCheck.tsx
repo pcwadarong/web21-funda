@@ -1,21 +1,31 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
+import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
 export const AuthCheck = () => {
+  const { updateUIState, uiState } = useStorage();
+  const location = useLocation();
+  const { from } = location.state || {};
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const handleLogin = useCallback(() => {
+  const handleLogin = () => {
     navigate('/login');
-  }, [navigate]);
+  };
 
-  const handleContinue = useCallback(() => {
-    navigate('/learn');
-  }, [navigate]);
+  const handleContinue = () => {
+    if (from === '/quiz') {
+      navigate('/quiz');
+      updateUIState({
+        current_quiz_step_id: uiState.current_quiz_step_id + 1,
+      });
+    } else {
+      navigate('/learn');
+    }
+  };
 
   return (
     <div css={containerStyle()}>

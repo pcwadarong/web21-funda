@@ -76,7 +76,7 @@ export const useLearnUnits = () => {
     const updateActiveUnit = () => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
       const scrollTop = root.scrollTop + headerHeight + 1;
-      let nextId = units[0]?.id ?? '';
+      let nextId = units[0]?.id ?? null;
 
       unitRefs.current.forEach((element, id) => {
         if (element.offsetTop <= scrollTop) {

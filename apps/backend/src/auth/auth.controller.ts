@@ -1,5 +1,12 @@
 import { Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 
 import { GithubAuthGuard } from './guards/github.guard';
@@ -30,6 +37,7 @@ type RequestWithMeta = {
   ip?: string;
 };
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   private readonly clientRedirectBase: string;
@@ -49,12 +57,24 @@ export class AuthController {
   }
 
   @Get('github')
+  @ApiOperation({
+    summary: 'GitHub OAuth 로그인 시작',
+    description: 'GitHub 로그인 페이지로 리다이렉트한다.',
+  })
+  @ApiOkResponse({ description: 'GitHub로 리다이렉트됩니다.' })
   @UseGuards(GithubAuthGuard)
   githubLogin(): void {
     // GitHub OAuth 로그인 URL로 리다이렉트된다. 로직은 Strategy에서 처리
   }
 
   @Get('github/callback')
+  @ApiOperation({
+    summary: 'GitHub OAuth 콜백',
+    description:
+      'GitHub 인증 코드를 처리하고 리프레시 토큰 쿠키를 설정한 뒤 클라이언트로 리다이렉트한다.',
+  })
+  @ApiOkResponse({ description: '클라이언트로 리다이렉트됩니다.' })
+  @ApiUnauthorizedResponse({ description: 'GitHub 인증 실패' })
   @UseGuards(GithubAuthGuard)
   async githubCallback(@Req() req: GithubRequest, @Res({ passthrough: true }) res: Response) {
     if (!req.user) {
@@ -71,6 +91,38 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @ApiOperation({
+    summary: '액세스 토큰 재발급',
+    description:
+      '리프레시 토큰 쿠키를 검증해 새 액세스 토큰과 리프레시 토큰을 발급한다. 응답 바디에 액세스 토큰과 유저 정보를 반환한다.',
+  })
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    description: '액세스 토큰 재발급 성공',
+    schema: {
+      example: {
+        success: true,
+        code: 200,
+        message: '액세스 토큰을 재발급했습니다.',
+        result: {
+          accessToken: 'eyJhbGciOi...',
+          user: {
+            id: 1,
+            displayName: '사용자',
+            email: 'user@example.com',
+            profileImageUrl: 'https://example.com/avatar.png',
+            role: 'user',
+            heartCount: 5,
+            maxHeartCount: 5,
+            experience: 0,
+            currentStreak: 0,
+            provider: 'github',
+          },
+        },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: '리프레시 토큰이 없거나 유효하지 않음' })
   @UseGuards(JwtRefreshGuard)
   async refresh(@Req() req: RefreshRequest, @Res({ passthrough: true }) res: Response) {
     if (!req.user) {
@@ -96,6 +148,23 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiOperation({
+    summary: '로그아웃',
+    description: '리프레시 토큰을 폐기하고 쿠키를 삭제한다.',
+  })
+  @ApiOkResponse({
+    description: '로그아웃 완료',
+    schema: {
+      example: {
+        success: true,
+        code: 200,
+        message: '로그아웃되었습니다.',
+        result: {
+          success: true,
+        },
+      },
+    },
+  })
   async logout(@Req() req: LogoutRequest, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refreshToken;
     if (refreshToken) {

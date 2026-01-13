@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 
 import { GithubAuthGuard } from './guards/github.guard';
@@ -31,7 +32,21 @@ type RequestWithMeta = {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly clientRedirectBase: string;
+  private readonly clientRedirectPath: string;
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {
+    const origin = this.configService.get<string>('CLIENT_ORIGIN');
+    if (!origin) {
+      throw new Error('CLIENT_ORIGIN 환경변수가 설정되어 있지 않습니다.');
+    }
+
+    this.clientRedirectBase = origin;
+    this.clientRedirectPath = this.configService.get<string>('CLIENT_LOGIN_REDIRECT_PATH', '/');
+  }
 
   @Get('github')
   @UseGuards(GithubAuthGuard)
@@ -47,20 +62,12 @@ export class AuthController {
     }
 
     const meta = this.toRequestMeta(req);
-    const { accessToken, refreshToken, user } = await this.authService.handleGithubLogin(
-      req.user,
-      meta,
-    );
+    const { refreshToken } = await this.authService.handleGithubLogin(req.user, meta);
 
     this.authService.attachRefreshTokenCookie(res, refreshToken);
 
-    return {
-      result: {
-        accessToken,
-        user,
-      },
-      message: 'GitHub 로그인에 성공했습니다.',
-    };
+    const redirectUrl = this.buildRedirectUrl();
+    return res.redirect(redirectUrl);
   }
 
   @Post('refresh')
@@ -114,5 +121,14 @@ export class AuthController {
     const ipAddress = typeof request.ip === 'string' ? request.ip : undefined;
 
     return { userAgent, ipAddress };
+  }
+
+  private buildRedirectUrl(): string {
+    const trimmedBase = this.clientRedirectBase.replace(/\/+$/, '');
+    const normalizedPath = this.clientRedirectPath.startsWith('/')
+      ? this.clientRedirectPath
+      : `/${this.clientRedirectPath}`;
+
+    return `${trimmedBase}${normalizedPath}`;
   }
 }

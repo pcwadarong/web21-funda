@@ -43,6 +43,27 @@ export const useLearnUnits = () => {
   };
 
   /**
+   * 체크포인트 스텝이 이전 스텝들을 모두 완료했을 때 잠금 해제되도록 처리합니다.
+   * (로그인/비로그인 모두 사용 가능지만, 현재는 비로그인 상태에서만 호출)
+   * @param units 잠금 해제 여부를 반영할 유닛 목록
+   * @returns 체크포인트 잠금 상태가 반영된 유닛 목록
+   */
+  const unlockCheckpoints = (units: UnitType[]) =>
+    units.map(unit => ({
+      ...unit,
+      steps: unit.steps.map(step => {
+        if (step.isCheckpoint && step.isLocked) {
+          const isUnlockable = unit.steps
+            .filter(s => s.orderIndex < step.orderIndex)
+            .every(s => s.isCompleted);
+          return isUnlockable ? { ...step, isLocked: false } : step;
+        } else {
+          return step;
+        }
+      }),
+    }));
+
+  /**
    * field_slug를 기준으로 유닛/스텝 데이터를 요청하고 상태로 매핑합니다.
    */
   useEffect(() => {
@@ -55,7 +76,9 @@ export const useLearnUnits = () => {
         if (!isMounted) return;
 
         setField(data.field.name);
-        setUnits(isLoggedIn ? (data.units ?? []) : markSolvedSteps(data.units ?? []));
+        setUnits(
+          isLoggedIn ? (data.units ?? []) : unlockCheckpoints(markSolvedSteps(data.units ?? [])),
+        );
         setActiveUnitId(data.units[0]?.id ?? null);
       } catch (error) {
         console.error('Failed to fetch units:', error);

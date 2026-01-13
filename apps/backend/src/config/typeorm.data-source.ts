@@ -4,6 +4,7 @@ import { config as loadEnv } from 'dotenv';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 
 import { SolveLog, UserQuizStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import { Report } from '../report/entities/report.entity';
 import { Field, Quiz, Step, Unit } from '../roadmap/entities';
 
 const toInt = (value: string | undefined, fallback: number): number => {
@@ -30,7 +31,17 @@ const createDataSourceOptions = (): DataSourceOptions => {
     username: process.env.DB_USER ?? 'root',
     password: process.env.DB_PASSWORD ?? '',
     database: process.env.DB_NAME ?? 'app',
-    entities: [Field, Unit, Step, Quiz, UserQuizStatus, UserStepStatus, UserStepAttempt, SolveLog],
+    entities: [
+      Field,
+      Unit,
+      Step,
+      Quiz,
+      UserQuizStatus,
+      UserStepStatus,
+      UserStepAttempt,
+      SolveLog,
+      Report,
+    ],
     migrations: [path.join(__dirname, '..', 'migrations', `*.${migrationExtension}`)],
     synchronize: false,
     logging: process.env.NODE_ENV !== 'production',

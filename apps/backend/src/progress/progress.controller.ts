@@ -24,7 +24,7 @@ export class ProgressController {
   @ApiOperation({
     summary: '스텝 풀이 시작',
     description:
-      '스텝 시도 정보를 생성한다. FE는 stepId와 userId, startedAt(옵션)을 전달하면 서버가 attemptNo/총 퀴즈 수를 채워 반환한다.',
+      '스텝 시도 정보를 생성한다. 인증된 사용자 기준으로 서버가 attemptNo/총 퀴즈 수를 채워 반환한다.',
   })
   @ApiOkResponse({
     description: '스텝 시도 생성 성공',

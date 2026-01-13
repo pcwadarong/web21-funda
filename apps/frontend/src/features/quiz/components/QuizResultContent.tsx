@@ -7,9 +7,9 @@ import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
-  xp: number;
-  successRate: number;
-  timeTaken: string;
+  xpGained: number | null;
+  successRate: number | null;
+  durationMs: string;
 }
 
 const METRIC_CONFIG = (theme: Theme) =>
@@ -18,7 +18,7 @@ const METRIC_CONFIG = (theme: Theme) =>
       key: 'xp',
       title: '획득 XP',
       icon: 'Star' as const,
-      getValue: (data: QuizResultData) => data.xp,
+      getValue: (data: QuizResultData) => (data.xpGained != null ? data.xpGained : '-'),
       styles: {
         bg: theme.colors.primary.main,
         text: theme.colors.primary.dark,
@@ -29,7 +29,7 @@ const METRIC_CONFIG = (theme: Theme) =>
       key: 'successRate',
       title: '성공률',
       icon: 'Graph' as const,
-      getValue: (data: QuizResultData) => `${data.successRate}%`,
+      getValue: (data: QuizResultData) => (data.successRate != null ? `${data.successRate}%` : '-'),
       styles: {
         bg: theme.colors.success.main,
         text: theme.colors.success.main,
@@ -37,10 +37,10 @@ const METRIC_CONFIG = (theme: Theme) =>
       },
     },
     {
-      key: 'timeTaken',
+      key: 'durationMs',
       title: '소요 시간',
       icon: 'Timer' as const,
-      getValue: (data: QuizResultData) => data.timeTaken,
+      getValue: (data: QuizResultData) => data.durationMs,
       styles: {
         bg: theme.colors.grayscale[500],
         text: theme.colors.grayscale[500],
@@ -63,6 +63,12 @@ export const QuizResultContent = ({
   const theme = useTheme();
   const navigate = useNavigate();
   const config = METRIC_CONFIG(theme);
+
+  /* 하나의 값이라도 null인 경우 체크 */
+  const hasMissingData = config.some(item => {
+    const value = item.getValue(resultData);
+    return value === '-' || value === null;
+  });
 
   const handleNavigation = useCallback(() => {
     if (!isLogin) navigate('/auth/check');
@@ -95,6 +101,12 @@ export const QuizResultContent = ({
         ))}
       </div>
 
+      {hasMissingData && (
+        <p css={noticeTextStyle(theme)}>
+          결과 데이터를 불러오지 못했어요. 기록은 정상 저장되었어요.
+        </p>
+      )}
+
       <div css={buttonsContainerStyle}>
         <Button variant="primary" onClick={handleNavigation} css={fullWidth}>
           학습 계속하기
@@ -121,6 +133,7 @@ const titleStyle = (theme: Theme) => css`
   ${theme.typography['32Bold']};
   color: ${theme.colors.primary.main};
   margin: 0;
+  text-align: center;
 `;
 
 const placeholderStyle = (theme: Theme) => css`
@@ -176,6 +189,10 @@ const metricValueStyle = (theme: Theme, textColor: string) => css`
   line-height: ${theme.typography['24Bold'].lineHeight};
   font-weight: ${theme.typography['24Bold'].fontWeight};
   color: ${textColor};
+`;
+
+const noticeTextStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.light};
 `;
 
 const buttonsContainerStyle = css`

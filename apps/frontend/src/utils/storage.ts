@@ -26,6 +26,8 @@ export interface QuizStorageData {
   progress: Progress;
   ui_state: UIState;
   solved_step_history: number[];
+  // step_id별 퀴즈 시작 시간 (step_id: timestamp)
+  quiz_started_at: Record<number, number>;
 }
 
 const STORAGE_KEY = 'QUIZ_V1';
@@ -38,6 +40,7 @@ const DEFAULT_STATE: QuizStorageData = {
     last_viewed: { field_slug: 'FE', unit_id: 1 },
     current_quiz_step_id: 0,
   },
+  quiz_started_at: {},
 };
 
 // 사용할 스토리지 함수
@@ -47,7 +50,12 @@ export const storageUtil = {
     if (!item) return DEFAULT_STATE;
 
     try {
-      return JSON.parse(item);
+      const parsed = JSON.parse(item);
+      if (!parsed.quiz_started_at) {
+        parsed.quiz_started_at = {};
+        storageUtil.set(parsed);
+      }
+      return parsed;
     } catch (error) {
       // 에러를 로깅
       console.error('파싱 중 오류 발생:', error);
@@ -122,5 +130,36 @@ export const storageUtil = {
     return storageUtil.update('progress', {
       last_solved_unit_id: lastSolvedList,
     });
+  },
+
+  /**
+   * 특정 step의 퀴즈 시작 시간 설정 (이미 있으면 업데이트하지 않음)
+   * @param stepId step ID
+   * @param timestamp 시작 시간 (기본값: 현재 시간)
+   * @returns 업데이트된 스토리지 데이터
+   */
+  setQuizStartedAt: (stepId: number, timestamp?: number): QuizStorageData => {
+    const current = storageUtil.get();
+    const quizStartedAt = { ...current.quiz_started_at };
+
+    // 이미 시작 시간이 있으면 업데이트하지 않음
+    if (quizStartedAt[stepId]) {
+      return current;
+    }
+
+    // 없으면 현재 시간으로 설정
+    quizStartedAt[stepId] = timestamp ?? Date.now();
+
+    return storageUtil.update('quiz_started_at', quizStartedAt);
+  },
+
+  /**
+   * 특정 step의 퀴즈 시작 시간 가져오기
+   * @param stepId step ID
+   * @returns 시작 시간 또는 null
+   */
+  getQuizStartedAt: (stepId: number): number | null => {
+    const current = storageUtil.get();
+    return current.quiz_started_at[stepId] ?? null;
   },
 };

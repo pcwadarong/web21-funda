@@ -13,7 +13,7 @@
     "migration:revert:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:revert",
     "migration:show:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend migration:show",
     "seed:docker": "docker compose -f docker-compose.local.yml exec backend pnpm --filter backend seed",
-    "postinstall": "husky install"
+    "postinstall": "husky"
   },
   "devDependencies": {
     "husky": "^9.1.7",

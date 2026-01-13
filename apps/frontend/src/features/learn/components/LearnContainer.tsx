@@ -84,7 +84,7 @@ export const LearnContainer = ({
                     <div key={step.id} css={positionStyle}>
                       <div css={lessonStackStyle}>
                         <div
-                          onClick={() => !step.isLocked && onStepClick(Number(step.id))}
+                          onClick={() => !step.isLocked && onStepClick(step.id)}
                           css={[
                             lessonItemStyle(theme),
                             step.isCompleted && completedLessonStyle(theme),

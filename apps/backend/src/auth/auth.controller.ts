@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 
+import { GithubAuthGuard } from './guards/github.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import type { RequestMeta } from './types/request-meta.type';
 import { AuthService } from './auth.service';
@@ -34,13 +34,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get('github')
-  @UseGuards(AuthGuard('github'))
+  @UseGuards(GithubAuthGuard)
   githubLogin(): void {
     // GitHub OAuth 로그인 URL로 리다이렉트된다. 로직은 Strategy에서 처리
   }
 
   @Get('github/callback')
-  @UseGuards(AuthGuard('github'))
+  @UseGuards(GithubAuthGuard)
   async githubCallback(@Req() req: GithubRequest, @Res({ passthrough: true }) res: Response) {
     if (!req.user) {
       throw new UnauthorizedException('GitHub 프로필 정보를 확인할 수 없습니다.');

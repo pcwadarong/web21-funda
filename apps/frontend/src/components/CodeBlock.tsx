@@ -1,51 +1,120 @@
 import { css, useTheme } from '@emotion/react';
 import type { HTMLAttributes } from 'react';
+import { useEffect, useRef } from 'react';
+// PrismLight를 사용하여 필요한 언어만 전략적으로 등록합니다.
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+// 필요한 언어만 import
+import c from 'react-syntax-highlighter/dist/esm/languages/prism/c';
+import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
+import dart from 'react-syntax-highlighter/dist/esm/languages/prism/dart'; // flutter
+import java from 'react-syntax-highlighter/dist/esm/languages/prism/java';
+import js from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import kotlin from 'react-syntax-highlighter/dist/esm/languages/prism/kotlin';
+import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup'; // html/xml
+import py from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import ts from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
+// 언어 등록
+SyntaxHighlighter.registerLanguage('javascript', js);
+SyntaxHighlighter.registerLanguage('typescript', ts);
+SyntaxHighlighter.registerLanguage('python', py);
+SyntaxHighlighter.registerLanguage('java', java);
+SyntaxHighlighter.registerLanguage('kotlin', kotlin);
+SyntaxHighlighter.registerLanguage('dart', dart);
+SyntaxHighlighter.registerLanguage('c', c);
+SyntaxHighlighter.registerLanguage('cpp', cpp);
+SyntaxHighlighter.registerLanguage('html', markup);
+
 export interface CodeBlockProps extends HTMLAttributes<HTMLPreElement> {
-  children: React.ReactNode;
+  children: string;
   language?: string;
 }
 
-export const CodeBlock = ({ children, language = 'JavaScript' }: CodeBlockProps) => {
+const PLACEHOLDER = '___BLANK___';
+
+export const CodeBlock = ({ children, language = 'javascript' }: CodeBlockProps) => {
   const theme = useTheme();
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // 백엔드에서 받은 데이터의 엔터를 구분하여 처리
-  const formatCode = (content: React.ReactNode): React.ReactNode => {
-    if (typeof content !== 'string') return content;
+  // {{BLANK}}를 임시 placeholder로 치환
+  const codeWithPlaceholder = children.replace(/\{\{BLANK\}\}/g, PLACEHOLDER);
 
-    const lines = content.split('\n');
+  // 하이라이팅 후 DOM에서 placeholder를 빈칸 요소로 교체
+  useEffect(() => {
+    if (!containerRef.current) return;
 
-    const formattedLines = lines.map((line, index) => {
-      const parts = line.trim().split(/({{BLANK}})/g);
-      const lineContent = parts.map((part, pIdx) => {
-        // {{BLANK}} 패턴을 만나면 회색 박스(BlankBox) 반환
-        if (part === '{{BLANK}}')
-          return <span key={`blank-${index}-${pIdx}`} css={blankBoxStyle(theme)} />;
-        return part;
+    const walker = document.createTreeWalker(containerRef.current, NodeFilter.SHOW_TEXT, null);
+
+    const nodesToReplace: { node: Text; parts: string[] }[] = [];
+
+    // 모든 텍스트 노드를 순회하며 PLACEHOLDER 찾기
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const textNode = node as Text;
+      if (textNode.textContent?.includes(PLACEHOLDER)) {
+        const parts = textNode.textContent.split(PLACEHOLDER);
+        nodesToReplace.push({ node: textNode, parts });
+      }
+    }
+
+    // 찾은 텍스트 노드들을 교체
+    nodesToReplace.forEach(({ node, parts }) => {
+      const parent = node.parentNode;
+      if (!parent) return;
+
+      const fragment = document.createDocumentFragment();
+
+      parts.forEach((part, i) => {
+        if (part) fragment.appendChild(document.createTextNode(part));
+
+        // 마지막 part가 아니면 빈칸 요소 추가
+        if (i < parts.length - 1) {
+          const blank = document.createElement('span');
+          blank.style.cssText = `
+            display: inline-block;
+            width: 80px;
+            height: 1.5em;
+            background-color: ${colors.light.grayscale[600]};
+            border-radius: ${theme.borderRadius.xsmall};
+            vertical-align: middle;
+            margin: 0 4px;
+            cursor: none;
+            user-select: none;
+          `;
+          fragment.appendChild(blank);
+        }
       });
 
-      // 일반 텍스트인 경우 엔터(\n)를 <br>로 변환
-      return (
-        <div key={index} style={{ minHeight: '1.5em' }}>
-          {lineContent}
-        </div>
-      );
+      parent.replaceChild(fragment, node);
     });
-
-    return formattedLines;
-  };
+  }, [children, language, theme]);
 
   return (
     <div css={codeBlockContainerStyle(theme)}>
       <div css={badgeContainerStyle(theme)}>
         <div css={badgeStyle(theme)}>{language}</div>
       </div>
-      <pre css={preStyle}>
-        <code css={codeStyle(theme)}>{formatCode(children)}</code>
-      </pre>
+      <div css={preStyle} ref={containerRef}>
+        <SyntaxHighlighter
+          language={language.toLowerCase()}
+          style={vscDarkPlus}
+          PreTag="div"
+          customStyle={{
+            margin: 0,
+            padding: 0,
+            background: 'transparent',
+            fontSize: '14px',
+            lineHeight: '1.5',
+            fontFamily: "'D2Coding', monospace",
+          }}
+        >
+          {codeWithPlaceholder}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 };
@@ -78,25 +147,4 @@ const preStyle = css`
   margin: 0;
   padding: 20px;
   overflow-x: auto;
-`;
-
-const codeStyle = (theme: Theme) => css`
-  font-family: 'D2Coding', 'Courier New', monospace;
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: 1.6;
-  color: ${colors.light.grayscale[50]};
-  white-space: pre-wrap;
-  word-wrap: break-word;
-`;
-
-const blankBoxStyle = (theme: Theme) => css`
-  display: inline-block;
-  width: 80px;
-  height: 1.5em;
-  background-color: ${colors.light.grayscale[600]};
-  border-radius: ${theme.borderRadius.xsmall};
-  vertical-align: middle;
-  margin: 0 4px;
-  cursor: none;
-  user-select: none;
 `;

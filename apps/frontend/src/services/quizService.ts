@@ -9,6 +9,7 @@ export interface QuizSubmissionRequest {
     option_id?: string;
     pairs?: MatchingPair[];
   };
+  step_attempt_id?: number;
 }
 
 export interface QuizSubmissionResponse {

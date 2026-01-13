@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { type DataSourceOptions } from 'typeorm';
 
 import { Field, Quiz, Step, Unit } from '../roadmap/entities';
+import { Report } from '../report/entities/report.entity';
 import { SolveLog, UserQuizStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
 
 const toInt = (value: string | undefined, fallback: number): number => {
@@ -16,7 +17,17 @@ export const createTypeOrmOptions = (config: ConfigService): DataSourceOptions =
   username: config.get<string>('DB_USER', 'root'),
   password: config.get<string>('DB_PASSWORD', ''),
   database: config.get<string>('DB_NAME', 'app'),
-  entities: [Field, Unit, Step, Quiz, UserQuizStatus, UserStepStatus, UserStepAttempt, SolveLog],
+  entities: [
+    Field,
+    Unit,
+    Step,
+    Report,
+    Quiz,
+    UserQuizStatus,
+    UserStepStatus,
+    UserStepAttempt,
+    SolveLog,
+  ],
   synchronize: false,
   logging: config.get<string>('NODE_ENV') !== 'production',
 });

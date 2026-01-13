@@ -28,7 +28,7 @@ export class ProgressService {
    * FE는 stepId, userId, startedAt(옵션)만 넘기면 되며, attemptNo/총 퀴즈 수는 서버에서 관리한다.
    */
   async startStepAttempt(params: StartStepAttemptParams): Promise<UserStepAttempt> {
-    const { userId, stepId, startedAt } = params;
+    const { userId, stepId } = params;
 
     const step = await this.stepRepository.findOne({ where: { id: stepId } });
     if (!step) {
@@ -50,7 +50,7 @@ export class ProgressService {
       answeredCount: 0,
       correctCount: 0,
       status: StepAttemptStatus.IN_PROGRESS,
-      startedAt: startedAt ? new Date(startedAt) : new Date(),
+      startedAt: new Date(),
     });
 
     return this.stepAttemptRepository.save(attempt);
@@ -62,7 +62,7 @@ export class ProgressService {
    * - 응답에는 획득 점수=경험치, 정답 수, 풀이 수, 성공률, 소요 시간을 포함한다.
    */
   async completeStepAttempt(params: CompleteStepAttemptParams): Promise<CompleteStepAttemptResult> {
-    const { userId, stepId, finishedAt } = params;
+    const { userId, stepId } = params;
 
     const step = await this.stepRepository.findOne({ where: { id: stepId } });
     if (!step) {
@@ -84,7 +84,7 @@ export class ProgressService {
     });
 
     const scoreResult = await this.calculateStepAttemptScore(stepAttemptId);
-    const finishedAtDate = finishedAt ? new Date(finishedAt) : new Date();
+    const finishedAtDate = new Date();
     const durationSeconds = Math.max(
       0,
       Math.floor((finishedAtDate.getTime() - attempt.startedAt.getTime()) / 1000),
@@ -217,13 +217,11 @@ export interface StepAttemptScore {
 export interface StartStepAttemptParams {
   userId: number;
   stepId: number;
-  startedAt?: string | Date;
 }
 
 export interface CompleteStepAttemptParams {
   userId: number;
   stepId: number;
-  finishedAt?: string | Date;
 }
 
 export interface CompleteStepAttemptResult {

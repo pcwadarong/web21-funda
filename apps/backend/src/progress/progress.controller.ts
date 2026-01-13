@@ -1,17 +1,21 @@
-import { Body, Controller, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 
-import { CompleteStepAttemptDto } from './dto/complete-step-attempt.dto';
-import { StartStepAttemptDto } from './dto/start-step-attempt.dto';
+import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
+import type { JwtPayload } from '../auth/types/jwt-payload.type';
+
 import { ProgressService } from './progress.service';
 
 @ApiTags('Progress')
+@ApiBearerAuth()
 @Controller('progress')
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
@@ -36,14 +40,19 @@ export class ProgressController {
     },
   })
   @ApiNotFoundResponse({ description: '스텝 정보를 찾을 수 없습니다.' })
+  @UseGuards(JwtAccessGuard)
   async startStep(
     @Param('stepId', ParseIntPipe) stepId: number,
-    @Body() body: StartStepAttemptDto,
+    @Req() req: Request & { user?: JwtPayload },
   ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
     const attempt = await this.progressService.startStepAttempt({
-      userId: body.userId,
+      userId,
       stepId,
-      startedAt: body.startedAt,
     });
 
     return {
@@ -82,14 +91,19 @@ export class ProgressController {
   })
   @ApiBadRequestResponse({ description: '진행 중인 스텝 시도를 찾을 수 없습니다.' })
   @ApiNotFoundResponse({ description: '스텝 정보를 찾을 수 없습니다.' })
+  @UseGuards(JwtAccessGuard)
   async completeStep(
     @Param('stepId', ParseIntPipe) stepId: number,
-    @Body() body: CompleteStepAttemptDto,
+    @Req() req: Request & { user?: JwtPayload },
   ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
     const completion = await this.progressService.completeStepAttempt({
-      userId: body.userId,
+      userId,
       stepId,
-      finishedAt: body.finishedAt,
     });
 
     return {

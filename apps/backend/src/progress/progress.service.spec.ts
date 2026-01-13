@@ -106,7 +106,6 @@ describe('ProgressService', () => {
     const attempt = await service.startStepAttempt({
       userId: 100,
       stepId: 3,
-      startedAt: '2025-01-01T00:00:00.000Z',
     });
 
     expect(stepFindOneMock).toHaveBeenCalledWith({ where: { id: 3 } });
@@ -122,8 +121,7 @@ describe('ProgressService', () => {
   });
 
   it('스텝 시도를 완료하며 점수/성공률/소요 시간을 반환한다', async () => {
-    const startedAt = new Date('2025-01-01T00:00:00.000Z');
-    const finishedAt = new Date('2025-01-01T00:00:10.000Z');
+    const startedAt = new Date(Date.now() - 10_000);
 
     stepFindOneMock.mockResolvedValue({ id: 5 } as Step);
     stepAttemptFindOneMock.mockResolvedValue({
@@ -150,7 +148,6 @@ describe('ProgressService', () => {
     const result = await service.completeStepAttempt({
       userId: 1,
       stepId: 5,
-      finishedAt,
     });
 
     expect(stepAttemptSaveMock).toHaveBeenCalled();
@@ -161,6 +158,7 @@ describe('ProgressService', () => {
     expect(savedAttempt.successRate).toBe((2 / 4) * 100);
 
     expect(stepStatusSaveMock).toHaveBeenCalled();
+    const expectedDuration = Math.floor((Date.now() - startedAt.getTime()) / 1000);
     expect(result).toEqual({
       score: 9,
       experience: 9,
@@ -168,8 +166,10 @@ describe('ProgressService', () => {
       totalQuizzes: 4,
       answeredQuizzes: 3,
       successRate: (2 / 4) * 100,
-      durationSeconds: 10,
+      durationSeconds: result.durationSeconds,
       firstSolve: false,
     });
+    expect(result.durationSeconds).toBeGreaterThanOrEqual(expectedDuration - 1);
+    expect(result.durationSeconds).toBeLessThanOrEqual(expectedDuration + 2);
   });
 });

@@ -229,4 +229,48 @@ describe('useLearnUnits Hook', () => {
       expect(scrollToMock).toHaveBeenCalledWith({ top: 290 });
     });
   });
+
+  it('체크포인트 이전 스텝이 모두 완료되었을 때, 체크포인트가 잠금 해제되어야 한다', async () => {
+    mockGetFieldUnits.mockResolvedValue(
+      createUnitsResponse({
+        units: [
+          {
+            id: 1,
+            title: '유닛 1',
+            orderIndex: 1,
+            steps: [
+              {
+                id: 1,
+                title: '스텝 1',
+                orderIndex: 1,
+                quizCount: 3,
+                isCheckpoint: false,
+                isCompleted: true,
+                isLocked: false,
+              },
+              {
+                id: 2,
+                title: '체크포인트',
+                orderIndex: 2,
+                quizCount: 3,
+                isCheckpoint: true,
+                isCompleted: false,
+                isLocked: true,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const { useLearnUnits } = await import('../useLearnUnits');
+    const { result } = renderHook(() => useLearnUnits());
+
+    await waitFor(() => {
+      expect(result.current.units.length).toBe(1);
+    });
+
+    const checkpointStep = result.current.units[0]!.steps.find(step => step.id === 2);
+    expect(checkpointStep?.isLocked).toBe(false);
+  });
 });

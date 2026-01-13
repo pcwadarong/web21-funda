@@ -18,6 +18,10 @@ export const useLearnUnits = () => {
   const unitRefs = useRef(new Map<number, HTMLElement>());
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
 
+  /**
+   * 현재 활성화된 유닛을 반환합니다.
+   * @returns 활성 유닛 또는 첫 번째 유닛
+   */
   const activeUnit = useMemo(
     () => units.find(unit => unit.id === activeUnitId) ?? units[0],
     [activeUnitId, units],

@@ -24,6 +24,7 @@ export class UserRefreshToken {
   user!: User;
 
   @RelationId((token: UserRefreshToken) => token.user)
+  @Column({ name: 'user_id', type: 'bigint' })
   userId!: number;
 
   // 토큰 원문 대신 해쉬 사용

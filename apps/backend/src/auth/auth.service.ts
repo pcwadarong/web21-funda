@@ -129,10 +129,34 @@ export class AuthService {
   }
 
   /**
+   * HttpOnly Secure 액세스 토큰 쿠키를 설정한다.
+   */
+  attachAccessTokenCookie(response: Response, accessToken: string): void {
+    const accessTtlSeconds = this.configService.get<number>('JWT_ACCESS_TTL', 60 * 15); // 기본 15분
+    const maxAgeMs = accessTtlSeconds * 1000;
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+
+    response.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: maxAgeMs,
+      path: '/',
+    });
+  }
+
+  /**
    * 리프레시 쿠키를 제거한다.
    */
   clearRefreshTokenCookie(response: Response): void {
     response.clearCookie(this.refreshCookieName, { path: '/' });
+  }
+
+  /**
+   * 액세스 토큰 쿠키를 제거한다.
+   */
+  clearAccessTokenCookie(response: Response): void {
+    response.clearCookie('accessToken', { path: '/' });
   }
 
   private async upsertGithubUser(profile: GithubProfile): Promise<User> {
@@ -290,7 +314,17 @@ export class AuthService {
     return 'GitHub User';
   }
 
-  private toAuthUserProfile(user: User): AuthUserProfile {
+  /**
+   * ID로 유저를 조회한다.
+   */
+  async getUserById(userId: number): Promise<User | null> {
+    return this.users.findOneBy({ id: userId });
+  }
+
+  /**
+   * User 엔티티를 AuthUserProfile로 변환한다.
+   */
+  toAuthUserProfile(user: User): AuthUserProfile {
     return {
       id: user.id,
       displayName: user.displayName,

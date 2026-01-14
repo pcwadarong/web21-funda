@@ -10,9 +10,11 @@ import {
 import type { Response } from 'express';
 
 import { GithubAuthGuard } from './guards/github.guard';
+import { JwtAccessGuard } from './guards/jwt-access.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import type { JwtPayload } from './types/jwt-payload.type';
 import type { RequestMeta } from './types/request-meta.type';
-import { AuthService } from './auth.service';
+import { AuthService, type AuthUserProfile } from './auth.service';
 import type { GithubProfile } from './github.strategy';
 import type { RefreshRequestUser } from './jwt-refresh.strategy';
 
@@ -35,6 +37,10 @@ type LogoutRequest = {
 type RequestWithMeta = {
   headers?: Record<string, unknown>;
   ip?: string;
+};
+
+type AccessRequest = {
+  user?: JwtPayload;
 };
 
 @ApiTags('Auth')
@@ -71,7 +77,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'GitHub OAuth 콜백',
     description:
-      'GitHub 인증 코드를 처리하고 리프레시 토큰 쿠키를 설정한 뒤 클라이언트로 리다이렉트한다.',
+      'GitHub 인증 코드를 처리하고 리프레시 토큰과 액세스 토큰 쿠키를 설정한 뒤 클라이언트로 리다이렉트한다.',
   })
   @ApiOkResponse({ description: '클라이언트로 리다이렉트됩니다.' })
   @ApiUnauthorizedResponse({ description: 'GitHub 인증 실패' })
@@ -82,9 +88,10 @@ export class AuthController {
     }
 
     const meta = this.toRequestMeta(req);
-    const { refreshToken } = await this.authService.handleGithubLogin(req.user, meta);
+    const { accessToken, refreshToken } = await this.authService.handleGithubLogin(req.user, meta);
 
     this.authService.attachRefreshTokenCookie(res, refreshToken);
+    this.authService.attachAccessTokenCookie(res, accessToken);
 
     const redirectUrl = this.buildRedirectUrl();
     return res.redirect(redirectUrl);
@@ -94,7 +101,7 @@ export class AuthController {
   @ApiOperation({
     summary: '액세스 토큰 재발급',
     description:
-      '리프레시 토큰 쿠키를 검증해 새 액세스 토큰과 리프레시 토큰을 발급한다. 응답 바디에 액세스 토큰과 유저 정보를 반환한다.',
+      '리프레시 토큰 쿠키를 검증해 새 액세스 토큰과 리프레시 토큰을 발급한다. 액세스 토큰과 리프레시 토큰은 쿠키로 설정되고, 응답 바디에 유저 정보를 반환한다.',
   })
   @ApiBearerAuth()
   @ApiOkResponse({
@@ -105,7 +112,6 @@ export class AuthController {
         code: 200,
         message: '액세스 토큰을 재발급했습니다.',
         result: {
-          accessToken: 'eyJhbGciOi...',
           user: {
             id: 1,
             displayName: '사용자',
@@ -137,10 +143,10 @@ export class AuthController {
     );
 
     this.authService.attachRefreshTokenCookie(res, refreshToken);
+    this.authService.attachAccessTokenCookie(res, accessToken);
 
     return {
       result: {
-        accessToken,
         user,
       },
       message: '액세스 토큰을 재발급했습니다.',
@@ -150,7 +156,7 @@ export class AuthController {
   @Post('logout')
   @ApiOperation({
     summary: '로그아웃',
-    description: '리프레시 토큰을 폐기하고 쿠키를 삭제한다.',
+    description: '리프레시 토큰을 폐기하고 모든 인증 쿠키를 삭제한다.',
   })
   @ApiOkResponse({
     description: '로그아웃 완료',
@@ -172,12 +178,65 @@ export class AuthController {
     }
 
     this.authService.clearRefreshTokenCookie(res);
+    this.authService.clearAccessTokenCookie(res);
 
     return {
       result: {
         success: true,
       },
       message: '로그아웃되었습니다.',
+    };
+  }
+
+  @Get('me')
+  @ApiOperation({
+    summary: '현재 사용자 정보 조회',
+    description: '액세스 토큰을 기반으로 현재 로그인한 사용자의 정보를 반환한다.',
+  })
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    description: '사용자 정보 조회 성공',
+    schema: {
+      example: {
+        success: true,
+        code: 200,
+        message: '사용자 정보를 조회했습니다.',
+        result: {
+          user: {
+            id: 1,
+            displayName: '사용자',
+            email: 'user@example.com',
+            profileImageUrl: 'https://example.com/avatar.png',
+            role: 'user',
+            heartCount: 5,
+            maxHeartCount: 5,
+            experience: 0,
+            currentStreak: 0,
+            provider: 'github',
+          },
+        },
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: '액세스 토큰이 없거나 유효하지 않음' })
+  @UseGuards(JwtAccessGuard)
+  async getMe(
+    @Req() req: AccessRequest,
+  ): Promise<{ result: { user: AuthUserProfile }; message: string }> {
+    if (!req.user) {
+      throw new UnauthorizedException('액세스 토큰을 확인할 수 없습니다.');
+    }
+
+    const user = await this.authService.getUserById(req.user.sub);
+    if (!user) {
+      throw new UnauthorizedException('유저 정보를 찾을 수 없습니다.');
+    }
+
+    return {
+      result: {
+        user: this.authService.toAuthUserProfile(user),
+      },
+      message: '사용자 정보를 조회했습니다.',
     };
   }
 

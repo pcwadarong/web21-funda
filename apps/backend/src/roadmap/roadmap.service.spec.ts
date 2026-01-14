@@ -1,10 +1,13 @@
 import { NotFoundException } from '@nestjs/common';
 import { type FindOneOptions, Repository } from 'typeorm';
 
+import { CodeFormatter } from '../common/utils/code-formatter';
 import { SolveLog, UserStepAttempt } from '../progress/entities';
 
 import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
+
+jest.mock('../common/utils/code-formatter');
 
 describe('RoadmapService', () => {
   let service: RoadmapService;
@@ -13,6 +16,7 @@ describe('RoadmapService', () => {
   let stepRepository: Partial<Repository<Step>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
+  let codeFormatter: Partial<CodeFormatter>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -25,8 +29,7 @@ describe('RoadmapService', () => {
   let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
   let createQueryBuilderMock: jest.Mock;
   let quizFindMock: jest.Mock;
-  let solveLogCreateMock: jest.Mock;
-  let solveLogSaveMock: jest.Mock;
+  let formatMock: jest.Mock;
 
   beforeEach(() => {
     findFieldsMock = jest.fn();
@@ -35,8 +38,7 @@ describe('RoadmapService', () => {
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
-    solveLogCreateMock = jest.fn().mockImplementation(data => data);
-    solveLogSaveMock = jest.fn().mockResolvedValue(undefined);
+    formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -57,17 +59,21 @@ describe('RoadmapService', () => {
       findOne: findStepMock,
     };
     solveLogRepository = {
-      create: solveLogCreateMock,
-      save: solveLogSaveMock,
+      create: jest.fn(),
+      save: jest.fn(),
     };
     stepAttemptRepository = {
       findOne: jest.fn(),
+    };
+    codeFormatter = {
+      format: formatMock,
     };
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
+      codeFormatter as CodeFormatter,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
     );
@@ -168,7 +174,7 @@ describe('RoadmapService', () => {
           title: 'CSS 기초',
           orderIndex: 2,
           steps: [
-            { id: 12, title: '레이아웃', orderIndex: 2, isCheckpoint: false },
+            { id: 12, title: '레이아웃', orderIndex: 2, isCheckpoint: true },
             { id: 11, title: '선택자', orderIndex: 1, isCheckpoint: false },
           ],
         },
@@ -216,7 +222,8 @@ describe('RoadmapService', () => {
     // 유닛2: 스텝 2개 + 플레이스홀더 3개 + 중간/최종 점검 → 총 7개
     expect(unit2.steps).toHaveLength(7);
     expect(unit2.steps.filter(step => step.id === 11 || step.id === 12).length).toBe(2);
-    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    // 실제 스텝 중 하나(id: 12)가 체크포인트이므로 총 3개 (실제 스텝 1개 + 중간/최종 점검 2개)
+    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(3);
     expect(unit2.steps.find(step => step.id === 11)?.quizCount).toBe(4);
     expect(unit2.steps.find(step => step.id === 12)?.quizCount).toBe(6);
   });
@@ -325,6 +332,10 @@ describe('RoadmapService', () => {
         },
       },
     });
+    expect(formatMock).toHaveBeenCalledWith(
+      '<{{BLANK}}>\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n</{{BLANK}}>',
+      'html',
+    );
   });
 
   it('스텝을 찾지 못하면 예외를 던진다', async () => {
@@ -348,7 +359,7 @@ describe('RoadmapService', () => {
         type: 'MCQ',
         selection: { option_id: 'c2' },
       },
-      1,
+      null,
     );
 
     expect(result).toEqual({
@@ -383,7 +394,7 @@ describe('RoadmapService', () => {
           pairs: [{ left: 'div > p', right: 'div의 직계 자식 p' }],
         },
       },
-      1,
+      null,
     );
 
     expect(result).toEqual({
@@ -410,7 +421,7 @@ describe('RoadmapService', () => {
           type: 'MCQ',
           selection: { option_id: 'c1' },
         },
-        1,
+        null,
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });

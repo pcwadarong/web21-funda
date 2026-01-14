@@ -106,14 +106,22 @@ const cardStyle = (theme: Theme, status: UnitStatus, isInteractive: boolean) => 
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: transform 150ms ease;
+  transition: all 150ms ease-in-out;
+  box-shadow: 0 4px 0 ${theme.colors.border.default};
 
   ${isInteractive &&
   css`
     cursor: pointer;
 
     &:hover {
-      transform: translateY(-2px);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 0 ${theme.colors.border.default};
+      border-color: ${theme.colors.primary.light};
+    }
+
+    &:active {
+      transform: translateY(2px);
+      box-shadow: 0 0px 0 ${theme.colors.border.default};
     }
 
     &:focus-visible {

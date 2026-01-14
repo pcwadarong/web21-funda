@@ -36,7 +36,7 @@ export const Default: Story = {
 export const QuizMode: Story = {
   args: {
     language: 'TypeScript',
-    children: `interface User {\nid: number;\nname: string;\n}\n\nconst doubled = arr.{{BLANK}}(x => x * 2);`,
+    children: `interface User {\n  id: number;\n  name: string;\n}\n\nconst doubled = arr.{{BLANK}}(x => x * 2);`,
   },
 };
 
@@ -44,7 +44,7 @@ export const QuizMode: Story = {
 export const LongCode: Story = {
   args: {
     language: 'Python',
-    children: `def calculate_sum(a, b):\n# This is a comment\nresult = a + b\nreturn result\n\nprint(calculate_sum(10, 20))`,
+    children: `def calculate_sum(a, b):\n  # This is a comment\n  result = a + b\n  return result\n\nprint(calculate_sum(10, 20))`,
   },
   decorators: [
     Story => (

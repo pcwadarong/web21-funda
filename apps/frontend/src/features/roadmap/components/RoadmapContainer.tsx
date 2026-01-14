@@ -63,9 +63,9 @@ const containerStyle = css`
 const mainStyle = (theme: Theme) => css`
   position: relative;
   flex: 1;
-  padding: 40px 48px;
+  padding: 24px;
   overflow-y: auto;
-  max-width: 85rem;
+  max-width: 1200px;
   margin: 0 auto;
 
   &:before {
@@ -119,20 +119,17 @@ const heroTitleStyle = css`
 `;
 
 const heroLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.primary.main};
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-`;
-
-const heroHeadingStyle = (theme: Theme) => css`
-  margin: 0;
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${theme.colors.text.light};
+  color: ${theme.colors.primary.main};
+`;
+
+const heroHeadingStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['20Medium'].fontSize};
+  line-height: ${theme.typography['20Medium'].lineHeight};
+  font-weight: ${theme.typography['20Medium'].fontWeight};
+  color: ${theme.colors.grayscale[600]};
 `;
 
 const gridStyle = css`

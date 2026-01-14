@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { CodeFormatter } from '../common/utils/code-formatter';
 import { SolveLog, StepAttemptStatus, UserStepAttempt } from '../progress/entities';
 
 import type { FieldListResponse } from './dto/field-list.dto';
@@ -28,6 +29,7 @@ export class RoadmapService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    private readonly codeFormatter: CodeFormatter,
     @InjectRepository(SolveLog)
     private readonly solveLogRepository: Repository<SolveLog>,
     @InjectRepository(UserStepAttempt)
@@ -166,7 +168,7 @@ export class RoadmapService {
       order: { id: 'ASC' },
     });
 
-    return quizzes.map(quiz => this.toQuizResponse(quiz));
+    return Promise.all(quizzes.map(quiz => this.toQuizResponse(quiz)));
   }
 
   /**
@@ -263,11 +265,11 @@ export class RoadmapService {
    * @param quiz 퀴즈 엔티티
    * @returns 퀴즈 응답 DTO
    */
-  private toQuizResponse(quiz: Quiz): QuizResponse {
+  private async toQuizResponse(quiz: Quiz): Promise<QuizResponse> {
     return {
       id: quiz.id,
       type: quiz.type,
-      content: this.normalizeQuizContent(quiz),
+      content: await this.normalizeQuizContent(quiz),
     };
   }
 
@@ -276,7 +278,7 @@ export class RoadmapService {
    * @param quiz 퀴즈 엔티티
    * @returns 정규화된 content
    */
-  private normalizeQuizContent(quiz: Quiz): QuizContent {
+  private async normalizeQuizContent(quiz: Quiz): Promise<QuizContent> {
     const rawObject = this.toContentObject(quiz.content);
     if (!rawObject) {
       return { question: quiz.question };
@@ -288,7 +290,7 @@ export class RoadmapService {
         : quiz.question;
 
     const options = this.normalizeOptions(rawObject.options);
-    const codeMetadata = this.normalizeCodeMetadata(rawObject);
+    const codeMetadata = await this.normalizeCodeMetadata(rawObject);
     const matchingMetadata = this.normalizeMatchingMetadata(rawObject);
 
     return {
@@ -376,11 +378,18 @@ export class RoadmapService {
    * @param value content 객체
    * @returns 정규화된 code_metadata (없으면 undefined)
    */
-  private normalizeCodeMetadata(value: Record<string, unknown>) {
+  private async normalizeCodeMetadata(value: Record<string, unknown>) {
     const code = value.code;
     const language = value.language;
     if (typeof code === 'string') {
-      return typeof language === 'string' ? { language, snippet: code } : { snippet: code };
+      const formattedCode = await this.codeFormatter.format(
+        code,
+        typeof language === 'string' ? language : 'javascript',
+      );
+      return {
+        ...(typeof language === 'string' ? { language } : {}),
+        snippet: formattedCode,
+      };
     }
     return undefined;
   }

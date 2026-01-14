@@ -1,8 +1,9 @@
 import { css, useTheme } from '@emotion/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { Toast } from '@/comp/Toast';
 import { reportService } from '@/services/reportService';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
@@ -20,36 +21,76 @@ const reportOptions = [
 const ReportModal = ({ quizId }: ReportModalProps) => {
   const theme = useTheme();
   const { closeModal } = useModal();
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string[]>([]);
   const [otherText, setOtherText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastState, setToastState] = useState<{ message: string; issuedAt: number } | null>(null);
+  const [isToastVisible, setIsToastVisible] = useState(false);
 
+  const handleOptionClick = (optionId: string) => {
+    setSelectedOption(
+      prev =>
+        prev.includes(optionId)
+          ? prev.filter(id => id !== optionId) // 이미 선택되면 제거
+          : [...prev, optionId], // 아니면 추가
+    );
+  };
+  const showToast = (message: string) => {
+    setToastState({ message, issuedAt: Date.now() });
+  };
   const handleSubmit = async () => {
-    if (!selectedOption) return;
+    if (selectedOption.length === 0) return;
 
-    const selectedLabel = reportOptions.find(o => o.id === selectedOption)?.label || '';
-    const report_description = selectedOption === 'other' ? otherText : selectedLabel;
+    // 선택된 옵션들의 라벨을 ", "로 연결
+    const selectedLabels = selectedOption
+      .filter(id => id !== 'other')
+      .map(id => reportOptions.find(o => o.id === id)?.label || '')
+      .filter(Boolean);
+
+    const otherPart = selectedOption.includes('other') && otherText.trim() ? otherText : '';
+
+    const report_description = [...selectedLabels, otherPart].filter(Boolean).join(', ');
 
     try {
       setIsSubmitting(true);
       const response = await reportService.createReport(quizId, {
         report_description,
       });
-      if (response.isSuccess) {
-        console.log('신고가 성공적으로 전송되었습니다.');
-      }
 
-      setSelectedOption(null);
-      setOtherText('');
-      closeModal();
+      if (response.isSuccess) {
+        showToast('신고가 성공적으로 전송되었습니다.');
+        setSelectedOption([]);
+        setOtherText('');
+        closeModal();
+      } else {
+        showToast('신고 전송에 실패했습니다.');
+      }
     } catch (error) {
-      console.error('신고 전송 중 오류:', error);
-      alert(error instanceof Error ? error.message : '신고 전송에 실패했습니다.');
+      showToast('신고 전송에 실패했습니다.');
+
+      if (process.env.NODE_ENV === 'development') {
+        console.error('신고 전송 중 오류:', error);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+  const toastIssuedAt = toastState?.issuedAt;
+  useEffect(() => {
+    if (!toastState) {
+      return;
+    }
 
+    setIsToastVisible(true);
+
+    const hideTimer = window.setTimeout(() => {
+      setIsToastVisible(false);
+    }, 2200);
+
+    return () => {
+      window.clearTimeout(hideTimer);
+    };
+  }, [toastIssuedAt, toastState]);
   return (
     <div>
       <p css={labelStyle(theme)}>신고 유형</p>
@@ -59,22 +100,22 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
           <div
             key={option.id}
             css={optionStyle(theme)}
-            onClick={() => setSelectedOption(option.id)}
+            onClick={() => handleOptionClick(option.id)}
           >
             <div
               css={[
                 checkboxStyle(theme),
-                selectedOption === option.id && checkboxCheckedStyle(theme),
+                selectedOption.includes(option.id) && checkboxCheckedStyle(theme),
               ]}
             >
-              {selectedOption === option.id && <SVGIcon icon="Check" size="xs" />}
+              {selectedOption.includes(option.id) && <SVGIcon icon="Check" size="xs" />}
             </div>
             <span css={optionTextStyle(theme)}>{option.label}</span>
           </div>
         ))}
       </div>
 
-      {selectedOption === 'other' && (
+      {selectedOption.includes('other') && (
         <div css={textareaContainerStyle}>
           <textarea
             value={otherText}
@@ -87,12 +128,13 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
 
       <Button
         variant="primary"
-        disabled={!selectedOption || (selectedOption === 'other' && !otherText.trim())}
+        disabled={!selectedOption || (selectedOption.includes('other') && !otherText.trim())}
         onClick={handleSubmit}
         css={btn}
       >
         {isSubmitting ? '신고 중...' : '신고하기'}
       </Button>
+      {toastState && <Toast message={toastState.message} isOpen={isToastVisible} />}
     </div>
   );
 };

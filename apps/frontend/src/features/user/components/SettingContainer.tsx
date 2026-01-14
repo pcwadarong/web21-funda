@@ -50,6 +50,7 @@ const containerStyle = css`
   width: 100%;
   max-width: 45rem;
   margin: 0 auto;
+  min-height: 100vh;
 `;
 
 const sectionCardStyle = (theme: Theme) => css`

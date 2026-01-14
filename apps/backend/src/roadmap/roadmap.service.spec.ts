@@ -151,7 +151,7 @@ describe('RoadmapService', () => {
           title: 'CSS 기초',
           orderIndex: 2,
           steps: [
-            { id: 12, title: '레이아웃', orderIndex: 2, isCheckpoint: true },
+            { id: 12, title: '레이아웃', orderIndex: 2, isCheckpoint: false },
             { id: 11, title: '선택자', orderIndex: 1, isCheckpoint: false },
           ],
         },

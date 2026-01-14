@@ -1,8 +1,11 @@
 import { css, useTheme } from '@emotion/react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
+import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { useStorage } from '@/hooks/useStorage';
+import { type Field, fieldService } from '@/services/fieldService';
 import { useAuthStore } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
@@ -23,22 +26,83 @@ const TODAY_GOALS = [
 
 export const LearnRightSidebar = () => {
   const theme = useTheme();
-  const { progress, uiState } = useStorage();
+  const { progress, uiState, updateUIState } = useStorage();
 
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
   const heartCount = isLoggedIn ? USER_STATS.learningDays : progress.heart;
 
+  const navigate = useNavigate();
+  const [fields, setFields] = useState<Field[]>([]);
+
+  useEffect(() => {
+    const fetchFields = async () => {
+      try {
+        const data = await fieldService.getFields();
+        setFields(data.fields);
+      } catch (error) {
+        console.error('Failed to fetch fields:', error);
+      }
+    };
+
+    fetchFields();
+  }, []);
+
+  const selectedField = useMemo(
+    () =>
+      fields.find(
+        field => field.slug.toLowerCase() === uiState.last_viewed.field_slug.toLowerCase(),
+      ),
+    [fields, uiState.last_viewed.field_slug],
+  );
+
+  const dropdownOptions = useMemo(
+    () =>
+      fields.map(field => ({
+        value: field.slug,
+        label: field.name,
+        icon: field.icon,
+      })),
+    [fields],
+  );
+
+  const handleChange = (option: string) => {
+    updateUIState({
+      last_viewed: {
+        ...uiState.last_viewed,
+        field_slug: option,
+      },
+    });
+    navigate(0);
+  };
+
   return (
     <aside css={rightSectionStyle}>
       <div css={statsContainerStyle(isLoggedIn)}>
-        <Link to="/learn/select-field" css={rightSidebarLinkStyle}>
-          <div css={statContainerStyle(theme)}>
-            <span css={statIconStyle}>
-              <SVGIcon icon="Frontend" size="md" />
-            </span>
-            <span css={statValueStyle(theme)}>{uiState.last_viewed.field_slug.toUpperCase()}</span>
-          </div>
-        </Link>
+        <Dropdown
+          options={dropdownOptions}
+          onChange={handleChange}
+          value={uiState.last_viewed.field_slug}
+          variant="plain"
+          triggerCss={statContainerStyle(theme)}
+          renderTrigger={() => (
+            <>
+              <span css={statIconStyle}>
+                <SVGIcon icon={selectedField?.icon ?? 'Frontend'} size="md" />
+              </span>
+              <span css={statValueStyle(theme)}>
+                {selectedField?.slug?.toUpperCase() ?? uiState.last_viewed.field_slug.toUpperCase()}
+              </span>
+            </>
+          )}
+          renderOption={option => (
+            <>
+              <span css={statIconStyle}>
+                <SVGIcon icon={option.icon ?? 'Frontend'} size="sm" />
+              </span>
+              <span css={statValueStyle(theme)}>{option.label}</span>
+            </>
+          )}
+        />
         {isLoggedIn && (
           <>
             <div css={statContainerStyle(theme)}>

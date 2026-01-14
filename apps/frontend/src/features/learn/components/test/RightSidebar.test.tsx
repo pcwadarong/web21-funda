@@ -1,7 +1,8 @@
 import { ThemeProvider } from '@emotion/react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type * as ReactRouterDom from 'react-router-dom';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import { ModalProvider } from '@/store/modalStore';
@@ -12,16 +13,18 @@ vi.mock('@/comp/SVGIcon', () => ({
   default: ({ icon }: { icon: string }) => <span data-testid={`icon-${icon}`} />,
 }));
 
+const updateUIStateMock = vi.fn();
+
 // useStorage 모킹
 const mockUseStorage = vi.fn(() => ({
   progress: { heart: 5, last_solved_unit_id: [] },
   uiState: {
-    last_viewed: { field_slug: 'FE', unit_id: 1 },
+    last_viewed: { field_slug: 'frontend', unit_id: 1 },
     current_quiz_step_id: 0,
   },
   solvedStepHistory: [],
   updateProgress: vi.fn(),
-  updateUIState: vi.fn(),
+  updateUIState: updateUIStateMock,
   addStepHistory: vi.fn(),
   updateLastSolvedUnit: vi.fn(),
 }));
@@ -30,6 +33,16 @@ vi.mock('@/hooks/useStorage', () => ({
   useStorage: () => mockUseStorage(),
 }));
 
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 // useAuthStore 모킹
 const mockUseAuthStore = vi.fn(() => false);
 
@@ -37,6 +50,14 @@ vi.mock('@/store/authStore', () => ({
   useAuthStore: (selector: (state: { isLoggedIn: boolean }) => boolean) => {
     const state = { isLoggedIn: mockUseAuthStore() };
     return selector(state);
+  },
+}));
+
+const mockGetFields = vi.fn();
+
+vi.mock('@/services/fieldService', () => ({
+  fieldService: {
+    getFields: () => mockGetFields(),
   },
 }));
 
@@ -62,23 +83,44 @@ const renderSidebar = () =>
   );
 
 describe('LearnRightSidebar 컴포넌트 테스트', () => {
+  beforeEach(() => {
+    mockGetFields.mockResolvedValue({
+      fields: [
+        {
+          slug: 'frontend',
+          name: '프론트엔드',
+          description: '프론트엔드',
+          icon: 'Frontend',
+        },
+        {
+          slug: 'backend',
+          name: '백엔드',
+          description: '백엔드',
+          icon: 'Backend',
+        },
+      ],
+    });
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    updateUIStateMock.mockClear();
+    mockNavigate.mockClear();
     mockUseAuthStore.mockReturnValue(false);
   });
 
   it('기본 렌더링이 올바르게 동작한다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FE/i)).toBeInTheDocument();
+    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument(); // 하트 개수
   });
 
   it('필드 이름이 표시된다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FE/i)).toBeInTheDocument();
+    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
   });
 
   it('비로그인 상태에서 하트 개수가 표시된다', () => {
@@ -166,5 +208,20 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(screen.getByTestId('icon-Heart')).toBeInTheDocument();
     expect(screen.getByTestId('icon-Book')).toBeInTheDocument();
     expect(screen.getByTestId('icon-Fire')).toBeInTheDocument();
+  });
+
+  it('드롭다운 옵션을 선택했을 때 상태가 갱신되고 이동이 호출되어야 한다', async () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(await screen.findByRole('option', { name: '백엔드' }));
+
+    expect(updateUIStateMock).toHaveBeenCalledWith({
+      last_viewed: {
+        field_slug: 'backend',
+        unit_id: 1,
+      },
+    });
+    expect(mockNavigate).toHaveBeenCalledWith(0);
   });
 });

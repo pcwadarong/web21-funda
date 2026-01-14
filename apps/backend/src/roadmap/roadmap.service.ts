@@ -321,7 +321,6 @@ export class RoadmapService {
 
     const maxSteps = 5;
     const allSteps = steps.sort((a, b) => a.orderIndex - b.orderIndex);
-    const actualSteps = allSteps.filter(step => !step.isCheckpoint);
     const checkpointSteps = allSteps.filter(step => step.isCheckpoint);
 
     const totalSteps = allSteps.length;

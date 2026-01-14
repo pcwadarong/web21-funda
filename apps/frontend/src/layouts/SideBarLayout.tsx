@@ -3,10 +3,9 @@ import { Outlet } from 'react-router-dom';
 
 import { Sidebar } from '@/layouts/Sidebar';
 
-export const LearnLayout = () => (
+export const SideBarLayout = () => (
   <div css={containerStyle}>
     <Sidebar />
-    {/* Learn,SelectField */}
     <Outlet />
   </div>
 );

@@ -2,7 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
@@ -12,18 +12,12 @@ const NAV_ITEMS = [
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
-// TODO: 유저 정보 추가
-const USER_INFO = {
-  name: '김 펀더',
-  level: 5,
-  xp: 1250,
-} as const;
-
 export const Sidebar = () => {
   const theme = useTheme();
   // TODO: 현재 페이지에 따라 활성화된 메뉴 아이템 추가
   const activeItemId = 'learn'; // 하드코딩
-  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const isLoggedIn = useIsLoggedIn();
+  const user = useAuthUser();
 
   return (
     <aside css={sidebarStyle(theme)}>
@@ -48,16 +42,14 @@ export const Sidebar = () => {
           </Link>
         ))}
       </nav>
-      {isLoggedIn && (
+      {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
           <div css={avatarStyle(theme)}>
             <SVGIcon icon="Profile" size="md" />
           </div>
           <div css={userInfoStyle}>
-            <div css={userNameStyle(theme)}>{USER_INFO.name}</div>
-            <div css={userLevelStyle(theme)}>
-              Lv. {USER_INFO.level} · {USER_INFO.xp} XP
-            </div>
+            <div css={userNameStyle(theme)}>{user.displayName}</div>
+            <div css={userLevelStyle(theme)}>{user.experience} XP</div>
           </div>
         </div>
       )}

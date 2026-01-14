@@ -6,17 +6,8 @@ import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { useStorage } from '@/hooks/useStorage';
 import { type Field, fieldService } from '@/services/fieldService';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
-
-// TODO: 유저 정보 수정
-const USER_STATS = {
-  learningDays: 4,
-  diamond: 0,
-  field: 'FE',
-  streak: 5,
-  wrongAnswers: 5,
-} as const;
 
 // TODO: 오늘의 목표 추가
 const TODAY_GOALS = [
@@ -26,10 +17,11 @@ const TODAY_GOALS = [
 
 export const LearnRightSidebar = () => {
   const theme = useTheme();
+  const user = useAuthUser();
+  const isLoggedIn = useIsLoggedIn();
   const { progress, uiState, updateUIState } = useStorage();
 
-  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
-  const heartCount = isLoggedIn ? USER_STATS.learningDays : progress.heart;
+  const heartCount = user ? user.heartCount : progress.heart;
 
   const navigate = useNavigate();
   const [fields, setFields] = useState<Field[]>([]);
@@ -106,19 +98,20 @@ export const LearnRightSidebar = () => {
             </>
           )}
         />
-        {isLoggedIn && (
+        {isLoggedIn && user && (
           <>
             <div css={statContainerStyle(theme)}>
               <span css={statIconStyle}>
                 <SVGIcon icon="Diamond" size="md" />
               </span>
-              <span css={statValueStyle(theme)}>{USER_STATS.diamond}</span>
+              //TODO: 다이아 추가
+              {/* <span css={statValueStyle(theme)}>{user.diamond}</span> */}
             </div>
             <div css={statContainerStyle(theme)}>
               <span css={statIconStyle}>
                 <SVGIcon icon="Streak" size="md" />
               </span>
-              <span css={statValueStyle(theme)}>{USER_STATS.streak}</span>
+              <span css={statValueStyle(theme)}>{user.currentStreak}</span>
             </div>
           </>
         )}
@@ -138,8 +131,10 @@ export const LearnRightSidebar = () => {
           </span>
           <span css={cardTitleStyle(theme)}>오답 노트</span>
         </div>
-        {isLoggedIn ? (
-          <button css={reviewBadgeStyle(theme)}>{USER_STATS.wrongAnswers}개 문제 복습 필요</button>
+        {isLoggedIn && user ? (
+          //TODO: 복습 시스템 구현
+          // <button css={reviewBadgeStyle(theme)}>{user.wrongAnswers}개 문제 복습 필요</button>
+          <button css={reviewBadgeStyle(theme)}>5개 문제 복습 필요</button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>
             <div css={reviewBadgeStyle(theme)}>로그인 후 문제를 복습해보세요!</div>

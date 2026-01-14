@@ -1,6 +1,6 @@
 import type { AuthUser } from '@/feat/auth/types';
 
-import { apiFetch } from './api';
+import { apiFetch, BASE_URL } from './api';
 
 interface RefreshResponse {
   user: AuthUser;
@@ -17,9 +17,7 @@ export const authService = {
   },
 
   async loginWithGitHub(): Promise<void> {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
-    const targetUrl = `${baseUrl}/auth/github`;
-
+    const targetUrl = `${BASE_URL}/auth/github`;
     window.location.href = targetUrl;
   },
 

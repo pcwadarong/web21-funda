@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Toast } from '@/comp/Toast';
+import { useToast } from '@/store/toastStore';
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { stepType } from '@/feat/learn/types';
@@ -11,19 +11,14 @@ import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { shuffleArray } from '@/utils/shuffleArray';
 
 export const Learn = () => {
+  const { showToast } = useToast();
   const { updateUIState, uiState } = useStorage();
   const navigate = useNavigate();
   const { field, units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } =
     useLearnUnits();
-  const [toastState, setToastState] = useState<{ message: string; issuedAt: number } | null>(null);
-  const [isToastVisible, setIsToastVisible] = useState(false);
 
   const showInProgressToast = useCallback(() => {
-    setToastState({
-      message: '제작 중입니다',
-      // 동일한 문구라도 다시 클릭했을 때 토스트가 재생되도록 시점을 함께 저장한다.
-      issuedAt: Date.now(),
-    });
+    showToast('제작 중입니다');
   }, []);
 
   const prefetchedStepsRef = useRef<number[]>([]);
@@ -91,24 +86,6 @@ export const Learn = () => {
     [navigate, showInProgressToast, updateUIState, units, uiState.last_viewed],
   );
 
-  const toastIssuedAt = toastState?.issuedAt;
-
-  useEffect(() => {
-    if (!toastState) {
-      return;
-    }
-
-    setIsToastVisible(true);
-
-    const hideTimer = window.setTimeout(() => {
-      setIsToastVisible(false);
-    }, 2200);
-
-    return () => {
-      window.clearTimeout(hideTimer);
-    };
-  }, [toastIssuedAt, toastState]);
-
   return (
     <>
       <LearnContainer
@@ -121,7 +98,6 @@ export const Learn = () => {
         onStepClick={handleStepClick}
         onStepHover={handleStepHover}
       />
-      {toastState && <Toast message={toastState.message} isOpen={isToastVisible} />}
     </>
   );
 };

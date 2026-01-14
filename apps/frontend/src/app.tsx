@@ -1,7 +1,7 @@
 import { css, Global, ThemeProvider } from '@emotion/react';
 import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router-dom';
-
+import { ToastProvider } from './store/toastStore';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { router } from '@/router';
 import { ModalProvider } from '@/store/modalStore';
@@ -36,7 +36,9 @@ export default function App() {
       />
       <AuthProvider>
         <ModalProvider>
-          <RouterProvider router={router} />
+          <ToastProvider>
+            <RouterProvider router={router} />
+          </ToastProvider>
         </ModalProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -136,11 +136,6 @@ const logoTextStyle = (theme: Theme) => css`
   @media (max-width: 1024px) {
     display: none;
   }
-
-  @media (max-width: 768px) {
-    display: block;
-    font-size: 10px;
-  }
 `;
 
 const navStyle = css`
@@ -181,6 +176,7 @@ const navItemStyle = (theme: Theme) => css`
     flex-direction: column;
     gap: 4px;
     padding: 8px;
+    width: 3.8rem;
   }
 `;
 
@@ -188,6 +184,11 @@ const activeNavItemStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   color: ${theme.colors.primary.dark};
   font-weight: 700;
+
+  @media (max-width: 768px) {
+    background: transparent;
+    color: ${theme.colors.primary.main};
+  }
 `;
 
 const navIconStyle = css`
@@ -214,7 +215,9 @@ const navLabelStyle = (theme: Theme) => css`
 
   @media (max-width: 768px) {
     display: block;
-    font-size: 10px;
+    font-size: ${theme.typography['12Medium'].fontSize};
+    line-height: ${theme.typography['12Medium'].lineHeight};
+    font-weight: ${theme.typography['12Medium'].fontWeight};
   }
 `;
 

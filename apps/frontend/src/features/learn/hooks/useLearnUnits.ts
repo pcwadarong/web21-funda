@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore';
  * Learn 페이지에서 사용할 유닛/스텝 데이터와 스크롤 상태를 관리합니다.
  */
 export const useLearnUnits = () => {
-  const { uiState, solvedStepHistory } = useStorage();
+  const { uiState, solvedStepHistory, updateUIState } = useStorage();
   const [field, setField] = useState('');
   const [units, setUnits] = useState<UnitType[]>([]);
   const [activeUnitId, setActiveUnitId] = useState<number | null>(null);
@@ -140,7 +140,17 @@ export const useLearnUnits = () => {
     const root = scrollContainerRef.current;
     if (!root || units.length === 0) return;
 
-    const targetUnitId = uiState.last_viewed.unit_id;
+    const lastViewedUnitId =
+      uiState.last_viewed.unit_id <= 1 ? units[0]?.id : uiState.last_viewed.unit_id;
+
+    updateUIState({
+      last_viewed: {
+        ...uiState.last_viewed,
+        unit_id: lastViewedUnitId,
+      },
+    });
+
+    const targetUnitId = lastViewedUnitId;
     if (targetUnitId <= 1) return;
 
     const element = unitRefs.current.get(targetUnitId);

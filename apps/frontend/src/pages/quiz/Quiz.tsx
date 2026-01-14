@@ -23,7 +23,8 @@ import { quizService } from '@/services/quizService';
  * * @returns {JSX.Element | null} 퀴즈 화면 레이아웃
  */
 export const Quiz = () => {
-  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt } = useStorage();
+  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt, updateLastSolvedUnit } =
+    useStorage();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const navigate = useNavigate();
@@ -212,7 +213,9 @@ export const Quiz = () => {
           state: result,
         });
 
-        addStepHistory(currentQuiz.id);
+        addStepHistory(step_id);
+
+        updateLastSolvedUnit(uiState.last_viewed.field_slug, uiState.last_viewed.unit_id);
       } catch {
         navigate('/quiz/error');
       }
@@ -231,6 +234,7 @@ export const Quiz = () => {
     currentQuiz,
     step_id,
     getQuizStartedAt,
+    updateLastSolvedUnit,
   ]);
 
   // 조건부 렌더링은 모든 hooks 호출 후에 배치

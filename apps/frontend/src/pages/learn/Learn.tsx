@@ -8,7 +8,7 @@ import type { stepType } from '@/feat/learn/types';
 import { useStorage } from '@/hooks/useStorage';
 
 export const Learn = () => {
-  const { updateUIState } = useStorage();
+  const { updateUIState, uiState } = useStorage();
   const navigate = useNavigate();
   const { field, units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } =
     useLearnUnits();
@@ -27,19 +27,29 @@ export const Learn = () => {
     (step: stepType) => {
       const stepTitle = step.title;
       const isInProgressStep = stepTitle === '제작 중';
+        
+      if (units.length === 0) return;
+      const fallbackUnitId = units[0]?.id;
+      if (!fallbackUnitId) return;
+      const currentUnit = units.find(unit => unit.steps.some(s => s.id === step.id))?.id;
 
       // 제작 중 스텝은 토스트 메시지 출력
       if (isInProgressStep) {
         showInProgressToast();
         return;
       }
-
-      navigate('/quiz');
+        
       updateUIState({
         current_quiz_step_id: step.id,
+        last_viewed: {
+          ...uiState.last_viewed,
+          unit_id: currentUnit ?? fallbackUnitId,
+        },
       });
+
+      navigate('/quiz');
     },
-    [navigate, showInProgressToast, updateUIState],
+    [navigate, showInProgressToast, updateUIState, units, uiState.last_viewed],
   );
 
   const toastIssuedAt = toastState?.issuedAt;

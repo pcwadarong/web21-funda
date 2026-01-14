@@ -66,10 +66,13 @@ export const LearnRightSidebar = () => {
   );
 
   const handleChange = (option: string) => {
+    const lastSolvedUnitId =
+      progress.last_solved_unit_id.find(item => item.field_slug === option)?.unit_id ?? 0;
+
     updateUIState({
       last_viewed: {
-        ...uiState.last_viewed,
         field_slug: option,
+        unit_id: lastSolvedUnitId,
       },
     });
     navigate(0);

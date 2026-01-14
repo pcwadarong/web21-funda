@@ -219,7 +219,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(updateUIStateMock).toHaveBeenCalledWith({
       last_viewed: {
         field_slug: 'backend',
-        unit_id: 1,
+        unit_id: 0,
       },
     });
     expect(mockNavigate).toHaveBeenCalledWith(0);

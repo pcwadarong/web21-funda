@@ -66,7 +66,9 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
         showReportSuccessToast();
         setSelectedOption([]);
         setOtherText('');
-        closeModal();
+        setTimeout(() => {
+          closeModal();
+        }, 2500);
       } else {
         showReportFailureToast();
       }

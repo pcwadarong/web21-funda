@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
@@ -13,7 +14,22 @@ export const Learn = () => {
   const { field, units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } =
     useLearnUnits();
 
+  const prefetchedStepsRef = useRef<number[]>([]);
+  const MAX_PREFETCH = 3;
   const handleStepHover = (stepId: number) => {
+    // 이미 프리페치된 경우 스킵
+    if (prefetchedStepsRef.current.includes(stepId)) {
+      return;
+    }
+    // 3개를 초과하면 가장 오래된 것(첫 번째) 제거
+    if (prefetchedStepsRef.current.length >= MAX_PREFETCH) {
+      const oldestStepId = prefetchedStepsRef.current.shift();
+      if (oldestStepId !== undefined) {
+        sessionStorage.removeItem(`processed_quizzes_${oldestStepId}`);
+      }
+    }
+    // 새로운 stepId 추가
+    prefetchedStepsRef.current.push(stepId);
     // 데이터 프리페치
     fetch(`/api/steps/${stepId}/quizzes`)
       .then(res => res.json())

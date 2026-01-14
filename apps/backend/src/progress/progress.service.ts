@@ -62,28 +62,25 @@ export class ProgressService {
    * - 응답에는 획득 점수=경험치, 정답 수, 풀이 수, 성공률, 소요 시간을 포함한다.
    */
   async completeStepAttempt(params: CompleteStepAttemptParams): Promise<CompleteStepAttemptResult> {
-    const { userId, stepId } = params;
+    const { userId, stepId, stepAttemptId } = params;
 
     const step = await this.stepRepository.findOne({ where: { id: stepId } });
     if (!step) {
       throw new NotFoundException('스텝 정보를 찾을 수 없습니다.');
     }
 
-    const attempt = await this.stepAttemptRepository.findOne({
-      where: { userId, step: { id: stepId }, status: StepAttemptStatus.IN_PROGRESS },
-      order: { attemptNo: 'DESC' },
-    });
+    const attempt = await this.findTargetStepAttempt({ userId, stepId, stepAttemptId });
 
     if (!attempt) {
       throw new BadRequestException('진행 중인 스텝 시도를 찾을 수 없습니다.');
     }
 
-    const stepAttemptId = attempt.id;
+    const targetStepAttemptId = attempt.id;
     const solveLogs = await this.solveLogRepository.find({
-      where: { stepAttemptId },
+      where: { stepAttemptId: targetStepAttemptId },
     });
 
-    const scoreResult = await this.calculateStepAttemptScore(stepAttemptId);
+    const scoreResult = await this.calculateStepAttemptScore(targetStepAttemptId);
     const finishedAtDate = new Date();
     const durationSeconds = Math.max(
       0,
@@ -136,6 +133,35 @@ export class ProgressService {
       // TODO: 오늘의 첫풀이여부 부탁드립니다
       firstSolve: false,
     };
+  }
+
+  /**
+   * 완료 처리 대상 스텝 시도를 찾는다.
+   * - 클라이언트가 명시한 stepAttemptId를 우선 사용한다.
+   * - 없으면 최신 진행 중(in_progress) 시도를 반환한다.
+   */
+  private async findTargetStepAttempt(params: {
+    userId: number;
+    stepId: number;
+    stepAttemptId?: number;
+  }): Promise<UserStepAttempt | null> {
+    const { userId, stepId, stepAttemptId } = params;
+
+    if (stepAttemptId) {
+      return this.stepAttemptRepository.findOne({
+        where: {
+          id: stepAttemptId,
+          userId,
+          step: { id: stepId },
+          status: StepAttemptStatus.IN_PROGRESS,
+        },
+      });
+    }
+
+    return this.stepAttemptRepository.findOne({
+      where: { userId, step: { id: stepId }, status: StepAttemptStatus.IN_PROGRESS },
+      order: { attemptNo: 'DESC' },
+    });
   }
 
   /**
@@ -222,6 +248,7 @@ export interface StartStepAttemptParams {
 export interface CompleteStepAttemptParams {
   userId: number;
   stepId: number;
+  stepAttemptId?: number;
 }
 
 export interface CompleteStepAttemptResult {

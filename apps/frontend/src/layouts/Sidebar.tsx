@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
@@ -14,10 +14,15 @@ const NAV_ITEMS = [
 
 export const Sidebar = () => {
   const theme = useTheme();
-  // TODO: 현재 페이지에 따라 활성화된 메뉴 아이템 추가
-  const activeItemId = 'learn'; // 하드코딩
+  const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
+
+  const activeItemId = NAV_ITEMS.find(item =>
+    item.id === 'profile'
+      ? location.pathname.startsWith('/profile')
+      : location.pathname === item.path,
+  )?.id;
 
   return (
     <aside css={sidebarStyle(theme)}>
@@ -29,23 +34,31 @@ export const Sidebar = () => {
       </Link>
 
       <nav css={navStyle}>
-        {NAV_ITEMS.map(item => (
-          <Link
-            key={item.id}
-            to={item.path}
-            css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
-          >
-            <span css={navIconStyle}>
-              <SVGIcon icon={`${item.icon}`} size="md" />
-            </span>
-            <span css={navLabelStyle(theme)}>{item.label}</span>
-          </Link>
-        ))}
+        {NAV_ITEMS.map(item => {
+          const targetPath = item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
+
+          return (
+            <Link
+              key={item.id}
+              to={targetPath}
+              css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
+            >
+              <span css={navIconStyle}>
+                <SVGIcon icon={`${item.icon}`} size="md" />
+              </span>
+              <span css={navLabelStyle(theme)}>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
       {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
           <div css={avatarStyle(theme)}>
-            <SVGIcon icon="Profile" size="md" />
+            {user.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt={user.displayName} css={avatarImageStyle} />
+            ) : (
+              <SVGIcon icon="Profile" size="md" />
+            )}
           </div>
           <div css={userInfoStyle}>
             <div css={userNameStyle(theme)}>{user.displayName}</div>
@@ -223,6 +236,13 @@ const userSectionStyle = (theme: Theme) => css`
   }
 `;
 
+const avatarImageStyle = css`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+`;
+
 const avatarStyle = (theme: Theme) => css`
   width: 40px;
   height: 40px;
@@ -233,6 +253,7 @@ const avatarStyle = (theme: Theme) => css`
   justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
+  overflow: hidden;
 
   @media (max-width: 1024px) {
     width: 32px;

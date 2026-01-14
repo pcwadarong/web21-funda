@@ -1,16 +1,28 @@
 import { create } from 'zustand';
 
+import type { AuthUser } from '@/feat/auth/types';
+
 // 스토어의 데이터 타입 정의
 interface AuthState {
   isLoggedIn: boolean;
-  setIsLoggedIn: (status: boolean) => void;
+  user: AuthUser | null;
+  actions: {
+    setIsLoggedIn: (status: boolean) => void;
+    setUser: (user: AuthUser | null) => void;
+    clearAuth: () => void;
+  };
 }
 
-export const initialState = {
+const initialState = {
   isLoggedIn: false,
+  user: null,
 };
 
 export const useAuthStore = create<AuthState>(set => ({
   ...initialState,
-  setIsLoggedIn: (status: boolean) => set({ isLoggedIn: status }),
+  actions: {
+    setIsLoggedIn: status => set({ isLoggedIn: status }),
+    setUser: user => set({ user, isLoggedIn: !!user }),
+    clearAuth: () => set(initialState),
+  },
 }));

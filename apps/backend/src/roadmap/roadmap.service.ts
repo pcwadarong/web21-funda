@@ -555,7 +555,7 @@ export class RoadmapService {
       quizCount: 0,
       isCheckpoint: true,
       isCompleted: false,
-      isLocked: false,
+      isLocked: true,
     };
   }
 

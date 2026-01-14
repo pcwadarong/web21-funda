@@ -1,8 +1,9 @@
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/store/toastStore';
-import { authService } from '@/services/authService';
-import { SettingContainer } from '@/features/user/components/SettingContainer';
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { SettingContainer } from '@/features/user/components/SettingContainer';
+import { authService } from '@/services/authService';
+import { useToast } from '@/store/toastStore';
 
 export const Setting = () => {
   const { showToast } = useToast();

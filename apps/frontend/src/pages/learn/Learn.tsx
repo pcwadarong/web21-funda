@@ -1,13 +1,13 @@
 import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { useToast } from '@/store/toastStore';
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { stepType } from '@/feat/learn/types';
 import type { QuizQuestion } from '@/feat/quiz/types';
 import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
+import { useToast } from '@/store/toastStore';
 import { shuffleArray } from '@/utils/shuffleArray';
 
 export const Learn = () => {

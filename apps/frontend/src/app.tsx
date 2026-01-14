@@ -1,11 +1,13 @@
 import { css, Global, ThemeProvider } from '@emotion/react';
 import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router-dom';
-import { ToastProvider } from './store/toastStore';
+
 import { AuthProvider } from '@/providers/AuthProvider';
 import { router } from '@/router';
 import { ModalProvider } from '@/store/modalStore';
 import { darkTheme, lightTheme } from '@/styles/theme';
+
+import { ToastProvider } from './store/toastStore';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {

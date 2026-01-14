@@ -27,7 +27,7 @@ export const Learn = () => {
     (step: stepType) => {
       const stepTitle = step.title;
       const isInProgressStep = stepTitle === '제작 중';
-        
+
       if (units.length === 0) return;
       const fallbackUnitId = units[0]?.id;
       if (!fallbackUnitId) return;
@@ -38,7 +38,7 @@ export const Learn = () => {
         showInProgressToast();
         return;
       }
-        
+
       updateUIState({
         current_quiz_step_id: step.id,
         last_viewed: {

@@ -3,22 +3,22 @@ import { useNavigate } from 'react-router-dom';
 
 import { SettingContainer } from '@/features/user/components/SettingContainer';
 import { authService } from '@/services/authService';
+import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
 
 export const Setting = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
-
-  //TODO: 실제 테마 상태와 연결 필요
-  const isDarkMode = false;
+  const { isDarkMode, toggleDarkMode } = useThemeStore();
 
   /**
    * 다크 모드 토글 핸들러
    * @param checked 다크 모드 체크 상태
    */
-  const handleDarkModeToggle = useCallback((checked: boolean) => {
-    console.log('Dark mode:', checked);
-  }, []);
+  const handleDarkModeToggle = useCallback(() => {
+    toggleDarkMode();
+    console.log(isDarkMode);
+  }, [toggleDarkMode]);
 
   /**
    * 로그아웃 핸들러

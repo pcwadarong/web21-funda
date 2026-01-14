@@ -118,7 +118,8 @@ const FetchMockProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (input, init) => {
-      const url = typeof input === 'string' ? input : input.url;
+      const url =
+        typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString();
       if (url.endsWith('/api/fields')) {
         return new Response(
           JSON.stringify({

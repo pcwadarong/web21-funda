@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/comp/Button';
+import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 interface LoginFormProps {
@@ -20,12 +21,18 @@ export const LoginForm = ({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
         <h1 css={titleStyle(theme)}>Funda</h1>
         <p css={taglineStyle(theme)}>재미있게 배우는 개발 지식</p>
         <div css={buttonGroupStyle}>
-          <Button variant="secondary" onClick={onGoogleLogin} fullWidth css={loginButtonStyle}>
-            <span css={iconStyle}>G</span>
+          <Button
+            variant="secondary"
+            onClick={onGoogleLogin}
+            fullWidth
+            css={loginButtonStyle}
+            disabled
+          >
+            <SVGIcon icon="Google" size="md" />
             <span>Google로 계속하기</span>
           </Button>
           <Button variant="primary" onClick={onGitHubLogin} fullWidth css={loginButtonStyle}>
-            <span css={iconStyle}>🐙</span>
+            <SVGIcon icon="Github" size="md" />
             <span>GitHub로 계속하기</span>
           </Button>
         </div>
@@ -96,12 +103,6 @@ const loginButtonStyle = css`
   align-items: center;
   justify-content: center;
   gap: 8px;
-`;
-
-const iconStyle = css`
-  font-size: 20px;
-  display: flex;
-  align-items: center;
 `;
 
 const socialProofStyle = (theme: Theme) => css`

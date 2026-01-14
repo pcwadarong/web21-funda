@@ -175,7 +175,7 @@ describe('LearnContainer 컴포넌트 테스트', () => {
         targetIcon.closest('div[style*="cursor: pointer"]') || targetIcon.closest('div');
       if (clickableDiv) {
         fireEvent.click(clickableDiv as HTMLElement);
-        expect(onStepClick).toHaveBeenCalledWith(102);
+        expect(onStepClick).toHaveBeenCalledWith(mockUnits[0]!.steps[1]);
       }
     }
   });
@@ -189,7 +189,7 @@ describe('LearnContainer 컴포넌트 테스트', () => {
     fireEvent.click(lockedStep);
 
     // 잠긴 스텝은 클릭해도 이벤트가 발생하지 않아야 함
-    expect(onStepClick).not.toHaveBeenCalledWith(103);
+    expect(onStepClick).not.toHaveBeenCalled();
   });
 
   it('RightSidebar가 렌더링된다', () => {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import correctSound from '@/assets/audio/correct.mp3';
+import wrongSound from '@/assets/audio/wrong.mp3';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
 import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
@@ -11,6 +13,7 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
 import { quizService } from '@/services/quizService';
 
@@ -20,7 +23,8 @@ import { quizService } from '@/services/quizService';
  * * @returns {JSX.Element | null} 퀴즈 화면 레이아웃
  */
 export const Quiz = () => {
-  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt } = useStorage();
+  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt, updateLastSolvedUnit } =
+    useStorage();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const navigate = useNavigate();
@@ -56,6 +60,8 @@ export const Quiz = () => {
 
   /** localStorage에서 필드 슬러그 가져오기 */
   const step_id = uiState.current_quiz_step_id;
+
+  const { playSound } = useSound();
 
   /**
    * 퀴즈 데이터 가져오기
@@ -159,6 +165,10 @@ export const Quiz = () => {
         ? { pairs: result.solution.correct_pairs }
         : (result.solution?.correct_option_id ?? null);
 
+      // 정답/오답 효과음 재생
+      if (result.is_correct) playSound({ src: correctSound, currentTime: 0.05 });
+      else playSound({ src: wrongSound, currentTime: 0.05 });
+
       setQuizSolutions(prev => {
         const newSolutions = [...prev];
         newSolutions[currentQuizIndex] = {
@@ -203,7 +213,9 @@ export const Quiz = () => {
           state: result,
         });
 
-        addStepHistory(currentQuiz.id);
+        addStepHistory(step_id);
+
+        updateLastSolvedUnit(uiState.last_viewed.field_slug, uiState.last_viewed.unit_id);
       } catch {
         navigate('/quiz/error');
       }
@@ -222,6 +234,7 @@ export const Quiz = () => {
     currentQuiz,
     step_id,
     getQuizStartedAt,
+    updateLastSolvedUnit,
   ]);
 
   // 조건부 렌더링은 모든 hooks 호출 후에 배치

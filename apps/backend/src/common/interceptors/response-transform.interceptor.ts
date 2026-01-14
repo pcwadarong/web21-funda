@@ -22,6 +22,12 @@ export class ResponseTransformInterceptor implements NestInterceptor {
     return next.handle().pipe(
       map(data => {
         const response = context.switchToHttp().getResponse();
+
+        // 이미 응답이 전송된 경우(예: redirect)에는 추가 가공 없이 바로 반환한다.
+        if (response.headersSent) {
+          return data ?? null;
+        }
+
         const statusCode = response.statusCode;
         const payload = this.toPayload(data);
         const successResponse = createSuccessResponse(payload.result, statusCode);

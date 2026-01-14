@@ -3,10 +3,6 @@ import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 
-import { SolveLog, UserQuizStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
-import { Report } from '../report/entities/report.entity';
-import { Field, Quiz, Step, Unit } from '../roadmap/entities';
-
 const toInt = (value: string | undefined, fallback: number): number => {
   const parsed = value ? Number.parseInt(value, 10) : Number.NaN;
   return Number.isNaN(parsed) ? fallback : parsed;
@@ -23,6 +19,7 @@ loadEnvironment();
 const createDataSourceOptions = (): DataSourceOptions => {
   const isProduction = process.env.NODE_ENV === 'production';
   const migrationExtension = isProduction ? 'js' : 'ts';
+  const entityPaths = [path.join(__dirname, '..', '**', '*.entity.{ts,js}')];
 
   return {
     type: 'mysql',
@@ -31,17 +28,8 @@ const createDataSourceOptions = (): DataSourceOptions => {
     username: process.env.DB_USER ?? 'root',
     password: process.env.DB_PASSWORD ?? '',
     database: process.env.DB_NAME ?? 'app',
-    entities: [
-      Field,
-      Unit,
-      Step,
-      Quiz,
-      UserQuizStatus,
-      UserStepStatus,
-      UserStepAttempt,
-      SolveLog,
-      Report,
-    ],
+    // 엔티티를 추가할 때마다 목록을 수정하지 않도록 글롭 패턴으로 자동 로드한다.
+    entities: entityPaths,
     migrations: [path.join(__dirname, '..', 'migrations', `*.${migrationExtension}`)],
     synchronize: false,
     logging: process.env.NODE_ENV !== 'production',

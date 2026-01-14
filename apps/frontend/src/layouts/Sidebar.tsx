@@ -2,12 +2,13 @@ import { css, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
+import { useAuthStore } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
-  { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard/1' },
-  { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile/1' },
+  { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
+  { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
@@ -18,12 +19,11 @@ const USER_INFO = {
   xp: 1250,
 } as const;
 
-const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
-
 export const Sidebar = () => {
   const theme = useTheme();
   // TODO: 현재 페이지에 따라 활성화된 메뉴 아이템 추가
   const activeItemId = 'learn'; // 하드코딩
+  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
 
   return (
     <aside css={sidebarStyle(theme)}>

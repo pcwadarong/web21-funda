@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
-import type { UnitType } from '@/feat/learn/types';
+import type { stepType, UnitType } from '@/feat/learn/types';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
@@ -14,7 +14,7 @@ interface LearnContainerProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   headerRef: React.RefObject<HTMLDivElement | null>;
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
-  onStepClick: (stepId: number) => void;
+  onStepClick: (step: stepType) => void;
 }
 
 export const LearnContainer = ({
@@ -80,11 +80,18 @@ export const LearnContainer = ({
                     );
                   }
 
+                  const handleStepSelection = () => {
+                    if (step.isLocked) {
+                      return;
+                    }
+                    onStepClick(step);
+                  };
+
                   return (
                     <div key={step.id} css={positionStyle}>
                       <div css={lessonStackStyle}>
                         <div
-                          onClick={() => !step.isLocked && onStepClick(Number(step.id))}
+                          onClick={handleStepSelection}
                           css={[
                             lessonItemStyle(theme),
                             step.isCompleted && completedLessonStyle(theme),

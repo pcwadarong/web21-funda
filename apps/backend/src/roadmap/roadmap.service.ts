@@ -90,10 +90,10 @@ export class RoadmapService {
     const stepIds = (firstUnit.steps || []).map(step => step.id);
     const quizCounts = await this.quizRepository
       .createQueryBuilder('quiz')
-      .select('quiz.stepId', 'stepId')
+      .select('quiz.step_id', 'stepId')
       .addSelect('COUNT(*)', 'quizCount')
-      .where('quiz.stepId IN (:...stepIds)', { stepIds })
-      .groupBy('quiz.stepId')
+      .where('quiz.step_id IN (:...stepIds)', { stepIds })
+      .groupBy('quiz.step_id')
       .getRawMany();
 
     const quizCountMap = new Map<number, number>();
@@ -133,10 +133,10 @@ export class RoadmapService {
 
     const quizCounts = await this.quizRepository
       .createQueryBuilder('quiz')
-      .select('quiz.stepId', 'stepId')
+      .select('quiz.step_id', 'stepId')
       .addSelect('COUNT(*)', 'quizCount')
-      .where('quiz.stepId IN (:...stepIds)', { stepIds: allStepIds })
-      .groupBy('quiz.stepId')
+      .where('quiz.step_id IN (:...stepIds)', { stepIds: allStepIds })
+      .groupBy('quiz.step_id')
       .getRawMany();
 
     const quizCountMap = new Map<number, number>();

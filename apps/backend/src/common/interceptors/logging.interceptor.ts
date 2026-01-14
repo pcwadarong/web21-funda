@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
 
-import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import type { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import type { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 /**
@@ -13,7 +14,7 @@ export class LoggingInterceptor implements NestInterceptor {
   // NestJS 내장 Logger를 사용하여 클래스 이름(LoggingInterceptor)을 컨텍스트로 지정
   private readonly logger = new Logger(LoggingInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     // 인터셉터는 HTTP뿐만 아니라 RPC, WebSocket 등에서도 동작하므로 HTTP일 때만 로깅 수행
     if (context.getType() === 'http') return this.logHttpCall(context, next);
 
@@ -21,7 +22,7 @@ export class LoggingInterceptor implements NestInterceptor {
     return next.handle();
   }
 
-  private logHttpCall(context: ExecutionContext, next: CallHandler): Observable<any> {
+  private logHttpCall(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     // 1. 요청 객체 추출 및 메타데이터 수집
     const request = context.switchToHttp().getRequest();
     const userAgent = request.get('user-agent') || '';

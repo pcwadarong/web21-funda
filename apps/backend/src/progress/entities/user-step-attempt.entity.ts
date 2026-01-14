@@ -44,8 +44,8 @@ export class UserStepAttempt {
   @Column({ name: 'attempt_no', type: 'int' })
   attemptNo!: number;
 
-  @Column({ name: 'total_questions', type: 'int' })
-  totalQuestions!: number;
+  @Column({ name: 'total_quizzes', type: 'int' })
+  totalQuizzes!: number;
 
   @Column({ name: 'answered_count', type: 'int', default: 0 })
   answeredCount!: number;

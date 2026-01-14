@@ -10,6 +10,11 @@ export interface QuizSubmissionRequest {
     option_id?: string;
     pairs?: MatchingPair[];
   };
+  /**
+   * 인증 사용자가 스텝 시작 시 받은 stepAttemptId.
+   * 비로그인 사용자는 포함하지 않는다.
+   */
+  step_attempt_id?: number;
 }
 
 export interface QuizSubmissionResponse {

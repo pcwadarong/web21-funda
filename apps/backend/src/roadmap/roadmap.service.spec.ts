@@ -1,6 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { type FindOneOptions, Repository } from 'typeorm';
 
+import { SolveLog, UserStepAttempt } from '../progress/entities';
+
 import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
 
@@ -9,6 +11,8 @@ describe('RoadmapService', () => {
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
+  let solveLogRepository: Partial<Repository<SolveLog>>;
+  let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -21,6 +25,8 @@ describe('RoadmapService', () => {
   let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
   let createQueryBuilderMock: jest.Mock;
   let quizFindMock: jest.Mock;
+  let solveLogCreateMock: jest.Mock;
+  let solveLogSaveMock: jest.Mock;
 
   beforeEach(() => {
     findFieldsMock = jest.fn();
@@ -29,6 +35,8 @@ describe('RoadmapService', () => {
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
+    solveLogCreateMock = jest.fn().mockImplementation(data => data);
+    solveLogSaveMock = jest.fn().mockResolvedValue(undefined);
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -48,11 +56,20 @@ describe('RoadmapService', () => {
     stepRepository = {
       findOne: findStepMock,
     };
+    solveLogRepository = {
+      create: solveLogCreateMock,
+      save: solveLogSaveMock,
+    };
+    stepAttemptRepository = {
+      findOne: jest.fn(),
+    };
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
+      solveLogRepository as Repository<SolveLog>,
+      stepAttemptRepository as Repository<UserStepAttempt>,
     );
   });
 
@@ -151,7 +168,7 @@ describe('RoadmapService', () => {
           title: 'CSS 기초',
           orderIndex: 2,
           steps: [
-            { id: 12, title: '레이아웃', orderIndex: 2, isCheckpoint: true },
+            { id: 12, title: '레이아웃', orderIndex: 2, isCheckpoint: false },
             { id: 11, title: '선택자', orderIndex: 1, isCheckpoint: false },
           ],
         },
@@ -324,11 +341,15 @@ describe('RoadmapService', () => {
       explanation: '설명입니다.',
     } as Quiz);
 
-    const result = await service.submitQuiz(10, {
-      quiz_id: 10,
-      type: 'MCQ',
-      selection: { option_id: 'c2' },
-    });
+    const result = await service.submitQuiz(
+      10,
+      {
+        quiz_id: 10,
+        type: 'MCQ',
+        selection: { option_id: 'c2' },
+      },
+      1,
+    );
 
     expect(result).toEqual({
       quiz_id: 10,
@@ -353,13 +374,17 @@ describe('RoadmapService', () => {
       explanation: '매칭 설명',
     } as Quiz);
 
-    const result = await service.submitQuiz(11, {
-      quiz_id: 11,
-      type: 'MATCHING',
-      selection: {
-        pairs: [{ left: 'div > p', right: 'div의 직계 자식 p' }],
+    const result = await service.submitQuiz(
+      11,
+      {
+        quiz_id: 11,
+        type: 'MATCHING',
+        selection: {
+          pairs: [{ left: 'div > p', right: 'div의 직계 자식 p' }],
+        },
       },
-    });
+      1,
+    );
 
     expect(result).toEqual({
       quiz_id: 11,
@@ -378,11 +403,15 @@ describe('RoadmapService', () => {
     findQuizMock.mockResolvedValue(null);
 
     await expect(
-      service.submitQuiz(999, {
-        quiz_id: 999,
-        type: 'MCQ',
-        selection: { option_id: 'c1' },
-      }),
+      service.submitQuiz(
+        999,
+        {
+          quiz_id: 999,
+          type: 'MCQ',
+          selection: { option_id: 'c1' },
+        },
+        1,
+      ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

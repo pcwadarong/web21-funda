@@ -35,11 +35,11 @@ export default function App() {
         `}
       />
       <AuthProvider>
-        <ModalProvider>
-          <ToastProvider>
+        <ToastProvider>
+          <ModalProvider>
             <RouterProvider router={router} />
-          </ToastProvider>
-        </ModalProvider>
+          </ModalProvider>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

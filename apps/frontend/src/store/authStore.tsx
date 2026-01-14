@@ -26,3 +26,7 @@ export const useAuthStore = create<AuthState>(set => ({
     clearAuth: () => set(initialState),
   },
 }));
+
+export const useAuthUser = () => useAuthStore(state => state.user);
+export const useIsLoggedIn = () => useAuthStore(state => state.isLoggedIn);
+export const useAuthActions = () => useAuthStore(state => state.actions);

@@ -140,8 +140,11 @@ export const useLearnUnits = () => {
     const root = scrollContainerRef.current;
     if (!root || units.length === 0) return;
 
+    const fallbackUnitId = units[0]?.id;
+    if (!fallbackUnitId) return;
+
     const lastViewedUnitId =
-      uiState.last_viewed.unit_id <= 1 ? units[0]?.id : uiState.last_viewed.unit_id;
+      uiState.last_viewed.unit_id <= 1 ? fallbackUnitId : uiState.last_viewed.unit_id;
 
     updateUIState({
       last_viewed: {

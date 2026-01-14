@@ -13,13 +13,16 @@ export const Learn = () => {
 
   const handleStepClick = useCallback(
     (stepId: number) => {
+      if (units.length === 0) return;
+      const fallbackUnitId = units[0]?.id;
+      if (!fallbackUnitId) return;
       const currentUnit = units.find(unit => unit.steps.some(step => step.id === stepId))?.id;
 
       updateUIState({
         current_quiz_step_id: stepId,
         last_viewed: {
           ...uiState.last_viewed,
-          unit_id: currentUnit ?? units[0].id,
+          unit_id: currentUnit ?? fallbackUnitId,
         },
       });
 

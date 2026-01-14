@@ -57,11 +57,13 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
         report_description,
       });
 
-      if (response.isSuccess) {
+      if (response?.id) {
         showToast('신고가 성공적으로 전송되었습니다.');
         setSelectedOption([]);
         setOtherText('');
-        closeModal();
+        setTimeout(() => {
+          closeModal();
+        }, 2500);
       } else {
         showToast('신고 전송에 실패했습니다.');
       }

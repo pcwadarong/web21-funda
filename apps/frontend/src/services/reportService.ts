@@ -6,7 +6,10 @@ interface ReportRequest {
 }
 
 interface ReportResponse {
-  isSuccess: boolean;
+  id: number;
+  quizId: number;
+  report_description: string;
+  createdAt: string;
 }
 
 export const reportService = {

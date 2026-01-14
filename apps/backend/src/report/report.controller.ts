@@ -10,6 +10,6 @@ export class ReportController {
   @Post(':quizId/reports')
   async create(@Param('quizId', ParseIntPipe) quizId: number, @Body() dto: CreateReportDto) {
     const saved = await this.service.create(quizId, dto.report_description);
-    return { isSuccess: true, data: saved };
+    return saved;
   }
 }

@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
+import { memo } from 'react';
 
 interface SettingProps {
   isDarkMode: boolean;
@@ -9,7 +10,7 @@ interface SettingProps {
   onLogout: () => void;
 }
 
-export const SettingContainer = ({ isDarkMode, onDarkModeToggle, onLogout }: SettingProps) => {
+export const SettingContainer = memo(({ isDarkMode, onDarkModeToggle, onLogout }: SettingProps) => {
   const theme = useTheme();
 
   return (
@@ -35,7 +36,9 @@ export const SettingContainer = ({ isDarkMode, onDarkModeToggle, onLogout }: Set
       </Button>
     </div>
   );
-};
+});
+
+SettingContainer.displayName = 'SettingContainer';
 
 const containerStyle = css`
   display: flex;

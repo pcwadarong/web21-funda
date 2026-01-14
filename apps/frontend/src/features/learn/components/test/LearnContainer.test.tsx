@@ -175,7 +175,7 @@ describe('LearnContainer 컴포넌트 테스트', () => {
         targetIcon.closest('div[style*="cursor: pointer"]') || targetIcon.closest('div');
       if (clickableDiv) {
         fireEvent.click(clickableDiv as HTMLElement);
-        expect(onStepClick).toHaveBeenCalledWith(mockUnits[0].steps[1]);
+        expect(onStepClick).toHaveBeenCalledWith(mockUnits[0]!.steps[1]);
       }
     }
   });

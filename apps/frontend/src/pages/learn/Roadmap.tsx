@@ -5,8 +5,7 @@ import { RoadmapContainer } from '@/feat/roadmap/components/RoadmapContainer';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
 import { useStorage } from '@/hooks/useStorage';
 import { fieldService } from '@/services/fieldService';
-
-const isLoggedIn = false; // TODO: 실제 로그인 상태로 변경
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * 로드맵 페이지
@@ -20,6 +19,8 @@ export const Roadmap = () => {
 
   const [field, setField] = useState<string>();
   const [units, setUnits] = useState<RoadmapUnit[]>([]);
+
+  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -43,7 +44,7 @@ export const Roadmap = () => {
   const handleClick = (unitId: number) => {
     updateUIState({
       last_viewed: {
-        field_slug: fieldSlug,
+        ...uiState.last_viewed,
         unit_id: unitId,
       },
     });

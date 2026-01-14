@@ -21,7 +21,6 @@ describe('RoadmapService', () => {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
     orderBy: jest.Mock;
-    addOrderBy: jest.Mock;
     getOne: jest.Mock;
   };
   let findFieldsMock: jest.Mock<Promise<Field[]>>;
@@ -30,8 +29,6 @@ describe('RoadmapService', () => {
   let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
   let createQueryBuilderMock: jest.Mock;
   let quizFindMock: jest.Mock;
-  let solveLogCreateMock: jest.Mock;
-  let solveLogSaveMock: jest.Mock;
   let formatMock: jest.Mock;
 
   beforeEach(() => {
@@ -41,14 +38,11 @@ describe('RoadmapService', () => {
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
-    solveLogCreateMock = jest.fn().mockImplementation(data => data);
-    solveLogSaveMock = jest.fn().mockResolvedValue(undefined);
     formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      addOrderBy: jest.fn().mockReturnThis(),
       getOne: jest.fn(),
     };
     fieldRepository = {
@@ -65,8 +59,8 @@ describe('RoadmapService', () => {
       findOne: findStepMock,
     };
     solveLogRepository = {
-      create: solveLogCreateMock,
-      save: solveLogSaveMock,
+      create: jest.fn(),
+      save: jest.fn(),
     };
     stepAttemptRepository = {
       findOne: jest.fn(),
@@ -79,9 +73,9 @@ describe('RoadmapService', () => {
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
+      codeFormatter as CodeFormatter,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
-      codeFormatter as CodeFormatter,
     );
   });
 
@@ -365,7 +359,7 @@ describe('RoadmapService', () => {
         type: 'MCQ',
         selection: { option_id: 'c2' },
       },
-      1,
+      null,
     );
 
     expect(result).toEqual({
@@ -400,7 +394,7 @@ describe('RoadmapService', () => {
           pairs: [{ left: 'div > p', right: 'div의 직계 자식 p' }],
         },
       },
-      1,
+      null,
     );
 
     expect(result).toEqual({
@@ -427,7 +421,7 @@ describe('RoadmapService', () => {
           type: 'MCQ',
           selection: { option_id: 'c1' },
         },
-        1,
+        null,
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });

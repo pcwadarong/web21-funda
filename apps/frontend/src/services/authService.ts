@@ -1,14 +1,14 @@
-import type { AuthUser } from '@/types';
-
 export const authService = {
-  async loginWithGoogle(): Promise<AuthUser> {
-    // TODO: Implement Google OAuth login
+  async loginWithGoogle(): Promise<void> {
+    // TODO: Google OAuth 연동 예정
     throw new Error('Not implemented');
   },
 
-  async loginWithGitHub(): Promise<AuthUser> {
-    // TODO: Implement GitHub OAuth login
-    throw new Error('Not implemented');
+  async loginWithGitHub(): Promise<void> {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api';
+    const targetUrl = `${baseUrl}/auth/github`;
+
+    window.location.href = targetUrl;
   },
 
   async logout(): Promise<void> {
@@ -16,7 +16,7 @@ export const authService = {
     throw new Error('Not implemented');
   },
 
-  async getCurrentUser(): Promise<AuthUser | null> {
+  async getCurrentUser(): Promise<null> {
     // TODO: Implement get current user
     return null;
   },

@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { SolveLog, StepAttemptStatus, UserStepAttempt } from '../progress/entities';
+
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
@@ -26,6 +28,10 @@ export class RoadmapService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    @InjectRepository(SolveLog)
+    private readonly solveLogRepository: Repository<SolveLog>,
+    @InjectRepository(UserStepAttempt)
+    private readonly stepAttemptRepository: Repository<UserStepAttempt>,
   ) {}
 
   /**
@@ -172,10 +178,12 @@ export class RoadmapService {
   async submitQuiz(
     quizId: number,
     payload: QuizSubmissionRequest,
+    userId: number | null,
   ): Promise<QuizSubmissionResponse> {
     const quiz = await this.quizRepository.findOne({
       where: { id: quizId },
       select: { id: true, type: true, answer: true, explanation: true },
+      relations: { step: true },
     });
 
     if (!quiz) {
@@ -188,7 +196,7 @@ export class RoadmapService {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
-      return {
+      const result: QuizSubmissionResponse = {
         quiz_id: quiz.id,
         is_correct: isCorrect,
         solution: {
@@ -196,12 +204,21 @@ export class RoadmapService {
           explanation: quiz.explanation ?? null,
         },
       };
+
+      await this.saveSolveLog({
+        userId,
+        quiz,
+        stepAttemptId: payload.step_attempt_id,
+        isCorrect,
+      });
+
+      return result;
     }
 
     const correctOptionId = this.getOptionAnswer(quiz.answer);
     const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
-    return {
+    const result: QuizSubmissionResponse = {
       quiz_id: quiz.id,
       is_correct: isCorrect,
       solution: {
@@ -209,6 +226,15 @@ export class RoadmapService {
         explanation: quiz.explanation ?? null,
       },
     };
+
+    await this.saveSolveLog({
+      userId,
+      quiz,
+      stepAttemptId: payload.step_attempt_id,
+      isCorrect,
+    });
+
+    return result;
   }
 
   /**
@@ -555,7 +581,7 @@ export class RoadmapService {
       quizCount: 0,
       isCheckpoint: true,
       isCompleted: false,
-      isLocked: false,
+      isLocked: true,
     };
   }
 
@@ -600,5 +626,41 @@ export class RoadmapService {
    */
   private sortByOrderIndex<T extends { orderIndex: number }>(items: T[]): T[] {
     return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  private async saveSolveLog(params: {
+    userId: number | null;
+    quiz: Quiz;
+    stepAttemptId?: number;
+    isCorrect: boolean;
+  }): Promise<void> {
+    const { userId, quiz, stepAttemptId, isCorrect } = params;
+
+    if (userId === null || userId === undefined) {
+      return;
+    }
+
+    let stepAttempt: UserStepAttempt | null = null;
+    if (stepAttemptId) {
+      stepAttempt = await this.stepAttemptRepository.findOne({
+        where: { id: stepAttemptId, userId },
+      });
+    } else if (quiz.step?.id) {
+      stepAttempt = await this.stepAttemptRepository.findOne({
+        where: { userId, step: { id: quiz.step.id }, status: StepAttemptStatus.IN_PROGRESS },
+        order: { startedAt: 'DESC' },
+      });
+    }
+
+    const log = this.solveLogRepository.create({
+      userId,
+      quiz,
+      stepAttempt: stepAttempt ?? null,
+      isCorrect,
+      solvedAt: new Date(),
+      duration: null,
+    });
+
+    await this.solveLogRepository.save(log);
   }
 }

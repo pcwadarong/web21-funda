@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import correctSound from '@/assets/audio/correct.mp3';
+import wrongSound from '@/assets/audio/wrong.mp3';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
 import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
@@ -11,6 +13,7 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
 import { quizService } from '@/services/quizService';
 
@@ -56,6 +59,8 @@ export const Quiz = () => {
 
   /** localStorage에서 필드 슬러그 가져오기 */
   const step_id = uiState.current_quiz_step_id;
+
+  const { playSound } = useSound();
 
   /**
    * 퀴즈 데이터 가져오기
@@ -158,6 +163,10 @@ export const Quiz = () => {
       const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
         ? { pairs: result.solution.correct_pairs }
         : (result.solution?.correct_option_id ?? null);
+
+      // 정답/오답 효과음 재생
+      if (result.is_correct) playSound({ src: correctSound, currentTime: 0.05 });
+      else playSound({ src: wrongSound, currentTime: 0.05 });
 
       setQuizSolutions(prev => {
         const newSolutions = [...prev];

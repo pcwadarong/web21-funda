@@ -7,9 +7,11 @@ import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
-  xpGained: number | null;
+  xpGained?: number | null;
+  experience?: number | null;
   successRate: number | null;
-  durationMs: string;
+  durationMs?: string;
+  durationSeconds?: string;
 }
 
 const METRIC_CONFIG = (theme: Theme) =>
@@ -18,7 +20,8 @@ const METRIC_CONFIG = (theme: Theme) =>
       key: 'xp',
       title: '획득 XP',
       icon: 'Star' as const,
-      getValue: (data: QuizResultData) => (data.xpGained != null ? data.xpGained : '-'),
+      getValue: (data: QuizResultData) =>
+        data.experience ?? (data.xpGained != null ? data.xpGained : '-'),
       styles: {
         bg: theme.colors.primary.main,
         text: theme.colors.primary.dark,
@@ -40,7 +43,7 @@ const METRIC_CONFIG = (theme: Theme) =>
       key: 'durationMs',
       title: '소요 시간',
       icon: 'Timer' as const,
-      getValue: (data: QuizResultData) => data.durationMs,
+      getValue: (data: QuizResultData) => data.durationSeconds ?? data.durationMs ?? '-',
       styles: {
         bg: theme.colors.grayscale[500],
         text: theme.colors.grayscale[500],

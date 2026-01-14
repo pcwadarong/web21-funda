@@ -104,7 +104,7 @@ export const LearnRightSidebar = () => {
               <span css={statIconStyle}>
                 <SVGIcon icon="Diamond" size="md" />
               </span>
-              //TODO: 다이아 추가
+              {/* //TODO: 다이아 추가 */}
               {/* <span css={statValueStyle(theme)}>{user.diamond}</span> */}
             </div>
             <div css={statContainerStyle(theme)}>

@@ -8,6 +8,9 @@
     "./frontend": "./frontend.js",
     "./backend": "./backend.js"
   },
+  "dependencies": {
+    "globals": "^16.5.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@next/eslint-plugin-next": "^15.5.0",
@@ -20,7 +23,6 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-turbo": "^2.6.0",
-    "globals": "^16.5.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.48.1"
   }

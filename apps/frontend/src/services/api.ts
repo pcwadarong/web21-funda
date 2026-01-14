@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -16,14 +16,19 @@ async function baseRequest<T>(
   body?: unknown,
   options: RequestInit = {},
 ): Promise<T> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  // Authorization 헤더가 명시적으로 제공된 경우에만 사용
+  // 그렇지 않으면 백엔드가 쿠키에서 accessToken을 읽음
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include', // 쿠키를 포함하기 위해 필요
   });
 
   const responseBody = (await response.json().catch(() => null)) as ApiResponse<T> | null;

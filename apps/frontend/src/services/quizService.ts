@@ -9,9 +9,11 @@ export interface QuizSubmissionRequest {
     option_id?: string;
     pairs?: MatchingPair[];
   };
+  step_attempt_id?: number;
 }
 
 export interface QuizSubmissionResponse {
+  is_correct: boolean;
   solution: {
     explanation: string;
     correct_option_id?: string;

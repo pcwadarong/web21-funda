@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 
 import { Quiz, Step } from '../roadmap/entities';
+import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
@@ -14,6 +15,7 @@ describe('ProgressService', () => {
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
   let stepRepository: Partial<Repository<Step>>;
   let quizRepository: Partial<Repository<Quiz>>;
+  let userRepository: Partial<Repository<User>>;
   let solveLogFindMock: jest.Mock;
   let stepAttemptFindOneMock: jest.Mock;
   let stepAttemptSaveMock: jest.Mock;
@@ -23,6 +25,7 @@ describe('ProgressService', () => {
   let stepStatusCreateMock: jest.Mock;
   let stepFindOneMock: jest.Mock;
   let quizCountMock: jest.Mock;
+  let userIncrementMock: jest.Mock;
 
   beforeEach(() => {
     solveLogFindMock = jest.fn();
@@ -34,6 +37,7 @@ describe('ProgressService', () => {
     stepStatusCreateMock = jest.fn(entity => entity);
     stepFindOneMock = jest.fn().mockResolvedValue({ id: 1 } as Step);
     quizCountMock = jest.fn().mockResolvedValue(0);
+    userIncrementMock = jest.fn().mockResolvedValue({});
 
     solveLogRepository = {
       find: solveLogFindMock,
@@ -54,6 +58,9 @@ describe('ProgressService', () => {
     quizRepository = {
       count: quizCountMock,
     };
+    userRepository = {
+      increment: userIncrementMock,
+    };
 
     service = new ProgressService(
       solveLogRepository as Repository<SolveLog>,
@@ -61,6 +68,7 @@ describe('ProgressService', () => {
       stepStatusRepository as Repository<UserStepStatus>,
       stepRepository as Repository<Step>,
       quizRepository as Repository<Quiz>,
+      userRepository as Repository<User>,
     );
   });
 
@@ -210,5 +218,40 @@ describe('ProgressService', () => {
     });
     const savedAttempt = stepAttemptSaveMock.mock.calls[0][0] as UserStepAttempt;
     expect(savedAttempt.id).toBe(30);
+  });
+
+  it('비로그인 풀이 기록을 동기화하고 경험치를 증가시킨다', async () => {
+    stepStatusFindOneMock.mockResolvedValue(null);
+    stepFindOneMock.mockResolvedValue({ id: 1 } as Step);
+    stepStatusSaveMock.mockResolvedValue({});
+
+    const result = await service.syncStepStatuses(100, [1, 2, 3]);
+
+    expect(result.syncedCount).toBe(3);
+    expect(stepStatusSaveMock).toHaveBeenCalledTimes(3);
+    expect(userIncrementMock).toHaveBeenCalledWith({ id: 100 }, 'experience', 90);
+  });
+
+  it('이미 존재하는 step은 건너뛴다', async () => {
+    stepStatusFindOneMock
+      .mockResolvedValueOnce({ userId: 100 } as UserStepStatus)
+      .mockResolvedValueOnce(null);
+    stepFindOneMock.mockResolvedValue({ id: 2 } as Step);
+    stepStatusSaveMock.mockResolvedValue({});
+
+    const result = await service.syncStepStatuses(100, [1, 2]);
+
+    expect(result.syncedCount).toBe(1);
+    expect(stepStatusSaveMock).toHaveBeenCalledTimes(1);
+    expect(userIncrementMock).toHaveBeenCalledWith({ id: 100 }, 'experience', 30);
+  });
+
+  it('동기화할 step이 없으면 경험치를 증가시키지 않는다', async () => {
+    stepStatusFindOneMock.mockResolvedValue({ userId: 100 } as UserStepStatus);
+
+    const result = await service.syncStepStatuses(100, [1]);
+
+    expect(result.syncedCount).toBe(0);
+    expect(userIncrementMock).not.toHaveBeenCalled();
   });
 });

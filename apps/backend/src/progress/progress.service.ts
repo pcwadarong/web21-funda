@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Quiz, Step } from '../roadmap/entities';
+import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
@@ -21,6 +22,8 @@ export class ProgressService {
     private readonly stepRepository: Repository<Step>,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
@@ -254,6 +257,11 @@ export class ProgressService {
       });
       await this.stepStatusRepository.save(newStatus);
       syncedCount++;
+    }
+
+    // 동기화된 step 수만큼 experience 추가 (step당 30 경험치)
+    if (syncedCount > 0) {
+      await this.userRepository.increment({ id: userId }, 'experience', syncedCount * 30);
     }
 
     return { syncedCount };

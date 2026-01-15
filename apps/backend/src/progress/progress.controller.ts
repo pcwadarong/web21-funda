@@ -8,12 +8,19 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { IsArray, IsInt } from 'class-validator';
 import type { Request } from 'express';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 
 import { ProgressService } from './progress.service';
+
+class SyncStepHistoryDto {
+  @IsArray()
+  @IsInt({ each: true })
+  stepIds!: number[];
+}
 
 @ApiTags('Progress')
 @ApiBearerAuth()
@@ -126,6 +133,56 @@ export class ProgressController {
     return {
       result: completion,
       message: '스텝 풀이를 완료했습니다.',
+    };
+  }
+
+  @Post('steps/sync')
+  @ApiOperation({
+    summary: '비로그인 풀이 기록 동기화',
+    description: '비로그인 상태에서 localStorage에 저장된 step 풀이 기록을 DB에 동기화한다.',
+  })
+  @ApiBody({
+    description: '동기화할 step ID 목록',
+    schema: {
+      type: 'object',
+      properties: {
+        stepIds: {
+          type: 'array',
+          items: { type: 'integer' },
+          example: [1, 2, 3],
+        },
+      },
+      required: ['stepIds'],
+    },
+  })
+  @ApiOkResponse({
+    description: '동기화 완료',
+    schema: {
+      example: {
+        success: true,
+        code: 200,
+        message: '풀이 기록을 동기화했습니다.',
+        result: {
+          syncedCount: 3,
+        },
+      },
+    },
+  })
+  @UseGuards(JwtAccessGuard)
+  async syncStepHistory(
+    @Body() body: SyncStepHistoryDto,
+    @Req() req: Request & { user?: JwtPayload },
+  ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const result = await this.progressService.syncStepStatuses(userId, body.stepIds);
+
+    return {
+      result,
+      message: '풀이 기록을 동기화했습니다.',
     };
   }
 }

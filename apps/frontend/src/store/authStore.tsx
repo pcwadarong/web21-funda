@@ -15,7 +15,7 @@ interface AuthState {
   };
 }
 
-const initialState = {
+export const initialState = {
   isLoggedIn: false,
   isAuthReady: false,
   user: null,

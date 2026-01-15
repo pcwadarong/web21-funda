@@ -1,5 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
+
+import { OptionalJwtAccessGuard } from '../auth/guards/optional-jwt-access.guard';
+import type { JwtPayload } from '../auth/types/jwt-payload.type';
 
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
@@ -24,8 +28,13 @@ export class FieldsController {
     description: '필드에 속한 유닛과 스텝 정보를 반환한다.',
   })
   @ApiParam({ name: 'fieldSlug', description: '필드 슬러그', example: 'fe' })
-  async getUnitsByFieldSlug(@Param('fieldSlug') fieldSlug: string): Promise<FieldUnitsResponse> {
-    return this.roadmapService.getUnitsByFieldSlug(fieldSlug);
+  @UseGuards(OptionalJwtAccessGuard)
+  async getUnitsByFieldSlug(
+    @Param('fieldSlug') fieldSlug: string,
+    @Req() req: Request & { user?: JwtPayload },
+  ): Promise<FieldUnitsResponse> {
+    const userId = req.user?.sub ?? null;
+    return this.roadmapService.getUnitsByFieldSlug(fieldSlug, userId);
   }
 
   @Get(':fieldSlug/roadmap')

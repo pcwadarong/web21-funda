@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
-import { SolveLog, UserStepAttempt } from '../progress/entities';
+import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
 
 import { Field, Quiz, Step, Unit } from './entities';
 import { FieldsController } from './fields.controller';
@@ -12,7 +12,9 @@ import { RoadmapService } from './roadmap.service';
 import { StepsController } from './steps.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Field, Unit, Step, Quiz, SolveLog, UserStepAttempt])],
+  imports: [
+    TypeOrmModule.forFeature([Field, Unit, Step, Quiz, SolveLog, UserStepAttempt, UserStepStatus]),
+  ],
   controllers: [RoadmapController, FieldsController, StepsController, QuizzesController],
   providers: [RoadmapService, CodeFormatter],
   exports: [TypeOrmModule],

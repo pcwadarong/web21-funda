@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
-import { SolveLog, UserStepAttempt } from '../progress/entities';
+import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
 
 import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
@@ -16,6 +16,7 @@ describe('RoadmapService', () => {
   let stepRepository: Partial<Repository<Step>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
+  let stepStatusRepository: Partial<Repository<UserStepStatus>>;
   let codeFormatter: Partial<CodeFormatter>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
@@ -30,6 +31,7 @@ describe('RoadmapService', () => {
   let createQueryBuilderMock: jest.Mock;
   let quizFindMock: jest.Mock;
   let formatMock: jest.Mock;
+  let stepStatusFindMock: jest.Mock;
 
   beforeEach(() => {
     findFieldsMock = jest.fn();
@@ -39,6 +41,7 @@ describe('RoadmapService', () => {
     createQueryBuilderMock = jest.fn();
     quizFindMock = jest.fn();
     formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
+    stepStatusFindMock = jest.fn();
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -65,6 +68,9 @@ describe('RoadmapService', () => {
     stepAttemptRepository = {
       findOne: jest.fn(),
     };
+    stepStatusRepository = {
+      find: stepStatusFindMock,
+    };
     codeFormatter = {
       format: formatMock,
     };
@@ -76,6 +82,7 @@ describe('RoadmapService', () => {
       codeFormatter as CodeFormatter,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
+      stepStatusRepository as Repository<UserStepStatus>,
     );
   });
 
@@ -89,8 +96,8 @@ describe('RoadmapService', () => {
 
     expect(result).toEqual({
       fields: [
-        { slug: 'fe', name: 'Frontend', description: '프론트엔드' },
-        { slug: 'be', name: 'Backend', description: null },
+        { slug: 'fe', name: 'Frontend', description: '프론트엔드', icon: 'Frontend' },
+        { slug: 'be', name: 'Backend', description: null, icon: 'Backend' },
       ],
     });
   });
@@ -202,7 +209,7 @@ describe('RoadmapService', () => {
     };
     createQueryBuilderMock.mockReturnValue(queryBuilder as never);
 
-    const result = await service.getUnitsByFieldSlug('fe');
+    const result = await service.getUnitsByFieldSlug('fe', null);
 
     expect(result.field).toEqual({ name: '프론트엔드', slug: 'fe' });
     expect(result.units.map(unit => unit.id)).toEqual([1, 2]);
@@ -228,10 +235,50 @@ describe('RoadmapService', () => {
     expect(unit2.steps.find(step => step.id === 12)?.quizCount).toBe(6);
   });
 
+  it('로그인 사용자 완료 스텝 상태를 반영한다', async () => {
+    const field = {
+      name: '프론트엔드',
+      slug: 'fe',
+      units: [
+        {
+          id: 1,
+          title: 'HTML 기초',
+          orderIndex: 1,
+          steps: [
+            { id: 10, title: '태그', orderIndex: 1, isCheckpoint: false },
+            { id: 11, title: '속성', orderIndex: 2, isCheckpoint: false },
+          ],
+        },
+      ],
+    } as Field;
+
+    findFieldMock.mockResolvedValue(field);
+
+    const queryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        { stepId: 10, quizCount: '1' },
+        { stepId: 11, quizCount: '1' },
+      ]),
+    };
+    createQueryBuilderMock.mockReturnValue(queryBuilder as never);
+
+    stepStatusFindMock.mockResolvedValue([{ step: { id: 10 } } as UserStepStatus]);
+
+    const result = await service.getUnitsByFieldSlug('fe', 42);
+    const steps = result.units[0]?.steps ?? [];
+
+    expect(steps.find(step => step.id === 10)?.isCompleted).toBe(true);
+    expect(steps.find(step => step.id === 11)?.isCompleted).toBe(false);
+  });
+
   it('필드를 찾지 못하면 예외를 던진다', async () => {
     findFieldMock.mockResolvedValue(null);
 
-    await expect(service.getUnitsByFieldSlug('fe')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getUnitsByFieldSlug('fe', null)).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('스텝별 퀴즈 목록을 응답한다', async () => {

@@ -14,7 +14,7 @@ import Lock from '@/assets/lock.svg?react';
 import Logo from '@/assets/logo.svg?react';
 import Logout from '@/assets/logout.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
-import Report from '@/assets/Report.svg?react';
+import Report from '@/assets/report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';

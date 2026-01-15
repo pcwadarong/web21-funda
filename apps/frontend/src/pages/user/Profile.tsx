@@ -1,6 +1,16 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
+import { useAuthUser } from '@/store/authStore';
 
 export const Profile = () => {
-  const { userId } = useParams<{ userId: string }>();
-  return <div>Profile Page - User ID: {userId}</div>;
+  const { userId } = useParams();
+  const user = useAuthUser();
+
+  if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
+  if (!userId && !user) return <Navigate to="/login" replace />;
+
+  return (
+    <div>
+      <h1>Profile Page: {userId}</h1>
+    </div>
+  );
 };

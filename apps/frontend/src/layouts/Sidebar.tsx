@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
@@ -14,15 +14,10 @@ const NAV_ITEMS = [
 
 export const Sidebar = () => {
   const theme = useTheme();
-  const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
 
-  const activeItemId = NAV_ITEMS.find(item =>
-    item.id === 'profile'
-      ? location.pathname.startsWith('/profile')
-      : location.pathname === item.path,
-  )?.id;
+  const activeItemId = NAV_ITEMS.find(item => location.pathname === item.path)?.id;
 
   return (
     <aside css={sidebarStyle(theme)}>

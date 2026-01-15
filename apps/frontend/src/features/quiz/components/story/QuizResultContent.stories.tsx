@@ -10,6 +10,8 @@ const mockResultData = {
   xpGained: 50,
   successRate: 70,
   durationMs: '1:40',
+  currentStreak: 3,
+  isFirstSolveToday: false,
 };
 
 const meta: Meta<typeof QuizResultContent> = {
@@ -32,8 +34,6 @@ const meta: Meta<typeof QuizResultContent> = {
   ],
   args: {
     resultData: mockResultData,
-    isLogin: false,
-    isFirstToday: false,
   },
 };
 
@@ -83,6 +83,8 @@ export const HighScore: Story = {
       xpGained: 100,
       successRate: 95,
       durationMs: '0:45',
+      currentStreak: 5,
+      isFirstSolveToday: true,
     },
   },
   play: async ({ canvasElement }) => {
@@ -105,9 +107,9 @@ export const MissingData: Story = {
       xpGained: null,
       successRate: null,
       durationMs: '-',
+      currentStreak: 1,
+      isFirstSolveToday: false,
     },
-    isLogin: true,
-    isFirstToday: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -139,9 +141,9 @@ export const PartialMissingData: Story = {
       xpGained: 50,
       successRate: null,
       durationMs: '1:30',
+      currentStreak: 2,
+      isFirstSolveToday: false,
     },
-    isLogin: true,
-    isFirstToday: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

@@ -11,27 +11,17 @@ vi.mock('@/comp/SVGIcon', () => ({
   default: () => <span data-testid="svg-icon" />,
 }));
 
-// useNavigate 모킹
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
 const mockResultData = {
   xpGained: 50,
   successRate: 70,
   durationMs: '1:40',
+  currentStreak: 3,
+  isFirstSolveToday: false,
 };
 
 const renderQuizResultContent = (props = {}) => {
   const defaultProps = {
     resultData: mockResultData,
-    isLogin: false,
-    isFirstToday: false,
     ...props,
   };
 
@@ -77,6 +67,8 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
           xpGained: null,
           successRate: null,
           durationMs: '-',
+          currentStreak: 1,
+          isFirstSolveToday: false,
         },
       });
 
@@ -91,6 +83,8 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
           xpGained: 50,
           successRate: null,
           durationMs: '1:30',
+          currentStreak: 2,
+          isFirstSolveToday: false,
         },
       });
 
@@ -105,6 +99,8 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
           xpGained: 50,
           successRate: 70,
           durationMs: '1:40',
+          currentStreak: 3,
+          isFirstSolveToday: false,
         },
       });
 
@@ -115,36 +111,22 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
   });
 
   describe('네비게이션 동작', () => {
-    it('로그인하지 않은 경우 학습 계속하기 버튼 클릭 시 /auth/check로 이동한다', () => {
-      renderQuizResultContent({ isLogin: false });
+    it('학습 계속하기 버튼 클릭 시 onNextNavigation이 호출된다', () => {
+      const handleNextNavigation = vi.fn();
+      renderQuizResultContent({ onNextNavigation: handleNextNavigation });
       const button = screen.getByText('학습 계속하기');
       fireEvent.click(button);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/auth/check');
+      expect(handleNextNavigation).toHaveBeenCalledTimes(1);
     });
 
-    it('로그인했고 오늘 첫 문제인 경우 학습 계속하기 버튼 클릭 시 /streak로 이동한다', () => {
-      renderQuizResultContent({ isLogin: true, isFirstToday: true });
-      const button = screen.getByText('학습 계속하기');
-      fireEvent.click(button);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/streak');
-    });
-
-    it('로그인했고 오늘 첫 문제가 아닌 경우 학습 계속하기 버튼 클릭 시 /learn로 이동한다', () => {
-      renderQuizResultContent({ isLogin: true, isFirstToday: false });
-      const button = screen.getByText('학습 계속하기');
-      fireEvent.click(button);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/learn');
-    });
-
-    it('메인 페이지로 이동하기 버튼 클릭 시 올바른 경로로 이동한다', () => {
-      renderQuizResultContent({ isLogin: false });
+    it('메인 페이지로 이동하기 버튼 클릭 시 onMainNavigation이 호출된다', () => {
+      const handleMainNavigation = vi.fn();
+      renderQuizResultContent({ onMainNavigation: handleMainNavigation });
       const button = screen.getByText('메인 페이지로 이동하기');
       fireEvent.click(button);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/auth/check');
+      expect(handleMainNavigation).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -155,6 +137,8 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
           xpGained: 100,
           successRate: 95,
           durationMs: '0:45',
+          currentStreak: 10,
+          isFirstSolveToday: false,
         },
       });
 
@@ -169,6 +153,8 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
           xpGained: 10,
           successRate: 30,
           durationMs: '5:20',
+          currentStreak: 1,
+          isFirstSolveToday: false,
         },
       });
 
@@ -183,6 +169,8 @@ describe('QuizResultContent 컴포넌트 테스트', () => {
           xpGained: 0,
           successRate: 50,
           durationMs: '2:00',
+          currentStreak: 4,
+          isFirstSolveToday: false,
         },
       });
 

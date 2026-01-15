@@ -72,6 +72,12 @@ export const Learn = () => {
         return;
       }
 
+      // 중간 점검 클릭시 제작중입니다 토스트 메시지 출력 (임시)
+      if (step.isCheckpoint) {
+        showInProgressToast();
+        return;
+      }
+
       updateUIState({
         current_quiz_step_id: step.id,
         last_viewed: {

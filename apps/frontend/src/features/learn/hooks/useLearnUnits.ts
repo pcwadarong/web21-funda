@@ -77,7 +77,9 @@ export const useLearnUnits = () => {
 
         setField(data.field.name);
         setUnits(
-          isLoggedIn ? (data.units ?? []) : unlockCheckpoints(markSolvedSteps(data.units ?? [])),
+          isLoggedIn
+            ? unlockCheckpoints(data.units ?? [])
+            : unlockCheckpoints(markSolvedSteps(data.units ?? [])),
         );
         setActiveUnitId(data.units[0]?.id ?? null);
       } catch (error) {

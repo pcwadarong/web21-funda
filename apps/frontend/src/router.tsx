@@ -77,7 +77,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/streak', element: <Streak /> },
       { path: '/leaderboard', element: <Leaderboard /> },
-      { path: '/profile/:userId', element: <Profile /> },
+      { path: '/profile/:userId?', element: <Profile /> },
       { path: '/setting', element: <Setting /> },
     ],
   },

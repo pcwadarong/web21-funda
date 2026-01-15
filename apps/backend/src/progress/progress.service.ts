@@ -77,7 +77,7 @@ export class ProgressService {
 
     const targetStepAttemptId = attempt.id;
     const solveLogs = await this.solveLogRepository.find({
-      where: { stepAttemptId: targetStepAttemptId },
+      where: { stepAttempt: { id: targetStepAttemptId } },
     });
 
     const scoreResult = await this.calculateStepAttemptScore(targetStepAttemptId);
@@ -176,7 +176,7 @@ export class ProgressService {
     const weights = this.mergeScoreWeights(options);
 
     const logs = await this.solveLogRepository.find({
-      where: { stepAttemptId },
+      where: { stepAttempt: { id: stepAttemptId } },
     });
 
     if (logs.length === 0) {

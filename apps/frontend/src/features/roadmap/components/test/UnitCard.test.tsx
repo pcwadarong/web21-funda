@@ -30,7 +30,7 @@ const renderUnitCard = (unit: RoadmapUnit, isLoggedIn: boolean, onClick?: () => 
 describe('UnitCard 컴포넌트 테스트', () => {
   it('로그인 상태에서 진행률과 정답률이 표시된다', () => {
     // given
-    const unit = { ...baseUnit, progress: 60, score: 90 };
+    const unit = { ...baseUnit, progress: 60, successRate: 90 };
 
     // when
     renderUnitCard(unit, true);
@@ -38,8 +38,8 @@ describe('UnitCard 컴포넌트 테스트', () => {
     // then
     expect(screen.getByText('진행률')).toBeInTheDocument();
     expect(screen.getByText('정답률')).toBeInTheDocument();
-    expect(screen.getByText('60%')).toBeInTheDocument();
-    expect(screen.getByText('90%')).toBeInTheDocument();
+    expect(screen.getByText(text => text.replace(/\s/g, '') === '60%')).toBeInTheDocument();
+    expect(screen.getByText(text => text.replace(/\s/g, '') === '90%')).toBeInTheDocument();
   });
 
   it('비로그인 상태에서는 진행률/정답률이 숨겨진다', () => {

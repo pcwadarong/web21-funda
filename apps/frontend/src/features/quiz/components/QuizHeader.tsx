@@ -92,6 +92,7 @@ const headerContentStyle = css`
 
 const closeButtonStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Medium'].fontSize};
+  color: ${theme.colors.text.default};
 `;
 
 const progressContainerStyle = (theme: Theme) => css`

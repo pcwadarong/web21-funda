@@ -22,7 +22,11 @@ export interface QuizSubmissionResponse {
 }
 
 export interface StepCompletionPayload {
-  startedAt: number; // ms timestamp
+  stepAttemptId?: number;
+}
+
+export interface StepStartResult {
+  stepAttemptId: number;
 }
 
 export const quizService = {
@@ -50,13 +54,22 @@ export const quizService = {
   /**
    * 이 step의 모든 quiz 풀이가 끝났음을 서버에 확정하는 요청
    * @param stepId 스텝 ID
-   * @param payload 퀴즈 시작 시간
-   * @returns 퀴즈 결과 (소요 시간, 획득 xp, 성공률)
+   * @param payload 완료 처리할 스텝 시도 ID
+   * @returns 퀴즈 결과 (점수, 성공률, 소요 시간 등)
    */
   async completeStep(
     stepId: number,
     payload: StepCompletionPayload,
   ): Promise<StepCompletionResult> {
-    return apiFetch.post<StepCompletionResult>(`/steps/${stepId}/completion`, payload);
+    return apiFetch.post<StepCompletionResult>(`/progress/steps/${stepId}/complete`, payload);
+  },
+
+  /**
+   * 스텝 풀이 시작 요청
+   * @param stepId 스텝 ID
+   * @returns 스텝 시도 ID
+   */
+  async startStep(stepId: number): Promise<StepStartResult> {
+    return apiFetch.post<StepStartResult>(`/progress/steps/${stepId}/start`);
   },
 };

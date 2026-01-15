@@ -21,6 +21,20 @@ export interface UIState {
   current_quiz_step_id: number;
 }
 
+export interface GuestAnswer {
+  quiz_id: number;
+  is_correct: boolean;
+}
+
+export interface GuestStepAttempt {
+  step_id: number;
+  started_at: number;
+  finished_at?: number;
+  answers: GuestAnswer[];
+}
+
+export type GuestStepAttempts = Record<number, GuestStepAttempt>;
+
 // 스토리지 전체 데이터
 export interface QuizStorageData {
   progress: Progress;
@@ -28,6 +42,7 @@ export interface QuizStorageData {
   solved_step_history: number[];
   // step_id별 퀴즈 시작 시간 (step_id: timestamp)
   quiz_started_at: Record<number, number>;
+  guest_step_attempts: GuestStepAttempts;
 }
 
 const STORAGE_KEY = 'QUIZ_V1';
@@ -41,6 +56,7 @@ const DEFAULT_STATE: QuizStorageData = {
     current_quiz_step_id: 0,
   },
   quiz_started_at: {},
+  guest_step_attempts: {},
 };
 
 // 사용할 스토리지 함수
@@ -53,6 +69,10 @@ export const storageUtil = {
       const parsed = JSON.parse(item);
       if (!parsed.quiz_started_at) {
         parsed.quiz_started_at = {};
+        storageUtil.set(parsed);
+      }
+      if (!parsed.guest_step_attempts) {
+        parsed.guest_step_attempts = {};
         storageUtil.set(parsed);
       }
       return parsed;
@@ -161,5 +181,116 @@ export const storageUtil = {
   getQuizStartedAt: (stepId: number): number | null => {
     const current = storageUtil.get();
     return current.quiz_started_at[stepId] ?? null;
+  },
+
+  /**
+   * 비로그인 스텝 풀이 시작 정보를 저장한다.
+   *
+   * @param stepId 스텝 ID
+   * @param timestamp 시작 시각(없으면 현재 시각)
+   * @returns 업데이트된 스토리지 데이터
+   */
+  startGuestStepAttempt: (stepId: number, timestamp?: number): QuizStorageData => {
+    const current = storageUtil.get();
+    const guestStepAttempts = { ...current.guest_step_attempts };
+    const startedAt = timestamp ?? Date.now();
+
+    guestStepAttempts[stepId] = {
+      step_id: stepId,
+      started_at: startedAt,
+      answers: [],
+    };
+
+    return storageUtil.update('guest_step_attempts', guestStepAttempts);
+  },
+
+  /**
+   * 비로그인 스텝 풀이에 퀴즈 정답 결과를 추가한다.
+   *
+   * @param stepId 스텝 ID
+   * @param answer 퀴즈 정답 결과
+   * @returns 업데이트된 스토리지 데이터
+   */
+  addGuestStepAnswer: (stepId: number, answer: GuestAnswer): QuizStorageData => {
+    const current = storageUtil.get();
+    const guestStepAttempts = { ...current.guest_step_attempts };
+    const currentAttempt = guestStepAttempts[stepId] ?? {
+      step_id: stepId,
+      started_at: Date.now(),
+      answers: [],
+    };
+
+    const updatedAnswers = currentAttempt.answers.filter(
+      savedAnswer => savedAnswer.quiz_id !== answer.quiz_id,
+    );
+
+    updatedAnswers.push(answer);
+
+    guestStepAttempts[stepId] = {
+      ...currentAttempt,
+      answers: updatedAnswers,
+    };
+
+    return storageUtil.update('guest_step_attempts', guestStepAttempts);
+  },
+
+  /**
+   * 비로그인 스텝 풀이 종료 시각을 기록한다.
+   *
+   * @param stepId 스텝 ID
+   * @param timestamp 종료 시각(없으면 현재 시각)
+   * @returns 업데이트된 스토리지 데이터
+   */
+  finalizeGuestStepAttempt: (stepId: number, timestamp?: number): QuizStorageData => {
+    const current = storageUtil.get();
+    const guestStepAttempts = { ...current.guest_step_attempts };
+    const currentAttempt = guestStepAttempts[stepId];
+
+    if (!currentAttempt) {
+      return current;
+    }
+
+    guestStepAttempts[stepId] = {
+      ...currentAttempt,
+      finished_at: timestamp ?? Date.now(),
+    };
+
+    return storageUtil.update('guest_step_attempts', guestStepAttempts);
+  },
+
+  /**
+   * 비로그인 스텝 풀이 기록을 가져온다.
+   *
+   * @param stepId 스텝 ID
+   * @returns 스텝 풀이 기록(없으면 null)
+   */
+  getGuestStepAttempt: (stepId: number): GuestStepAttempt | null => {
+    const current = storageUtil.get();
+    return current.guest_step_attempts[stepId] ?? null;
+  },
+
+  /**
+   * 비로그인 스텝 풀이 기록을 삭제한다.
+   *
+   * @param stepId 스텝 ID
+   * @returns 업데이트된 스토리지 데이터
+   */
+  removeGuestStepAttempt: (stepId: number): QuizStorageData => {
+    const current = storageUtil.get();
+    const guestStepAttempts = { ...current.guest_step_attempts };
+
+    if (!guestStepAttempts[stepId]) {
+      return current;
+    }
+
+    delete guestStepAttempts[stepId];
+
+    const updated: QuizStorageData = {
+      ...current,
+      guest_step_attempts: guestStepAttempts,
+    };
+
+    storageUtil.set(updated);
+    return updated;
   },
 };

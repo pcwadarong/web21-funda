@@ -1,27 +1,15 @@
 import { css, Global, ThemeProvider } from '@emotion/react';
-import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { AuthProvider } from '@/providers/AuthProvider';
 import { router } from '@/router';
 import { ModalProvider } from '@/store/modalStore';
+import { ThemeStoreProvider, useThemeStore } from '@/store/themeStore';
+import { ToastProvider } from '@/store/toastStore';
 import { darkTheme, lightTheme } from '@/styles/theme';
 
-export default function App() {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, []);
+function AppContent() {
+  const { isDarkMode } = useThemeStore();
 
   return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
@@ -31,14 +19,25 @@ export default function App() {
             background: ${isDarkMode
               ? '#1c1d2bff'
               : 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)'};
+            transition: background 0.3s ease; // 부드러운 전환 효과
           }
         `}
       />
       <AuthProvider>
-        <ModalProvider>
-          <RouterProvider router={router} />
-        </ModalProvider>
+        <ToastProvider>
+          <ModalProvider>
+            <RouterProvider router={router} />
+          </ModalProvider>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeStoreProvider>
+      <AppContent />
+    </ThemeStoreProvider>
   );
 }

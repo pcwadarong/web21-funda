@@ -1,7 +1,8 @@
-import { Body, Controller, Param, ParseIntPipe, Post, Req } from '@nestjs/common';
+import { Body, Controller, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 
+import { JwtOptionalGuard } from '../auth/guards/jwt-optional.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 
 import type { QuizSubmissionRequest, QuizSubmissionResponse } from './dto/quiz-submission.dto';
@@ -14,6 +15,7 @@ export class QuizzesController {
   constructor(private readonly roadmapService: RoadmapService) {}
 
   @Post(':quizId/submissions')
+  @UseGuards(JwtOptionalGuard)
   @ApiOperation({
     summary: '퀴즈 정답 제출',
     description: '퀴즈 정답을 제출하고 채점 결과를 반환한다. 로그인 사용자는 풀이 기록이 저장된다.',

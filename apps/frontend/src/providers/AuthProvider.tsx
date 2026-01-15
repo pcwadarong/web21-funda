@@ -10,7 +10,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const { setUser, clearAuth } = useAuthActions();
+  const { setUser, clearAuth, setAuthReady } = useAuthActions();
   const hasSynced = useRef(false);
 
   useEffect(() => {
@@ -57,11 +57,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       } catch {
         clearAuth();
+      } finally {
+        setAuthReady(true);
       }
     };
 
     initializeAuth();
-  }, [setUser, clearAuth]);
+  }, [setUser, clearAuth, setAuthReady]);
 
   return <>{children}</>;
 };

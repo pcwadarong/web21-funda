@@ -1,11 +1,11 @@
 import { css, useTheme } from '@emotion/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
-import { Toast } from '@/comp/Toast';
 import { reportService } from '@/services/reportService';
 import { useModal } from '@/store/modalStore';
+import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 interface ReportModalProps {
@@ -21,11 +21,10 @@ const reportOptions = [
 const ReportModal = ({ quizId }: ReportModalProps) => {
   const theme = useTheme();
   const { closeModal } = useModal();
+  const { showToast } = useToast();
   const [selectedOption, setSelectedOption] = useState<string[]>([]);
   const [otherText, setOtherText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toastState, setToastState] = useState<{ message: string; issuedAt: number } | null>(null);
-  const [isToastVisible, setIsToastVisible] = useState(false);
 
   const handleOptionClick = (optionId: string) => {
     setSelectedOption(
@@ -35,9 +34,15 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
           : [...prev, optionId], // 아니면 추가
     );
   };
-  const showToast = (message: string) => {
-    setToastState({ message, issuedAt: Date.now() });
+
+  const showReportSuccessToast = () => {
+    showToast('신고가 성공적으로 전송되었습니다.');
   };
+
+  const showReportFailureToast = () => {
+    showToast('신고 전송에 실패했습니다.');
+  };
+
   const handleSubmit = async () => {
     if (selectedOption.length === 0) return;
 
@@ -57,18 +62,18 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
         report_description,
       });
 
-      if (response?.id) {
-        showToast('신고가 성공적으로 전송되었습니다.');
+      if (response.isSuccess) {
+        showReportSuccessToast();
         setSelectedOption([]);
         setOtherText('');
         setTimeout(() => {
           closeModal();
         }, 2500);
       } else {
-        showToast('신고 전송에 실패했습니다.');
+        showReportFailureToast();
       }
     } catch (error) {
-      showToast('신고 전송에 실패했습니다.');
+      showReportFailureToast();
 
       if (process.env.NODE_ENV === 'development') {
         console.error('신고 전송 중 오류:', error);
@@ -77,22 +82,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
       setIsSubmitting(false);
     }
   };
-  const toastIssuedAt = toastState?.issuedAt;
-  useEffect(() => {
-    if (!toastState) {
-      return;
-    }
 
-    setIsToastVisible(true);
-
-    const hideTimer = window.setTimeout(() => {
-      setIsToastVisible(false);
-    }, 2200);
-
-    return () => {
-      window.clearTimeout(hideTimer);
-    };
-  }, [toastIssuedAt, toastState]);
   return (
     <div>
       <p css={labelStyle(theme)}>신고 유형</p>
@@ -136,7 +126,6 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
       >
         {isSubmitting ? '신고 중...' : '신고하기'}
       </Button>
-      {toastState && <Toast message={toastState.message} isOpen={isToastVisible} />}
     </div>
   );
 };

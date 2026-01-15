@@ -1,6 +1,6 @@
 import { createBrowserRouter, redirect } from 'react-router-dom';
 
-import { LearnLayout } from '@/layouts/LearnLayout';
+import { SideBarLayout } from '@/layouts/SideBarLayout';
 import { AdminQuizUpload } from '@/pages/admin/AdminQuizUpload';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
@@ -8,6 +8,7 @@ import { GlobalError } from '@/pages/common/GlobalError';
 import { NotFound } from '@/pages/common/NotFound';
 import { ServicePreparation } from '@/pages/common/ServicePreparation';
 import { Landing } from '@/pages/Landing';
+import { Leaderboard } from '@/pages/Leaderboard';
 import { InitialFields } from '@/pages/learn/InitialFields';
 import { Learn } from '@/pages/learn/Learn';
 import { Roadmap } from '@/pages/learn/Roadmap';
@@ -16,12 +17,14 @@ import { Quiz } from '@/pages/quiz/Quiz';
 import { QuizResult } from '@/pages/quiz/QuizResult';
 import { QuizResultError } from '@/pages/quiz/QuizResultError';
 import { Streak } from '@/pages/quiz/Streak';
-
-const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
+import { Profile } from '@/pages/user/Profile';
+import { Setting } from '@/pages/user/Setting';
+import { useAuthStore } from '@/store/authStore';
 
 // 보호된 페이지를 위한 공통 로더
-// 로그인이 안 되어 있다면 로그인 페이지로 강제 이동
 const protectedLoader = () => {
+  const { isLoggedIn, isAuthReady } = useAuthStore.getState();
+  if (!isAuthReady) return null;
   if (!isLoggedIn) return redirect('/login');
   return null;
 };
@@ -41,10 +44,10 @@ export const router = createBrowserRouter([
     element: <AuthCheck />,
   },
 
-  // 학습 + 레이아웃 통일
+  // 학습 관련
   {
     path: '/learn',
-    element: <LearnLayout />,
+    element: <SideBarLayout />,
     children: [
       { index: true, element: <Learn /> },
       { path: 'select-field', element: <SelectField /> },
@@ -67,17 +70,19 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // 사용자 및 소셜 (User)
+  // 로그인 보호 + SideBarLayout 사용
   {
     loader: protectedLoader,
+    element: <SideBarLayout />,
     children: [
       { path: '/streak', element: <Streak /> },
-      { path: '/leaderboard/:groupId', element: <ServicePreparation /> },
-      { path: '/profile/:userId', element: <ServicePreparation /> },
+      { path: '/leaderboard', element: <Leaderboard /> },
+      { path: '/profile/:userId', element: <Profile /> },
+      { path: '/setting', element: <Setting /> },
     ],
   },
 
-  // 4. 관리자 (Admin)
+  // 관리자 (Admin)
   {
     path: '/admin',
     children: [
@@ -88,13 +93,6 @@ export const router = createBrowserRouter([
         ],
       },
     ],
-  },
-
-  // 기타 설정 및 공통
-  {
-    path: '/setting',
-    // element: <Setting />,
-    element: <ServicePreparation />,
   },
   {
     path: '/initial-fields',

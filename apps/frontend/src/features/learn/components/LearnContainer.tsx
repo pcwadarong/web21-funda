@@ -1,4 +1,4 @@
-import { css, useTheme } from '@emotion/react';
+import { css, keyframes, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
@@ -40,7 +40,10 @@ export const LearnContainer = ({
       <div css={centerSectionStyle} ref={scrollContainerRef}>
         {activeUnit && (
           <div css={stickyHeaderWrapperStyle} ref={headerRef}>
-            <div css={[headerSectionStyle(), stickyHeaderStyle(theme)]}>
+            <div
+              key={activeUnit.id}
+              css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
+            >
               <div css={headerContentStyle}>
                 <Link to="/learn/roadmap">
                   <div css={unitTextStyle(theme)}>
@@ -48,7 +51,11 @@ export const LearnContainer = ({
                     {fieldName} 로드맵
                   </div>
                 </Link>
-                <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
+                <div css={titleTextStyle(theme)}>
+                  <span key={activeUnit.title} css={titleFadeStyle}>
+                    {activeUnit.title}
+                  </span>
+                </div>
               </div>
               <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
                 학습 개요
@@ -194,6 +201,23 @@ const stickyHeaderStyle = (theme: Theme) => css`
   overflow: hidden;
 `;
 
+const headerPulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  60% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
+
+const headerPulseStyle = css`
+  animation: ${headerPulse} 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+`;
+
 const unitDividerStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
@@ -263,6 +287,27 @@ const titleTextStyle = (theme: Theme) => css`
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${colors.light.grayscale[50]};
+  overflow: hidden;
+`;
+
+const titleFade = keyframes`
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.3;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+`;
+
+const titleFadeStyle = css`
+  display: inline-block;
+  animation: ${titleFade} 260ms ease;
 `;
 
 const overviewButtonStyle = (theme: Theme) => css`

@@ -9,8 +9,18 @@ import { lightTheme } from '@/styles/theme';
 const mockContent: MatchingContent = {
   question: '선택자와 의미를 올바르게 연결하세요.',
   matching_metadata: {
-    left: ['div p', 'div > p', 'h1 + p', 'h1 ~ p'],
-    right: ['div의 모든 자손 p', 'div의 직계 자식 p', 'h1 바로 다음 p', 'h1 뒤의 모든 형제 p'],
+    left: [
+      { id: 'l1', text: 'div p' },
+      { id: 'l2', text: 'div > p' },
+      { id: 'l3', text: 'h1 + p' },
+      { id: 'l4', text: 'h1 ~ p' },
+    ],
+    right: [
+      { id: 'r1', text: 'div의 모든 자손 p' },
+      { id: 'r2', text: 'div의 직계 자식 p' },
+      { id: 'r3', text: 'h1 바로 다음 p' },
+      { id: 'r4', text: 'h1 뒤의 모든 형제 p' },
+    ],
   },
 };
 
@@ -57,8 +67,8 @@ export const WithPairs: Story = {
     content: mockContent,
     selectedAnswer: {
       pairs: [
-        { leftIndex: 0, rightIndex: 0 },
-        { leftIndex: 1, rightIndex: 1 },
+        { left: 'l1', right: 'r1' },
+        { left: 'l2', right: 'r2' },
       ],
     },
     correctAnswer: null,
@@ -73,18 +83,18 @@ export const ShowResult: Story = {
     content: mockContent,
     selectedAnswer: {
       pairs: [
-        { leftIndex: 0, rightIndex: 0 },
-        { leftIndex: 1, rightIndex: 2 },
-        { leftIndex: 2, rightIndex: 1 },
-        { leftIndex: 3, rightIndex: 3 },
+        { left: 'l1', right: 'r1' },
+        { left: 'l2', right: 'r3' },
+        { left: 'l3', right: 'r2' },
+        { left: 'l4', right: 'r4' },
       ],
     },
     correctAnswer: {
       pairs: [
-        { leftIndex: 0, rightIndex: 0 },
-        { leftIndex: 1, rightIndex: 1 },
-        { leftIndex: 2, rightIndex: 2 },
-        { leftIndex: 3, rightIndex: 3 },
+        { left: 'l1', right: 'r1' },
+        { left: 'l2', right: 'r2' },
+        { left: 'l3', right: 'r3' },
+        { left: 'l4', right: 'r4' },
       ],
     },
     showResult: true,
@@ -136,7 +146,7 @@ export const DuplicateMatchingPrevention: Story = {
   args: {
     content: mockContent,
     selectedAnswer: {
-      pairs: [{ leftIndex: 0, rightIndex: 0 }],
+      pairs: [{ left: 'l1', right: 'r1' }],
     },
     correctAnswer: null,
     showResult: false,

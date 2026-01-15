@@ -7,6 +7,27 @@ interface ApiResponse<T> {
   result: T;
 }
 
+type RequestRetryOptions = {
+  hasRetried: boolean;
+};
+
+/**
+ * 인증 만료 시 리프레시 토큰으로 갱신을 시도한다.
+ *
+ * @returns {Promise<boolean>} 갱신 성공 여부
+ */
+async function tryRefreshToken(): Promise<boolean> {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * 전역 요청 함수 (기본 토대)
  */
@@ -15,6 +36,7 @@ async function baseRequest<T>(
   endpoint: string,
   body?: unknown,
   options: RequestInit = {},
+  retryOptions: RequestRetryOptions = { hasRetried: false },
 ): Promise<T> {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -30,6 +52,13 @@ async function baseRequest<T>(
     body: body ? JSON.stringify(body) : undefined,
     credentials: 'include', // 쿠키를 포함하기 위해 필요
   });
+
+  if (response.status === 401 && !retryOptions.hasRetried && endpoint !== '/auth/refresh') {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      return baseRequest(method, endpoint, body, options, { hasRetried: true });
+    }
+  }
 
   const responseBody = (await response.json().catch(() => null)) as ApiResponse<T> | null;
 

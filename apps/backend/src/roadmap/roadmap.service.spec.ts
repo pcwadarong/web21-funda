@@ -350,12 +350,23 @@ describe('RoadmapService', () => {
       content: {
         question: '시멘틱 태그 매칭',
         matching_metadata: {
-          left: ['<header>', '<nav>', '<article>', '<aside>'],
+          left: [
+            { id: '<header>', text: '<header>' },
+            { id: '<nav>', text: '<nav>' },
+            { id: '<article>', text: '<article>' },
+            { id: '<aside>', text: '<aside>' },
+          ],
           right: [
-            '문서/섹션의 머리말(제목, 소개 등)',
-            '내비게이션 링크 모음',
-            '독립적으로 배포/재사용 가능한 콘텐츠 단위',
-            '보조 콘텐츠(사이드바, 관련 링크 등)',
+            { id: '문서/섹션의 머리말(제목, 소개 등)', text: '문서/섹션의 머리말(제목, 소개 등)' },
+            { id: '내비게이션 링크 모음', text: '내비게이션 링크 모음' },
+            {
+              id: '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+              text: '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+            },
+            {
+              id: '보조 콘텐츠(사이드바, 관련 링크 등)',
+              text: '보조 콘텐츠(사이드바, 관련 링크 등)',
+            },
           ],
         },
       },

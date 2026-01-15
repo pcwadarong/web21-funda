@@ -27,14 +27,22 @@ vi.mock('@/feat/quiz/components/QuizContentCard', () => ({
   }) => {
     type MatchingQuestion = {
       type?: string;
-      content?: { matching_metadata: { left: string[]; right: string[] } };
+      content?: {
+        matching_metadata: {
+          left: Array<{ id: string; text: string }>;
+          right: Array<{ id: string; text: string }>;
+        };
+      };
     };
     const handleSelect = () => {
       const q = question as MatchingQuestion;
       if (q?.type === 'matching') {
-        const left: string[] = q.content!.matching_metadata.left;
-        const right: string[] = q.content!.matching_metadata.right;
-        const pairs = left.map((l: string, i: number) => ({ left: l, right: right[i] }));
+        const left = q.content!.matching_metadata.left;
+        const right = q.content!.matching_metadata.right;
+        const pairs = left.map((item, i: number) => ({
+          left: item.id,
+          right: right[i]?.id ?? '',
+        }));
         onAnswerChange({ pairs });
       } else {
         onAnswerChange('c1');

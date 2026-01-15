@@ -9,8 +9,8 @@ export interface CodeMetadata {
 }
 
 export interface MatchingMetadata {
-  left: string[];
-  right: string[];
+  left: Array<{ id: string; text: string }>;
+  right: Array<{ id: string; text: string }>;
 }
 
 export interface QuizContent {

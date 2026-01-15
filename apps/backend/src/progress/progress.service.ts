@@ -120,6 +120,12 @@ export class ProgressService {
       await this.stepStatusRepository.save(newStatus);
     }
 
+    const gainedExperience = scoreResult.score;
+    if (gainedExperience > 0) {
+      // 스텝 완료 시 획득한 점수를 경험치로 누적한다.
+      await this.userRepository.increment({ id: userId }, 'experience', gainedExperience);
+    }
+
     const { isFirstSolveToday, currentStreak } = await this.handleUserStreak(params.userId);
 
     return {

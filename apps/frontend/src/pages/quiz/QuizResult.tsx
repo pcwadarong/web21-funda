@@ -50,6 +50,7 @@ export const QuizResult = () => {
 
   const [showPointEffect, setShowPointEffect] = useState(true); // 경험치 획득 연출 여부
   const [showStreakAnimation, setShowStreakAnimation] = useState(false); // 스트릭 애니메이션 여부
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   // 비로그인 사용자의 임시 저장 데이터 삭제
   useEffect(() => {
@@ -58,62 +59,47 @@ export const QuizResult = () => {
 
   // 경험치 연출(PointEffect)을 2초 동안 보여준 후 종료
   useEffect(() => {
-    if (!hasXP) {
-      setShowPointEffect(false);
-      return;
+    if (!hasXP) setShowPointEffect(false);
+    else {
+      const timer = setTimeout(() => setShowPointEffect(false), 2000);
+      return () => clearTimeout(timer);
     }
-    const timer = setTimeout(() => setShowPointEffect(false), 2000);
-    return () => clearTimeout(timer);
   }, [hasXP]);
 
   // 스트릭 애니메이션 종료 후 이동 처리
   useEffect(() => {
-    if (!showStreakAnimation) return;
+    if (!showStreakAnimation || !pendingPath) return;
 
     const timer = setTimeout(() => {
-      navigate('/learn');
+      navigate(pendingPath);
       setShowStreakAnimation(false);
+      setPendingPath(null);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [showStreakAnimation, navigate]);
+  }, [showStreakAnimation, pendingPath, navigate]);
 
   /**
-   * CASE 1: 다음 단계로 이동
+   * 네비게이션 통합 핸들러
    * - 비로그인: 로그인 체크 페이지로
    * - 오늘 첫 풀이: 스트릭 애니메이션 재생 후 이동
    * - 일반 완료: 즉시 다음 퀴즈 단계로 이동
    */
-  const handleNextNavigation = () => {
+  const handleNavigation = (targetPath: string, shouldUpdateStep: boolean = false) => {
     if (!isLogin) {
-      navigate('/auth/check', { state: { from: '/quiz' } });
+      navigate('/auth/check', { state: { from: targetPath } });
       return;
     }
+
+    if (shouldUpdateStep) updateUIState({ current_quiz_step_id: uiState.current_quiz_step_id + 1 });
 
     if (resultData.isFirstSolveToday) {
-      setShowStreakAnimation(true); // 스트릭 연출 시작 (이후 useEffect에서 이동 처리)
-    } else {
-      // 즉시 이동 및 상태 업데이트
-      updateUIState({ current_quiz_step_id: uiState.current_quiz_step_id + 1 });
-      navigate('/quiz');
-    }
+      setPendingPath(targetPath);
+      setShowStreakAnimation(true);
+    } else navigate(targetPath);
   };
 
-  /**
-   * CASE 2: 메인(학습) 화면으로 이동
-   * - 별도 연출 없이 즉시 /learn으로 이동
-   */
-  const handleMainNavigation = () => {
-    if (!isLogin) {
-      navigate('/auth/check', { state: { from: '/learn' } });
-      return;
-    }
-    navigate('/learn');
-  };
-
-  // ---------------------------------------------------------
-  // 4. 렌더링 조건부 처리 (순서: 경험치 -> 스트릭 -> 결과창)
-  // ---------------------------------------------------------
+  // 렌더링 조건부 처리 (순서: 경험치 -> 스트릭 -> 결과창)
   return (
     <AnimatePresence mode="wait">
       {/* 1순위: 경험치 획득 연출 */}
@@ -127,8 +113,8 @@ export const QuizResult = () => {
         <QuizResultContent
           key="result-content"
           resultData={resultData}
-          onNextNavigation={handleNextNavigation}
-          onMainNavigation={handleMainNavigation}
+          onNextNavigation={() => handleNavigation('/quiz', true)}
+          onMainNavigation={() => handleNavigation('/learn')}
         />
       )}
     </AnimatePresence>

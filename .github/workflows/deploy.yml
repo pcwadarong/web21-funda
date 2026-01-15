@@ -102,9 +102,8 @@ jobs:
             git pull origin main
 
             # docker-compose.deploy.yml 파일용 환경 변수 파일 생성
-            printf "NCR_REGISTRY=%s\nDB_ROOT_PASSWORD=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
+            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
               "${{ secrets.NCR_REGISTRY }}" \
-              "${{ secrets.DB_ROOT_PASSWORD }}" \
               "${{ secrets.DB_USER }}" \
               "${{ secrets.DB_PASSWORD }}" > .env
 
@@ -116,5 +115,7 @@ jobs:
             echo "${{ secrets.NCP_SECRET_KEY }}" | docker login ${{ secrets.NCR_REGISTRY }} -u ${{ secrets.NCP_ACCESS_KEY }} --password-stdin
             docker compose -f docker-compose.deploy.yml pull
             docker compose -f docker-compose.deploy.yml up -d
-            docker compose -f docker-compose.deploy.yml exec backend pnpm --filter backend migration:run
+            # 런타임 컨테이너에는 pnpm이 없고 dev 의존성이 빠져 있어 TS 기반 마이그레이션이 실행되지 않는다.
+            docker compose -f docker-compose.deploy.yml exec backend \
+              node ./node_modules/typeorm/cli.js -d dist/config/typeorm.data-source.js migration:run
             docker image prune -f

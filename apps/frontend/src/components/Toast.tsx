@@ -1,4 +1,4 @@
-import { css, useTheme } from '@emotion/react';
+import { css, keyframes, useTheme } from '@emotion/react';
 
 import type { Theme } from '@/styles/theme';
 
@@ -10,13 +10,9 @@ interface ToastProps {
 export const Toast = ({ message, isOpen }: ToastProps) => {
   const theme = useTheme();
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div css={toastWrapperStyle}>
-      <div css={toastBodyStyle(theme)} role="status" aria-live="polite">
+    <div css={toastWrapperStyle(isOpen)}>
+      <div css={toastBodyStyle(theme, isOpen)} role="status" aria-live="polite">
         <span css={accentDotStyle(theme)} aria-hidden="true" />
         <span css={messageStyle(theme)}>{message}</span>
       </div>
@@ -24,7 +20,29 @@ export const Toast = ({ message, isOpen }: ToastProps) => {
   );
 };
 
-const toastWrapperStyle = css`
+const slideUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const slideDown = keyframes`
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+`;
+
+const toastWrapperStyle = (isOpen: boolean) => css`
   position: fixed;
   bottom: 28px;
   left: 50%;
@@ -34,9 +52,10 @@ const toastWrapperStyle = css`
   z-index: 1100;
   display: flex;
   justify-content: center;
+  pointer-events: ${isOpen ? 'auto' : 'none'};
 `;
 
-const toastBodyStyle = (theme: Theme) => css`
+const toastBodyStyle = (theme: Theme, isOpen: boolean) => css`
   display: flex;
   align-items: center;
   gap: 12px;
@@ -46,6 +65,7 @@ const toastBodyStyle = (theme: Theme) => css`
   box-shadow: 0 12px 32px rgba(20, 20, 43, 0.18);
   border: 1px solid ${theme.colors.border.default};
   color: ${theme.colors.text.strong};
+  animation: ${isOpen ? slideUp : slideDown} 0.3s ease-out forwards;
 `;
 
 const accentDotStyle = (theme: Theme) => css`

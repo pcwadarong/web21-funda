@@ -102,9 +102,8 @@ jobs:
             git pull origin main
 
             # docker-compose.deploy.yml 파일용 환경 변수 파일 생성
-            printf "NCR_REGISTRY=%s\nDB_ROOT_PASSWORD=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
+            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
               "${{ secrets.NCR_REGISTRY }}" \
-              "${{ secrets.DB_ROOT_PASSWORD }}" \
               "${{ secrets.DB_USER }}" \
               "${{ secrets.DB_PASSWORD }}" > .env
 

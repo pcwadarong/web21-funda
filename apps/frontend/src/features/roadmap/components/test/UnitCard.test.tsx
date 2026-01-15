@@ -15,7 +15,7 @@ const baseUnit: RoadmapUnit = {
   title: 'HTML & CSS 기초',
   description: '웹의 기본 구조와 스타일링',
   progress: 45,
-  score: 85,
+  successRate: 85,
   status: 'active',
   variant: 'full',
 };
@@ -44,7 +44,7 @@ describe('UnitCard 컴포넌트 테스트', () => {
 
   it('비로그인 상태에서는 진행률/정답률이 숨겨진다', () => {
     // given
-    const unit = { ...baseUnit, progress: 70, score: 88 };
+    const unit = { ...baseUnit, progress: 70, successRate: 88 };
 
     // when
     renderUnitCard(unit, false);

@@ -1,8 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { expect } from 'vitest';
+import { expect, userEvent, within } from '@storybook/test';
 
 import { QuizCode } from '@/feat/quiz/components/quizType/QuizCode';
 import type { CodeContent } from '@/feat/quiz/types';
@@ -23,7 +21,7 @@ const mockContent: CodeContent = {
 };
 
 const meta: Meta<typeof QuizCode> = {
-  title: 'Features/Quiz/QuizCode',
+  title: 'Features/Quiz/Types/QuizCode',
   component: QuizCode,
   parameters: {
     layout: 'centered',

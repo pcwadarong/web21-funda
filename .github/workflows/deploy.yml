@@ -116,4 +116,5 @@ jobs:
             echo "${{ secrets.NCP_SECRET_KEY }}" | docker login ${{ secrets.NCR_REGISTRY }} -u ${{ secrets.NCP_ACCESS_KEY }} --password-stdin
             docker compose -f docker-compose.deploy.yml pull
             docker compose -f docker-compose.deploy.yml up -d
+            docker compose -f docker-compose.deploy.yml exec backend pnpm --filter backend migration:run
             docker image prune -f

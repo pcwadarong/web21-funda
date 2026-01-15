@@ -196,7 +196,7 @@ export const PointEffect = ({ points }: PointEffectProps) => {
             >
               {p.type === 'star' ? (
                 <SVGIcon
-                  icon="Star"
+                  icon="RoundStar"
                   style={{
                     width: `${p.size}px`,
                     height: `${p.size}px`,

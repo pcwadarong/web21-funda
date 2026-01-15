@@ -1,6 +1,11 @@
-import type { ApiSuccessResponse } from '@/types/api';
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  result: T;
+}
 
 /**
  * 전역 요청 함수 (기본 토대)
@@ -11,24 +16,37 @@ async function baseRequest<T>(
   body?: unknown,
   options: RequestInit = {},
 ): Promise<T> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  // Authorization 헤더가 명시적으로 제공된 경우에만 사용
+  // 그렇지 않으면 백엔드가 쿠키에서 accessToken을 읽음
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include', // 쿠키를 포함하기 위해 필요
   });
 
-  // NestJS 에러(4xx, 5xx) 감지기
+  const responseBody = (await response.json().catch(() => null)) as ApiResponse<T> | null;
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API Error: ${response.statusText}`);
+    const errorMessage = responseBody?.message || `API Error: ${response.statusText}`;
+    throw new Error(errorMessage);
   }
 
-  const result: ApiSuccessResponse<T> = await response.json();
-  return result.data;
+  if (!responseBody) {
+    throw new Error('API 응답 본문이 비어 있습니다.');
+  }
+
+  if (!responseBody.success) {
+    throw new Error(responseBody.message || '요청에 실패했습니다.');
+  }
+
+  return responseBody.result;
 }
 
 /**

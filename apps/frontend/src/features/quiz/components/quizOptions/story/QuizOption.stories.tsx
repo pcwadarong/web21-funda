@@ -1,14 +1,12 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { expect } from 'vitest';
+import { expect, userEvent, within } from '@storybook/test';
 
 import { QuizOption } from '@/feat/quiz/components/quizOptions/QuizOption';
 import { lightTheme } from '@/styles/theme';
 
 const meta: Meta<typeof QuizOption> = {
-  title: 'Features/Quiz/QuizOption',
+  title: 'Features/Quiz/Options/QuizOption',
   component: QuizOption,
   parameters: {
     layout: 'centered',

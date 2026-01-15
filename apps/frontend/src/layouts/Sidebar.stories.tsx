@@ -9,7 +9,7 @@ type SidebarProps = ComponentProps<typeof Sidebar>;
 const navClickAction = action('Sidebar navigation click');
 
 const meta: Meta<SidebarProps> = {
-  title: 'Components/Sidebar',
+  title: 'Layouts/Sidebar',
   component: Sidebar,
   parameters: {
     layout: 'fullscreen',

@@ -9,6 +9,7 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import ReportModal from '@/features/report/ReportForm';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
 
@@ -47,10 +48,10 @@ export const QuizContentCard = ({
         <h2 css={titleStyle(theme)}>{question.content.question}</h2>
         <button
           css={reportButtonStyle(theme)}
-          onClick={() => openModal('오류 신고', <div>신고 폼</div>)}
+          onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
         >
-          <SVGIcon icon="Vector" size="sm" />
-          신고
+          <SVGIcon icon="Report" size="sm" />
+          <span>신고</span>
         </button>
       </div>
 
@@ -66,7 +67,7 @@ export const QuizContentCard = ({
       {showResult && explanation && (
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
-          <span>{explanation}</span>
+          <span css={explanationTextStyle(theme)}>{explanation}</span>
         </div>
       )}
 
@@ -109,43 +110,59 @@ const cardStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 `;
+
 const headerStyle = css`
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
   padding: 20px 0;
 `;
+
 const titleStyle = (theme: Theme) => css`
-  font-size: 24px;
-  font-weight: 700;
+  font-size: ${theme.typography['20Bold'].fontSize};
+  line-height: ${theme.typography['20Bold'].lineHeight};
+  font-weight: ${theme.typography['20Bold'].fontWeight};
   color: ${theme.colors.text.strong};
   margin: 0;
 `;
+
 const footerStyle = css`
   display: flex;
   gap: 12px;
   margin-top: 24px;
 `;
+
 const flexBtn = css`
   flex: 1;
 `;
+
 const explanationStyle = (theme: Theme) => css`
   margin-top: 24px;
   padding: 16px;
   background: ${theme.colors.surface.default};
   border-radius: 8px;
 `;
+
+const explanationTextStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  color: ${theme.colors.text.default};
+`;
+
 const reportButtonStyle = (theme: Theme) => css`
-  font-size: 12px;
-  width: 72px;
-  height: 33px;
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 1.2rem;
+  gap: 0.2rem;
+  height: 2.5rem;
   color: ${theme.colors.text.weak};
   background: transparent;
   border: 1px solid ${theme.colors.border.default};
   border-radius: ${theme.borderRadius.xlarge};
-  cursor: pointer;
+  text-wrap: nowrap;
 `;

@@ -82,6 +82,16 @@ export interface QuizSolution {
 }
 
 /** -----------------------------------------
+ * 스탭 결과
+ * ----------------------------------------- */
+
+export interface StepCompletionResult {
+  successRate: number;
+  xpGained: number;
+  durationMs: number;
+}
+
+/** -----------------------------------------
  * 공통 매개변수
  * ----------------------------------------- */
 

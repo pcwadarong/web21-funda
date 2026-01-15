@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+
+import { CodeFormatter } from '../common/utils/code-formatter';
+import { SolveLog, StepAttemptStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
 
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
@@ -26,6 +29,13 @@ export class RoadmapService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    private readonly codeFormatter: CodeFormatter,
+    @InjectRepository(SolveLog)
+    private readonly solveLogRepository: Repository<SolveLog>,
+    @InjectRepository(UserStepAttempt)
+    private readonly stepAttemptRepository: Repository<UserStepAttempt>,
+    @InjectRepository(UserStepStatus)
+    private readonly stepStatusRepository: Repository<UserStepStatus>,
   ) {}
 
   /**
@@ -43,6 +53,7 @@ export class RoadmapService {
         slug: field.slug,
         name: field.name,
         description: field.description ?? null,
+        icon: this.getFieldIconBySlug(field.slug),
       })),
     };
   }
@@ -50,9 +61,10 @@ export class RoadmapService {
   /**
    * 필드 슬러그 기준으로 유닛/스텝과 퀴즈 개수를 조회한다.
    * @param fieldSlug 필드 슬러그
+   * @param userId 로그인 사용자 ID(없으면 null)
    * @returns 필드와 유닛/스텝 정보
    */
-  async getUnitsByFieldSlug(fieldSlug: string): Promise<FieldUnitsResponse> {
+  async getUnitsByFieldSlug(fieldSlug: string, userId: number | null): Promise<FieldUnitsResponse> {
     const field = await this.fieldRepository.findOne({
       where: { slug: fieldSlug },
       relations: { units: { steps: true } }, // 유닛과 스텝까지 함께 로딩
@@ -64,9 +76,12 @@ export class RoadmapService {
 
     const units = field.units ?? [];
     const steps = units.flatMap(unit => unit.steps ?? []);
-    const quizCountByStepId = await this.getQuizCountByStepId(steps.map(step => step.id));
+    const stepIds = steps.map(step => step.id);
+    const uniqueStepIds = Array.from(new Set(stepIds));
+    const quizCountByStepId = await this.getQuizCountByStepId(uniqueStepIds);
+    const completedStepIdSet = await this.getCompletedStepIdSet(uniqueStepIds, userId);
 
-    return this.buildFieldUnitsResponse(field, units, quizCountByStepId);
+    return this.buildFieldUnitsResponse(field, units, quizCountByStepId, completedStepIdSet);
   }
 
   /**
@@ -160,7 +175,7 @@ export class RoadmapService {
       order: { id: 'ASC' },
     });
 
-    return quizzes.map(quiz => this.toQuizResponse(quiz));
+    return Promise.all(quizzes.map(quiz => this.toQuizResponse(quiz)));
   }
 
   /**
@@ -172,10 +187,12 @@ export class RoadmapService {
   async submitQuiz(
     quizId: number,
     payload: QuizSubmissionRequest,
+    userId: number | null,
   ): Promise<QuizSubmissionResponse> {
     const quiz = await this.quizRepository.findOne({
       where: { id: quizId },
       select: { id: true, type: true, answer: true, explanation: true },
+      relations: { step: true },
     });
 
     if (!quiz) {
@@ -188,7 +205,7 @@ export class RoadmapService {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
-      return {
+      const result: QuizSubmissionResponse = {
         quiz_id: quiz.id,
         is_correct: isCorrect,
         solution: {
@@ -196,12 +213,21 @@ export class RoadmapService {
           explanation: quiz.explanation ?? null,
         },
       };
+
+      await this.saveSolveLog({
+        userId,
+        quiz,
+        stepAttemptId: payload.step_attempt_id,
+        isCorrect,
+      });
+
+      return result;
     }
 
     const correctOptionId = this.getOptionAnswer(quiz.answer);
     const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
-    return {
+    const result: QuizSubmissionResponse = {
       quiz_id: quiz.id,
       is_correct: isCorrect,
       solution: {
@@ -209,6 +235,15 @@ export class RoadmapService {
         explanation: quiz.explanation ?? null,
       },
     };
+
+    await this.saveSolveLog({
+      userId,
+      quiz,
+      stepAttemptId: payload.step_attempt_id,
+      isCorrect,
+    });
+
+    return result;
   }
 
   /**
@@ -233,15 +268,72 @@ export class RoadmapService {
   }
 
   /**
+   * 필드 슬러그에 따른 아이콘 식별자를 반환한다.
+   * @param slug 필드 슬러그
+   * @returns 아이콘 식별자
+   */
+  private getFieldIconBySlug(slug: string): string {
+    if (slug === 'fe') {
+      return 'Frontend';
+    }
+    if (slug === 'be') {
+      return 'Backend';
+    }
+    if (slug === 'mo') {
+      return 'Mobile';
+    }
+    if (slug === 'cs') {
+      return 'ComputerScience';
+    }
+    if (slug === 'algo') {
+      return 'Algorithm';
+    }
+    if (slug === 'game') {
+      return 'Game';
+    }
+    if (slug === 'da') {
+      return 'Data';
+    }
+    if (slug === 'devops') {
+      return 'Cloud';
+    }
+
+    return 'Unknown';
+  }
+
+  /**
+   * 사용자 완료 스텝 ID를 Set으로 반환한다.
+   * @param stepIds 스텝 ID 목록
+   * @param userId 사용자 ID
+   * @returns 완료 스텝 ID 집합
+   */
+  private async getCompletedStepIdSet(
+    stepIds: number[],
+    userId: number | null,
+  ): Promise<Set<number>> {
+    if (userId === null || userId === undefined || stepIds.length === 0) {
+      return new Set();
+    }
+
+    const stepStatuses = await this.stepStatusRepository.find({
+      where: { userId, isCompleted: true, step: { id: In(stepIds) } },
+      relations: { step: true },
+    });
+
+    const completedStepIds = stepStatuses.map(status => status.step.id);
+    return new Set(completedStepIds);
+  }
+
+  /**
    * 퀴즈 엔티티를 응답 DTO로 변환한다.
    * @param quiz 퀴즈 엔티티
    * @returns 퀴즈 응답 DTO
    */
-  private toQuizResponse(quiz: Quiz): QuizResponse {
+  private async toQuizResponse(quiz: Quiz): Promise<QuizResponse> {
     return {
       id: quiz.id,
       type: quiz.type,
-      content: this.normalizeQuizContent(quiz),
+      content: await this.normalizeQuizContent(quiz),
     };
   }
 
@@ -250,7 +342,7 @@ export class RoadmapService {
    * @param quiz 퀴즈 엔티티
    * @returns 정규화된 content
    */
-  private normalizeQuizContent(quiz: Quiz): QuizContent {
+  private async normalizeQuizContent(quiz: Quiz): Promise<QuizContent> {
     const rawObject = this.toContentObject(quiz.content);
     if (!rawObject) {
       return { question: quiz.question };
@@ -262,7 +354,7 @@ export class RoadmapService {
         : quiz.question;
 
     const options = this.normalizeOptions(rawObject.options);
-    const codeMetadata = this.normalizeCodeMetadata(rawObject);
+    const codeMetadata = await this.normalizeCodeMetadata(rawObject);
     const matchingMetadata = this.normalizeMatchingMetadata(rawObject);
 
     return {
@@ -350,11 +442,18 @@ export class RoadmapService {
    * @param value content 객체
    * @returns 정규화된 code_metadata (없으면 undefined)
    */
-  private normalizeCodeMetadata(value: Record<string, unknown>) {
+  private async normalizeCodeMetadata(value: Record<string, unknown>) {
     const code = value.code;
     const language = value.language;
     if (typeof code === 'string') {
-      return typeof language === 'string' ? { language, snippet: code } : { snippet: code };
+      const formattedCode = await this.codeFormatter.format(
+        code,
+        typeof language === 'string' ? language : 'javascript',
+      );
+      return {
+        ...(typeof language === 'string' ? { language } : {}),
+        snippet: formattedCode,
+      };
     }
     return undefined;
   }
@@ -468,12 +567,14 @@ export class RoadmapService {
    * @param field 필드 엔티티
    * @param units 유닛 엔티티 목록
    * @param quizCountByStepId stepId -> quizCount 매핑
+   * @param completedStepIdSet 완료된 스텝 ID 집합
    * @returns 응답 DTO
    */
   private buildFieldUnitsResponse(
     field: Field,
     units: NonNullable<Field['units']> = [],
     quizCountByStepId: Map<number, number>,
+    completedStepIdSet: Set<number>,
   ): FieldUnitsResponse {
     return {
       field: {
@@ -484,7 +585,11 @@ export class RoadmapService {
         id: unit.id,
         title: unit.title,
         orderIndex: unit.orderIndex,
-        steps: this.buildUnitStepsWithCheckpoints(unit.steps ?? [], quizCountByStepId),
+        steps: this.buildUnitStepsWithCheckpoints(
+          unit.steps ?? [],
+          quizCountByStepId,
+          completedStepIdSet,
+        ),
       })),
     };
   }
@@ -498,6 +603,7 @@ export class RoadmapService {
   private buildUnitStepsWithCheckpoints(
     steps: Step[],
     quizCountByStepId: Map<number, number>,
+    completedStepIdSet: Set<number> = new Set(),
   ): StepSummary[] {
     const sortedSteps = this.sortByOrderIndex(steps);
     const baseStepSummaries: Array<StepSummary & { isPlaceholder?: boolean }> = sortedSteps.map(
@@ -507,7 +613,7 @@ export class RoadmapService {
         orderIndex: step.orderIndex,
         quizCount: quizCountByStepId.get(step.id) ?? 0,
         isCheckpoint: step.isCheckpoint,
-        isCompleted: false,
+        isCompleted: completedStepIdSet.has(step.id),
         isLocked: false,
       }),
     );
@@ -555,7 +661,7 @@ export class RoadmapService {
       quizCount: 0,
       isCheckpoint: true,
       isCompleted: false,
-      isLocked: false,
+      isLocked: true,
     };
   }
 
@@ -600,5 +706,41 @@ export class RoadmapService {
    */
   private sortByOrderIndex<T extends { orderIndex: number }>(items: T[]): T[] {
     return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  private async saveSolveLog(params: {
+    userId: number | null;
+    quiz: Quiz;
+    stepAttemptId?: number;
+    isCorrect: boolean;
+  }): Promise<void> {
+    const { userId, quiz, stepAttemptId, isCorrect } = params;
+
+    if (userId === null || userId === undefined) {
+      return;
+    }
+
+    let stepAttempt: UserStepAttempt | null = null;
+    if (stepAttemptId) {
+      stepAttempt = await this.stepAttemptRepository.findOne({
+        where: { id: stepAttemptId, userId },
+      });
+    } else if (quiz.step?.id) {
+      stepAttempt = await this.stepAttemptRepository.findOne({
+        where: { userId, step: { id: quiz.step.id }, status: StepAttemptStatus.IN_PROGRESS },
+        order: { startedAt: 'DESC' },
+      });
+    }
+
+    const log = this.solveLogRepository.create({
+      userId,
+      quiz,
+      stepAttempt: stepAttempt ?? null,
+      isCorrect,
+      solvedAt: new Date(),
+      duration: null,
+    });
+
+    await this.solveLogRepository.save(log);
   }
 }

@@ -1,29 +1,28 @@
 import { css, useTheme } from '@emotion/react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
+import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
-  { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard/1' },
-  { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile/1' },
+  { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
+  { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
-// TODO: 유저 정보 추가
-const USER_INFO = {
-  name: '김 펀더',
-  level: 5,
-  xp: 1250,
-} as const;
-
-const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
-
 export const Sidebar = () => {
   const theme = useTheme();
-  // TODO: 현재 페이지에 따라 활성화된 메뉴 아이템 추가
-  const activeItemId = 'learn'; // 하드코딩
+  const location = useLocation();
+  const isLoggedIn = useIsLoggedIn();
+  const user = useAuthUser();
+
+  const activeItemId = NAV_ITEMS.find(item =>
+    item.id === 'profile'
+      ? location.pathname.startsWith('/profile')
+      : location.pathname === item.path,
+  )?.id;
 
   return (
     <aside css={sidebarStyle(theme)}>
@@ -35,29 +34,35 @@ export const Sidebar = () => {
       </Link>
 
       <nav css={navStyle}>
-        {NAV_ITEMS.map(item => (
-          <Link
-            key={item.id}
-            to={!isLoggedIn && item.path !== '/learn' ? '/login' : item.path}
-            css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
-          >
-            <span css={navIconStyle}>
-              <SVGIcon icon={`${item.icon}`} size="md" />
-            </span>
-            <span css={navLabelStyle(theme)}>{item.label}</span>
-          </Link>
-        ))}
+        {NAV_ITEMS.map(item => {
+          const targetPath = item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
+
+          return (
+            <Link
+              key={item.id}
+              to={targetPath}
+              css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
+            >
+              <span css={navIconStyle}>
+                <SVGIcon icon={`${item.icon}`} size="md" />
+              </span>
+              <span css={navLabelStyle(theme)}>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
-      {isLoggedIn && (
+      {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
           <div css={avatarStyle(theme)}>
-            <SVGIcon icon="Profile" size="md" />
+            {user.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt={user.displayName} css={avatarImageStyle} />
+            ) : (
+              <SVGIcon icon="Profile" size="md" />
+            )}
           </div>
           <div css={userInfoStyle}>
-            <div css={userNameStyle(theme)}>{USER_INFO.name}</div>
-            <div css={userLevelStyle(theme)}>
-              Lv. {USER_INFO.level} · {USER_INFO.xp} XP
-            </div>
+            <div css={userNameStyle(theme)}>{user.displayName}</div>
+            <div css={userLevelStyle(theme)}>{user.experience} XP</div>
           </div>
         </div>
       )}
@@ -131,11 +136,6 @@ const logoTextStyle = (theme: Theme) => css`
   @media (max-width: 1024px) {
     display: none;
   }
-
-  @media (max-width: 768px) {
-    display: block;
-    font-size: 10px;
-  }
 `;
 
 const navStyle = css`
@@ -176,6 +176,7 @@ const navItemStyle = (theme: Theme) => css`
     flex-direction: column;
     gap: 4px;
     padding: 8px;
+    width: 3.8rem;
   }
 `;
 
@@ -183,6 +184,11 @@ const activeNavItemStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.surface};
   color: ${theme.colors.primary.dark};
   font-weight: 700;
+
+  @media (max-width: 768px) {
+    background: transparent;
+    color: ${theme.colors.primary.main};
+  }
 `;
 
 const navIconStyle = css`
@@ -209,7 +215,9 @@ const navLabelStyle = (theme: Theme) => css`
 
   @media (max-width: 768px) {
     display: block;
-    font-size: 10px;
+    font-size: ${theme.typography['12Medium'].fontSize};
+    line-height: ${theme.typography['12Medium'].lineHeight};
+    font-weight: ${theme.typography['12Medium'].fontWeight};
   }
 `;
 
@@ -231,6 +239,13 @@ const userSectionStyle = (theme: Theme) => css`
   }
 `;
 
+const avatarImageStyle = css`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+`;
+
 const avatarStyle = (theme: Theme) => css`
   width: 40px;
   height: 40px;
@@ -241,6 +256,7 @@ const avatarStyle = (theme: Theme) => css`
   justify-content: center;
   font-size: 20px;
   flex-shrink: 0;
+  overflow: hidden;
 
   @media (max-width: 1024px) {
     width: 32px;

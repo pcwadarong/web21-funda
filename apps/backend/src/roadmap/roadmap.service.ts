@@ -711,8 +711,8 @@ export class RoadmapService {
         orderIndex: orderIndex++,
       });
 
-      // 3번째 위치에 중간 점검 삽입 (2번째 스텝 뒤)
-      if (idx === 1) {
+      // 4번째 위치에 중간 점검 삽입 (3번째 스텝 뒤)
+      if (idx === 2) {
         newSteps.push(this.createCheckpointStep('중간 점검', orderIndex++));
       }
     });

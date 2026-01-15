@@ -13,7 +13,7 @@ const streakData = {
   allDays: ['We', 'Th', 'Fr', 'Sa', 'Su', 'Mo', 'Tu'],
 };
 
-export const Streak = () => {
+export const Streak = ({ currentStreak }: { currentStreak: number }) => {
   const theme = useTheme();
   const navigate = useNavigate();
 

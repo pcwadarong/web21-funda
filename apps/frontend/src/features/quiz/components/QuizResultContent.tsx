@@ -1,9 +1,7 @@
 import { css, useTheme } from '@emotion/react';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
-import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
@@ -12,6 +10,8 @@ interface QuizResultData {
   successRate: number | null;
   durationMs?: string;
   durationSeconds?: string;
+  currentStreak: number;
+  isFirstSolveToday: boolean;
 }
 
 const METRIC_CONFIG = (theme: Theme) =>
@@ -54,26 +54,18 @@ const METRIC_CONFIG = (theme: Theme) =>
 
 interface QuizResultContentProps {
   resultData: QuizResultData;
-  isLogin: boolean;
-  isFirstToday: boolean;
+  onNextNavigation?: () => void;
+  onMainNavigation?: () => void;
 }
 
 export const QuizResultContent = ({
   resultData,
-  isLogin,
-  isFirstToday,
+  onNextNavigation,
+  onMainNavigation,
 }: QuizResultContentProps) => {
-  const { uiState, updateUIState } = useStorage();
   const theme = useTheme();
-  const navigate = useNavigate();
   const config = METRIC_CONFIG(theme);
 
-  const handleMainNavigation = () => {
-    if (!isLogin)
-      navigate('/auth/check', {
-        state: { from: '/learn' },
-      });
-  };
   /* 하나의 값이라도 null인 경우 체크 */
   const hasMissingData = config.some(item => {
     const value = item.getValue(resultData);
@@ -81,16 +73,14 @@ export const QuizResultContent = ({
   });
 
   const handleNextNavigation = () => {
-    if (!isLogin)
-      navigate('/auth/check', {
-        state: { from: '/quiz' },
-      });
-    else if (isFirstToday) navigate('/streak');
-    else {
-      navigate('/quiz');
-      updateUIState({
-        current_quiz_step_id: uiState.current_quiz_step_id + 1,
-      });
+    if (onNextNavigation) {
+      onNextNavigation();
+    }
+  };
+
+  const handleMainNavigation = () => {
+    if (onMainNavigation) {
+      onMainNavigation();
     }
   };
 

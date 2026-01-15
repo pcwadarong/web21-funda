@@ -35,7 +35,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
    * 진행률/정답률 기본값 처리
    */
   const progressValue = unit.progress ?? 0;
-  const scoreValue = unit.score ?? 0;
+  const scoreValue = unit.successRate ?? 0;
   /**
    * 클릭 핸들러가 있을 때만 인터랙션 스타일/키보드 접근성 활성화
    */
@@ -105,6 +105,7 @@ const cardStyle = (theme: Theme, status: UnitStatus, isInteractive: boolean) => 
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 12px;
   transition: all 150ms ease-in-out;
   box-shadow: 0 4px 0 ${theme.colors.border.default};

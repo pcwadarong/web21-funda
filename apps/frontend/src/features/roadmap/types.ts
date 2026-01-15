@@ -11,8 +11,8 @@ export interface RoadmapUnit {
   id: number;
   title: string;
   description: string;
-  progress?: number;
-  score?: number;
+  progress: number;
+  successRate: number;
   status?: UnitStatus;
   variant?: UnitVariant;
 }

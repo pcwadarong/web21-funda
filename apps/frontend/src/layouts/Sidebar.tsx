@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
@@ -14,10 +14,23 @@ const NAV_ITEMS = [
 
 export const Sidebar = () => {
   const theme = useTheme();
+  const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
 
-  const activeItemId = NAV_ITEMS.find(item => location.pathname === item.path)?.id;
+  // 활성화된 네비게이션 아이템 찾기
+  const activeItemId = NAV_ITEMS.find(item => {
+    const currentPath = location.pathname;
+
+    // 프로필의 경우 동적 경로 처리
+    if (item.id === 'profile') return currentPath.startsWith('/profile');
+
+    // 학습하기의 경우 하위 경로도 포함
+    if (item.id === 'learn') return currentPath.startsWith('/learn');
+
+    // 나머지는 정확히 일치하는지 확인
+    return currentPath === item.path;
+  })?.id;
 
   return (
     <aside css={sidebarStyle(theme)}>

@@ -16,7 +16,6 @@ import { SelectField } from '@/pages/learn/SelectField';
 import { Quiz } from '@/pages/quiz/Quiz';
 import { QuizResult } from '@/pages/quiz/QuizResult';
 import { QuizResultError } from '@/pages/quiz/QuizResultError';
-import { Streak } from '@/pages/quiz/Streak';
 import { Profile } from '@/pages/user/Profile';
 import { Setting } from '@/pages/user/Setting';
 import { useAuthStore } from '@/store/authStore';
@@ -75,7 +74,6 @@ export const router = createBrowserRouter([
     loader: protectedLoader,
     element: <SideBarLayout />,
     children: [
-      { path: '/streak', element: <Streak /> },
       { path: '/leaderboard', element: <Leaderboard /> },
       { path: '/profile/:userId?', element: <Profile /> },
       { path: '/setting', element: <Setting /> },

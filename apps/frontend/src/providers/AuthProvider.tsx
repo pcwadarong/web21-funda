@@ -42,15 +42,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const user = await authService.getCurrentUser();
 
         if (user) {
-          setUser(user);
+          // 동기화 먼저 완료
           await syncLocalProgress();
+          // 동기화 후 최신 user 정보 조회
+          const updatedUser = await authService.getCurrentUser();
+          if (updatedUser) {
+            setUser(updatedUser);
+          }
         } else {
           // /me 실패 시 refresh 시도 (refreshToken은 쿠키에 있음)
           const refreshResult = await authService.refreshToken();
 
           if (refreshResult) {
-            setUser(refreshResult.user);
+            // 동기화 먼저 완료
             await syncLocalProgress();
+            // 동기화 후 최신 user 정보 조회
+            const updatedUser = await authService.getCurrentUser();
+            if (updatedUser) {
+              setUser(updatedUser);
+            }
           } else {
             clearAuth();
           }

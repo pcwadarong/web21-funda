@@ -9,7 +9,7 @@ import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
 interface LearnContainerProps {
-  field: string;
+  fieldName: string;
   units: UnitType[];
   activeUnit: UnitType | undefined;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -17,10 +17,12 @@ interface LearnContainerProps {
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
   onStepClick: (stepId: stepType) => void;
   onStepHover?: (stepId: number) => void;
+  fieldSlug: string;
+  setFieldSlug: (slug: string) => void;
 }
 
 export const LearnContainer = ({
-  field,
+  fieldName,
   units,
   activeUnit,
   scrollContainerRef,
@@ -28,6 +30,8 @@ export const LearnContainer = ({
   registerUnitRef,
   onStepClick,
   onStepHover,
+  fieldSlug,
+  setFieldSlug,
 }: LearnContainerProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
@@ -41,7 +45,7 @@ export const LearnContainer = ({
                 <Link to="/learn/roadmap">
                   <div css={unitTextStyle(theme)}>
                     <SVGIcon icon="ArrowLeft" size="md" />
-                    {field} 로드맵
+                    {fieldName} 로드맵
                   </div>
                 </Link>
                 <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
@@ -121,7 +125,7 @@ export const LearnContainer = ({
         </div>
       </div>
 
-      <LearnRightSidebar />
+      <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
     </div>
   );
 };

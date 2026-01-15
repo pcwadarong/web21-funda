@@ -4,15 +4,19 @@ import type { UnitType } from '@/feat/learn/types';
 import { useStorage } from '@/hooks/useStorage';
 import { fieldService } from '@/services/fieldService';
 import { useAuthStore } from '@/store/authStore';
+import { storageUtil } from '@/utils/storage';
 
 /**
  * Learn 페이지에서 사용할 유닛/스텝 데이터와 스크롤 상태를 관리합니다.
  */
 export const useLearnUnits = () => {
-  const { uiState, solvedStepHistory, updateUIState } = useStorage();
-  const [field, setField] = useState('');
+  const { solvedStepHistory, updateUIState } = useStorage();
+  const [fieldName, setFieldName] = useState('');
   const [units, setUnits] = useState<UnitType[]>([]);
   const [activeUnitId, setActiveUnitId] = useState<number | null>(null);
+  const [fieldSlug, setFieldSlug] = useState(
+    () => storageUtil.get().ui_state.last_viewed.field_slug,
+  );
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const unitRefs = useRef(new Map<number, HTMLElement>());
@@ -67,7 +71,6 @@ export const useLearnUnits = () => {
    * field_slug를 기준으로 유닛/스텝 데이터를 요청하고 상태로 매핑합니다.
    */
   useEffect(() => {
-    const fieldSlug = uiState.last_viewed?.field_slug;
     let isMounted = true;
 
     const fetchUnits = async () => {
@@ -75,7 +78,7 @@ export const useLearnUnits = () => {
         const data = await fieldService.getFieldUnits(fieldSlug);
         if (!isMounted) return;
 
-        setField(data.field.name);
+        setFieldName(data.field.name);
         setUnits(
           isLoggedIn
             ? unlockCheckpoints(data.units ?? [])
@@ -92,7 +95,7 @@ export const useLearnUnits = () => {
     return () => {
       isMounted = false;
     };
-  }, [isLoggedIn]);
+  }, [fieldSlug, isLoggedIn]);
 
   /**
    * 스크롤 위치를 기준으로 활성 유닛을 계산합니다.
@@ -145,12 +148,14 @@ export const useLearnUnits = () => {
     const fallbackUnitId = units[0]?.id;
     if (!fallbackUnitId) return;
 
+    const uiState = storageUtil.get().ui_state;
+
     const lastViewedUnitId =
       uiState.last_viewed.unit_id <= 1 ? fallbackUnitId : uiState.last_viewed.unit_id;
 
     updateUIState({
       last_viewed: {
-        ...uiState.last_viewed,
+        field_slug: fieldSlug,
         unit_id: lastViewedUnitId,
       },
     });
@@ -165,7 +170,7 @@ export const useLearnUnits = () => {
     root.scrollTo({
       top: Math.max(0, element.offsetTop - headerHeight),
     });
-  }, [uiState.last_viewed.unit_id, units]);
+  }, [units]);
 
   /**
    * 유닛 DOM을 등록하는 ref 콜백을 생성합니다.
@@ -183,11 +188,13 @@ export const useLearnUnits = () => {
   );
 
   return {
-    field,
+    fieldName,
     units,
     activeUnit,
     scrollContainerRef,
     headerRef,
     registerUnitRef,
+    fieldSlug,
+    setFieldSlug,
   };
 };

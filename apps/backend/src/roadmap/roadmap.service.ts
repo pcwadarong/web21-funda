@@ -507,13 +507,43 @@ export class RoadmapService {
     if (!this.isPlainObject(value)) return undefined;
 
     const item = value as Record<string, unknown>;
-    const left = this.toStringArray(item.left);
-    const right = this.toStringArray(item.right);
+    const left = this.normalizeMatchingItems(item.left);
+    const right = this.normalizeMatchingItems(item.right);
 
     if (left.length > 0 && right.length > 0) {
       return { left, right };
     }
     return undefined;
+  }
+
+  /**
+   * 매칭 항목을 id/text 형태로 정규화한다.
+   * - 문자열 배열은 id/text를 동일하게 채운다.
+   * - 객체 배열은 id/text를 추출한다.
+   */
+  private normalizeMatchingItems(value: unknown): Array<{ id: string; text: string }> {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map(item => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          const text = String(item).trim();
+          if (!text) return null;
+          return { id: text, text };
+        }
+
+        if (this.isPlainObject(item)) {
+          const record = item as Record<string, unknown>;
+          const text = this.toCleanString(record.text);
+          const rawId = this.toCleanString(record.id ?? record.value ?? record.key);
+          const id = rawId ?? text;
+          if (!id || !text) return null;
+          return { id, text };
+        }
+
+        return null;
+      })
+      .filter((entry): entry is { id: string; text: string } => entry !== null);
   }
 
   /**

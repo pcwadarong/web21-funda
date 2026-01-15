@@ -127,7 +127,10 @@ describe('QuizRenderer', () => {
           type: 'matching',
           content: {
             question: 'Q',
-            matching_metadata: { left: ['L1'], right: ['R1'] },
+            matching_metadata: {
+              left: [{ id: 'l1', text: 'L1' }],
+              right: [{ id: 'r1', text: 'R1' }],
+            },
           },
         }}
         selectedAnswer={null}

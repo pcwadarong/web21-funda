@@ -5,7 +5,7 @@ import { RoadmapContainer } from '@/feat/roadmap/components/RoadmapContainer';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
 import { useStorage } from '@/hooks/useStorage';
 import { fieldService } from '@/services/fieldService';
-import { useAuthStore } from '@/store/authStore';
+import { useIsLoggedIn } from '@/store/authStore';
 
 /**
  * 로드맵 페이지
@@ -20,7 +20,7 @@ export const Roadmap = () => {
   const [field, setField] = useState<string>();
   const [units, setUnits] = useState<RoadmapUnit[]>([]);
 
-  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const isLoggedIn = useIsLoggedIn();
 
   useEffect(() => {
     const fetchFields = async () => {

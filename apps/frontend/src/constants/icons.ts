@@ -8,8 +8,11 @@ import Data from '@/assets/field-icons/data.svg?react';
 import Frontend from '@/assets/field-icons/frontend.svg?react';
 import Game from '@/assets/field-icons/game.svg?react';
 import Mobile from '@/assets/field-icons/mobile.svg?react';
+import Github from '@/assets/github.svg?react';
+import Google from '@/assets/google.svg?react';
 import Lock from '@/assets/lock.svg?react';
 import Logo from '@/assets/logo.svg?react';
+import Logout from '@/assets/logout.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
 import Report from '@/assets/Report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
@@ -38,8 +41,11 @@ export const IconMap = {
   Frontend,
   Game,
   Mobile,
+  Github,
+  Google,
   Lock,
   Logo,
+  Logout,
   NextArrow,
   Report,
   RoundStar,

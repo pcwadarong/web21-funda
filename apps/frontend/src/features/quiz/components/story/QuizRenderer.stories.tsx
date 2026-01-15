@@ -131,8 +131,8 @@ export const Matching: Story = {
       content: {
         question: '테스트 문제(Matching)',
         matching_metadata: {
-          left: ['div p'],
-          right: ['div의 모든 자손 p'],
+          left: [{ id: 'l1', text: 'div p' }],
+          right: [{ id: 'r1', text: 'div의 모든 자손 p' }],
         },
       },
     },

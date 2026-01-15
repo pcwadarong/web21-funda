@@ -43,10 +43,13 @@ export class FieldsController {
     description: '필드에 속한 유닛 목록만 반환한다.',
   })
   @ApiParam({ name: 'fieldSlug', description: '필드 슬러그', example: 'fe' })
+  @UseGuards(OptionalJwtAccessGuard)
   async getRoadmapByFieldSlug(
     @Param('fieldSlug') fieldSlug: string,
+    @Req() req: Request & { user?: JwtPayload },
   ): Promise<FieldRoadmapResponse> {
-    return this.roadmapService.getRoadmapByFieldSlug(fieldSlug);
+    const userId = req.user?.sub ?? null;
+    return this.roadmapService.getRoadmapByFieldSlug(fieldSlug, userId);
   }
 
   @Get(':fieldSlug/units/first')

@@ -89,10 +89,14 @@ export class RoadmapService {
    * @param fieldSlug 필드 슬러그
    * @returns 필드와 유닛 목록
    */
-  async getRoadmapByFieldSlug(fieldSlug: string): Promise<FieldRoadmapResponse> {
+  async getRoadmapByFieldSlug(
+    fieldSlug: string,
+    userId: number | null,
+  ): Promise<FieldRoadmapResponse> {
     const field = await this.fieldRepository
       .createQueryBuilder('field')
       .leftJoinAndSelect('field.units', 'unit')
+      .leftJoinAndSelect('unit.steps', 'step')
       .where('field.slug = :slug', { slug: fieldSlug })
       .orderBy('unit.orderIndex', 'ASC')
       .getOne();
@@ -101,17 +105,53 @@ export class RoadmapService {
       throw new NotFoundException('Field not found.');
     }
 
+    const units = field.units ?? [];
+
+    const calculatedUnits = await Promise.all(
+      units.map(async unit => {
+        const totalSteps = unit.steps?.length || 0;
+        const userSteps = await this.getUserStepsByUnit(unit.id, userId);
+        const completedSteps = userSteps.filter(step => step.isCompleted);
+        const progress = Math.round((completedSteps.length / (totalSteps + 2)) * 100) || 0; // +2는 체크포인트 고려 (DB에 없어서 +2를 추가)
+        const successRateArray = userSteps.map(step => step.successRate || 0);
+        const successRate =
+          Math.round(
+            successRateArray.reduce((acc, cur) => acc + cur, 0) / successRateArray.length,
+          ) || 0;
+
+        return {
+          id: unit.id,
+          title: unit.title,
+          orderIndex: unit.orderIndex,
+          progress,
+          successRate,
+        };
+      }),
+    );
+
     return {
       field: {
         name: field.name,
         slug: field.slug,
       },
-      units: (field.units ?? []).map(unit => ({
-        id: unit.id,
-        title: unit.title,
-        orderIndex: unit.orderIndex,
-      })),
+      units: calculatedUnits,
     };
+  }
+
+  private async getUserStepsByUnit(
+    unitId: number,
+    userId: number | null,
+  ): Promise<UserStepStatus[]> {
+    if (userId === null || userId === undefined) {
+      return [];
+    }
+
+    const userSteps = await this.stepStatusRepository.find({
+      where: { userId, step: { unit: { id: unitId } } },
+      relations: { step: true },
+    });
+
+    return userSteps;
   }
 
   /**
@@ -467,13 +507,43 @@ export class RoadmapService {
     if (!this.isPlainObject(value)) return undefined;
 
     const item = value as Record<string, unknown>;
-    const left = this.toStringArray(item.left);
-    const right = this.toStringArray(item.right);
+    const left = this.normalizeMatchingItems(item.left);
+    const right = this.normalizeMatchingItems(item.right);
 
     if (left.length > 0 && right.length > 0) {
       return { left, right };
     }
     return undefined;
+  }
+
+  /**
+   * 매칭 항목을 id/text 형태로 정규화한다.
+   * - 문자열 배열은 id/text를 동일하게 채운다.
+   * - 객체 배열은 id/text를 추출한다.
+   */
+  private normalizeMatchingItems(value: unknown): Array<{ id: string; text: string }> {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map(item => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          const text = String(item).trim();
+          if (!text) return null;
+          return { id: text, text };
+        }
+
+        if (this.isPlainObject(item)) {
+          const record = item as Record<string, unknown>;
+          const text = this.toCleanString(record.text);
+          const rawId = this.toCleanString(record.id ?? record.value ?? record.key);
+          const id = rawId ?? text;
+          if (!id || !text) return null;
+          return { id, text };
+        }
+
+        return null;
+      })
+      .filter((entry): entry is { id: string; text: string } => entry !== null);
   }
 
   /**

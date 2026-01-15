@@ -21,6 +21,9 @@ export const RoadmapContainer = ({
 }: RoadmapContainerProps) => {
   const theme = useTheme();
 
+  const completedUnits = units.filter(unit => unit.progress === 100).length;
+  const progressPercent = Math.round((completedUnits / units.length) * 100);
+
   return (
     <div css={containerStyle}>
       <main css={mainStyle(theme)}>
@@ -36,6 +39,14 @@ export const RoadmapContainer = ({
               <span css={heroLabelStyle(theme)}>{fieldName} 로드맵</span>
               <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
             </div>
+            {isLoggedIn && (
+              <div css={progressSummaryStyle(theme)}>
+                <span css={progressValueStyle(theme)}>{progressPercent}%</span>
+                <span css={progressMetaStyle(theme)}>
+                  {completedUnits}/{units.length} 완료
+                </span>
+              </div>
+            )}
           </div>
         </section>
         <section css={gridStyle}>
@@ -63,8 +74,10 @@ const containerStyle = css`
 const mainStyle = (theme: Theme) => css`
   position: relative;
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 24px;
-  overflow-y: auto;
+  overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
 
@@ -89,7 +102,7 @@ const heroStyle = css`
   display: flex;
   flex-direction: column;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 10px;
 `;
 
 const heroTopStyle = css`
@@ -132,12 +145,42 @@ const heroHeadingStyle = (theme: Theme) => css`
   color: ${theme.colors.grayscale[600]};
 `;
 
+const progressSummaryStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: ${theme.colors.text.strong};
+`;
+
+const progressValueStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['24Bold'].fontSize};
+  line-height: ${theme.typography['24Bold'].lineHeight};
+  font-weight: ${theme.typography['24Bold'].fontWeight};
+  color: ${theme.colors.primary.main};
+`;
+
+const progressMetaStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Medium'].fontSize};
+  line-height: ${theme.typography['12Medium'].lineHeight};
+  font-weight: ${theme.typography['12Medium'].fontWeight};
+  color: ${theme.colors.text.weak};
+`;
+
 const gridStyle = css`
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
+  padding: 20px 0;
+
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, minmax(240px, 1fr));

@@ -68,15 +68,10 @@ export class ProgressService {
     const { userId, stepId, stepAttemptId } = params;
 
     const step = await this.stepRepository.findOne({ where: { id: stepId } });
-    if (!step) {
-      throw new NotFoundException('스텝 정보를 찾을 수 없습니다.');
-    }
+    if (!step) throw new NotFoundException('스텝 정보를 찾을 수 없습니다.');
 
     const attempt = await this.findTargetStepAttempt({ userId, stepId, stepAttemptId });
-
-    if (!attempt) {
-      throw new BadRequestException('진행 중인 스텝 시도를 찾을 수 없습니다.');
-    }
+    if (!attempt) throw new BadRequestException('진행 중인 스텝 시도를 찾을 수 없습니다.');
 
     const targetStepAttemptId = attempt.id;
     const solveLogs = await this.solveLogRepository.find({
@@ -125,6 +120,14 @@ export class ProgressService {
       await this.stepStatusRepository.save(newStatus);
     }
 
+    const gainedExperience = scoreResult.score;
+    if (gainedExperience > 0) {
+      // 스텝 완료 시 획득한 점수를 경험치로 누적한다.
+      await this.userRepository.increment({ id: userId }, 'experience', gainedExperience);
+    }
+
+    const { isFirstSolveToday, currentStreak } = await this.handleUserStreak(params.userId);
+
     return {
       score: scoreResult.score,
       experience: scoreResult.score,
@@ -133,8 +136,8 @@ export class ProgressService {
       answeredQuizzes: solveLogs.length,
       successRate,
       durationSeconds,
-      // TODO: 오늘의 첫풀이여부 부탁드립니다
-      firstSolve: false,
+      isFirstSolveToday,
+      currentStreak,
     };
   }
 
@@ -266,6 +269,50 @@ export class ProgressService {
 
     return { syncedCount };
   }
+
+  /**
+   * 유저의 스트릭을 관리하고 오늘의 첫 풀이 여부를 확인한다.
+   */
+  private async handleUserStreak(
+    userId: number,
+  ): Promise<{ isFirstSolveToday: boolean; currentStreak: number }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+    const now = new Date();
+
+    // 날짜 비교를 위한 헬퍼 (서버 타임존 기준 YYYY-MM-DD)
+    const formatDate = (d: Date): string => d.toISOString().split('T')[0]!;
+
+    const todayStr: string = formatDate(now);
+    const lastUpdateStr: string | null = user.lastStreakUpdatedAt
+      ? formatDate(user.lastStreakUpdatedAt)
+      : null;
+
+    // 오늘 이미 풀었다면 스트릭 갱신 없이 종료
+    if (lastUpdateStr === todayStr)
+      return { isFirstSolveToday: false, currentStreak: user.currentStreak };
+
+    // 날짜 차이 계산
+    let nextStreak = 1;
+    if (lastUpdateStr) {
+      const lastDate = new Date(lastUpdateStr);
+      const todayDate = new Date(todayStr);
+
+      // 밀리세컨드 차이를 일 단위로 변환
+      const diffTime = todayDate.getTime() - lastDate.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) nextStreak = user.currentStreak + 1;
+      else nextStreak = 1;
+    }
+
+    user.currentStreak = nextStreak;
+    user.lastStreakUpdatedAt = now;
+    await this.userRepository.save(user);
+
+    return { isFirstSolveToday: true, currentStreak: nextStreak };
+  }
 }
 
 export interface ScoreCalculationOptions {
@@ -302,5 +349,6 @@ export interface CompleteStepAttemptResult {
   answeredQuizzes: number;
   successRate: number;
   durationSeconds: number;
-  firstSolve: boolean;
+  isFirstSolveToday: boolean;
+  currentStreak: number;
 }

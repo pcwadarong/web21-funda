@@ -1,22 +1,24 @@
 import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { PointEffect } from '@/feat/quiz/components/PointEffect';
 import { QuizResultContent } from '@/feat/quiz/components/QuizResultContent';
+import { Streak } from '@/feat/quiz/components/Streak';
 import { formatDuration } from '@/feat/quiz/utils/formatDuration';
 import { useStorage } from '@/hooks/useStorage';
 import { useIsLoggedIn } from '@/store/authStore';
 
 type QuizResultState = {
-  score?: number;
-  experience?: number;
-  correctCount?: number;
-  totalQuizzes?: number | null;
   answeredQuizzes?: number;
-  successRate?: number;
+  correctCount?: number;
+  currentStreak: number;
   durationSeconds?: number;
-  firstSolve?: boolean;
+  experience?: number;
+  isFirstSolveToday: boolean;
+  score?: number;
+  totalQuizzes?: number | null;
+  successRate?: number;
   xpGained?: number;
   durationMs?: number;
   guestStepId?: number;
@@ -24,15 +26,13 @@ type QuizResultState = {
 
 export const QuizResult = () => {
   const location = useLocation();
-  const [showPointEffect, setShowPointEffect] = useState(true);
+  const navigate = useNavigate();
   const isLogin = useIsLoggedIn();
-  const [isFirstToday] = useState(true); // TODO: 실제 오늘 첫 문제 여부로 대체
-  const { removeGuestStepAttempt } = useStorage();
+  const { removeGuestStepAttempt, uiState, updateUIState } = useStorage();
 
-  // Quiz.tsx에서 전달된 result 데이터
+  // 데이터 초기화 및 가공
   const response = (location.state as QuizResultState | null) ?? null;
   const guestStepId = response?.guestStepId;
-
   const xpValue = response?.experience ?? response?.xpGained;
   const durationMs =
     response?.durationMs ??
@@ -40,47 +40,91 @@ export const QuizResult = () => {
   const hasXP = typeof xpValue === 'number' && xpValue > 0;
 
   const resultData = {
+    isFirstSolveToday: response?.isFirstSolveToday ?? false, // 오늘 첫 풀이 여부
+    currentStreak: response?.currentStreak ?? 1, // 현재 스트릭
     xpGained: response?.xpGained ?? null,
     experience: response?.experience ?? null,
     successRate: response?.successRate ?? null,
     durationMs: formatDuration(durationMs),
   };
 
-  const firstSolve = response?.firstSolve ?? isFirstToday;
+  const [showPointEffect, setShowPointEffect] = useState(true); // 경험치 획득 연출 여부
+  const [showStreakAnimation, setShowStreakAnimation] = useState(false); // 스트릭 애니메이션 여부
+  const [isExiting, setIsExiting] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
 
+  // 비로그인 사용자의 임시 저장 데이터 삭제
   useEffect(() => {
-    if (guestStepId === undefined) {
-      return;
-    }
-
-    removeGuestStepAttempt(guestStepId);
+    if (guestStepId !== undefined) removeGuestStepAttempt(guestStepId);
   }, [guestStepId, removeGuestStepAttempt]);
 
+  // 경험치 연출(PointEffect)을 3초 동안 보여준 후 종료
   useEffect(() => {
-    if (!hasXP) {
-      setShowPointEffect(false);
+    if (!hasXP) setShowPointEffect(false);
+    else {
+      const timer = setTimeout(() => setShowPointEffect(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasXP]);
+
+  // 스트릭 애니메이션 종료 후 이동 처리
+  useEffect(() => {
+    if (!showStreakAnimation || !pendingPath) return;
+
+    // 1. 스트릭 화면을 충분히 보여줌 (3초)
+    const displayTimer = setTimeout(() => {
+      setIsExiting(true);
+    }, 3000);
+
+    // 2. exit 애니메이션(0.8초)이 끝난 직후 실제 페이지 이동
+    const navigateTimer = setTimeout(() => {
+      navigate(pendingPath);
+    }, 3850);
+
+    return () => {
+      clearTimeout(displayTimer);
+      clearTimeout(navigateTimer);
+    };
+  }, [showStreakAnimation, pendingPath, navigate]);
+
+  /**
+   * 네비게이션 통합 핸들러
+   * - 비로그인: 로그인 체크 페이지로
+   * - 오늘 첫 풀이: 스트릭 애니메이션 재생 후 이동
+   * - 일반 완료: 즉시 다음 퀴즈 단계로 이동
+   */
+  const handleNavigation = (targetPath: string, shouldUpdateStep: boolean = false) => {
+    if (!isLogin) {
+      navigate('/auth/check', { state: { from: targetPath } });
       return;
     }
 
-    const timer = setTimeout(() => {
-      setShowPointEffect(false);
-    }, 2000);
+    if (shouldUpdateStep) updateUIState({ current_quiz_step_id: uiState.current_quiz_step_id + 1 });
 
-    return () => clearTimeout(timer);
-  }, [hasXP]);
+    if (resultData.isFirstSolveToday) {
+      setPendingPath(targetPath);
+      setShowStreakAnimation(true);
+    } else navigate(targetPath);
+  };
 
+  // 렌더링 조건부 처리 (순서: 경험치 -> 스트릭 -> 결과창)
   return (
     <AnimatePresence mode="wait">
+      {/* 1순위: 경험치 획득 연출 */}
       {showPointEffect && hasXP ? (
         <PointEffect key="point-effect" points={xpValue!} />
-      ) : (
+      ) : /* 2순위: 스트릭 연출 (오늘 첫 풀이) */
+      showStreakAnimation && !isExiting ? (
+        <Streak key="streak-animation" currentStreak={resultData.currentStreak} />
+      ) : !showStreakAnimation ? (
+        /* 3순위: 최종 결과 리포트 컨텐츠 */
         <QuizResultContent
           key="result-content"
           resultData={resultData}
-          isLogin={isLogin}
-          isFirstToday={firstSolve}
+          onNextNavigation={() => handleNavigation('/quiz', true)}
+          onMainNavigation={() => handleNavigation('/learn')}
         />
-      )}
+      ) : null}
     </AnimatePresence>
   );
 };

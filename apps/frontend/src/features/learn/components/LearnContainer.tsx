@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import type { stepType, UnitType } from '@/feat/learn/types';
+import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
@@ -29,12 +30,12 @@ export const LearnContainer = ({
   onStepHover,
 }: LearnContainerProps) => {
   const theme = useTheme();
-
+  const { isDarkMode } = useThemeStore();
   return (
     <div css={mainStyle}>
       <div css={centerSectionStyle} ref={scrollContainerRef}>
         {activeUnit && (
-          <div css={stickyHeaderWrapperStyle(theme)} ref={headerRef}>
+          <div css={stickyHeaderWrapperStyle} ref={headerRef}>
             <div css={[headerSectionStyle(), stickyHeaderStyle(theme)]}>
               <div css={headerContentStyle}>
                 <Link to="/learn/roadmap">
@@ -97,7 +98,7 @@ export const LearnContainer = ({
                           onPointerEnter={() => onStepHover?.(Number(step.id))} // prefetch 를 위해
                           css={[
                             lessonItemStyle(theme),
-                            step.isCompleted && completedLessonStyle(theme),
+                            step.isCompleted && completedLessonStyle(theme, isDarkMode),
                             step.isLocked && step.isCheckpoint && lockedLessonStyle(theme),
                             !step.isCompleted && !step.isLocked && activeLessonStyle(theme),
                           ]}
@@ -171,19 +172,13 @@ const sectionBlockStyle = css`
   gap: 16px;
 `;
 
-const stickyHeaderWrapperStyle = (theme: Theme) => css`
+const stickyHeaderWrapperStyle = css`
   position: sticky;
   top: 0;
   z-index: 3;
   width: 100%;
   display: flex;
   justify-content: center;
-  background: linear-gradient(
-    180deg,
-    ${theme.colors.surface.default} 0%,
-    ${theme.colors.surface.default} 70%,
-    transparent 100%
-  );
 `;
 
 const stickyHeaderStyle = (theme: Theme) => css`
@@ -296,6 +291,7 @@ const lessonItemStyle = (theme: Theme) => css`
   justify-content: center;
   padding: 20px;
   background: ${theme.colors.surface.strong};
+
   border-radius: 30px;
   transition: all 150ms ease;
   text-align: center;
@@ -312,8 +308,8 @@ const lessonItemStyle = (theme: Theme) => css`
   }
 `;
 
-const completedLessonStyle = (theme: Theme) => css`
-  background: ${theme.colors.primary.surface};
+const completedLessonStyle = (theme: Theme, isDarkMode: boolean) => css`
+  background: ${isDarkMode ? '#b4b5ff' : theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
   color: ${theme.colors.primary.main};
   box-shadow: 0 8px 0 ${theme.colors.primary.main};

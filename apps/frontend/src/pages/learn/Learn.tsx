@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { stepType } from '@/feat/learn/types';
-import type { QuizQuestion } from '@/feat/quiz/types';
 import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
+import { quizService } from '@/services/quizService';
 import { useToast } from '@/store/toastStore';
 import { shuffleArray } from '@/utils/shuffleArray';
 
@@ -23,7 +23,7 @@ export const Learn = () => {
 
   const prefetchedStepsRef = useRef<number[]>([]);
   const MAX_PREFETCH = 3;
-  const handleStepHover = (stepId: number) => {
+  const handleStepHover = async (stepId: number) => {
     // 이미 프리페치된 경우 스킵
     if (prefetchedStepsRef.current.includes(stepId)) {
       return;
@@ -38,23 +38,22 @@ export const Learn = () => {
     // 새로운 stepId 추가
     prefetchedStepsRef.current.push(stepId);
     // 데이터 프리페치
-    fetch(`/api/steps/${stepId}/quizzes`)
-      .then(res => res.json())
-      .then(async (data: QuizQuestion[]) => {
-        // 데이터 셔플링
-        const shuffledQuizzes = await shuffleArray(data);
-        // 옵션 셔플링
-        const finalQuizzes = await shuffleQuizOptions(shuffledQuizzes);
+    try {
+      const data = await quizService.getQuizzesByStep(stepId);
+      const shuffledQuizzes = await shuffleArray(data);
+      const finalQuizzes = await shuffleQuizOptions(shuffledQuizzes);
 
-        const processedData = {
-          quizzes: finalQuizzes,
-          selectedAnswers: new Array(finalQuizzes.length).fill(null),
-          questionStatuses: new Array(finalQuizzes.length).fill('idle'),
-          quizSolutions: new Array(finalQuizzes.length).fill(null),
-        };
+      const processedData = {
+        quizzes: finalQuizzes,
+        selectedAnswers: new Array(finalQuizzes.length).fill(null),
+        questionStatuses: new Array(finalQuizzes.length).fill('idle'),
+        quizSolutions: new Array(finalQuizzes.length).fill(null),
+      };
 
-        sessionStorage.setItem(`processed_quizzes_${stepId}`, JSON.stringify(processedData));
-      });
+      sessionStorage.setItem(`processed_quizzes_${stepId}`, JSON.stringify(processedData));
+    } catch (_error) {
+      prefetchedStepsRef.current = prefetchedStepsRef.current.filter(id => id !== stepId);
+    }
   };
 
   const handleStepClick = useCallback(
@@ -69,6 +68,12 @@ export const Learn = () => {
 
       // 제작 중 스텝은 토스트 메시지 출력
       if (isInProgressStep) {
+        showInProgressToast();
+        return;
+      }
+
+      // 중간 점검 클릭시 제작중입니다 토스트 메시지 출력 (임시)
+      if (step.isCheckpoint) {
         showInProgressToast();
         return;
       }

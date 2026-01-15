@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
@@ -7,6 +7,7 @@ import SVGIcon from '@/comp/SVGIcon';
 import { useStorage } from '@/hooks/useStorage';
 import { type Field, fieldService } from '@/services/fieldService';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 // TODO: 오늘의 목표 추가
@@ -25,6 +26,12 @@ export const LearnRightSidebar = () => {
 
   const navigate = useNavigate();
   const [fields, setFields] = useState<Field[]>([]);
+
+  const { showToast } = useToast();
+
+  const showInProgressToast = useCallback(() => {
+    showToast('제작 중입니다');
+  }, []);
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -134,7 +141,10 @@ export const LearnRightSidebar = () => {
         {isLoggedIn && user ? (
           //TODO: 복습 시스템 구현
           // <button css={reviewBadgeStyle(theme)}>{user.wrongAnswers}개 문제 복습 필요</button>
-          <button css={reviewBadgeStyle(theme)}>5개 문제 복습 필요</button>
+          // 임시 토스트 메시지 출력
+          <button css={reviewBadgeStyle(theme)} onClick={() => showInProgressToast()}>
+            5개 문제 복습 필요
+          </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>
             <div css={reviewBadgeStyle(theme)}>로그인 후 문제를 복습해보세요!</div>
@@ -223,6 +233,12 @@ const statIconStyle = css`
 
 const rightSidebarLinkStyle = css`
   text-decoration: none;
+  color: inherit;
+
+  &:visited,
+  &:active {
+    color: inherit;
+  }
 `;
 
 const statValueStyle = (theme: Theme) => css`

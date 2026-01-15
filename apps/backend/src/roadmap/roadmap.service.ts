@@ -53,6 +53,7 @@ export class RoadmapService {
         slug: field.slug,
         name: field.name,
         description: field.description ?? null,
+        icon: this.getFieldIconBySlug(field.slug),
       })),
     };
   }
@@ -264,6 +265,40 @@ export class RoadmapService {
       .getRawMany<{ stepId: number; quizCount: string }>(); // 엔티티가 아닌 raw row 반환
 
     return new Map(quizCounts.map(row => [Number(row.stepId), Number(row.quizCount)]));
+  }
+
+  /**
+   * 필드 슬러그에 따른 아이콘 식별자를 반환한다.
+   * @param slug 필드 슬러그
+   * @returns 아이콘 식별자
+   */
+  private getFieldIconBySlug(slug: string): string {
+    if (slug === 'fe') {
+      return 'Frontend';
+    }
+    if (slug === 'be') {
+      return 'Backend';
+    }
+    if (slug === 'mo') {
+      return 'Mobile';
+    }
+    if (slug === 'cs') {
+      return 'ComputerScience';
+    }
+    if (slug === 'algo') {
+      return 'Algorithm';
+    }
+    if (slug === 'game') {
+      return 'Game';
+    }
+    if (slug === 'da') {
+      return 'Data';
+    }
+    if (slug === 'devops') {
+      return 'Cloud';
+    }
+
+    return 'Unknown';
   }
 
   /**

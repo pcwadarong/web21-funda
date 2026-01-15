@@ -96,8 +96,8 @@ describe('RoadmapService', () => {
 
     expect(result).toEqual({
       fields: [
-        { slug: 'fe', name: 'Frontend', description: '프론트엔드' },
-        { slug: 'be', name: 'Backend', description: null },
+        { slug: 'fe', name: 'Frontend', description: '프론트엔드', icon: 'Frontend' },
+        { slug: 'be', name: 'Backend', description: null, icon: 'Backend' },
       ],
     });
   });

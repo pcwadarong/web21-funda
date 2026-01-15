@@ -74,8 +74,10 @@ const containerStyle = css`
 const mainStyle = (theme: Theme) => css`
   position: relative;
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 24px;
-  overflow-y: auto;
+  overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
 
@@ -100,7 +102,7 @@ const heroStyle = css`
   display: flex;
   flex-direction: column;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 10px;
 `;
 
 const heroTopStyle = css`
@@ -170,6 +172,15 @@ const gridStyle = css`
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
+  padding: 20px 0;
+
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, minmax(240px, 1fr));

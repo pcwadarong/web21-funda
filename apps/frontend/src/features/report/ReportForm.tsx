@@ -62,7 +62,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
         report_description,
       });
 
-      if (response.isSuccess) {
+      if (response?.id) {
         showReportSuccessToast();
         setSelectedOption([]);
         setOtherText('');

@@ -1,145 +1,241 @@
-import { css, useTheme } from '@emotion/react';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { css } from '@emotion/react';
+import { motion, type Variants } from 'framer-motion';
 
-import { Button } from '@/comp/Button';
+import SVGIcon from '@/comp/SVGIcon';
+import { getSortedWeekdays } from '@/feat/quiz/utils/getSortedWeekDays';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 
-// TODO: 실제 날짜에 맞춰서 정렬되도록 수정
-const streakData = {
-  days: 3,
-  completedDays: ['We', 'Th', 'Fr'],
-  allDays: ['We', 'Th', 'Fr', 'Sa', 'Su', 'Mo', 'Tu'],
-};
+import { AnimatedFireIcon } from './AnimatedFireIcon';
 
 interface StreakProps {
   currentStreak?: number;
 }
 
 export const Streak = ({ currentStreak = 1 }: StreakProps) => {
-  const theme = useTheme();
-  const navigate = useNavigate();
+  // 요일 정렬
+  const allDays = getSortedWeekdays(currentStreak);
 
-  const handleNavigate = useCallback(() => {
-    navigate('/learn');
-  }, [navigate]);
+  // 체크 표시를 할 개수
+  const completedCount = currentStreak <= 7 ? currentStreak : 7;
+
+  // 공통 Exit 설정 (디졸브 효과의 핵심)
+  const commonExitTransition = { duration: 0.8, ease: 'easeInOut' } as const;
+
+  // ---------------------------------------------------------
+  // Framer Motion Variants (애니메이션 설정)
+  // ---------------------------------------------------------
+  // 배경 글로우 라인 애니메이션
+  const lineVariants: Variants = {
+    hidden: { opacity: 0, scaleY: 0, width: '2px', filter: 'blur(2px)' },
+    visible: {
+      opacity: [0, 1, 1],
+      scaleY: [0, 1.2, 1.2],
+      width: ['2px', '10px', '80vw'],
+      background: 'radial-gradient(#5A2C25 0%, #000 70%)',
+      filter: ['blur(2px)', 'blur(8px)', 'blur(60px)'],
+      transition: { duration: 0.9, times: [0, 0.3, 1], ease: 'easeInOut' },
+    },
+    exit: { opacity: 0, transition: commonExitTransition },
+  };
+
+  // 전체 콘텐츠를 감싸는 Variant
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+    exit: { opacity: 0, transition: commonExitTransition },
+  };
+
+  // 메인 숫자(스트릭) 등장 애니메이션
+  const streakVariants: Variants = {
+    hidden: { opacity: 0, scale: 0.5 },
+    visible: {
+      opacity: 1,
+      scale: [0.9, 1.2, 1],
+      transition: { duration: 0.6, delay: 0.8, ease: 'easeOut' },
+    },
+  };
+
+  // 하단 서브텍스트 등장 애니메이션
+  const subtextVariants: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { delay: 1.1, duration: 0.5 },
+    },
+  };
 
   return (
     <div css={containerStyle}>
-      <div css={contentStyle}>
-        <div css={flameContainerStyle}>
-          <span css={flameStyle}>🔥</span>
-        </div>
-        <h1 css={titleStyle(theme)}>{currentStreak}일 연속 학습</h1>
-        <div css={daysContainerStyle}>
-          {streakData.allDays.map(day => {
-            const isCompleted = streakData.completedDays.includes(day);
-            return (
-              <div key={day} css={dayContainerStyle}>
-                <span css={dayLabelStyle(theme)}>{day}</span>
-                <div css={dayCircleStyle(theme, isCompleted)}>
-                  {isCompleted && <span css={checkmarkStyle}>✓</span>}
+      {/* 1. 배경 글로우 라인 - 소멸 시 opacity 0 처리 */}
+      <motion.div
+        css={glowLineStyle}
+        variants={lineVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      />
+
+      {/* 2. 전체 콘텐츠 래퍼 - AnimatePresence와 연동되어 디졸브(Fade out) 효과 발생 */}
+      <motion.div
+        css={contentWrapperStyle}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      >
+        <AnimatedFireIcon />
+
+        <h1 css={titleWrapperStyle}>
+          <motion.p
+            css={currentStreakStyle}
+            variants={streakVariants}
+            initial="hidden"
+            animate="visible"
+            style={{ transformOrigin: 'bottom center' }}
+          >
+            {currentStreak}
+          </motion.p>
+          <motion.p
+            css={titleSubtextStyle}
+            variants={subtextVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            연속 학습!
+          </motion.p>
+        </h1>
+
+        <div css={daysContainerWrapperStyle}>
+          <div css={daysContainerStyle}>
+            {allDays.map((day, index) => {
+              const isCompleted = index < completedCount;
+              return (
+                <div key={`${day}-${index}`} css={dayContainerStyle}>
+                  <span css={dayLabelStyle}>{day}</span>
+                  <div css={dayCircleStyle(isCompleted)}>
+                    {isCompleted && <SVGIcon icon="Check" aria-hidden="true" size="md" />}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          <p css={encouragementStyle}>
+            하루 학습을 빠지면 연속 학습 기록이 초기화 돼요.
+            <br />
+            계속 학습해서 {currentStreak + 1}일차로 이어가세요!
+          </p>
         </div>
-        <p css={encouragementStyle(theme)}>계속 학습해서 {currentStreak + 1}일차로 이어가세요!</p>
-        <Button variant="secondary" onClick={handleNavigate} fullWidth css={buttonStyle()}>
-          클릭하여 넘어가기
-        </Button>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
 const containerStyle = css`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-`;
-
-const contentStyle = css`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  max-width: 600px;
-  width: 100%;
+  justify-content: center;
+  min-height: 100vh;
+  background: #000;
+  overflow: hidden;
 `;
 
-const flameContainerStyle = css`
+const glowLineStyle = css`
+  position: absolute;
+  width: 80vw;
+  height: 90vh;
+  z-index: 1;
+`;
+
+const contentWrapperStyle = css`
+  position: relative;
+  z-index: 2;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const titleWrapperStyle = css`
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-bottom: 2rem;
 `;
 
-const flameStyle = css`
-  font-size: 120px;
-  filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.5));
-`;
-
-const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['32Bold'].fontSize};
-  line-height: ${theme.typography['32Bold'].lineHeight};
-  font-weight: ${theme.typography['32Bold'].fontWeight};
-  color: ${theme.colors.success.main};
+const currentStreakStyle = css`
+  font-size: 9rem;
+  font-weight: 700;
+  background: linear-gradient(to bottom, #f9e0ce 40%, rgb(252, 154, 122) 70%, rgb(164, 255, 192));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px #ffa35d);
   margin: 0;
+  display: inline-block;
+`;
+
+const titleSubtextStyle = css`
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 0;
+  margin: 0.5rem 0 2rem;
+  color: ${palette.grayscale[300]};
+`;
+
+const daysContainerWrapperStyle = (theme: Theme) => css`
+  padding: 0.5rem 1rem;
+  background: #00000043;
+  border-radius: ${theme.borderRadius.large};
 `;
 
 const daysContainerStyle = css`
   display: flex;
   gap: 20px;
   margin: 16px 0 0 0;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
 `;
 
-const dayContainerStyle = css`
+const dayContainerStyle = (theme: Theme) => css`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin: 16px 0;
+  font-size: ${theme.typography['16Bold'].fontSize};
+  line-height: ${theme.typography['16Bold'].lineHeight};
+  font-weight: ${theme.typography['16Bold'].fontWeight};
 `;
 
-const dayCircleStyle = (theme: Theme, isCompleted: boolean) => css`
+const dayCircleStyle = (isCompleted: boolean) => css`
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: ${isCompleted ? theme.colors.success.main : palette.grayscale[400]};
+  background-color: ${isCompleted ? '#FFA35D' : '#00000066'};
+  color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
+  box-shadow: ${isCompleted ? '0 0 12px rgba(255, 163, 93, 0.5)' : 'none'};
 `;
 
-const checkmarkStyle = css`
-  color: white;
-  font-size: 30px;
-  font-weight: bold;
+const dayLabelStyle = css`
+  color: #8e8e8e;
 `;
 
-const dayLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['24Bold'].fontSize};
-  line-height: ${theme.typography['24Bold'].lineHeight};
-  font-weight: ${theme.typography['24Bold'].fontWeight};
-  color: ${theme.colors.text.default};
-`;
-
-const encouragementStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
-  font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${theme.colors.text.light};
-  margin: 0;
+const encouragementStyle = css`
+  color: ${palette.grayscale[300]};
   text-align: center;
-`;
-
-const buttonStyle = () => css`
-  margin-top: 1rem;
-  width: 25rem;
+  border-top: 1px solid ${palette.grayscale[700]};
+  padding-top: 1rem;
 `;

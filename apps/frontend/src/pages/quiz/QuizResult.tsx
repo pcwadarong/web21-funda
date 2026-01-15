@@ -50,6 +50,7 @@ export const QuizResult = () => {
 
   const [showPointEffect, setShowPointEffect] = useState(true); // 경험치 획득 연출 여부
   const [showStreakAnimation, setShowStreakAnimation] = useState(false); // 스트릭 애니메이션 여부
+  const [isExiting, setIsExiting] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   // 비로그인 사용자의 임시 저장 데이터 삭제
@@ -57,11 +58,11 @@ export const QuizResult = () => {
     if (guestStepId !== undefined) removeGuestStepAttempt(guestStepId);
   }, [guestStepId, removeGuestStepAttempt]);
 
-  // 경험치 연출(PointEffect)을 2초 동안 보여준 후 종료
+  // 경험치 연출(PointEffect)을 3초 동안 보여준 후 종료
   useEffect(() => {
     if (!hasXP) setShowPointEffect(false);
     else {
-      const timer = setTimeout(() => setShowPointEffect(false), 2000);
+      const timer = setTimeout(() => setShowPointEffect(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [hasXP]);
@@ -70,13 +71,20 @@ export const QuizResult = () => {
   useEffect(() => {
     if (!showStreakAnimation || !pendingPath) return;
 
-    const timer = setTimeout(() => {
-      navigate(pendingPath);
-      setShowStreakAnimation(false);
-      setPendingPath(null);
-    }, 2000);
+    // 1. 스트릭 화면을 충분히 보여줌 (3초)
+    const displayTimer = setTimeout(() => {
+      setIsExiting(true);
+    }, 3000);
 
-    return () => clearTimeout(timer);
+    // 2. exit 애니메이션(0.8초)이 끝난 직후 실제 페이지 이동
+    const navigateTimer = setTimeout(() => {
+      navigate(pendingPath);
+    }, 3850);
+
+    return () => {
+      clearTimeout(displayTimer);
+      clearTimeout(navigateTimer);
+    };
   }, [showStreakAnimation, pendingPath, navigate]);
 
   /**
@@ -106,9 +114,9 @@ export const QuizResult = () => {
       {showPointEffect && hasXP ? (
         <PointEffect key="point-effect" points={xpValue!} />
       ) : /* 2순위: 스트릭 연출 (오늘 첫 풀이) */
-      showStreakAnimation ? (
+      showStreakAnimation && !isExiting ? (
         <Streak key="streak-animation" currentStreak={resultData.currentStreak} />
-      ) : (
+      ) : !showStreakAnimation ? (
         /* 3순위: 최종 결과 리포트 컨텐츠 */
         <QuizResultContent
           key="result-content"
@@ -116,7 +124,7 @@ export const QuizResult = () => {
           onNextNavigation={() => handleNavigation('/quiz', true)}
           onMainNavigation={() => handleNavigation('/learn')}
         />
-      )}
+      ) : null}
     </AnimatePresence>
   );
 };

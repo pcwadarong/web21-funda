@@ -18,7 +18,6 @@ import Report from '@/assets/report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
-import Fire from '@/assets/sidebar-icons/fire.svg?react';
 import Heart from '@/assets/sidebar-icons/heart.svg?react';
 import Learn from '@/assets/sidebar-icons/learn.svg?react';
 import Profile from '@/assets/sidebar-icons/profile.svg?react';
@@ -51,7 +50,6 @@ export const IconMap = {
   RoundStar,
   Book,
   Diamond,
-  Fire,
   Heart,
   Learn,
   Profile,

@@ -13,7 +13,11 @@ const streakData = {
   allDays: ['We', 'Th', 'Fr', 'Sa', 'Su', 'Mo', 'Tu'],
 };
 
-export const Streak = ({ currentStreak }: { currentStreak: number }) => {
+interface StreakProps {
+  currentStreak?: number;
+}
+
+export const Streak = ({ currentStreak = 1 }: StreakProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
 
@@ -27,7 +31,7 @@ export const Streak = ({ currentStreak }: { currentStreak: number }) => {
         <div css={flameContainerStyle}>
           <span css={flameStyle}>🔥</span>
         </div>
-        <h1 css={titleStyle(theme)}>{streakData.days}일 연속 학습</h1>
+        <h1 css={titleStyle(theme)}>{currentStreak}일 연속 학습</h1>
         <div css={daysContainerStyle}>
           {streakData.allDays.map(day => {
             const isCompleted = streakData.completedDays.includes(day);
@@ -41,7 +45,7 @@ export const Streak = ({ currentStreak }: { currentStreak: number }) => {
             );
           })}
         </div>
-        <p css={encouragementStyle(theme)}>계속 학습해서 {streakData.days + 1}일차로 이어가세요!</p>
+        <p css={encouragementStyle(theme)}>계속 학습해서 {currentStreak + 1}일차로 이어가세요!</p>
         <Button variant="secondary" onClick={handleNavigate} fullWidth css={buttonStyle()}>
           클릭하여 넘어가기
         </Button>

@@ -107,18 +107,18 @@ describe('RoadmapService', () => {
       name: 'Frontend',
       slug: 'fe',
       units: [
-        { id: 2, title: 'JS', orderIndex: 2 },
-        { id: 1, title: 'HTML', orderIndex: 1 },
+        { id: 2, title: 'JS', orderIndex: 2, steps: [{ id: 3 }, { id: 4 }] },
+        { id: 1, title: 'HTML', orderIndex: 1, steps: [{ id: 1 }, { id: 2 }] },
       ],
     } as Field);
 
-    const result = await service.getRoadmapByFieldSlug('fe');
+    const result = await service.getRoadmapByFieldSlug('fe', null);
 
     expect(result).toEqual({
       field: { name: 'Frontend', slug: 'fe' },
       units: [
-        { id: 2, title: 'JS', orderIndex: 2 },
-        { id: 1, title: 'HTML', orderIndex: 1 },
+        { id: 2, title: 'JS', orderIndex: 2, progress: 0, successRate: 0 },
+        { id: 1, title: 'HTML', orderIndex: 1, progress: 0, successRate: 0 },
       ],
     });
     expect(roadmapQueryBuilderMock.orderBy).toHaveBeenCalledWith('unit.orderIndex', 'ASC');

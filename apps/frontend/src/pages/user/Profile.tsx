@@ -1,4 +1,5 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
+
 import { useAuthUser } from '@/store/authStore';
 
 export const Profile = () => {

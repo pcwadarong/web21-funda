@@ -14,7 +14,7 @@ interface QuizRendererProps {
   question: QuizQuestion;
   selectedAnswer: AnswerType | null;
   correctAnswer: CorrectAnswerType | null;
-  onAnswerChange: (answer: any) => void;
+  onAnswerChange: (answer: AnswerType) => void;
   showResult: boolean;
   disabled: boolean;
 }

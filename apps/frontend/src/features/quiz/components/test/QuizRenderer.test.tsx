@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
+import type { QuizQuestion } from '@/feat/quiz/types';
 import { lightTheme } from '@/styles/theme';
 
 vi.mock('@/feat/quiz/components/quizType/QuizMCQ', () => ({
@@ -143,10 +144,16 @@ describe('QuizRenderer', () => {
   });
 
   it('알 수 없는 type이면 안내 문구를 렌더링한다(런타임 보호)', () => {
+    const unknownQuestion = {
+      id: 1,
+      type: 'unknown',
+      content: { question: 'Q', options: [] },
+    } as unknown as QuizQuestion;
+
     renderWithTheme(
       <QuizRenderer
         // TS 타입상 불가능하지만, 런타임 안전성 체크
-        question={{ id: 1, type: 'unknown', content: { question: 'Q', options: [] } } as any}
+        question={unknownQuestion}
         selectedAnswer={null}
         correctAnswer={null}
         onAnswerChange={vi.fn()}

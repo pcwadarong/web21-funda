@@ -19,7 +19,7 @@ interface QuizContentCardProps {
   selectedAnswer: AnswerType | null;
   correctAnswer: CorrectAnswerType | null;
   explanation: string;
-  onAnswerChange: (answer: any) => void;
+  onAnswerChange: (answer: AnswerType) => void;
   isSubmitDisabled: boolean;
   onCheck: () => void;
   onNext: () => void;

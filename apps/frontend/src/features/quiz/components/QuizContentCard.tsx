@@ -9,6 +9,7 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import ReportModal from '@/features/report/ReportForm';
 import { useModal } from '@/store/modalStore';
 import type { Theme } from '@/styles/theme';
 
@@ -47,7 +48,7 @@ export const QuizContentCard = ({
         <h2 css={titleStyle(theme)}>{question.content.question}</h2>
         <button
           css={reportButtonStyle(theme)}
-          onClick={() => openModal('오류 신고', <div>신고 폼</div>)}
+          onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
         >
           <SVGIcon icon="Report" size="sm" />
           <span>신고</span>
@@ -156,8 +157,9 @@ const reportButtonStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1.2rem;
+  padding: 0 1.2rem;
   gap: 0.2rem;
+  height: 2.5rem;
   color: ${theme.colors.text.weak};
   background: transparent;
   border: 1px solid ${theme.colors.border.default};

@@ -14,7 +14,8 @@ interface LearnContainerProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   headerRef: React.RefObject<HTMLDivElement | null>;
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
-  onStepClick: (step: stepType) => void;
+  onStepClick: (stepId: stepType) => void;
+  onStepHover?: (stepId: number) => void;
 }
 
 export const LearnContainer = ({
@@ -25,6 +26,7 @@ export const LearnContainer = ({
   headerRef,
   registerUnitRef,
   onStepClick,
+  onStepHover,
 }: LearnContainerProps) => {
   const theme = useTheme();
 
@@ -92,6 +94,7 @@ export const LearnContainer = ({
                       <div css={lessonStackStyle}>
                         <div
                           onClick={handleStepSelection}
+                          onPointerEnter={() => onStepHover?.(Number(step.id))} // prefetch 를 위해
                           css={[
                             lessonItemStyle(theme),
                             step.isCompleted && completedLessonStyle(theme),

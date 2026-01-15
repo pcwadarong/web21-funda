@@ -21,6 +21,21 @@ services:
       retries: 5
     restart: unless-stopped
 
+  installer:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: funda-installer
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - backend_node_modules:/workspace/apps/backend/node_modules
+      - frontend_node_modules:/workspace/apps/frontend/node_modules
+      - pnpm_store:/root/.local/share/pnpm/store
+    command: >
+      sh -c "pnpm install && echo 'Installation complete'"
+
   backend:
     build:
       context: .
@@ -29,9 +44,7 @@ services:
     working_dir: /workspace
     env_file:
       - ./apps/backend/.env.local
-    command: >
-      sh -c "pnpm install
-      && pnpm --filter backend start:dev"
+    command: pnpm --filter backend start:dev
     ports:
       - '3000:3000'
     volumes:
@@ -42,6 +55,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      installer:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   frontend:
@@ -52,9 +67,7 @@ services:
     working_dir: /workspace
     env_file:
       - ./apps/frontend/.env.local
-    command: >
-      sh -c "pnpm install
-      && pnpm --filter frontend dev"
+    command: pnpm --filter frontend dev
     environment:
       NODE_ENV: development
       VITE_API_BASE_URL: http://localhost:3000/api
@@ -68,6 +81,8 @@ services:
     depends_on:
       backend:
         condition: service_started
+      installer:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   storybook:
@@ -85,9 +100,10 @@ services:
       - pnpm_store:/root/.local/share/pnpm/store
     environment:
       - NODE_ENV=development
-    command: >
-      sh -c "pnpm install
-      && pnpm --filter frontend storybook"
+    command: pnpm --filter frontend storybook
+    depends_on:
+      installer:
+        condition: service_completed_successfully
 
 volumes:
   mysql_data:

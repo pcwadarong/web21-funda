@@ -16,12 +16,13 @@ import { Quiz } from '@/pages/quiz/Quiz';
 import { QuizResult } from '@/pages/quiz/QuizResult';
 import { QuizResultError } from '@/pages/quiz/QuizResultError';
 import { Streak } from '@/pages/quiz/Streak';
-
-const isLoggedIn = false; // TODO: 추후 실제 로그인 상태로 변경 필요
+import { useAuthStore } from '@/store/authStore';
 
 // 보호된 페이지를 위한 공통 로더
 // 로그인이 안 되어 있다면 로그인 페이지로 강제 이동
 const protectedLoader = () => {
+  const { isLoggedIn, isAuthReady } = useAuthStore.getState();
+  if (!isAuthReady) return null;
   if (!isLoggedIn) return redirect('/login');
   return null;
 };

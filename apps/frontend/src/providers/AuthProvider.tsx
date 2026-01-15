@@ -8,7 +8,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const { setUser, clearAuth } = useAuthActions();
+  const { setUser, clearAuth, setAuthReady } = useAuthActions();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -26,11 +26,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       } catch {
         clearAuth();
+      } finally {
+        setAuthReady(true);
       }
     };
 
     initializeAuth();
-  }, [setUser, clearAuth]);
+  }, [setUser, clearAuth, setAuthReady]);
 
   return <>{children}</>;
 };

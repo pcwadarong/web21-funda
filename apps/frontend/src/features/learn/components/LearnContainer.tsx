@@ -309,7 +309,7 @@ const lessonItemStyle = (theme: Theme) => css`
 `;
 
 const completedLessonStyle = (theme: Theme, isDarkMode: boolean) => css`
-  background: ${isDarkMode ? '#b4b5fff5' : theme.colors.surface.strong};
+  background: ${isDarkMode ? '#b4b5ff' : theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
   color: ${theme.colors.primary.main};
   box-shadow: 0 8px 0 ${theme.colors.primary.main};

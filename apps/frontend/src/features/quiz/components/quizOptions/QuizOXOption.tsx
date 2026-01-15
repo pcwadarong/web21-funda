@@ -50,6 +50,7 @@ const oxBaseStyle = (theme: Theme) => css`
   transition: all 0.2s ease;
 `;
 
-const oxTextStyle = css`
+const oxTextStyle = (theme: Theme) => css`
   font-size: 5rem;
+  color: ${theme.colors.text.strong};
 `;

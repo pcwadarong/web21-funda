@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { worker } from '@/mocks/browser';
@@ -14,10 +13,6 @@ const startApp = async () => {
     });
   }
 
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+  createRoot(document.getElementById('root')!).render(<App />);
 };
 startApp();

@@ -1,6 +1,13 @@
 import { useCallback, useState } from 'react';
 
-import { type Progress, type QuizStorageData, storageUtil, type UIState } from '@/utils/storage';
+import {
+  type GuestAnswer,
+  type GuestStepAttempt,
+  type Progress,
+  type QuizStorageData,
+  storageUtil,
+  type UIState,
+} from '@/utils/storage';
 
 export const useStorage = () => {
   // 초기 상태를 로컬 스토리지에서 읽어온다.
@@ -42,6 +49,36 @@ export const useStorage = () => {
     [],
   );
 
+  // 게스트 스텝 시작 기록
+  const startGuestStepAttempt = useCallback((stepId: number, timestamp?: number) => {
+    const updated = storageUtil.startGuestStepAttempt(stepId, timestamp);
+    setStorageData(updated);
+  }, []);
+
+  // 게스트 정답 기록
+  const addGuestStepAnswer = useCallback((stepId: number, answer: GuestAnswer) => {
+    const updated = storageUtil.addGuestStepAnswer(stepId, answer);
+    setStorageData(updated);
+  }, []);
+
+  // 게스트 스텝 종료 기록
+  const finalizeGuestStepAttempt = useCallback((stepId: number, timestamp?: number) => {
+    const updated = storageUtil.finalizeGuestStepAttempt(stepId, timestamp);
+    setStorageData(updated);
+  }, []);
+
+  // 게스트 스텝 기록 조회
+  const getGuestStepAttempt = useCallback(
+    (stepId: number): GuestStepAttempt | null => storageUtil.getGuestStepAttempt(stepId),
+    [],
+  );
+
+  // 게스트 스텝 기록 삭제
+  const removeGuestStepAttempt = useCallback((stepId: number) => {
+    const updated = storageUtil.removeGuestStepAttempt(stepId);
+    setStorageData(updated);
+  }, []);
+
   return {
     storageData,
     progress: storageData.progress,
@@ -53,5 +90,10 @@ export const useStorage = () => {
     updateLastSolvedUnit,
     setQuizStartedAt,
     getQuizStartedAt,
+    startGuestStepAttempt,
+    addGuestStepAnswer,
+    finalizeGuestStepAttempt,
+    getGuestStepAttempt,
+    removeGuestStepAttempt,
   };
 };

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Quiz, Step } from '../roadmap/entities';
+import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
@@ -21,6 +22,8 @@ export class ProgressService {
     private readonly stepRepository: Repository<Step>,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
@@ -77,7 +80,7 @@ export class ProgressService {
 
     const targetStepAttemptId = attempt.id;
     const solveLogs = await this.solveLogRepository.find({
-      where: { stepAttemptId: targetStepAttemptId },
+      where: { stepAttempt: { id: targetStepAttemptId } },
     });
 
     const scoreResult = await this.calculateStepAttemptScore(targetStepAttemptId);
@@ -176,7 +179,7 @@ export class ProgressService {
     const weights = this.mergeScoreWeights(options);
 
     const logs = await this.solveLogRepository.find({
-      where: { stepAttemptId },
+      where: { stepAttempt: { id: stepAttemptId } },
     });
 
     if (logs.length === 0) {
@@ -222,6 +225,46 @@ export class ProgressService {
       speedBonus: 0,
       ...(options ?? {}),
     };
+  }
+
+  /**
+   * 비로그인 상태에서 푼 step들을 로그인 후 동기화한다.
+   * 이미 존재하는 stepId는 건너뛴다.
+   */
+  async syncStepStatuses(userId: number, stepIds: number[]): Promise<{ syncedCount: number }> {
+    let syncedCount = 0;
+
+    for (const stepId of stepIds) {
+      const existing = await this.stepStatusRepository.findOne({
+        where: { userId, step: { id: stepId } },
+      });
+
+      if (existing) {
+        continue;
+      }
+
+      const step = await this.stepRepository.findOne({ where: { id: stepId } });
+      if (!step) {
+        continue;
+      }
+
+      const newStatus = this.stepStatusRepository.create({
+        userId,
+        step,
+        isCompleted: true,
+        bestScore: null,
+        successRate: null,
+      });
+      await this.stepStatusRepository.save(newStatus);
+      syncedCount++;
+    }
+
+    // 동기화된 step 수만큼 experience 추가 (step당 30 경험치)
+    if (syncedCount > 0) {
+      await this.userRepository.increment({ id: userId }, 'experience', syncedCount * 30);
+    }
+
+    return { syncedCount };
   }
 }
 

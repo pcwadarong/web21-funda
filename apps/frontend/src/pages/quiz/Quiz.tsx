@@ -16,7 +16,8 @@ import type {
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
-import { quizService } from '@/services/quizService';
+import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
+import { useAuthStore, useIsAuthReady } from '@/store/authStore';
 import { shuffleArray } from '@/utils/shuffleArray';
 /**
  * 퀴즈 풀이 페이지 컴포넌트
@@ -24,10 +25,20 @@ import { shuffleArray } from '@/utils/shuffleArray';
  * * @returns {JSX.Element | null} 퀴즈 화면 레이아웃
  */
 export const Quiz = () => {
-  const { uiState, addStepHistory, setQuizStartedAt, getQuizStartedAt, updateLastSolvedUnit } =
-    useStorage();
+  const {
+    uiState,
+    addStepHistory,
+    updateLastSolvedUnit,
+    startGuestStepAttempt,
+    addGuestStepAnswer,
+    finalizeGuestStepAttempt,
+    getGuestStepAttempt,
+  } = useStorage();
+  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const isAuthReady = useIsAuthReady();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
   const navigate = useNavigate();
 
   /** 불러온 문제 배열 */
@@ -59,22 +70,91 @@ export const Quiz = () => {
   /** 현재 활성화된 퀴즈에 대해 사용자가 입력한 답변 */
   const currentAnswer = selectedAnswers[currentQuizIndex];
 
-  /** localStorage에서 필드 슬러그 가져오기 */
+  /** 현재 진행할 스텝 ID */
   const step_id = uiState.current_quiz_step_id;
 
   const { playSound } = useSound();
+  const baseScorePerQuiz = 3;
+
+  type GuestStepResult = {
+    score: number;
+    experience: number;
+    correctCount: number;
+    totalQuizzes: number;
+    answeredQuizzes: number;
+    successRate: number;
+    durationSeconds: number;
+    firstSolve: boolean;
+  };
+
+  /**
+   * 비로그인 사용자 결과 데이터를 계산한다.
+   *
+   * @param stepId 스텝 ID
+   * @returns 결과 데이터(기록이 없으면 null)
+   */
+  const buildGuestResult = useCallback(
+    (stepId: number): GuestStepResult | null => {
+      const guestAttempt = getGuestStepAttempt(stepId);
+
+      if (!guestAttempt) {
+        return null;
+      }
+
+      const totalQuizzes = quizzes.length;
+      const answeredQuizzes = guestAttempt.answers.length;
+      const correctCount = guestAttempt.answers.filter(answer => answer.is_correct).length;
+      const score = answeredQuizzes * baseScorePerQuiz;
+      const successRate = totalQuizzes === 0 ? 0 : (correctCount / totalQuizzes) * 100;
+      const finishedAt = guestAttempt.finished_at ?? Date.now();
+      const durationSeconds = Math.max(
+        0,
+        Math.floor((finishedAt - guestAttempt.started_at) / 1000),
+      );
+
+      return {
+        score,
+        experience: score,
+        correctCount,
+        totalQuizzes,
+        answeredQuizzes,
+        successRate,
+        durationSeconds,
+        firstSolve: false,
+      };
+    },
+    [baseScorePerQuiz, getGuestStepAttempt, quizzes.length],
+  );
 
   /**
    * 퀴즈 데이터 가져오기
    */
 
   const fetchQuizzes = async () => {
-    if (!step_id) return;
+    if (!step_id) {
+      return;
+    }
+
+    if (!isAuthReady) {
+      return;
+    }
     setIsLoading(true);
     setLoadError(false);
+    setStepAttemptId(null);
 
-    /** 퀴즈 시작 시간 저장 */
-    setQuizStartedAt(step_id);
+    /** 퀴즈 시작 정보 저장 */
+    if (isLoggedIn) {
+      try {
+        const startResult = await quizService.startStep(step_id);
+        setStepAttemptId(startResult.stepAttemptId);
+      } catch {
+        setLoadError(true);
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      startGuestStepAttempt(step_id);
+    }
 
     try {
       // 완전히 준비된 캐시 확인
@@ -116,7 +196,7 @@ export const Quiz = () => {
   /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
     fetchQuizzes();
-  }, [step_id]);
+  }, [step_id, isLoggedIn, isAuthReady]);
 
   /** 새로고침 시, 한 문제라도 제출했다면 경고 */
   useEffect(() => {
@@ -170,10 +250,14 @@ export const Quiz = () => {
    */
   const handleCheckAnswer = useCallback(async () => {
     if (!currentQuiz || !currentAnswer) return;
+    if (isLoggedIn && stepAttemptId === null) {
+      setLoadError(true);
+      return;
+    }
     setCurrentQuestionStatus('checking');
 
     try {
-      const payload =
+      const payload: QuizSubmissionRequest =
         currentQuiz.type === 'matching'
           ? {
               quiz_id: currentQuiz.id,
@@ -185,6 +269,10 @@ export const Quiz = () => {
               type: currentQuiz.type.toUpperCase() as 'MCQ' | 'OX' | 'CODE',
               selection: { option_id: currentAnswer as string },
             };
+
+      if (isLoggedIn && stepAttemptId !== null) {
+        payload.step_attempt_id = stepAttemptId;
+      }
 
       const result = await quizService.submitQuiz(currentQuiz.id, payload);
       const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
@@ -209,11 +297,27 @@ export const Quiz = () => {
         newStatuses[currentQuizIndex] = 'checked';
         return newStatuses;
       });
+
+      if (!isLoggedIn) {
+        addGuestStepAnswer(step_id, {
+          quiz_id: currentQuiz.id,
+          is_correct: result.is_correct,
+        });
+      }
     } catch {
       // 에러 발생 시에도 다음 문제로 넘어갈 수 있도록 함
       setCurrentQuestionStatus('checked');
     }
-  }, [currentAnswer, currentQuiz, currentQuizIndex]);
+  }, [
+    addGuestStepAnswer,
+    currentAnswer,
+    currentQuiz,
+    currentQuizIndex,
+    isLoggedIn,
+    playSound,
+    step_id,
+    stepAttemptId,
+  ]);
 
   /** 마지막 문제 여부 */
   const isLastQuestion = currentQuizIndex === quizzes.length - 1;
@@ -225,19 +329,35 @@ export const Quiz = () => {
     if (!currentQuiz) return;
     if (isLastQuestion) {
       try {
-        const startedAt = getQuizStartedAt(step_id);
-        if (!startedAt) {
-          navigate('/quiz/error');
-          return;
+        if (isLoggedIn) {
+          if (stepAttemptId === null) {
+            navigate('/quiz/error');
+            return;
+          }
+
+          const result = await quizService.completeStep(step_id, {
+            stepAttemptId,
+          });
+
+          navigate('/quiz/result', {
+            state: result,
+          });
+        } else {
+          finalizeGuestStepAttempt(step_id);
+          const result = buildGuestResult(step_id);
+
+          if (!result) {
+            navigate('/quiz/error');
+            return;
+          }
+
+          navigate('/quiz/result', {
+            state: {
+              ...result,
+              guestStepId: step_id,
+            },
+          });
         }
-
-        const result = await quizService.completeStep(step_id, {
-          startedAt,
-        });
-
-        navigate('/quiz/result', {
-          state: result,
-        });
 
         addStepHistory(step_id);
 
@@ -259,8 +379,11 @@ export const Quiz = () => {
     addStepHistory,
     currentQuiz,
     step_id,
-    getQuizStartedAt,
     updateLastSolvedUnit,
+    isLoggedIn,
+    finalizeGuestStepAttempt,
+    buildGuestResult,
+    stepAttemptId,
   ]);
 
   // 조건부 렌더링은 모든 hooks 호출 후에 배치

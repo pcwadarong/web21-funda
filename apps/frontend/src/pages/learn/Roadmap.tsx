@@ -27,7 +27,21 @@ export const Roadmap = () => {
       if (!fieldSlug) return;
       try {
         const data = await fieldService.getFieldRoadmap(fieldSlug);
-        setUnits(data.units);
+
+        setUnits(
+          isLoggedIn
+            ? data.units.map(unit => {
+                const isInProgress = unit.progress > 0 && unit.progress < 100;
+                const isCompleted = unit.progress === 100;
+
+                return {
+                  ...unit,
+                  status: isInProgress ? 'active' : isCompleted ? 'completed' : 'normal',
+                  variant: isInProgress ? 'full' : 'compact',
+                };
+              })
+            : data.units,
+        );
         setField(data.field.name);
       } catch (error) {
         console.error('Failed to fetch fields:', error);
@@ -35,7 +49,7 @@ export const Roadmap = () => {
     };
 
     fetchFields();
-  }, [fieldSlug]);
+  }, [fieldSlug, isLoggedIn]);
 
   /**
    * 유닛 카드 클릭 처리

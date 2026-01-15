@@ -2,6 +2,8 @@ export interface RoadmapUnit {
   id: number;
   title: string;
   orderIndex: number;
+  progress: number;
+  successRate: number;
 }
 
 export interface FieldRoadmapResponse {

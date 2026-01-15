@@ -15,7 +15,7 @@ const baseUnit: RoadmapUnit = {
   title: 'HTML & CSS 기초',
   description: '웹의 기본 구조와 스타일링',
   progress: 45,
-  score: 85,
+  successRate: 85,
   status: 'active',
   variant: 'full',
 };
@@ -30,7 +30,7 @@ const renderUnitCard = (unit: RoadmapUnit, isLoggedIn: boolean, onClick?: () => 
 describe('UnitCard 컴포넌트 테스트', () => {
   it('로그인 상태에서 진행률과 정답률이 표시된다', () => {
     // given
-    const unit = { ...baseUnit, progress: 60, score: 90 };
+    const unit = { ...baseUnit, progress: 60, successRate: 90 };
 
     // when
     renderUnitCard(unit, true);
@@ -38,13 +38,13 @@ describe('UnitCard 컴포넌트 테스트', () => {
     // then
     expect(screen.getByText('진행률')).toBeInTheDocument();
     expect(screen.getByText('정답률')).toBeInTheDocument();
-    expect(screen.getByText('60%')).toBeInTheDocument();
-    expect(screen.getByText('90%')).toBeInTheDocument();
+    expect(screen.getByText(text => text.replace(/\s/g, '') === '60%')).toBeInTheDocument();
+    expect(screen.getByText(text => text.replace(/\s/g, '') === '90%')).toBeInTheDocument();
   });
 
   it('비로그인 상태에서는 진행률/정답률이 숨겨진다', () => {
     // given
-    const unit = { ...baseUnit, progress: 70, score: 88 };
+    const unit = { ...baseUnit, progress: 70, successRate: 88 };
 
     // when
     renderUnitCard(unit, false);

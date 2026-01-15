@@ -15,7 +15,7 @@ const baseUnit: RoadmapUnit = {
   title: 'HTML & CSS 기초',
   description: '웹의 기본 구조와 스타일링',
   progress: 75,
-  score: 88,
+  successRate: 88,
   status: 'active',
   variant: 'full',
 };
@@ -63,7 +63,7 @@ export const Completed: Story = {
       ...baseUnit,
       status: 'completed',
       progress: 100,
-      score: 92,
+      successRate: 92,
     },
   },
 };
@@ -74,7 +74,7 @@ export const LoggedOut: Story = {
       ...baseUnit,
       status: 'completed',
       progress: 100,
-      score: 92,
+      successRate: 92,
     },
     isLoggedIn: false,
   },

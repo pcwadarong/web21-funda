@@ -36,7 +36,7 @@ export const Sidebar = () => {
     <aside css={sidebarStyle(theme)}>
       <Link to="/learn" css={logoSectionStyle}>
         <span css={logoIconStyle}>
-          <SVGIcon icon="Logo" size="xl" />
+          <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
         </span>
         <span css={logoTextStyle(theme)}>Funda</span>
       </Link>
@@ -133,6 +133,12 @@ const logoIconStyle = css`
     flex: 1;
     text-align: center;
   }
+`;
+
+const logoImageStyle = css`
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 `;
 
 const logoTextStyle = (theme: Theme) => css`

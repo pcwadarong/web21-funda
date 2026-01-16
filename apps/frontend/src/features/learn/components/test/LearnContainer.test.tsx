@@ -6,12 +6,28 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import type { UnitType } from '@/feat/learn/types';
 import { ModalProvider } from '@/store/modalStore';
+import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
 
 // SVGIcon 모킹
 vi.mock('@/comp/SVGIcon', () => ({
   default: ({ icon }: { icon: string }) => <span data-testid={`icon-${icon}`} />,
 }));
+
+beforeEach(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches: false,
+      media: '',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 // RightSidebar 모킹
 vi.mock('@/feat/learn/components/RightSidebar', () => ({
@@ -76,23 +92,27 @@ const mockHeaderRef = { current: null };
 
 const renderContainer = (props: Partial<React.ComponentProps<typeof LearnContainer>> = {}) => {
   const defaultProps = {
-    field: '프론트엔드',
+    fieldName: '프론트엔드',
     units: mockUnits,
     activeUnit: mockUnits[0],
     scrollContainerRef: mockScrollContainerRef,
     headerRef: mockHeaderRef,
     registerUnitRef: vi.fn(() => () => {}),
     onStepClick: vi.fn(),
+    fieldSlug: 'FE',
+    setFieldSlug: vi.fn(),
     ...props,
   };
 
   return render(
     <ThemeProvider theme={lightTheme}>
-      <ModalProvider>
-        <MemoryRouter>
-          <LearnContainer {...defaultProps} />
-        </MemoryRouter>
-      </ModalProvider>
+      <ThemeStoreProvider>
+        <ModalProvider>
+          <MemoryRouter>
+            <LearnContainer {...defaultProps} />
+          </MemoryRouter>
+        </ModalProvider>
+      </ThemeStoreProvider>
     </ThemeProvider>,
   );
 };

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
 import { ModalProvider } from '@/store/modalStore';
+import { ToastProvider } from '@/store/toastStore';
 import { lightTheme } from '@/styles/theme';
 
 // SVGIcon 모킹
@@ -43,14 +44,17 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-// useAuthStore 모킹
+// authStore 모킹
 const mockUseAuthStore = vi.fn(() => false);
+const mockUseAuthUser = vi.fn(() => null);
 
 vi.mock('@/store/authStore', () => ({
   useAuthStore: (selector: (state: { isLoggedIn: boolean }) => boolean) => {
     const state = { isLoggedIn: mockUseAuthStore() };
     return selector(state);
   },
+  useAuthUser: () => mockUseAuthUser(),
+  useIsLoggedIn: () => mockUseAuthStore(),
 }));
 
 const mockGetFields = vi.fn();
@@ -61,26 +65,35 @@ vi.mock('@/services/fieldService', () => ({
   },
 }));
 
-const renderSidebar = () =>
-  render(
-    <ThemeProvider theme={lightTheme}>
-      <ModalProvider>
-        <MemoryRouter>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              backgroundColor: lightTheme.colors.surface.default,
-              minHeight: '100vh',
-              padding: '24px',
-            }}
-          >
-            <LearnRightSidebar />
-          </div>
-        </MemoryRouter>
-      </ModalProvider>
-    </ThemeProvider>,
-  );
+const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: ReturnType<typeof vi.fn> }) => {
+  const setFieldSlug = props?.setFieldSlug ?? vi.fn();
+  const fieldSlug = props?.fieldSlug ?? 'FE';
+
+  return {
+    setFieldSlug,
+    ...render(
+      <ThemeProvider theme={lightTheme}>
+        <ToastProvider>
+          <ModalProvider>
+            <MemoryRouter>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  backgroundColor: lightTheme.colors.surface.default,
+                  minHeight: '100vh',
+                  padding: '24px',
+                }}
+              >
+                <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
+              </div>
+            </MemoryRouter>
+          </ModalProvider>
+        </ToastProvider>
+      </ThemeProvider>,
+    ),
+  };
+};
 
 describe('LearnRightSidebar 컴포넌트 테스트', () => {
   beforeEach(() => {
@@ -113,14 +126,14 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
   it('기본 렌더링이 올바르게 동작한다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
+    expect(screen.getByText(/FE/i)).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument(); // 하트 개수
   });
 
   it('필드 이름이 표시된다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
+    expect(screen.getByText(/FE/i)).toBeInTheDocument();
   });
 
   it('비로그인 상태에서 하트 개수가 표시된다', () => {
@@ -133,19 +146,19 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
 
   it('로그인 상태에서 Diamond와 Streak이 표시된다', () => {
     mockUseAuthStore.mockReturnValue(true);
+    mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     renderSidebar();
 
-    expect(screen.getByText('0')).toBeInTheDocument(); // Diamond
-    expect(screen.getByText('5')).toBeInTheDocument(); // Streak
     expect(screen.getByTestId('icon-Diamond')).toBeInTheDocument();
     expect(screen.getByTestId('icon-Streak')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument(); // Streak
   });
 
   it('로그인 상태에서 learningDays가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(true);
+    mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     renderSidebar();
 
-    // USER_STATS.learningDays = 4
     const heartNumbers = screen.getAllByText('4');
     expect(heartNumbers.length).toBeGreaterThan(0);
   });
@@ -165,6 +178,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
 
   it('로그인 상태에서 오답 노트에 문제 개수가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(true);
+    mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     renderSidebar();
 
     expect(screen.getByText(/5개 문제 복습 필요/)).toBeInTheDocument();
@@ -185,6 +199,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
 
   it('로그인 상태에서 오늘의 목표가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(true);
+    mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     renderSidebar();
 
     expect(screen.getByText(/10 XP 획득하기/)).toBeInTheDocument();
@@ -195,6 +210,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
 
   it('로그인 상태에서 진행률 바가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(true);
+    mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     renderSidebar();
 
     const progressBars = screen.getAllByRole('progressbar');
@@ -211,7 +227,8 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
   });
 
   it('드롭다운 옵션을 선택했을 때 상태가 갱신되고 이동이 호출되어야 한다', async () => {
-    renderSidebar();
+    const setFieldSlug = vi.fn();
+    renderSidebar({ setFieldSlug });
 
     fireEvent.click(screen.getByRole('button'));
     fireEvent.click(await screen.findByRole('option', { name: '백엔드' }));
@@ -222,6 +239,6 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
         unit_id: 0,
       },
     });
-    expect(mockNavigate).toHaveBeenCalledWith(0);
+    expect(setFieldSlug).toHaveBeenCalledWith('backend');
   });
 });

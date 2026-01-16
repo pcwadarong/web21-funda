@@ -7,6 +7,7 @@ const mockUseStorage = vi.fn();
 const mockUseAuthStore = vi.fn();
 const mockGetFieldUnits = vi.fn();
 const updateUIStateMock = vi.fn();
+const mockStorageUtilGet = vi.fn();
 let storageState: {
   uiState: {
     last_viewed: { field_slug: string; unit_id: number };
@@ -29,6 +30,12 @@ vi.mock('@/store/authStore', () => ({
 vi.mock('@/services/fieldService', () => ({
   fieldService: {
     getFieldUnits: (...args: unknown[]) => mockGetFieldUnits(...args),
+  },
+}));
+
+vi.mock('@/utils/storage', () => ({
+  storageUtil: {
+    get: () => mockStorageUtilGet(),
   },
 }));
 
@@ -87,6 +94,7 @@ describe('useLearnUnits Hook', () => {
       ...storageState,
       updateUIState: updateUIStateMock,
     }));
+    mockStorageUtilGet.mockImplementation(() => ({ ui_state: storageState.uiState }));
     mockUseAuthStore.mockReturnValue(false);
     mockGetFieldUnits.mockResolvedValue(createUnitsResponse());
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -142,7 +150,7 @@ describe('useLearnUnits Hook', () => {
     const { result } = renderHook(() => useLearnUnits());
 
     await waitFor(() => {
-      expect(result.current.field).toBe('프론트엔드');
+      expect(result.current.fieldName).toBe('프론트엔드');
     });
   });
 
@@ -392,11 +400,13 @@ describe('useLearnUnits Hook', () => {
       ...storageState,
       uiState: {
         ...storageState.uiState,
-        last_viewed: { field_slug: 'FE', unit_id: 2 },
+        last_viewed: { field_slug: 'BE', unit_id: 2 },
       },
     };
 
-    rerender();
+    await act(async () => {
+      result.current.setFieldSlug('BE');
+    });
 
     await waitFor(() => {
       expect(scrollToMock).toHaveBeenCalledWith({ top: 390 });

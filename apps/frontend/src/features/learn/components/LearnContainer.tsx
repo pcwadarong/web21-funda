@@ -253,7 +253,7 @@ const evenLeftPositions = [220, 310, 230, 160, 250, 340, 420];
 const lessonPositionStyle = (index: number, unitIndex: number) => {
   const isOddUnit = unitIndex % 2 === 0;
   const positions = isOddUnit ? oddLeftPositions : evenLeftPositions;
-  const left = positions[index % positions.length];
+  const left = positions[index % positions.length] ?? positions[0] ?? 0;
   const minLeft = Math.max(150, Math.round(left * 0.65));
   const midLeft = Math.max(18, Math.round(left / 9));
   const tightMinLeft = Math.max(100, Math.round(left * 0.4));

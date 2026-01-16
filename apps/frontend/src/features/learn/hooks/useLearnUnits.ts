@@ -170,7 +170,7 @@ export const useLearnUnits = () => {
     root.scrollTo({
       top: Math.max(0, element.offsetTop - headerHeight),
     });
-  }, [units]);
+  }, [units, fieldSlug]);
 
   /**
    * 유닛 DOM을 등록하는 ref 콜백을 생성합니다.

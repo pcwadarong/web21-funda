@@ -349,7 +349,7 @@ describe('useLearnUnits Hook', () => {
     mockGetFieldUnits.mockReturnValue(deferred.promise);
 
     const { useLearnUnits } = await import('../useLearnUnits');
-    const { result, rerender } = renderHook(() => useLearnUnits());
+    const { result } = renderHook(() => useLearnUnits());
 
     const container = document.createElement('div');
     const header = document.createElement('div');

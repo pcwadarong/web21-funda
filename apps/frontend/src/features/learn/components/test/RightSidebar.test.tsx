@@ -46,7 +46,9 @@ vi.mock('react-router-dom', async () => {
 
 // authStore 모킹
 const mockUseAuthStore = vi.fn(() => false);
-const mockUseAuthUser = vi.fn(() => null);
+const mockUseAuthUser = vi.fn<() => { heartCount: number; currentStreak: number } | null>(
+  () => null,
+);
 
 vi.mock('@/store/authStore', () => ({
   useAuthStore: (selector: (state: { isLoggedIn: boolean }) => boolean) => {
@@ -65,8 +67,8 @@ vi.mock('@/services/fieldService', () => ({
   },
 }));
 
-const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: ReturnType<typeof vi.fn> }) => {
-  const setFieldSlug = props?.setFieldSlug ?? vi.fn();
+const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: (slug: string) => void }) => {
+  const setFieldSlug = props?.setFieldSlug ?? (() => {});
   const fieldSlug = props?.fieldSlug ?? 'FE';
 
   return {

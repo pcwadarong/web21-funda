@@ -9,13 +9,22 @@ import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { quizService } from '@/services/quizService';
 import { useToast } from '@/store/toastStore';
 import { shuffleArray } from '@/utils/shuffleArray';
+import { storageUtil } from '@/utils/storage';
 
 export const Learn = () => {
   const { showToast } = useToast();
-  const { updateUIState, uiState } = useStorage();
+  const { updateUIState } = useStorage();
   const navigate = useNavigate();
-  const { field, units, activeUnit, scrollContainerRef, headerRef, registerUnitRef } =
-    useLearnUnits();
+  const {
+    fieldName,
+    units,
+    activeUnit,
+    scrollContainerRef,
+    headerRef,
+    registerUnitRef,
+    fieldSlug,
+    setFieldSlug,
+  } = useLearnUnits();
 
   const showInProgressToast = useCallback(() => {
     showToast('제작 중입니다');
@@ -81,20 +90,20 @@ export const Learn = () => {
       updateUIState({
         current_quiz_step_id: step.id,
         last_viewed: {
-          ...uiState.last_viewed,
+          field_slug: storageUtil.get().ui_state.last_viewed.field_slug,
           unit_id: currentUnit ?? fallbackUnitId,
         },
       });
 
       navigate('/quiz');
     },
-    [navigate, showInProgressToast, updateUIState, units, uiState.last_viewed],
+    [navigate, showInProgressToast, updateUIState, units],
   );
 
   return (
     <>
       <LearnContainer
-        field={field}
+        fieldName={fieldName}
         units={units}
         activeUnit={activeUnit}
         scrollContainerRef={scrollContainerRef}
@@ -102,6 +111,8 @@ export const Learn = () => {
         registerUnitRef={registerUnitRef}
         onStepClick={handleStepClick}
         onStepHover={handleStepHover}
+        fieldSlug={fieldSlug}
+        setFieldSlug={setFieldSlug}
       />
     </>
   );

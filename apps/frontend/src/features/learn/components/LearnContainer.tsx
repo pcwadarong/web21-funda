@@ -1,4 +1,4 @@
-import { css, useTheme } from '@emotion/react';
+import { css, keyframes, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
@@ -9,7 +9,7 @@ import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
 interface LearnContainerProps {
-  field: string;
+  fieldName: string;
   units: UnitType[];
   activeUnit: UnitType | undefined;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -17,10 +17,12 @@ interface LearnContainerProps {
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
   onStepClick: (stepId: stepType) => void;
   onStepHover?: (stepId: number) => void;
+  fieldSlug: string;
+  setFieldSlug: (slug: string) => void;
 }
 
 export const LearnContainer = ({
-  field,
+  fieldName,
   units,
   activeUnit,
   scrollContainerRef,
@@ -28,6 +30,8 @@ export const LearnContainer = ({
   registerUnitRef,
   onStepClick,
   onStepHover,
+  fieldSlug,
+  setFieldSlug,
 }: LearnContainerProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
@@ -36,15 +40,22 @@ export const LearnContainer = ({
       <div css={centerSectionStyle} ref={scrollContainerRef}>
         {activeUnit && (
           <div css={stickyHeaderWrapperStyle} ref={headerRef}>
-            <div css={[headerSectionStyle(), stickyHeaderStyle(theme)]}>
+            <div
+              key={activeUnit.id}
+              css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
+            >
               <div css={headerContentStyle}>
                 <Link to="/learn/roadmap">
                   <div css={unitTextStyle(theme)}>
                     <SVGIcon icon="ArrowLeft" size="md" />
-                    {field} 로드맵
+                    {fieldName} 로드맵
                   </div>
                 </Link>
-                <div css={titleTextStyle(theme)}>{activeUnit.title}</div>
+                <div css={titleTextStyle(theme)}>
+                  <span key={activeUnit.title} css={titleFadeStyle}>
+                    {activeUnit.title}
+                  </span>
+                </div>
               </div>
               <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
                 학습 개요
@@ -121,7 +132,7 @@ export const LearnContainer = ({
         </div>
       </div>
 
-      <LearnRightSidebar />
+      <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
     </div>
   );
 };
@@ -131,7 +142,7 @@ const mainStyle = css`
   flex: 1;
   gap: 24px;
   padding: 24px 24px 0 24px;
-  overflow: hidden;
+  overflow: visible;
   height: 100vh;
   min-height: 0;
 
@@ -162,8 +173,9 @@ const centerSectionInnerStyle = css`
   gap: 24px;
   margin: 0 auto;
   width: 100%;
-  max-width: 40rem;
+  max-width: clamp(28rem, 56vw, 40rem);
   padding-bottom: 24px;
+  z-index: 1;
 `;
 
 const sectionBlockStyle = css`
@@ -174,8 +186,8 @@ const sectionBlockStyle = css`
 
 const stickyHeaderWrapperStyle = css`
   position: sticky;
-  top: 0;
-  z-index: 3;
+  top: 0px;
+  z-index: 5;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -188,6 +200,27 @@ const stickyHeaderStyle = (theme: Theme) => css`
   box-shadow: 0 12px 20px rgba(20, 20, 43, 0.12);
   border-radius: ${theme.borderRadius.large};
   overflow: hidden;
+`;
+
+const headerPulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  60% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
+
+const headerPulseStyle = css`
+  animation: ${headerPulse} 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+
+  @media (max-width: 768px) {
+    animation: none;
+  }
 `;
 
 const unitDividerStyle = (theme: Theme) => css`
@@ -214,19 +247,28 @@ const unitDividerTextStyle = (theme: Theme) => css`
   white-space: nowrap;
 `;
 
-const oddLeftPositions = [400, 300, 380, 450, 360, 270, 190];
-const evenLeftPositions = [190, 290, 210, 140, 220, 310, 400];
+const oddLeftPositions = [410, 320, 400, 470, 380, 290, 210];
+const evenLeftPositions = [220, 310, 230, 160, 250, 340, 420];
 
 const lessonPositionStyle = (index: number, unitIndex: number) => {
   const isOddUnit = unitIndex % 2 === 0;
   const positions = isOddUnit ? oddLeftPositions : evenLeftPositions;
-  const left = positions[index % positions.length];
+  const left = positions[index % positions.length] ?? positions[0] ?? 0;
+  const minLeft = Math.max(150, Math.round(left * 0.65));
+  const midLeft = Math.max(18, Math.round(left / 9));
+  const tightMinLeft = Math.max(100, Math.round(left * 0.4));
+  const tightMidLeft = Math.max(13, Math.round(left / 15));
 
   return css`
     position: absolute;
     top: ${index * 130}px;
-    left: ${left}px;
+    left: clamp(${minLeft}px, ${midLeft}vw, ${left}px);
     transform: translateX(-50%);
+
+    @media (max-width: 1420px) and (min-width: 1024px) {
+      left: clamp(${tightMinLeft}px, ${tightMidLeft}vw, ${left}px);
+      transform: translateX(-80%);
+    }
   `;
 };
 
@@ -259,6 +301,27 @@ const titleTextStyle = (theme: Theme) => css`
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${colors.light.grayscale[50]};
+  overflow: hidden;
+`;
+
+const titleFade = keyframes`
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.3;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+`;
+
+const titleFadeStyle = css`
+  display: inline-block;
+  animation: ${titleFade} 260ms ease;
 `;
 
 const overviewButtonStyle = (theme: Theme) => css`
@@ -298,6 +361,10 @@ const lessonItemStyle = (theme: Theme) => css`
   width: 4.5rem;
   height: 4rem;
   text-decoration: none;
+  svg {
+    transform: scale(clamp(0.78, 2.4vw, 1));
+    transform-origin: center;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -342,12 +409,17 @@ const lockedLessonStyle = (theme: Theme) => css`
   }
 `;
 const lessonNamePillStyle = (theme: Theme) => css`
+  display: inline-block;
   padding: 6px 14px;
   border-radius: 999px;
   background: ${theme.colors.surface.strong};
   color: ${theme.colors.text.light};
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-size: clamp(12px, 2.6vw, ${theme.typography['16Medium'].fontSize});
+  line-height: clamp(16px, 3vw, ${theme.typography['16Medium'].lineHeight});
   font-weight: ${theme.typography['16Medium'].fontWeight};
   box-shadow: 0 8px 20px rgba(20, 20, 43, 0.12);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;

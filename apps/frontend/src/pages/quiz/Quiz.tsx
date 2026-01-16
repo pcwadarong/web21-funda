@@ -16,6 +16,7 @@ import type {
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
+import { authService } from '@/services/authService';
 import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
 import { useAuthStore, useIsAuthReady } from '@/store/authStore';
 import { shuffleArray } from '@/utils/shuffleArray';
@@ -338,7 +339,10 @@ export const Quiz = () => {
           const result = await quizService.completeStep(step_id, {
             stepAttemptId,
           });
-
+          const updatedUser = await authService.getCurrentUser();
+          if (updatedUser) {
+            useAuthStore.getState().actions.setUser(updatedUser);
+          }
           navigate('/quiz/result', {
             state: result,
           });

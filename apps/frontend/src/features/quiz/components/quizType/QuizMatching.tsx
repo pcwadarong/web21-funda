@@ -29,6 +29,7 @@ export const QuizMatching = ({
 
   /** 전체를 감싸는 부모 컨테이너의 Ref */
   const containerRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
 
   /** SVG 라인 재계산을 위한 트리거 상태 */
   const [lineUpdateTrigger, setLineUpdateTrigger] = useState(0);
@@ -192,12 +193,17 @@ export const QuizMatching = ({
 
   // 리사이즈 감지 및 SVG 라인 재계산
   useEffect(() => {
+    isMountedRef.current = true;
     if (!showResult || !containerRef.current) return;
 
     // ResizeObserver가 사용 가능한지 확인
     if (typeof ResizeObserver === 'undefined') return;
 
     const resizeObserver = new ResizeObserver(() => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
       setLineUpdateTrigger(prev => prev + 1);
     });
 
@@ -209,6 +215,7 @@ export const QuizMatching = ({
     });
 
     return () => {
+      isMountedRef.current = false;
       resizeObserver.disconnect();
     };
   }, [showResult, currentPairs.length]);

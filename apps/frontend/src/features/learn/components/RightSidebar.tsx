@@ -1,6 +1,6 @@
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
@@ -16,15 +16,20 @@ const TODAY_GOALS = [
   { id: 'lessons', label: '2개의 완벽한 레슨 끝내기', current: 2, target: 2 },
 ] as const;
 
-export const LearnRightSidebar = () => {
+export const LearnRightSidebar = ({
+  fieldSlug,
+  setFieldSlug,
+}: {
+  fieldSlug: string;
+  setFieldSlug: (slug: string) => void;
+}) => {
   const theme = useTheme();
   const user = useAuthUser();
   const isLoggedIn = useIsLoggedIn();
-  const { progress, uiState, updateUIState } = useStorage();
+  const { progress, updateUIState } = useStorage();
 
   const heartCount = user ? user.heartCount : progress.heart;
 
-  const navigate = useNavigate();
   const [fields, setFields] = useState<Field[]>([]);
 
   const { showToast } = useToast();
@@ -47,11 +52,8 @@ export const LearnRightSidebar = () => {
   }, []);
 
   const selectedField = useMemo(
-    () =>
-      fields.find(
-        field => field.slug.toLowerCase() === uiState.last_viewed.field_slug.toLowerCase(),
-      ),
-    [fields, uiState.last_viewed.field_slug],
+    () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
+    [fields, fieldSlug],
   );
 
   const dropdownOptions = useMemo(
@@ -74,7 +76,8 @@ export const LearnRightSidebar = () => {
         unit_id: lastSolvedUnitId,
       },
     });
-    navigate(0);
+
+    setFieldSlug(option);
   };
 
   return (
@@ -83,7 +86,7 @@ export const LearnRightSidebar = () => {
         <Dropdown
           options={dropdownOptions}
           onChange={handleChange}
-          value={uiState.last_viewed.field_slug}
+          value={fieldSlug}
           variant="plain"
           triggerCss={statContainerStyle(theme)}
           renderTrigger={() => (
@@ -92,7 +95,7 @@ export const LearnRightSidebar = () => {
                 <SVGIcon icon={selectedField?.icon ?? 'Frontend'} size="md" />
               </span>
               <span css={statValueStyle(theme)}>
-                {selectedField?.slug?.toUpperCase() ?? uiState.last_viewed.field_slug.toUpperCase()}
+                {selectedField?.slug?.toUpperCase() ?? fieldSlug.toUpperCase()}
               </span>
             </>
           )}

@@ -34,6 +34,9 @@ services:
       mysql:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - default
+      - funda-network
 
   frontend:
     image: ${NCR_REGISTRY}/funda-frontend:latest
@@ -47,6 +50,10 @@ services:
       backend:
         condition: service_started
     restart: unless-stopped
+
+networks:
+  funda-network:
+    external: true
 
 volumes:
   mysql_data:

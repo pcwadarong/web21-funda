@@ -23,20 +23,9 @@ scrape_configs:
       - targets: ['node-exporter:9100']
     metrics_path: '/metrics'
 
-  # Nginx stub_status 메트릭 (nginx-exporter 필요 시 별도 설정)
-  # - job_name: 'nginx'
-  #   static_configs:
-  #     - targets: ['nginx-exporter:9113']
-  #   metrics_path: '/metrics'
-
-  # Backend 메트릭 (NestJS Prometheus 엔드포인트가 있다면)
+  # Backend 메트릭 (NestJS)
   - job_name: 'backend'
     static_configs:
       - targets: ['backend:3000']
     metrics_path: '/api/metrics'
     scrape_interval: 30s
-
-  # MySQL Exporter (선택사항 - 별도 설치 필요)
-  # - job_name: 'mysql'
-  #   static_configs:
-  #     - targets: ['mysql-exporter:9104']

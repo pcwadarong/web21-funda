@@ -50,6 +50,9 @@ services:
       backend:
         condition: service_started
     restart: unless-stopped
+    networks:
+      - default
+      - funda-network
 
 networks:
   funda-network:

@@ -33,7 +33,6 @@ jobs:
             "${{ secrets.NCR_REGISTRY }}" \
             "${{ secrets.DB_USER }}" \
             "${{ secrets.DB_PASSWORD }}" \
-            "${{ secrets.GRAFANA_ADMIN_USER || 'admin' }}" \
             "${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
             "${{ secrets.GRAFANA_ROOT_URL }}" > .env
 

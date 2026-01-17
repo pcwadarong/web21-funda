@@ -1,0 +1,64 @@
+# ============================================================
+# Promtail Configuration
+# Docker 컨테이너 로그를 수집하여 Loki로 전송하는 설정
+# ============================================================
+
+# ============================================================
+# Server Configuration
+# ============================================================
+server:
+  # HTTP 리스닝 포트: 헬스체크 및 메트릭 수집용
+  http_listen_port: 9080
+  # gRPC 포트: 비활성화 (단일 인스턴스 환경)
+  grpc_listen_port: 0
+
+# ============================================================
+# Positions Configuration
+# ============================================================
+# 로그 수집 위치 추적 파일: 컨테이너 재시작 시에도 수집 위치 유지
+# 주의: /tmp는 컨테이너 재시작 시 삭제되므로 볼륨 마운트 권장
+positions:
+  filename: /tmp/positions.yaml
+
+# ============================================================
+# Clients Configuration
+# ============================================================
+# Loki 서버로 로그를 전송하는 설정
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+# ============================================================
+# Scrape Configuration
+# ============================================================
+scrape_configs:
+  # Docker 컨테이너 로그 수집 작업
+  - job_name: container_logs
+    # Docker 서비스 디스커버리: Docker 소켓을 통해 컨테이너 자동 감지
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock  # Docker 소켓 경로
+        refresh_interval: 5s                # 컨테이너 목록 갱신 주기
+    
+    # 레이블 재설정: 컨테이너 이름을 레이블로 추가
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'                       # 컨테이너 이름에서 '/' 제거
+        target_label: 'container'            # 'container' 레이블로 저장
+    
+    # ============================================================
+    # Pipeline Stages: 로그 전처리 파이프라인
+    # ============================================================
+    pipeline_stages:
+      # 이메일 주소 마스킹: 개인정보 보호를 위한 마스킹 처리
+      - replace:
+          expression: '([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)'
+          replace: "****@****.***"
+
+      # JSON 형식 로그 파싱
+      - json:
+        expressions:
+          level: level
+          msg: message
+
+      # 특정 필드를 레이블로 추출
+      - labels:
+        level:

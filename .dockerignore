@@ -1,0 +1,18 @@
+# dev only
+.husky
+.vscode
+docker/local
+Dockerfile.local
+
+# tests
+**/*.test.ts
+**/*.spec.ts
+**/__tests__/**
+
+# storybook
+.storybook
+**/*/stories.tsx
+
+# local artifacts
+node_modules
+.pnpm-store

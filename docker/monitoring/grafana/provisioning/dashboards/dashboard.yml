@@ -1,13 +1,23 @@
+# ============================================================
+# Grafana Dashboards Provisioning
+# 대시보드 자동 로드 및 관리 설정
+# ============================================================
+
 apiVersion: 1
 
 providers:
-  - name: 'Default'
-    orgId: 1
-    folder: ''
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
-    allowUiUpdates: true
+  # ------------------------------------------------------------
+  # Default Dashboards Provider
+  # 하나의 provider로 모든 대시보드 관리
+  # 서브 디렉토리 구조가 자동으로 Grafana 폴더로 매핑됨
+  # ------------------------------------------------------------
+  - name: 'default'
+    orgId: 1                           # Organization ID (기본값: 1)
+    folder: ''                         # 대시보드 폴더명 (빈 값 = 루트)
+    type: file                         # 프로바이더 타입: file 기반
+    disableDeletion: false             # UI에서 삭제 가능 여부
+    updateIntervalSeconds: 30          # 파일 변경 감지 주기 (30초)
+    allowUiUpdates: true               # UI에서 대시보드 수정 가능
     options:
-      path: /etc/grafana/provisioning/dashboards
-      foldersFromFilesStructure: true
+      path: /etc/grafana/provisioning/dashboards  # 대시보드 JSON 파일 경로
+      foldersFromFilesStructure: true  # 서브 디렉토리를 폴더로 자동 인식

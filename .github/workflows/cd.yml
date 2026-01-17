@@ -29,10 +29,13 @@ jobs:
             git pull origin main
 
             # 2. .env 파일 생성 (루트 디렉토리)
-            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
-              "${{ secrets.NCR_REGISTRY }}" \
-              "${{ secrets.DB_USER }}" \
-              "${{ secrets.DB_PASSWORD }}" > .env
+            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\nGRAFANA_ADMIN_USER=%s\nGRAFANA_ADMIN_PASSWORD=%s\nGRAFANA_ROOT_URL=%s\n" \
+            "${{ secrets.NCR_REGISTRY }}" \
+            "${{ secrets.DB_USER }}" \
+            "${{ secrets.DB_PASSWORD }}" \
+            "${{ secrets.GRAFANA_ADMIN_USER || 'admin' }}" \
+            "${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
+            "${{ secrets.GRAFANA_ROOT_URL }}" > .env
 
             # 3. BE 전용 환경 변수 주입
             mkdir -p apps/backend
@@ -41,14 +44,22 @@ jobs:
             # 4. NCR 로그인
             echo "${{ secrets.NCP_SECRET_KEY }}" | docker login ${{ secrets.NCR_REGISTRY }} -u ${{ secrets.NCP_ACCESS_KEY }} --password-stdin
 
-            # 5. 실행
-            COMPOSE_FILE=docker/production/docker-compose.deploy.yml
-            docker compose -f $COMPOSE_FILE pull
-            docker compose -f $COMPOSE_FILE up -d
+            # 5. 네트워크 및 공통 설정 준비
+            docker network inspect funda-network >/dev/null 2>&1 || docker network create funda-network
 
-            # 6. DB 마이그레이션
-            docker compose -f $COMPOSE_FILE exec -T backend \
+            # 6. 실행 (애플리케이션 + 모니터링)
+            APP_COMPOSE=docker/production/docker-compose.deploy.yml
+            MONITOR_COMPOSE=docker/monitoring/docker-compose.monitoring.production.yml
+
+            docker compose -f $APP_COMPOSE pull
+            docker compose -f $MONITOR_COMPOSE pull
+            
+            docker compose -f $APP_COMPOSE up -d
+            docker compose -f $MONITOR_COMPOSE up -d
+
+            # 7. DB 마이그레이션
+            docker compose -f $APP_COMPOSE exec -T backend \
               node ./node_modules/typeorm/cli.js -d dist/config/typeorm.data-source.js migration:run
 
-            # 7. 정리
+            # 8. 정리
             docker image prune -f

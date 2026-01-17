@@ -11,7 +11,7 @@ import { MetricsInterceptor } from 'src/common/interceptors/metrics.interceptor'
 @Module({
   imports: [
     PrometheusModule.register({
-      path: '/api/metrics',
+      path: '/metrics',
       defaultMetrics: {
         enabled: true, // 프로세스 메모리, CPU 등 기본 메트릭 활성화
       },

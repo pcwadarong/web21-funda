@@ -17,6 +17,12 @@ scrape_configs:
       - targets: ['cadvisor:8080']
     metrics_path: '/metrics'
 
+  # Node Exporter - 호스트 OS 메트릭
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    metrics_path: '/metrics'
+
   # Backend 메트릭 (NestJS Prometheus 엔드포인트가 있다면)
   - job_name: 'backend'
     static_configs:

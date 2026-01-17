@@ -20,6 +20,22 @@ services:
       - '--housekeeping_interval=10s'
       - '--docker_only=true'
 
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: funda-node-exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - funda-network
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:v2.48.0
     container_name: funda-prometheus
@@ -38,15 +54,17 @@ services:
     restart: unless-stopped
     depends_on:
       - cadvisor
+      - node-exporter
 
   grafana:
     image: grafana/grafana:10.2.0
     container_name: funda-grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3001}
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-%(protocol)s://%(domain)s/grafana/}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

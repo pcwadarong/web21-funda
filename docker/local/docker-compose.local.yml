@@ -58,6 +58,9 @@ services:
       installer:
         condition: service_completed_successfully
     restart: unless-stopped
+    networks:
+      - default
+      - funda-network
 
   frontend:
     build:
@@ -104,6 +107,13 @@ services:
     depends_on:
       installer:
         condition: service_completed_successfully
+    networks:
+      - default
+      - funda-network
+
+networks:
+  funda-network:
+    external: true
 
 volumes:
   mysql_data:

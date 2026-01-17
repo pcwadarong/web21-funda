@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'funda-local'
+    environment: 'local'
+
+scrape_configs:
+  # Prometheus 자체 모니터링
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # cAdvisor - 컨테이너 메트릭
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+
+  # Backend 메트릭 (NestJS Prometheus 엔드포인트가 있다면)
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+
+  # Frontend는 클라이언트 사이드이므로 일반적으로 스크랩하지 않음
+  # 필요시 별도 메트릭 수집 서비스 고려

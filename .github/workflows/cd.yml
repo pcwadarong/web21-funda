@@ -1,0 +1,54 @@
+name: Funda CD (Deploy)
+
+on:
+  workflow_run:
+    workflows: ['Funda CI (Build & Push)']
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    # CI 워크플로우가 성공적으로 끝났을 때만 실행
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: deploy to NCP Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          script: |
+            APP_DIR=~/web21-funda
+            cd $APP_DIR
+
+            # 1. 최신 코드 가져오기 (배포 설정 파일 갱신)
+            git pull origin main
+
+            # 2. .env 파일 생성 (루트 디렉토리)
+            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
+              "${{ secrets.NCR_REGISTRY }}" \
+              "${{ secrets.DB_USER }}" \
+              "${{ secrets.DB_PASSWORD }}" > .env
+
+            # 3. BE 전용 환경 변수 주입
+            mkdir -p apps/backend
+            printf '%s' "${{ secrets.ENV_BE_PROD }}" > apps/backend/.env.production
+
+            # 4. NCR 로그인
+            echo "${{ secrets.NCP_SECRET_KEY }}" | docker login ${{ secrets.NCR_REGISTRY }} -u ${{ secrets.NCP_ACCESS_KEY }} --password-stdin
+
+            # 5. 실행
+            COMPOSE_FILE=docker/production/docker-compose.deploy.yml
+            docker compose -f $COMPOSE_FILE pull
+            docker compose -f $COMPOSE_FILE up -d
+
+            # 6. DB 마이그레이션
+            docker compose -f $COMPOSE_FILE exec -T backend \
+              node ./node_modules/typeorm/cli.js -d dist/config/typeorm.data-source.js migration:run
+
+            # 7. 정리
+            docker image prune -f

@@ -1,7 +1,11 @@
 import { css, useTheme } from '@emotion/react';
+import { motion, type Variants } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 
+import appearSound from '@/assets/audio/ding.mp3';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 
 interface QuizResultData {
@@ -52,6 +56,35 @@ const METRIC_CONFIG = (theme: Theme) =>
     },
   ] as const;
 
+// 왼쪽부터 순차 등장과 이후 사운드 타이밍 연동을 위해 애니메이션 값을 상수로 분리한다.
+const METRIC_APPEAR_START_X = -18;
+const METRIC_APPEAR_INITIAL_SCALE = 0.88;
+const METRIC_APPEAR_DURATION_SECONDS = 0.8;
+const METRIC_APPEAR_DELAY_SECONDS = 0.35;
+const METRIC_APPEAR_PEAK_SCALE = 1.08;
+const METRIC_APPEAR_PEAK_TIMING_RATIO = 0.85;
+const METRIC_APPEAR_PLAYBACK_RATES = [0.9, 0.95, 1];
+const METRIC_APPEAR_SOUND_LEAD_SECONDS = 0.25;
+
+const getMetricAppearVariants = (): Variants => ({
+  hidden: {
+    opacity: 0,
+    x: METRIC_APPEAR_START_X,
+    scale: METRIC_APPEAR_INITIAL_SCALE,
+  },
+  visible: (index: number) => ({
+    opacity: [0, 0.3, 1, 1],
+    x: [METRIC_APPEAR_START_X, -8, 0],
+    scale: [METRIC_APPEAR_INITIAL_SCALE, 0.92, METRIC_APPEAR_PEAK_SCALE, 1],
+    transition: {
+      duration: METRIC_APPEAR_DURATION_SECONDS,
+      delay: index * METRIC_APPEAR_DELAY_SECONDS,
+      ease: [0.22, 1, 0.36, 1],
+      times: [0, 0.55, 0.85, 1],
+    },
+  }),
+});
+
 interface QuizResultContentProps {
   resultData: QuizResultData;
   onNextNavigation?: () => void;
@@ -65,6 +98,100 @@ export const QuizResultContent = ({
 }: QuizResultContentProps) => {
   const theme = useTheme();
   const config = METRIC_CONFIG(theme);
+  const metricAppearVariants = getMetricAppearVariants();
+  const { playSound, preloadSound, isAudioContextReady } = useSound();
+  const hasPlayedAppearSoundRef = useRef(false);
+  const appearSoundTimeoutsRef = useRef<number[]>([]);
+  const appearSoundSequenceIdRef = useRef(0);
+  const isAppearSoundReadyRef = useRef(false);
+  const metricCount = config.length;
+
+  const clearAppearSoundTimeouts = () => {
+    appearSoundTimeoutsRef.current.forEach(timeoutId => {
+      clearTimeout(timeoutId);
+    });
+    appearSoundTimeoutsRef.current = [];
+  };
+
+  /**
+   * 사운드 리소스를 미리 로딩해 재생 지연을 줄인다.
+   */
+  const ensureAppearSoundReady = async () => {
+    if (isAppearSoundReadyRef.current) {
+      return true;
+    }
+
+    const isReady = await preloadSound(appearSound);
+    if (isReady) {
+      isAppearSoundReadyRef.current = true;
+    }
+
+    return isReady;
+  };
+
+  /**
+   * 카드가 뿅! 되는 시점에 맞춰 사운드를 순차 재생한다.
+   */
+  const playAppearSounds = async () => {
+    clearAppearSoundTimeouts();
+    const sequenceId = appearSoundSequenceIdRef.current + 1;
+    appearSoundSequenceIdRef.current = sequenceId;
+
+    // 새로고침 직후처럼 사용자 제스처가 없으면 재생을 예약하지 않는다.
+    if (!isAudioContextReady()) {
+      return;
+    }
+
+    const isReady = await ensureAppearSoundReady();
+    if (!isReady) {
+      return;
+    }
+
+    if (appearSoundSequenceIdRef.current !== sequenceId) {
+      return;
+    }
+
+    const timeouts = Array.from({ length: metricCount }, (_, index) => {
+      const baseDelaySeconds =
+        index * METRIC_APPEAR_DELAY_SECONDS +
+        METRIC_APPEAR_DURATION_SECONDS * METRIC_APPEAR_PEAK_TIMING_RATIO;
+      const delaySeconds = Math.max(0, baseDelaySeconds - METRIC_APPEAR_SOUND_LEAD_SECONDS);
+      const playbackRate = METRIC_APPEAR_PLAYBACK_RATES[index] ?? 1;
+
+      return window.setTimeout(() => {
+        void playSound({ src: appearSound, volume: 0.6, playbackRate });
+      }, delaySeconds * 1000);
+    });
+
+    appearSoundTimeoutsRef.current = timeouts;
+  };
+
+  useEffect(() => {
+    const preloadAppearSound = async () => {
+      if (isAppearSoundReadyRef.current) {
+        return;
+      }
+
+      const isReady = await preloadSound(appearSound);
+      if (isReady) {
+        isAppearSoundReadyRef.current = true;
+      }
+    };
+
+    void preloadAppearSound();
+  }, [preloadSound]);
+
+  useEffect(() => {
+    if (hasPlayedAppearSoundRef.current) {
+      return;
+    }
+
+    hasPlayedAppearSoundRef.current = true;
+
+    void playAppearSounds();
+
+    return clearAppearSoundTimeouts;
+  }, [metricCount, playSound, preloadSound, isAudioContextReady]);
 
   /* 하나의 값이라도 null인 경우 체크 */
   const hasMissingData = config.some(item => {
@@ -90,8 +217,15 @@ export const QuizResultContent = ({
       <div css={placeholderStyle(theme)} />
 
       <div css={metricsContainerStyle}>
-        {config.map(item => (
-          <div key={item.key} css={metricCardStyle(theme, item.styles.bg)}>
+        {config.map((item, index) => (
+          <motion.div
+            key={item.key}
+            custom={index}
+            initial="hidden"
+            animate="visible"
+            variants={metricAppearVariants}
+            css={metricCardStyle(theme, item.styles.bg)}
+          >
             <div css={metricTitleStyle(theme)}>{item.title}</div>
             <div css={metricValueContainerStyle(theme, item.styles.bg)}>
               <SVGIcon
@@ -105,7 +239,7 @@ export const QuizResultContent = ({
                 {item.getValue(resultData)}
               </span>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

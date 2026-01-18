@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { SettingContainer } from '@/features/user/components/SettingContainer';
 import { authService } from '@/services/authService';
 import { useAuthActions } from '@/store/authStore';
+import { useSoundSettingStore } from '@/store/soundSettingStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
 
@@ -12,6 +13,7 @@ export const Setting = () => {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const { clearAuth } = useAuthActions();
+  const { soundVolume, setSoundVolume } = useSoundSettingStore();
 
   /**
    * 다크 모드 토글 핸들러
@@ -20,6 +22,18 @@ export const Setting = () => {
   const handleDarkModeToggle = useCallback(() => {
     toggleDarkMode();
   }, [toggleDarkMode]);
+
+  /**
+   * 효과음 볼륨 변경 핸들러
+   *
+   * @param volume 0.0~1.0 범위의 볼륨 값
+   */
+  const handleSoundVolumeChange = useCallback(
+    (volume: number) => {
+      setSoundVolume(volume);
+    },
+    [setSoundVolume],
+  );
 
   /**
    * 로그아웃 핸들러
@@ -41,6 +55,8 @@ export const Setting = () => {
     <SettingContainer
       isDarkMode={isDarkMode}
       onDarkModeToggle={handleDarkModeToggle}
+      soundVolume={soundVolume}
+      onSoundVolumeChange={handleSoundVolumeChange}
       onLogout={handleLogout}
     />
   );

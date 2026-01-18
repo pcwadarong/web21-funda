@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { memo } from 'react';
+import { type ChangeEvent, memo } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
@@ -9,35 +9,66 @@ interface SettingProps {
   isDarkMode: boolean;
   onDarkModeToggle: (checked: boolean) => void;
   onLogout: () => void;
+  soundVolume: number;
+  onSoundVolumeChange: (volume: number) => void;
 }
 
-export const SettingContainer = memo(({ isDarkMode, onDarkModeToggle, onLogout }: SettingProps) => {
-  const theme = useTheme();
+export const SettingContainer = memo(
+  ({ isDarkMode, onDarkModeToggle, onLogout, soundVolume, onSoundVolumeChange }: SettingProps) => {
+    const theme = useTheme();
+    const volumePercent = Math.round(soundVolume * 100);
 
-  return (
-    <div css={containerStyle}>
-      <section css={sectionCardStyle(theme)}>
-        <h2 css={sectionTitleStyle(theme)}>화면</h2>
-        <div css={rowStyle}>
-          <div css={labelGroupStyle(theme)}>다크 모드</div>
-          <label css={switchStyle(theme)}>
-            <input
-              type="checkbox"
-              checked={isDarkMode}
-              onChange={e => onDarkModeToggle(e.target.checked)}
-            />
-            <span className="slider" />
-          </label>
-        </div>
-      </section>
+    const handleSoundVolumeChange = (event: ChangeEvent<HTMLInputElement>) => {
+      const rawValue = Number(event.target.value);
+      const normalizedVolume = rawValue / 100;
+      onSoundVolumeChange(normalizedVolume);
+    };
 
-      <Button variant="primary" fullWidth onClick={onLogout} css={logoutButtonStyle}>
-        <SVGIcon icon="Logout" size="md" />
-        <span>로그아웃</span>
-      </Button>
-    </div>
-  );
-});
+    return (
+      <div css={containerStyle}>
+        <section css={sectionCardStyle(theme)}>
+          <h2 css={sectionTitleStyle(theme)}>화면</h2>
+          <div css={rowStyle}>
+            <div css={labelGroupStyle(theme)}>다크 모드</div>
+            <label css={switchStyle(theme)}>
+              <input
+                type="checkbox"
+                checked={isDarkMode}
+                onChange={e => onDarkModeToggle(e.target.checked)}
+              />
+              <span className="slider" />
+            </label>
+          </div>
+        </section>
+
+        <section css={sectionCardStyle(theme)}>
+          <h2 css={sectionTitleStyle(theme)}>사운드</h2>
+          <div css={rowStyle}>
+            <div css={labelGroupStyle(theme)}>효과음</div>
+            <div css={volumeControlStyle}>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={volumePercent}
+                onChange={handleSoundVolumeChange}
+                css={volumeRangeStyle(theme)}
+                aria-label="효과음 볼륨"
+              />
+              <span css={volumeValueStyle(theme)}>{volumePercent}%</span>
+            </div>
+          </div>
+        </section>
+
+        <Button variant="primary" fullWidth onClick={onLogout} css={logoutButtonStyle}>
+          <SVGIcon icon="Logout" size="md" />
+          <span>로그아웃</span>
+        </Button>
+      </div>
+    );
+  },
+);
 
 SettingContainer.displayName = 'SettingContainer';
 
@@ -73,12 +104,55 @@ const rowStyle = css`
   align-items: center;
 `;
 
+const volumeControlStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
 const labelGroupStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 16px;
   font-weight: 500;
+  color: ${theme.colors.text.default};
+`;
+
+const volumeRangeStyle = (theme: Theme) => css`
+  appearance: none;
+  width: 180px;
+  height: 6px;
+  border-radius: 999px;
+  background: ${theme.colors.surface.default};
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: ${theme.colors.primary.main};
+    border: 2px solid ${theme.colors.surface.strong};
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: ${theme.colors.primary.main};
+    border: 2px solid ${theme.colors.surface.strong};
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+`;
+
+const volumeValueStyle = (theme: Theme) => css`
+  min-width: 48px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
   color: ${theme.colors.text.default};
 `;
 

@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { router } from '@/router';
 import { ModalProvider } from '@/store/modalStore';
+import { SoundSettingStoreProvider } from '@/store/soundSettingStore';
 import { ThemeStoreProvider, useThemeStore } from '@/store/themeStore';
 import { ToastProvider } from '@/store/toastStore';
 import { darkTheme, lightTheme } from '@/styles/theme';
@@ -37,7 +38,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeStoreProvider>
-      <AppContent />
+      <SoundSettingStoreProvider>
+        <AppContent />
+      </SoundSettingStoreProvider>
     </ThemeStoreProvider>
   );
 }

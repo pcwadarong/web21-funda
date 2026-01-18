@@ -1,3 +1,5 @@
+import { useSoundSettingStore } from '@/store/soundSettingStore';
+
 /**
  * 사운드 재생에 필요한 파라미터들입니다.
  */
@@ -57,6 +59,8 @@ const loadAudioBuffer = async (src: string): Promise<AudioBuffer | null> => {
  * Web Audio를 우선 사용하고, 지원하지 않으면 HTMLAudio로 재생합니다.
  */
 export const useSound = () => {
+  const { soundVolume } = useSoundSettingStore();
+
   /**
    * 사운드 리소스를 미리 로딩한다.
    *
@@ -124,10 +128,12 @@ export const useSound = () => {
     currentTime = 0,
     playbackRate = 1,
   }: PlaySoundParams) => {
+    const baseVolume = Math.min(Math.max(volume, 0), 1);
+    const finalVolume = Math.min(Math.max(baseVolume * soundVolume, 0), 1);
     const audioContext = getAudioContext();
     if (!audioContext) {
       const audio = new Audio(src);
-      audio.volume = volume;
+      audio.volume = finalVolume;
       audio.currentTime = currentTime;
       audio.playbackRate = playbackRate;
       audio.play().catch(error => {
@@ -150,7 +156,7 @@ export const useSound = () => {
     source.playbackRate.value = playbackRate;
 
     const gainNode = audioContext.createGain();
-    gainNode.gain.value = volume;
+    gainNode.gain.value = finalVolume;
 
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);

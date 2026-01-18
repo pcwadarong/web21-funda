@@ -55,10 +55,10 @@ scrape_configs:
 
       # JSON 형식 로그 파싱
       - json:
-        expressions:
-          level: level
-          msg: message
+          expressions:
+            level: level
+            msg: message
 
       # 특정 필드를 레이블로 추출
       - labels:
-        level:
+          level:

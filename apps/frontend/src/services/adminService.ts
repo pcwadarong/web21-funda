@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { apiFetch } from './api';
 
 export interface UploadSummary {
   processed: number;
@@ -26,28 +26,6 @@ export const adminService = {
   async uploadQuizzes(file: File): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
-
-    const response = await fetch(`${BASE_URL}/admin/quizzes/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    const text = await response.text();
-    let parsed: UploadResponse;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = { error: text || '응답을 해석할 수 없습니다.' };
-    }
-
-    if (!response.ok) {
-      const message =
-        (parsed as { message?: string }).message ||
-        (parsed as { error?: string }).error ||
-        '업로드 실패';
-      throw new Error(message);
-    }
-
-    return parsed;
+    return apiFetch.post<UploadResponse>('/admin/quizzes/upload', formData);
   },
 };

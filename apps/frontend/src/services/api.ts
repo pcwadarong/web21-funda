@@ -66,8 +66,11 @@ async function baseRequest<T>(
   options: RequestInit = {},
   retryOptions: RequestRetryOptions = { hasRetried: false },
 ): Promise<T> {
+  const isFormData = body instanceof FormData;
+
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    // FormData가 아닐 때만 기본적으로 JSON 타입을 설정
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
 
@@ -78,7 +81,7 @@ async function baseRequest<T>(
     ...options,
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
     credentials: 'include',
   });
 

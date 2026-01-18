@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Landing } from '@/pages/Landing';
+import { Landing } from '@/pages/common/Landing';
 import { lightTheme } from '@/styles/theme';
 
 // useNavigate 모킹

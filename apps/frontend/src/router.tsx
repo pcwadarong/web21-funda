@@ -7,7 +7,7 @@ import { Login } from '@/pages/auth/Login';
 import { GlobalError } from '@/pages/common/GlobalError';
 import { NotFound } from '@/pages/common/NotFound';
 import { ServicePreparation } from '@/pages/common/ServicePreparation';
-import { Landing } from '@/pages/Landing';
+import { Landing } from '@/pages/common/Landing';
 import { Leaderboard } from '@/pages/Leaderboard';
 import { InitialFields } from '@/pages/learn/InitialFields';
 import { Learn } from '@/pages/learn/Learn';

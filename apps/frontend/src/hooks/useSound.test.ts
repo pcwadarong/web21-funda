@@ -1,8 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { createElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { SoundSettingStoreProvider } from '@/store/soundSettingStore';
 
 describe('useSound Hook', () => {
   beforeEach(() => {
@@ -48,7 +45,7 @@ describe('useSound Hook', () => {
     );
 
     const { useSound } = await import('./useSound');
-    const { result } = renderHook(() => useSound(), { wrapper: soundSettingWrapper });
+    const { result } = renderHook(() => useSound());
 
     // 재생 요청
     await act(async () => {
@@ -85,7 +82,7 @@ describe('useSound Hook', () => {
     vi.stubGlobal('Audio', AudioMock);
 
     const { useSound } = await import('./useSound');
-    const { result } = renderHook(() => useSound(), { wrapper: soundSettingWrapper });
+    const { result } = renderHook(() => useSound());
 
     // 재생 요청
     await act(async () => {
@@ -99,6 +96,3 @@ describe('useSound Hook', () => {
     expect(playMock).toHaveBeenCalled();
   });
 });
-
-const soundSettingWrapper = ({ children }: { children: ReactNode }) =>
-  createElement(SoundSettingStoreProvider, null, children);

@@ -1,4 +1,4 @@
-import { useSoundSettingStore } from '@/store/soundSettingStore';
+import { useStorage } from '@/hooks/useStorage';
 
 /**
  * 사운드 재생에 필요한 파라미터들입니다.
@@ -59,7 +59,7 @@ const loadAudioBuffer = async (src: string): Promise<AudioBuffer | null> => {
  * Web Audio를 우선 사용하고, 지원하지 않으면 HTMLAudio로 재생합니다.
  */
 export const useSound = () => {
-  const { soundVolume } = useSoundSettingStore();
+  const { soundVolume } = useStorage();
 
   /**
    * 사운드 리소스를 미리 로딩한다.

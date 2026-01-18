@@ -79,11 +79,18 @@ export const useStorage = () => {
     setStorageData(updated);
   }, []);
 
+  // 효과음 볼륨 설정
+  const setSoundVolume = useCallback((volume: number) => {
+    const updated = storageUtil.setSoundVolume(volume);
+    setStorageData(updated);
+  }, []);
+
   return {
     storageData,
     progress: storageData.progress,
     uiState: storageData.ui_state,
     solvedStepHistory: storageData.solved_step_history,
+    soundVolume: storageData.sound_volume,
     updateProgress,
     updateUIState,
     addStepHistory,
@@ -95,5 +102,6 @@ export const useStorage = () => {
     finalizeGuestStepAttempt,
     getGuestStepAttempt,
     removeGuestStepAttempt,
+    setSoundVolume,
   };
 };

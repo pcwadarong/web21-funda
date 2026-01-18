@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { SettingContainer } from '@/features/user/components/SettingContainer';
+import { useStorage } from '@/hooks/useStorage';
 import { authService } from '@/services/authService';
 import { useAuthActions } from '@/store/authStore';
-import { useSoundSettingStore } from '@/store/soundSettingStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
 
@@ -13,7 +13,7 @@ export const Setting = () => {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const { clearAuth } = useAuthActions();
-  const { soundVolume, setSoundVolume } = useSoundSettingStore();
+  const { soundVolume, setSoundVolume } = useStorage();
 
   /**
    * 다크 모드 토글 핸들러

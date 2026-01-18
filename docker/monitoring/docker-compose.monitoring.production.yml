@@ -83,7 +83,7 @@ services:
       - '--web.enable-lifecycle'                    # 설정 리로드 API 활성화
     volumes:
       - prometheus_data:/prometheus                 # 메트릭 데이터 영구 저장
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - funda-network
     restart: unless-stopped

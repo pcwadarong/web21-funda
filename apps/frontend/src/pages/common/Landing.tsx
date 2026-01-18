@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useIsLoggedIn, useIsAuthReady } from '@/store/authStore';
+
 import { LandingContainer } from '@/feat/landing/components/LandingContainer';
+import { useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 
 export const Landing = () => {
   const navigate = useNavigate();

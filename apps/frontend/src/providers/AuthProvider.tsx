@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+
 import { authService } from '@/services/authService';
 import { progressService } from '@/services/progressService';
 import { useAuthActions } from '@/store/authStore';

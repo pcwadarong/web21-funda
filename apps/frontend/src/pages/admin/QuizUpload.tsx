@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
-import { adminService, type UploadResponse } from '@/services/adminService';
+
 import { AdminQuizUploadContainer } from '@/feat/admin/components/QuizUploadContainer';
+import { adminService, type UploadResponse } from '@/services/adminService';
 
 export function AdminQuizUpload() {
   const [status, setStatus] = useState('대기 중');

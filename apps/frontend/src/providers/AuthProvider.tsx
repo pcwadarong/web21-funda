@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-
+import { useEffect, useRef, useCallback } from 'react';
 import { authService } from '@/services/authService';
 import { progressService } from '@/services/progressService';
 import { useAuthActions } from '@/store/authStore';
@@ -13,58 +12,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { setUser, clearAuth, setAuthReady } = useAuthActions();
   const hasSynced = useRef(false);
 
+  // 로컬 기록 서버와 동기화
+  const syncLocalProgress = useCallback(async () => {
+    if (hasSynced.current) return;
+
+    const storage = storageUtil.get();
+    const stepIds = storage.solved_step_history;
+    if (stepIds.length === 0) return;
+
+    hasSynced.current = true;
+    try {
+      await progressService.syncStepHistory(stepIds);
+      storageUtil.set({ ...storage, solved_step_history: [] });
+    } catch {
+      hasSynced.current = false;
+    }
+  }, []);
+
+  // 인증 성공 시 동기화 및 정보 갱신
+  const handleAuthSuccess = useCallback(async () => {
+    await syncLocalProgress();
+    const updatedUser = await authService.getCurrentUser();
+    if (updatedUser) {
+      setUser(updatedUser);
+    }
+  }, [syncLocalProgress, setUser]);
+
   useEffect(() => {
-    const syncLocalProgress = async () => {
-      if (hasSynced.current) return;
-      hasSynced.current = true;
-
-      const storage = storageUtil.get();
-      const stepIds = storage.solved_step_history;
-
-      if (stepIds.length === 0) return;
-
-      try {
-        await progressService.syncStepHistory(stepIds);
-        // 동기화 성공 시 localStorage 초기화
-        storageUtil.set({
-          ...storage,
-          solved_step_history: [],
-        });
-      } catch (error) {
-        console.error('풀이 기록 동기화 실패:', error);
-        hasSynced.current = false; // 다음에 다시 시도할 수 있도록
-      }
-    };
-
     const initializeAuth = async () => {
       try {
-        // 1. 먼저 /me로 유저 정보 확인
-        const user = await authService.getCurrentUser();
+        // 1. 유효한 세션이 있는지 확인
+        let user = await authService.getCurrentUser();
 
-        if (user) {
-          // 동기화 먼저 완료
-          await syncLocalProgress();
-          // 동기화 후 최신 user 정보 조회
-          const updatedUser = await authService.getCurrentUser();
-          if (updatedUser) {
-            setUser(updatedUser);
-          }
-        } else {
-          // /me 실패 시 refresh 시도 (refreshToken은 쿠키에 있음)
+        // 2. 세션이 없다면 토큰 재발급 시도
+        if (!user) {
           const refreshResult = await authService.refreshToken();
-
-          if (refreshResult) {
-            // 동기화 먼저 완료
-            await syncLocalProgress();
-            // 동기화 후 최신 user 정보 조회
-            const updatedUser = await authService.getCurrentUser();
-            if (updatedUser) {
-              setUser(updatedUser);
-            }
-          } else {
-            clearAuth();
-          }
+          if (refreshResult) user = refreshResult.user;
         }
+
+        // 3. 최종적으로 인증된 상태라면 후속 처리 실행
+        if (user) await handleAuthSuccess();
+        else clearAuth();
       } catch {
         clearAuth();
       } finally {
@@ -73,7 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     initializeAuth();
-  }, [setUser, clearAuth, setAuthReady]);
+  }, [clearAuth, setAuthReady, handleAuthSuccess]);
 
   return <>{children}</>;
 };

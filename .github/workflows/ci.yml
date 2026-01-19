@@ -43,9 +43,9 @@ jobs:
       # - name: run lint
       #  run: pnpm -r lint
 
-      # 테스트 코드 실행. 현재는 테스트 코드가 없으므로 주석 처리.
+      # 2-2. 테스트 실행
       # - name: run tests
-      #   run: pnpm -r test?? --filter 사용? 어떻게 해야할지는 테스트코드 작성 후 결정
+      # run: pnpm -r test
 
       # FE 환경변수 (빌드 시점에 주입되어 static 파일에 포함됨)
       - name: create FE env file

@@ -1,0 +1,69 @@
+# ============================================================
+# Prometheus Configuration
+# 메트릭 수집 및 저장을 위한 Prometheus 설정 파일
+# 로컬/프로덕션 환경 공통 사용
+# ============================================================
+
+# ============================================================
+# Global Configuration
+# ============================================================
+global:
+  # 스크랩 간격: 모든 타겟에서 메트릭을 수집하는 기본 주기
+  scrape_interval: 15s
+  
+  # 평가 간격: 알림 규칙과 레코딩 규칙을 평가하는 주기
+  evaluation_interval: 15s
+  
+  # 외부 레이블: 모든 수집된 메트릭에 자동으로 추가되는 레이블
+  # 환경별로 구분하여 메트릭을 필터링할 수 있음
+  external_labels:
+    cluster: 'funda-local'      # 클러스터 식별자 (환경별 수정 필요)
+    environment: 'local'        # 환경 식별자 (local/production)
+
+# ============================================================
+# Scrape Configuration
+# 메트릭을 수집할 타겟 목록
+# ============================================================
+scrape_configs:
+  # ------------------------------------------------------------
+  # Prometheus 자체 모니터링
+  # Prometheus 서버의 성능 및 상태 메트릭 수집
+  # ------------------------------------------------------------
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ------------------------------------------------------------
+  # Node Exporter - 호스트 OS 메트릭
+  # CPU, 메모리, 디스크 I/O, 네트워크 등 호스트 레벨 메트릭
+  # ------------------------------------------------------------
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']  # Node Exporter 기본 포트
+    metrics_path: '/metrics'             # 메트릭 엔드포인트 경로
+
+  # ------------------------------------------------------------
+  # Backend 메트릭 (NestJS 애플리케이션)
+  # 백엔드 서버의 애플리케이션 레벨 메트릭
+  # ------------------------------------------------------------
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:3000']         # 백엔드 서비스 이름 및 포트
+    metrics_path: '/api/metrics'          # NestJS Prometheus 엔드포인트
+    scrape_interval: 30s                  # 백엔드는 30초마다 수집 (부하 고려)
+
+
+  # ------------------------------------------------------------
+  # 추가 가능한 스크랩 타겟:
+  # 
+  # - job_name: 'mysql-exporter'
+  #   static_configs:
+  #     - targets: ['mysql-exporter:9104']
+  # 
+  # - job_name: 'nginx-exporter'
+  #   static_configs:
+  #     - targets: ['nginx-exporter:9113']
+  # 
+  # - job_name: 'redis-exporter'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

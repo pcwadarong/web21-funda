@@ -1,5 +1,6 @@
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
+/** API 표준 응답 포맷 */
 interface ApiResponse<T> {
   success: boolean;
   code: number;
@@ -7,29 +8,56 @@ interface ApiResponse<T> {
   result: T;
 }
 
+/** 요청 재시도 제어를 위한 옵션 */
 type RequestRetryOptions = {
   hasRetried: boolean;
 };
 
 /**
- * 인증 만료 시 리프레시 토큰으로 갱신을 시도한다.
- *
+ * [인증 갱신] 인증 만료(401) 시 리프레시 토큰 쿠키를 이용하여 세션을 갱신한다.
  * @returns {Promise<boolean>} 갱신 성공 여부
  */
 async function tryRefreshToken(): Promise<boolean> {
   try {
     const response = await fetch(`${BASE_URL}/auth/refresh`, {
       method: 'POST',
-      credentials: 'include',
+      credentials: 'include', // 쿠키 전달 필수
     });
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error('[Auth] Token refresh failed:', error);
     return false;
   }
 }
 
 /**
- * 전역 요청 함수 (기본 토대)
+ * [공통] API 응답의 유효성을 검사하고 결과를 반환한다.
+ */
+async function handleResponse<T>(response: Response): Promise<T> {
+  const responseBody = (await response.json().catch(() => null)) as ApiResponse<T> | null;
+
+  // 1. HTTP 상태 코드가 성공 범위(2xx)가 아닌 경우
+  if (!response.ok) {
+    const errorMessage = responseBody?.message || `HTTP Error: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  // 2. 응답 본문이 없거나 success 필드가 false인 경우
+  if (!responseBody) throw new Error('응답 본문이 비어 있습니다.');
+  if (!responseBody.success) throw new Error(responseBody.message || '요청 처리에 실패했습니다.');
+
+  return responseBody.result;
+}
+
+/**
+ * [핵심] Fetch API를 기반으로 한 전역 요청 함수.
+ * 인증 만료 시 자동 재시도 로직을 포함한다.
+ *
+ * @param method HTTP 메서드
+ * @param endpoint API 엔드포인트 (예: '/users/me')
+ * @param body 요청 바디 (POST, PUT 등)
+ * @param options 추가적인 Fetch 설정
+ * @param retryOptions 내부 재시도 상태 관리용
  */
 async function baseRequest<T>(
   method: string,
@@ -38,58 +66,50 @@ async function baseRequest<T>(
   options: RequestInit = {},
   retryOptions: RequestRetryOptions = { hasRetried: false },
 ): Promise<T> {
+  const isFormData = body instanceof FormData;
+
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    // FormData가 아닐 때만 기본적으로 JSON 타입을 설정
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...options.headers,
   };
 
-  // Authorization 헤더가 명시적으로 제공된 경우에만 사용
-  // 그렇지 않으면 백엔드가 쿠키에서 accessToken을 읽음
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  // 슬래시 중복 방지 처리된 URL 생성
+  const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+
+  const response = await fetch(url, {
     ...options,
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: 'include', // 쿠키를 포함하기 위해 필요
+    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+    credentials: 'include',
   });
 
-  if (response.status === 401 && !retryOptions.hasRetried && endpoint !== '/auth/refresh') {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) {
-      return baseRequest(method, endpoint, body, options, { hasRetried: true });
-    }
+  // 401 Unauthorized 발생 시 리프레시 토큰으로 재시도
+  const isUnauthorized = response.status === 401;
+  const isRefreshEndpoint = endpoint.includes('/auth/refresh');
+
+  if (isUnauthorized && !retryOptions.hasRetried && !isRefreshEndpoint) {
+    const isRefreshed = await tryRefreshToken();
+    if (isRefreshed) return baseRequest(method, endpoint, body, options, { hasRetried: true });
   }
 
-  const responseBody = (await response.json().catch(() => null)) as ApiResponse<T> | null;
-
-  if (!response.ok) {
-    const errorMessage = responseBody?.message || `API Error: ${response.statusText}`;
-    throw new Error(errorMessage);
-  }
-
-  if (!responseBody) {
-    throw new Error('API 응답 본문이 비어 있습니다.');
-  }
-
-  if (!responseBody.success) {
-    throw new Error(responseBody.message || '요청에 실패했습니다.');
-  }
-
-  return responseBody.result;
+  return handleResponse<T>(response);
 }
 
 /**
- * 커링 패턴을 적용한 apiFetch 객체
+ * 외부에서 사용할 API 요청 객체
  */
 export const apiFetch = {
-  // 인자가 1개인 메서드 (GET, DELETE)
   get: <T>(url: string, opt?: RequestInit) => baseRequest<T>('GET', url, undefined, opt),
+
   delete: <T>(url: string, opt?: RequestInit) => baseRequest<T>('DELETE', url, undefined, opt),
 
-  // 인자가 2개인 메서드 (POST, PUT, PATCH)
   post: <T>(url: string, body?: unknown, opt?: RequestInit) =>
     baseRequest<T>('POST', url, body, opt),
+
   put: <T>(url: string, body?: unknown, opt?: RequestInit) => baseRequest<T>('PUT', url, body, opt),
+
   patch: <T>(url: string, body?: unknown, opt?: RequestInit) =>
     baseRequest<T>('PATCH', url, body, opt),
 };

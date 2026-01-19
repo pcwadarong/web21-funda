@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
@@ -9,7 +10,7 @@ interface LoginFormProps {
   onGitHubLogin: () => void;
 }
 
-export const LoginForm = ({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
+export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
   const theme = useTheme();
 
   return (
@@ -40,7 +41,7 @@ export const LoginForm = ({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
       </div>
     </div>
   );
-};
+});
 
 const containerStyle = () => css`
   min-height: 100vh;

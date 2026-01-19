@@ -1,21 +1,16 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 
 import { Button } from '@/comp/Button';
 import type { Theme } from '@/styles/theme';
 
-export const Landing = () => {
+interface LandingContainerProps {
+  onStart: () => void;
+  onLogin: () => void;
+}
+
+export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContainerProps) => {
   const theme = useTheme();
-  const navigate = useNavigate();
-
-  const handleStart = useCallback(() => {
-    navigate('/initial-fields');
-  }, [navigate]);
-
-  const handleLogin = useCallback(() => {
-    navigate('/login');
-  }, [navigate]);
 
   return (
     <div css={containerStyle()}>
@@ -25,17 +20,17 @@ export const Landing = () => {
           "컴퓨터 사이언스를 배우기 위한 <br /> 가장 재밌고 효과적인 방법"
         </h1>
         <div css={buttonGroupStyle}>
-          <Button variant="primary" onClick={handleStart} fullWidth>
+          <Button variant="primary" onClick={onStart} fullWidth>
             사용해 보기
           </Button>
-          <Button variant="secondary" onClick={handleLogin} fullWidth>
+          <Button variant="secondary" onClick={onLogin} fullWidth>
             전 이미 계정이 있어요
           </Button>
         </div>
       </div>
     </div>
   );
-};
+});
 
 const containerStyle = () => css`
   min-height: 100vh;

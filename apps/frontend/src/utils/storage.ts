@@ -35,6 +35,8 @@ export interface GuestStepAttempt {
 
 export type GuestStepAttempts = Record<number, GuestStepAttempt>;
 
+type StorageUpdatableKey = 'progress' | 'ui_state' | 'quiz_started_at' | 'guest_step_attempts';
+
 // 스토리지 전체 데이터
 export interface QuizStorageData {
   progress: Progress;
@@ -43,6 +45,8 @@ export interface QuizStorageData {
   // step_id별 퀴즈 시작 시간 (step_id: timestamp)
   quiz_started_at: Record<number, number>;
   guest_step_attempts: GuestStepAttempts;
+  // 효과음 볼륨 (0.0~1.0)
+  sound_volume: number;
 }
 
 const STORAGE_KEY = 'QUIZ_V1';
@@ -57,6 +61,7 @@ const DEFAULT_STATE: QuizStorageData = {
   },
   quiz_started_at: {},
   guest_step_attempts: {},
+  sound_volume: 1,
 };
 
 // 사용할 스토리지 함수
@@ -73,6 +78,10 @@ export const storageUtil = {
       }
       if (!parsed.guest_step_attempts) {
         parsed.guest_step_attempts = {};
+        storageUtil.set(parsed);
+      }
+      if (typeof parsed.sound_volume !== 'number') {
+        parsed.sound_volume = DEFAULT_STATE.sound_volume;
         storageUtil.set(parsed);
       }
       return parsed;
@@ -99,7 +108,7 @@ export const storageUtil = {
 
   // key는 progess 또는 ui_state 중 하나만 가능하고 value는 해당 객체의 부분 업데이트를 위한 값
   // partial만 넣어서 사용하도록 제네릭 타입 활용
-  update: <K extends keyof QuizStorageData>(
+  update: <K extends StorageUpdatableKey>(
     key: K,
     value: Partial<QuizStorageData[K]>,
   ): QuizStorageData => {
@@ -127,6 +136,32 @@ export const storageUtil = {
     };
     storageUtil.set(updated);
     return updated;
+  },
+  /**
+   * 효과음 볼륨을 설정한다.
+   *
+   * @param volume 0.0~1.0 범위의 볼륨 값
+   * @returns 업데이트된 스토리지 데이터
+   */
+  setSoundVolume: (volume: number): QuizStorageData => {
+    const safeVolume = Math.min(Math.max(volume, 0), 1);
+    const current = storageUtil.get();
+    const updated = {
+      ...current,
+      sound_volume: safeVolume,
+    };
+    storageUtil.set(updated);
+    return updated;
+  },
+
+  /**
+   * 효과음 볼륨을 가져온다.
+   *
+   * @returns 0.0~1.0 범위의 볼륨 값
+   */
+  getSoundVolume: (): number => {
+    const current = storageUtil.get();
+    return current.sound_volume;
   },
   /**
    * 특정 필드의 마지막 완료 유닛 업데이트

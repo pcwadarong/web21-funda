@@ -55,7 +55,7 @@ const mainStyle = css`
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 1.5rem 1.5rem 0;
   overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
@@ -94,7 +94,7 @@ const gridStyle = css`
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
-  padding: 20px 0;
+  padding: 10px 0 30px;
 
   overflow-y: auto;
   flex: 1;

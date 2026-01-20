@@ -73,6 +73,9 @@ export const getKstNow = (): Date => {
  * @returns 다음 날 0시(KST)
  */
 export const getKstNextDayStart = (date: Date): Date => {
-  const parts = getKstDateTimeParts(date);
-  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0, 0));
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+
+  return new Date(Date.UTC(year, month, day + 1, 0, 0, 0, 0));
 };

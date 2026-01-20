@@ -64,6 +64,7 @@ export const IdleDisabled: Story = {
     onCheck: () => {},
     onNext: () => {},
     isLast: false,
+    isReviewMode: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -82,6 +83,7 @@ export const IdleEnabled: Story = {
     onCheck: () => {},
     onNext: () => {},
     isLast: false,
+    isReviewMode: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -100,6 +102,7 @@ export const Checking: Story = {
     onCheck: () => {},
     onNext: () => {},
     isLast: false,
+    isReviewMode: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -117,6 +120,7 @@ export const Checked: Story = {
     onCheck: () => {},
     onNext: () => {},
     isLast: false,
+    isReviewMode: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -136,10 +140,29 @@ export const CheckedLast: Story = {
     onCheck: () => {},
     onNext: () => {},
     isLast: true,
+    isReviewMode: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('button', { name: '결과 보기' })).toBeInTheDocument();
+  },
+};
+
+export const CheckedLastReview: Story = {
+  args: {
+    question: sampleQuestion,
+    status: 'checked',
+    selectedAnswer: 'c1',
+    onAnswerChange: () => {},
+    isSubmitDisabled: false,
+    onCheck: () => {},
+    onNext: () => {},
+    isLast: true,
+    isReviewMode: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('button', { name: '복습 완료' })).toBeInTheDocument();
   },
 };
 
@@ -153,6 +176,7 @@ export const OpenReportModal: Story = {
     onCheck: () => {},
     onNext: () => {},
     isLast: false,
+    isReviewMode: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

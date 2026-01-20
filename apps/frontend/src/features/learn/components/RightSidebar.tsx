@@ -1,11 +1,13 @@
 import { css, useTheme } from '@emotion/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
+import type { QuizQuestion } from '@/feat/quiz/types';
 import { useStorage } from '@/hooks/useStorage';
 import { type Field, fieldService } from '@/services/fieldService';
+import { progressService } from '@/services/progressService';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
@@ -27,16 +29,16 @@ export const LearnRightSidebar = ({
   const user = useAuthUser();
   const isLoggedIn = useIsLoggedIn();
   const { progress, updateUIState } = useStorage();
+  const navigate = useNavigate();
 
   const heartCount = user ? user.heartCount : progress.heart;
 
   const [fields, setFields] = useState<Field[]>([]);
+  const [reviewQuizzes, setReviewQuizzes] = useState<QuizQuestion[]>([]);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [isReviewLoading, setIsReviewLoading] = useState(false);
 
   const { showToast } = useToast();
-
-  const showInProgressToast = useCallback(() => {
-    showToast('제작 중입니다');
-  }, []);
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -50,6 +52,31 @@ export const LearnRightSidebar = ({
 
     fetchFields();
   }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setReviewQuizzes([]);
+      setReviewCount(0);
+      return;
+    }
+
+    const fetchReviewQueue = async () => {
+      setIsReviewLoading(true);
+      try {
+        const quizzes = await progressService.getReviewQueue();
+        setReviewQuizzes(quizzes);
+        setReviewCount(quizzes.length);
+      } catch (error) {
+        console.error('Failed to fetch review queue:', error);
+        setReviewQuizzes([]);
+        setReviewCount(0);
+      } finally {
+        setIsReviewLoading(false);
+      }
+    };
+
+    fetchReviewQueue();
+  }, [isLoggedIn]);
 
   const selectedField = useMemo(
     () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
@@ -79,6 +106,43 @@ export const LearnRightSidebar = ({
 
     setFieldSlug(option);
   };
+
+  const handleReviewClick = useCallback(async () => {
+    if (isReviewLoading) {
+      return;
+    }
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+
+    let quizzes = reviewQuizzes;
+    if (quizzes.length === 0) {
+      setIsReviewLoading(true);
+      try {
+        quizzes = await progressService.getReviewQueue();
+        setReviewQuizzes(quizzes);
+        setReviewCount(quizzes.length);
+      } catch (error) {
+        console.error('Failed to fetch review queue:', error);
+        showToast('복습 문제를 불러오지 못했습니다.');
+        setIsReviewLoading(false);
+        return;
+      }
+      setIsReviewLoading(false);
+    }
+
+    if (quizzes.length === 0) {
+      showToast('복습할 문제가 없습니다.');
+      return;
+    }
+
+    navigate('/quiz?mode=review', {
+      state: {
+        reviewQuizzes: quizzes,
+      },
+    });
+  }, [isLoggedIn, isReviewLoading, navigate, reviewQuizzes, showToast]);
 
   return (
     <aside css={rightSectionStyle}>
@@ -139,18 +203,15 @@ export const LearnRightSidebar = ({
           <span css={cardIconStyle}>
             <SVGIcon icon="Book" size="md" />
           </span>
-          <span css={cardTitleStyle(theme)}>오답 노트</span>
+          <span css={cardTitleStyle(theme)}>복습 노트</span>
         </div>
         {isLoggedIn && user ? (
-          //TODO: 복습 시스템 구현
-          // <button css={reviewBadgeStyle(theme)}>{user.wrongAnswers}개 문제 복습 필요</button>
-          // 임시 토스트 메시지 출력
-          <button css={reviewBadgeStyle(theme)} onClick={() => showInProgressToast()}>
-            5개 문제 복습 필요
+          <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
+            {reviewCount}개 문제 복습 필요
           </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 문제를 복습해보세요!</div>
+            <div css={reviewBadgeStyle(theme)}>로그인 후 복습 노트를 확인해보세요!</div>
           </Link>
         )}
       </div>

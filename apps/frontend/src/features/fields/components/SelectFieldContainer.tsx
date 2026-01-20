@@ -30,7 +30,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
               <SVGIcon icon={field.icon} size="lg" />
             </div>
             <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
-            <div css={goLoadmap(theme)}>
+            <div css={goRoadmap(theme)}>
               <span>로드맵 보기</span>
 
               <SVGIcon icon={'NextArrow'} size="sm" />
@@ -111,6 +111,7 @@ const fieldLabelStyle = (theme: Theme) => css`
   transition: all 150ms ease-in-out;
   box-shadow: 0 4px 0 ${theme.colors.border.default};
   cursor: pointer;
+  color: ${theme.colors.text.default};
 
   &:hover {
     transform: translateY(-4px);
@@ -136,18 +137,17 @@ const fieldNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   line-height: ${theme.typography['20Bold'].lineHeight};
-  color: ${theme.colors.grayscale[800]};
 `;
 
 const fieldDescriptionStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   line-height: ${theme.typography['16Medium'].lineHeight};
-  color: ${theme.colors.grayscale[600]};
-  flex-grow: 1; /* 설명이 짧아도 아래 '로드맵 보기' 위치를 고정 */
+  color: ${theme.colors.text.light};
+  flex-grow: 1;
 `;
 
-const goLoadmap = (theme: Theme) => css`
+const goRoadmap = (theme: Theme) => css`
   display: flex;
   align-items: center;
   gap: 4px;

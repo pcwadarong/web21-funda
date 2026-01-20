@@ -7,7 +7,6 @@ import { AuthModule } from './auth/auth.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
 import { createTypeOrmOptions } from './config/typeorm.config';
 import { MetricsModule } from './metrics/metrics.module';
-import { NotificationController } from './notification/notification.controller';
 import { NotificationModule } from './notification/notification.module';
 import { ProgressModule } from './progress/progress.module';
 import { ReportModule } from './report/report.module';
@@ -34,7 +33,7 @@ import { AppService } from './app.service';
     ScheduleModule.forRoot(),
     NotificationModule,
   ],
-  controllers: [AppController, NotificationController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -1,12 +1,12 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
+import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { type Field, fieldService } from '@/services/fieldService';
-import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
@@ -25,12 +25,12 @@ export const LearnRightSidebar = ({
 }) => {
   const theme = useTheme();
   const user = useAuthUser();
-  const isLoggedIn = useIsLoggedIn();
   const { progress, updateUIState } = useStorage();
 
-  const heartCount = user ? user.heartCount : progress.heart;
+  const isLoggedIn = useIsLoggedIn();
+  const isAuthReady = useIsAuthReady();
 
-  const [fields, setFields] = useState<Field[]>([]);
+  const heartCount = user ? user.heartCount : progress.heart;
 
   const { showToast } = useToast();
 
@@ -38,18 +38,9 @@ export const LearnRightSidebar = ({
     showToast('제작 중입니다');
   }, []);
 
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        const data = await fieldService.getFields();
-        setFields(data.fields);
-      } catch (error) {
-        console.error('Failed to fetch fields:', error);
-      }
-    };
+  const { data } = useFieldsQuery();
 
-    fetchFields();
-  }, []);
+  const fields = data.fields;
 
   const selectedField = useMemo(
     () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
@@ -79,6 +70,8 @@ export const LearnRightSidebar = ({
 
     setFieldSlug(option);
   };
+
+  if (!isAuthReady) return null;
 
   return (
     <aside css={rightSectionStyle}>

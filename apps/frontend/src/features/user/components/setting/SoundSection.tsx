@@ -52,6 +52,14 @@ export const volumeControlStyle = css`
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 240px;
+  justify-content: flex-end;
+  min-width: 0;
+
+  @media (max-width: 480px) {
+    justify-content: space-between;
+    width: 100%;
+  }
 `;
 
 export const thumbStyle = (theme: Theme) => css`
@@ -67,6 +75,8 @@ export const thumbStyle = (theme: Theme) => css`
 export const volumeRangeStyle = (theme: Theme) => css`
   appearance: none;
   width: 180px;
+  max-width: 180px;
+  min-width: 80px;
   height: 6px;
   border-radius: 999px;
   background: ${theme.colors.surface.default};

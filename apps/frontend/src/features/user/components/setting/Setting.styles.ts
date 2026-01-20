@@ -26,10 +26,14 @@ export const rowStyle = css`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 40px; /* 터치 영역 및 정렬 안정감 */
+  min-height: 40px;
+  gap: 16px;
+  flex-wrap: wrap;
 `;
 
 export const labelGroupStyle = css`
   margin: 0;
   white-space: nowrap;
+  flex-shrink: 0;
+  flex-grow: 1;
 `;

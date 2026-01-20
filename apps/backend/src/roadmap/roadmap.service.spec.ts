@@ -3,6 +3,7 @@ import { type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import { User } from '../users/entities/user.entity';
 
 import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
@@ -17,6 +18,7 @@ describe('RoadmapService', () => {
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
+  let userRepository: Partial<Repository<User>>;
   let codeFormatter: Partial<CodeFormatter>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
@@ -71,6 +73,10 @@ describe('RoadmapService', () => {
     stepStatusRepository = {
       find: stepStatusFindMock,
     };
+    userRepository = {
+      findOne: jest.fn(),
+      save: jest.fn(),
+    };
     codeFormatter = {
       format: formatMock,
     };
@@ -83,6 +89,7 @@ describe('RoadmapService', () => {
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
       stepStatusRepository as Repository<UserStepStatus>,
+      userRepository as Repository<User>,
     );
   });
 

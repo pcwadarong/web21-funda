@@ -1,10 +1,14 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+
+import { AdminGuard } from '../auth/guards/admin.guard';
+import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 
 import type { UploadSummary } from './dto/quizzes-upload.dto';
 import { BackofficeService } from './backoffice.service';
 
 @Controller('admin/quizzes')
+@UseGuards(JwtAccessGuard, AdminGuard)
 export class BackofficeController {
   constructor(private readonly backofficeService: BackofficeService) {}
 

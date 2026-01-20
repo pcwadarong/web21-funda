@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-import { authService } from '@/services/authService';
+import { useCurrentUserQuery } from '@/hooks/queries/authQueries';
 import { progressService } from '@/services/progressService';
 import { useAuthActions } from '@/store/authStore';
 import { storageUtil } from '@/utils/storage';
@@ -12,6 +12,8 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { setUser, clearAuth, setAuthReady } = useAuthActions();
   const hasSynced = useRef(false);
+
+  const { data } = useCurrentUserQuery();
 
   // 로컬 기록 서버와 동기화
   const syncLocalProgress = useCallback(async () => {
@@ -30,39 +32,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
-  // 인증 성공 시 동기화 및 정보 갱신
-  const handleAuthSuccess = useCallback(async () => {
-    await syncLocalProgress();
-    const updatedUser = await authService.getCurrentUser();
-    if (updatedUser) {
-      setUser(updatedUser);
-    }
-  }, [syncLocalProgress, setUser]);
-
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        // 1. 유효한 세션이 있는지 확인
-        let user = await authService.getCurrentUser();
-
-        // 2. 세션이 없다면 토큰 재발급 시도
-        if (!user) {
-          const refreshResult = await authService.refreshToken();
-          if (refreshResult) user = refreshResult.user;
-        }
-
-        // 3. 최종적으로 인증된 상태라면 후속 처리 실행
-        if (user) await handleAuthSuccess();
-        else clearAuth();
-      } catch {
+    const finalizeAuth = async () => {
+      if (data) {
+        await syncLocalProgress();
+        setUser(data);
+      } else {
         clearAuth();
-      } finally {
-        setAuthReady(true);
       }
+      setAuthReady(true);
     };
 
-    initializeAuth();
-  }, [clearAuth, setAuthReady, handleAuthSuccess]);
+    finalizeAuth().catch(() => {
+      clearAuth();
+      setAuthReady(true);
+    });
+  }, [clearAuth, data, setAuthReady, setUser, syncLocalProgress]);
 
   return <>{children}</>;
 };

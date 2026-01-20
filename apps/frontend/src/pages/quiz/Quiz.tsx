@@ -18,7 +18,7 @@ import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { authService } from '@/services/authService';
 import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
-import { useAuthStore, useIsAuthReady } from '@/store/authStore';
+import { useAuthStore, useAuthUser, useIsAuthReady } from '@/store/authStore';
 import { shuffleArray } from '@/utils/shuffleArray';
 /**
  * 퀴즈 풀이 페이지 컴포넌트
@@ -34,13 +34,17 @@ export const Quiz = () => {
     addGuestStepAnswer,
     finalizeGuestStepAttempt,
     getGuestStepAttempt,
+    progress,
   } = useStorage();
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const user = useAuthUser();
   const isAuthReady = useIsAuthReady();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  const heartCount = user ? user.heartCount : progress.heart;
 
   /** 불러온 문제 배열 */
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
@@ -407,6 +411,7 @@ export const Quiz = () => {
       handleAnswerChange={handleAnswerChange}
       handleCheckAnswer={handleCheckAnswer}
       handleNextQuestion={handleNextQuestion}
+      heartCount={heartCount}
     />
   );
 };

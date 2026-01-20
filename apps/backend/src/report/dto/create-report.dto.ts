@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsString,
   registerDecorator,
   ValidationOptions,
   ValidatorConstraint,
@@ -51,7 +50,6 @@ export class CreateReportDto {
     enum: REPORT_REASONS,
     example: '문제/해설에 오타가 있어요',
   })
-  @IsString()
   @IsValidReportDescription()
   report_description!: string;
 }

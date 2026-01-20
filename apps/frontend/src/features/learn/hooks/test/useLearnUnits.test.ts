@@ -94,7 +94,7 @@ describe('useLearnUnits Hook', () => {
 
   it('유닛을 불러왔을 때, 로그인 상태에서는 완료 상태를 덮어쓰지 않아야 한다', async () => {
     const { useLearnUnits } = await import('../useLearnUnits');
-    const { result } = renderHook(() => useLearnUnits());
+    renderHook(() => useLearnUnits());
 
     const completedStep = createUnitsResponse().units[0]!.steps.find(step => step.id === 2);
     expect(completedStep?.isCompleted).toBe(false);

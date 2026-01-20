@@ -26,7 +26,7 @@ export const RoadmapContainer = ({
 
   return (
     <div css={containerStyle}>
-      <main css={mainStyle(theme)}>
+      <main css={mainStyle}>
         <section css={heroStyle}>
           <div css={heroTopStyle}>
             <Link to="/learn/select-field" css={backLinkStyle(theme)}>
@@ -71,25 +71,15 @@ const containerStyle = css`
   overflow: hidden;
 `;
 
-const mainStyle = (theme: Theme) => css`
+const mainStyle = css`
   position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 24px 24px 0;
   overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
-
-  &:before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: radial-gradient(${theme.colors.surface.bold} 1px, transparent 1px);
-    background-size: 28px 28px;
-    opacity: 0.4;
-  }
 
   @media (max-width: 768px) {
     padding: 32px 20px 80px;

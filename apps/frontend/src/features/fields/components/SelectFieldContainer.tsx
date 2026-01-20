@@ -13,51 +13,65 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
   const theme = useTheme();
 
   return (
-    <main css={mainStyle}>
-      <div css={titleWrapper}>
-        <span css={title(theme)}>학습 분야 선택</span>
-        <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
-      </div>
-      <div css={gridStyle}>
-        {fields.map(field => (
-          <label
-            key={field.slug}
-            onClick={() => onFieldClick(field.slug)}
-            css={fieldLabelStyle(theme)}
-          >
-            <div css={fieldNameWrapper}>
-              <span css={fieldNameStyle(theme)}>{field.name}</span>
-              <SVGIcon icon={field.icon} size="lg" />
-            </div>
-            <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
-            <div css={goRoadmap(theme)}>
-              <span>로드맵 보기</span>
-
-              <SVGIcon icon={'NextArrow'} size="sm" />
-            </div>
-          </label>
-        ))}
-      </div>
-    </main>
+    <div css={containerStyle}>
+      <main css={mainStyle}>
+        <div css={titleWrapper}>
+          <span css={title(theme)}>학습 분야 선택</span>
+          <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
+        </div>
+        <div css={gridStyle}>
+          {fields.map(field => (
+            <label
+              key={field.slug}
+              onClick={() => onFieldClick(field.slug)}
+              css={fieldLabelStyle(theme)}
+            >
+              <div css={fieldNameWrapper}>
+                <span css={fieldNameStyle(theme)}>{field.name}</span>
+                <SVGIcon icon={field.icon} size="lg" />
+              </div>
+              <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
+              <div css={goRoadmap(theme)}>
+                <span>로드맵 보기</span>
+                <SVGIcon icon={'NextArrow'} size="sm" />
+              </div>
+            </label>
+          ))}
+        </div>
+      </main>
+    </div>
   );
 };
 
+const containerStyle = css`
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+`;
+
 const mainStyle = css`
+  position: relative;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
   padding: 24px;
-  gap: 24px;
+  overflow: hidden;
   max-width: 1200px;
-  width: 100%;
-  box-sizing: border-box;
-  flex: 1;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 32px 20px 80px;
+  }
 `;
 
 const titleWrapper = css`
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 24px;
 `;
 
 const title = (theme: Theme) => css`
@@ -75,26 +89,26 @@ const subtitle = (theme: Theme) => css`
 `;
 
 const gridStyle = css`
+  position: relative;
+  z-index: 1;
   display: grid;
-  /* 기본 1열에서 시작하여 너비에 따라 열 개수를 유연하게 조절 */
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem;
-  width: 100%;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
 
-  /* 태블릿 및 작은 모니터 */
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 
-  /* 일반 데스크탑 */
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
   }
 
-  /* 대화면 데스크탑 */
-  @media (min-width: 1440px) {
-    grid-template-columns: repeat(4, 1fr);
+  @media (max-width: 768px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 `;
 
@@ -102,7 +116,7 @@ const fieldLabelStyle = (theme: Theme) => css`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 180px; /* 카드 높이 균일화 */
+  min-height: 180px;
   gap: 16px;
   padding: 24px;
   background: ${theme.colors.surface.strong};
@@ -123,8 +137,6 @@ const fieldLabelStyle = (theme: Theme) => css`
     transform: translateY(2px);
     box-shadow: 0 0px 0 ${theme.colors.border.default};
   }
-
-  color: ${theme.colors.text.default};
 `;
 
 const fieldNameWrapper = css`
@@ -137,6 +149,7 @@ const fieldNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   line-height: ${theme.typography['20Bold'].lineHeight};
+  color: ${theme.colors.text.strong};
 `;
 
 const fieldDescriptionStyle = (theme: Theme) => css`

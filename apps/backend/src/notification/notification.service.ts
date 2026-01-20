@@ -34,7 +34,9 @@ export class NotificationService {
    * 매일 새벽 2시, 가입 후 활동이 없는 유저에게 리마인드 메일을 발송하는 배치 작업입니다.
    * 가입 5일 경과, 스트릭 0, 이메일 수신 동의 유저를 대상으로 이틀 간격 발송합니다.
    */
-  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  @Cron(CronExpression.EVERY_DAY_AT_2AM, {
+    timeZone: 'Asia/Seoul',
+  })
   async handleStreakRemindBatch(): Promise<void> {
     try {
       const targets = await this.fetchTargetUsers();

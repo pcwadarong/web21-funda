@@ -193,6 +193,6 @@ export class NotificationService {
       { email }, // 조건: 해당 이메일을 가진 유저
       { isEmailSubscribed: false }, // 변경할 내용
     );
-    this.logger.log(`User with email ${email} has unsubscribed.`);
+    this.logger.log('User unsubscribed via email-based request.');
   }
 }

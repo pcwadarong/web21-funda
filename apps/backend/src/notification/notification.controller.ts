@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -59,10 +51,6 @@ export class NotificationController {
   })
   async unsubscribe(@Body() unsubscribeDto: UnsubscribeDto) {
     const { email, token } = unsubscribeDto;
-
-    if (!email || !token) {
-      throw new UnauthorizedException('Email and token are required');
-    }
 
     // 토큰 검증
     await this.notificationService.verifyUnsubscribeToken(token, email);

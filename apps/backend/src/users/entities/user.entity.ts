@@ -83,9 +83,9 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at', type: 'datetime' })
   updatedAt!: Date;
 
-  @Column({ name: 'is_email_subscribed', default: true })
+  @Column({ name: 'is_email_subscribed', type: 'boolean', default: true })
   isEmailSubscribed!: boolean;
 
-  @Column({ name: 'last_remind_email_sent_at', type: 'timestamp', nullable: true })
+  @Column({ name: 'last_remind_email_sent_at', type: 'datetime', nullable: true })
   lastRemindEmailSentAt?: Date | null;
 }

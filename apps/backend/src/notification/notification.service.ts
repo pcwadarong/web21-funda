@@ -63,12 +63,16 @@ export class NotificationService {
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
     return this.userRepository
       .createQueryBuilder('user')
       .where('user.currentStreak = :streak', { streak: 0 })
       .andWhere('user.isEmailSubscribed = :subscribed', { subscribed: true })
       .andWhere('user.email IS NOT NULL')
       .andWhere('user.createdAt <= :fiveDaysAgo', { fiveDaysAgo })
+      .andWhere('user.lastLoginAt >= :fourteenDaysAgo', { fourteenDaysAgo })
       .andWhere(
         new Brackets(qb => {
           qb.where('user.lastRemindEmailSentAt IS NULL').orWhere(

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from './auth/auth.module';
@@ -20,6 +22,12 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: [`.env.${process.env.NODE_ENV ?? 'local'}`, '.env'],
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1분
+        limit: 10, // 최대 10회 요청
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: createTypeOrmOptions,
@@ -34,6 +42,12 @@ import { AppService } from './app.service';
     NotificationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

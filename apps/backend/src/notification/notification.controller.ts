@@ -1,20 +1,23 @@
-import { Body, Controller, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  UnauthorizedException,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { Throttle } from '@nestjs/throttler';
 
+import { UnsubscribeDto } from './dto/unsubscribe.dto';
 import { NotificationService } from './notification.service';
-
-class UnsubscribeDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email!: string;
-}
 
 @ApiTags('Notification')
 @Controller('notification')
@@ -25,16 +28,18 @@ export class NotificationController {
    * 이메일 구독 해지 API
    */
   @Patch('unsubscribe')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 1분에 최대 5회 요청
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '이메일 구독 해지',
-    description: '리마인드 이메일 수신을 거부한다.',
+    description: '리마인드 이메일 수신을 거부한다. 이메일 링크에 포함된 토큰이 필요합니다.',
   })
   @ApiBody({
     type: UnsubscribeDto,
-    description: '수신 거부할 유저의 이메일 주소',
+    description: '수신 거부할 유저의 이메일 주소와 토큰',
     examples: {
       example1: {
-        value: { email: 'user@example.com' },
+        value: { email: 'user@example.com', token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
       },
     },
   })
@@ -45,11 +50,24 @@ export class NotificationController {
     },
   })
   @ApiBadRequestResponse({
-    description: '잘못된 요청(이메일 누락 등)입니다.',
+    description: '잘못된 요청(이메일 또는 토큰 누락 등)입니다.',
+  })
+  @ApiUnauthorizedResponse({
+    description: '토큰이 유효하지 않거나 만료되었습니다.',
   })
   async unsubscribe(@Body() unsubscribeDto: UnsubscribeDto) {
-    const { email } = unsubscribeDto;
-    if (!email) return { success: false, message: 'Email is required' };
-    return this.notificationService.unsubscribeUser(email);
+    const { email, token } = unsubscribeDto;
+
+    if (!email || !token) {
+      throw new UnauthorizedException('Email and token are required');
+    }
+
+    // 토큰 검증
+    await this.notificationService.verifyUnsubscribeToken(token, email);
+
+    // 검증 성공 후 구독 해지
+    await this.notificationService.unsubscribeUser(email);
+
+    return { success: true, message: 'Successfully unsubscribed' };
   }
 }

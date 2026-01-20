@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as nodemailer from 'nodemailer';
@@ -20,6 +21,7 @@ export class NotificationService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private configService: ConfigService,
+    private jwtService: JwtService,
   ) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -133,12 +135,53 @@ export class NotificationService {
       ];
 
     const quizLink = `${clientOrigin}/quiz`;
-    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email!)}`;
+    const unsubscribeToken = this.generateUnsubscribeToken(user.email!);
+    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email!)}&token=${encodeURIComponent(unsubscribeToken)}`;
 
     return {
       subject: randomSubjectFn!(name),
       html: getRemindMailHtml(name, randomContent!, quizLink, unsubscribeLink),
     };
+  }
+
+  /**
+   * 구독 해지를 위한 일회용 토큰을 생성합니다.
+   * @param email 유저 이메일 주소
+   * @returns JWT 토큰 문자열
+   */
+  generateUnsubscribeToken(email: string): string {
+    const secret = this.configService.get<string>('JWT_ACCESS_SECRET', 'local-access-secret');
+    const payload = {
+      email,
+      type: 'unsubscribe',
+    };
+    // 토큰은 7일간 유효
+    return this.jwtService.sign(payload, {
+      secret,
+      expiresIn: '7d',
+    });
+  }
+
+  /**
+   * 구독 해지 토큰을 검증합니다.
+   * @param token 검증할 토큰
+   * @param email 검증할 이메일 주소
+   * @throws UnauthorizedException 토큰이 유효하지 않거나 이메일이 일치하지 않는 경우
+   */
+  async verifyUnsubscribeToken(token: string, email: string): Promise<void> {
+    try {
+      const secret = this.configService.get<string>('JWT_ACCESS_SECRET', 'local-access-secret');
+      const payload = this.jwtService.verify<{ email: string; type: string }>(token, {
+        secret,
+      });
+
+      if (payload.type !== 'unsubscribe') throw new UnauthorizedException('Invalid token type');
+      if (payload.email !== email) throw new UnauthorizedException('Email mismatch');
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+
+      throw new UnauthorizedException('Invalid or expired token');
+    }
   }
 
   /**

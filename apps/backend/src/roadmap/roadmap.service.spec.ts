@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { type DataSource, type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
+import { QuizContentService } from '../common/utils/quiz-content.service';
 import {
   QuizLearningStatus,
   SolveLog,
@@ -23,6 +24,7 @@ describe('RoadmapService', () => {
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
   let dataSource: Partial<DataSource>;
   let codeFormatter: Partial<CodeFormatter>;
+  let quizContentService: QuizContentService;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -75,12 +77,13 @@ describe('RoadmapService', () => {
     codeFormatter = {
       format: formatMock,
     };
+    quizContentService = new QuizContentService(codeFormatter as CodeFormatter);
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
-      codeFormatter as CodeFormatter,
+      quizContentService,
       stepStatusRepository as Repository<UserStepStatus>,
       dataSource as DataSource,
     );
@@ -564,8 +567,8 @@ describe('RoadmapService', () => {
     expect(savedStatus.isWrong).toBe(false);
     expect(savedStatus.lastQuality).toBe(5);
     expect(savedStatus.easeFactor).toBeCloseTo(2.6, 5);
-    expect(savedStatus.lastSolvedAt).toEqual(new Date('2026-01-01T00:00:00.000Z'));
-    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-02T00:00:00.000Z'));
+    expect(savedStatus.lastSolvedAt).toEqual(new Date('2026-01-01T09:00:00.000Z'));
+    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-02T09:00:00.000Z'));
 
     jest.useRealTimers();
   });
@@ -650,8 +653,8 @@ describe('RoadmapService', () => {
     expect(savedStatus.isWrong).toBe(true);
     expect(savedStatus.lastQuality).toBe(2);
     expect(savedStatus.easeFactor).toBeCloseTo(2.18, 5);
-    expect(savedStatus.lastSolvedAt).toEqual(new Date('2026-01-01T00:00:00.000Z'));
-    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-02T00:00:00.000Z'));
+    expect(savedStatus.lastSolvedAt).toEqual(new Date('2026-01-01T09:00:00.000Z'));
+    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-02T09:00:00.000Z'));
 
     jest.useRealTimers();
   });

@@ -2,7 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
-import { CodeFormatter } from '../common/utils/code-formatter';
+import { getKstNow } from '../common/utils/kst-date';
+import { QuizContentService } from '../common/utils/quiz-content.service';
 import {
   QuizLearningStatus,
   SolveLog,
@@ -16,7 +17,7 @@ import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
 import type { FirstUnitResponse, UnitSummary } from './dto/first-unit.dto';
-import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
+import type { QuizResponse } from './dto/quiz-list.dto';
 import type {
   MatchingPair,
   QuizSubmissionRequest,
@@ -36,7 +37,7 @@ export class RoadmapService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
-    private readonly codeFormatter: CodeFormatter,
+    private readonly quizContentService: QuizContentService,
     @InjectRepository(UserStepStatus)
     private readonly stepStatusRepository: Repository<UserStepStatus>,
     private readonly dataSource: DataSource,
@@ -219,7 +220,7 @@ export class RoadmapService {
       order: { id: 'ASC' },
     });
 
-    return Promise.all(quizzes.map(quiz => this.toQuizResponse(quiz)));
+    return Promise.all(quizzes.map(quiz => this.quizContentService.toQuizResponse(quiz)));
   }
 
   /**
@@ -369,95 +370,6 @@ export class RoadmapService {
   }
 
   /**
-   * 퀴즈 엔티티를 응답 DTO로 변환한다.
-   * @param quiz 퀴즈 엔티티
-   * @returns 퀴즈 응답 DTO
-   */
-  private async toQuizResponse(quiz: Quiz): Promise<QuizResponse> {
-    return {
-      id: quiz.id,
-      type: quiz.type,
-      content: await this.normalizeQuizContent(quiz),
-    };
-  }
-
-  /**
-   * 퀴즈 content를 안전하게 정규화한다.
-   * @param quiz 퀴즈 엔티티
-   * @returns 정규화된 content
-   */
-  private async normalizeQuizContent(quiz: Quiz): Promise<QuizContent> {
-    const rawObject = this.toContentObject(quiz.content);
-    if (!rawObject) {
-      return { question: quiz.question };
-    }
-
-    const question =
-      typeof rawObject.question === 'string' && rawObject.question.trim().length > 0
-        ? rawObject.question
-        : quiz.question;
-
-    const options = this.normalizeOptions(rawObject.options);
-    const codeMetadata = await this.normalizeCodeMetadata(rawObject);
-    const matchingMetadata = this.normalizeMatchingMetadata(rawObject);
-
-    return {
-      question,
-      ...(options ? { options } : {}),
-      ...(codeMetadata ? { code_metadata: codeMetadata } : {}),
-      ...(matchingMetadata ? { matching_metadata: matchingMetadata } : {}),
-    };
-  }
-
-  /**
-   * options 값을 QuizOption[] 형태로 정규화한다.
-   * @param value 원본 options 값
-   * @returns 정규화된 options (없으면 undefined)
-   */
-  private normalizeOptions(value: unknown) {
-    if (!Array.isArray(value)) return undefined;
-
-    const options = value
-      .map(option => {
-        if (!this.isPlainObject(option)) return null;
-        const item = option as Record<string, unknown>;
-        const id = item.id;
-        const text = item.text;
-        if ((typeof id === 'string' || typeof id === 'number') && typeof text === 'string') {
-          return { id: String(id), text };
-        }
-        return null;
-      })
-      .filter((opt): opt is { id: string; text: string } => opt !== null);
-
-    return options.length > 0 ? options : undefined;
-  }
-
-  /**
-   * content raw 값을 객체로 변환한다(문자열 JSON도 허용).
-   * @param raw content 원본 값
-   * @returns content 객체 (없으면 null)
-   */
-  private toContentObject(raw: unknown): Record<string, unknown> | null {
-    if (this.isPlainObject(raw)) {
-      return raw;
-    }
-
-    if (typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw);
-        if (this.isPlainObject(parsed)) {
-          return parsed;
-        }
-      } catch {
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  /**
    * answer raw 값을 객체로 변환한다(문자열 JSON도 허용).
    * @param raw answer 원본 값
    * @returns answer 객체 (없으면 null)
@@ -479,75 +391,6 @@ export class RoadmapService {
     }
 
     return null;
-  }
-
-  /**
-   * CODE 타입 메타데이터를 content의 최상위 code/language로부터 정규화한다.
-   * @param value content 객체
-   * @returns 정규화된 code_metadata (없으면 undefined)
-   */
-  private async normalizeCodeMetadata(value: Record<string, unknown>) {
-    const code = value.code;
-    const language = value.language;
-    if (typeof code === 'string') {
-      const formattedCode = await this.codeFormatter.format(
-        code,
-        typeof language === 'string' ? language : 'javascript',
-      );
-      return {
-        ...(typeof language === 'string' ? { language } : {}),
-        snippet: formattedCode,
-      };
-    }
-    return undefined;
-  }
-
-  /**
-   * MATCHING 타입 메타데이터를 정규화한다.
-   * @param value matching_metadata 원본 값
-   * @returns 정규화된 matching_metadata (없으면 undefined)
-   */
-  private normalizeMatchingMetadata(value: unknown) {
-    if (!this.isPlainObject(value)) return undefined;
-
-    const item = value as Record<string, unknown>;
-    const left = this.normalizeMatchingItems(item.left);
-    const right = this.normalizeMatchingItems(item.right);
-
-    if (left.length > 0 && right.length > 0) {
-      return { left, right };
-    }
-    return undefined;
-  }
-
-  /**
-   * 매칭 항목을 id/text 형태로 정규화한다.
-   * - 문자열 배열은 id/text를 동일하게 채운다.
-   * - 객체 배열은 id/text를 추출한다.
-   */
-  private normalizeMatchingItems(value: unknown): Array<{ id: string; text: string }> {
-    if (!Array.isArray(value)) return [];
-
-    return value
-      .map(item => {
-        if (typeof item === 'string' || typeof item === 'number') {
-          const text = String(item).trim();
-          if (!text) return null;
-          return { id: text, text };
-        }
-
-        if (this.isPlainObject(item)) {
-          const record = item as Record<string, unknown>;
-          const text = this.toCleanString(record.text);
-          const rawId = this.toCleanString(record.id ?? record.value ?? record.key);
-          const id = rawId ?? text;
-          if (!id || !text) return null;
-          return { id, text };
-        }
-
-        return null;
-      })
-      .filter((entry): entry is { id: string; text: string } => entry !== null);
   }
 
   /**
@@ -794,7 +637,8 @@ export class RoadmapService {
       return;
     }
 
-    const solvedAt = new Date();
+    // 복습 기준과 일치시키기 위해 KST 기준 시각으로 저장한다.
+    const solvedAt = getKstNow();
     const qualityScore = this.calculateQualityScore(isCorrect);
 
     await this.dataSource.transaction(async manager => {

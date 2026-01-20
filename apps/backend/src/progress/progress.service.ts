@@ -2,10 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { getKstNextDayStart, getKstNow } from '../common/utils/kst-date';
+import { QuizContentService } from '../common/utils/quiz-content.service';
+import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 import { Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
+import { UserQuizStatus } from './entities/user-quiz-status.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
 import { UserStepStatus } from './entities/user-step-status.entity';
 
@@ -24,6 +28,9 @@ export class ProgressService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserQuizStatus)
+    private readonly userQuizStatusRepository: Repository<UserQuizStatus>,
+    private readonly quizContentService: QuizContentService,
   ) {}
 
   /**
@@ -139,6 +146,42 @@ export class ProgressService {
       isFirstSolveToday,
       currentStreak,
     };
+  }
+
+  /**
+   * 복습 노트 대상 퀴즈를 조회한다.
+   * - 복습 부담을 줄이기 위해 시간 단위 대신 날짜 기준으로 오늘까지 포함해 조회한다.
+   *
+   * @param userId 사용자 ID
+   * @returns 복습 큐 응답
+   */
+  async getReviewQueue(userId: number): Promise<QuizResponse[]> {
+    const now = getKstNow();
+    const reviewCutoff = getKstNextDayStart(now);
+
+    const reviewStatuses = await this.userQuizStatusRepository
+      .createQueryBuilder('status')
+      .innerJoinAndSelect('status.quiz', 'quiz')
+      .where('status.userId = :userId', { userId })
+      .andWhere('status.nextReviewAt IS NOT NULL')
+      .andWhere('status.nextReviewAt < :reviewCutoff', { reviewCutoff })
+      .orderBy('status.nextReviewAt', 'ASC')
+      .getMany();
+
+    const reviews: QuizResponse[] = [];
+
+    for (const status of reviewStatuses) {
+      const quiz = status.quiz;
+      if (!quiz) {
+        continue;
+      }
+
+      // 퀴즈 조회 API와 동일한 응답을 유지하기 위해 공용 변환기를 사용한다.
+      const quizResponse = await this.quizContentService.toQuizResponse(quiz);
+      reviews.push(quizResponse);
+    }
+
+    return reviews;
   }
 
   /**

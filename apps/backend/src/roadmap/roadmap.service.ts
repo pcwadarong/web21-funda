@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { SolveLog, StepAttemptStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import { User } from '../users/entities/user.entity';
 
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
@@ -36,6 +37,8 @@ export class RoadmapService {
     private readonly stepAttemptRepository: Repository<UserStepAttempt>,
     @InjectRepository(UserStepStatus)
     private readonly stepStatusRepository: Repository<UserStepStatus>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
@@ -222,6 +225,7 @@ export class RoadmapService {
    * 퀴즈 정답 제출을 검증한다.
    * @param quizId 퀴즈 ID
    * @param payload 사용자가 제출한 답안
+   * @param userId 사용자 ID
    * @returns 채점 결과와 정답 정보
    */
   async submitQuiz(
@@ -245,6 +249,17 @@ export class RoadmapService {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
+      // 오답이고 로그인 사용자면 heart 차감
+      let userHeartCount: number | undefined;
+      if (!isCorrect && userId) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (user) {
+          user.heartCount = Math.max(0, user.heartCount - 1);
+          await this.userRepository.save(user);
+          userHeartCount = user.heartCount;
+        }
+      }
+
       const result: QuizSubmissionResponse = {
         quiz_id: quiz.id,
         is_correct: isCorrect,
@@ -252,6 +267,7 @@ export class RoadmapService {
           ...(correctPairs.length > 0 ? { correct_pairs: correctPairs } : {}),
           explanation: quiz.explanation ?? null,
         },
+        ...(userHeartCount !== undefined ? { user_heart_count: userHeartCount } : {}),
       };
 
       await this.saveSolveLog({
@@ -267,6 +283,17 @@ export class RoadmapService {
     const correctOptionId = this.getOptionAnswer(quiz.answer);
     const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
+    // 오답이고 로그인 사용자면 heart 차감
+    let userHeartCount: number | undefined;
+    if (!isCorrect && userId) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (user) {
+        user.heartCount = Math.max(0, user.heartCount - 1);
+        await this.userRepository.save(user);
+        userHeartCount = user.heartCount;
+      }
+    }
+
     const result: QuizSubmissionResponse = {
       quiz_id: quiz.id,
       is_correct: isCorrect,
@@ -274,6 +301,7 @@ export class RoadmapService {
         ...(correctOptionId ? { correct_option_id: correctOptionId } : {}),
         explanation: quiz.explanation ?? null,
       },
+      ...(userHeartCount !== undefined ? { user_heart_count: userHeartCount } : {}),
     };
 
     await this.saveSolveLog({

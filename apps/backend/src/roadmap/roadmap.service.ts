@@ -19,9 +19,6 @@ import { Field, Quiz, Step } from './entities';
 
 @Injectable()
 export class RoadmapService {
-  // TODO(임시): DB에 없는 체크포인트/플레이스홀더 스텝을 음수 ID로 생성한다.
-  private checkpointIdSeed = -1;
-
   constructor(
     @InjectRepository(Field)
     private readonly fieldRepository: Repository<Field>,
@@ -665,10 +662,8 @@ export class RoadmapService {
   }
 
   /**
-   * TODO(임시): 유닛 스텝을 최소 5개로 채우고 중간/최종 점검 스텝을 삽입한다.
-   * - 실제 스텝: 실제 스텝 정보 + 퀴즈 개수
-   * - 플레이스홀더: 부족분을 "제작 중"으로 채운다.
-   * - 체크포인트: 중간/최종 점검 스텝은 퀴즈 수 없이 표시만 한다.
+   * 유닛의 스텝을 orderIndex 기준으로 정렬해 응답 형태로 변환한다.
+   * 체크포인트 스텝은 DB에 저장된 값을 그대로 사용한다.
    */
   private buildUnitStepsWithCheckpoints(
     steps: Step[],
@@ -676,67 +671,20 @@ export class RoadmapService {
     completedStepIdSet: Set<number> = new Set(),
   ): StepSummary[] {
     const sortedSteps = this.sortByOrderIndex(steps);
-    const baseStepSummaries: Array<StepSummary & { isPlaceholder?: boolean }> = sortedSteps.map(
-      step => ({
+    return sortedSteps.map(step => {
+      const isCompleted = completedStepIdSet.has(step.id);
+      const isLocked = step.isCheckpoint && !isCompleted;
+
+      return {
         id: step.id,
         title: step.title,
         orderIndex: step.orderIndex,
         quizCount: quizCountByStepId.get(step.id) ?? 0,
         isCheckpoint: step.isCheckpoint,
-        isCompleted: completedStepIdSet.has(step.id),
-        isLocked: false,
-      }),
-    );
-
-    // 부족분을 플레이스홀더로 채워 기본 5개를 맞춘다.
-    while (baseStepSummaries.length < 5) {
-      baseStepSummaries.push({
-        id: this.nextVirtualId(),
-        title: '제작 중',
-        orderIndex: baseStepSummaries.length + 1,
-        quizCount: 0,
-        isCheckpoint: false,
-        isCompleted: false,
-        isLocked: false,
-        isPlaceholder: true,
-      });
-    }
-
-    const newSteps: StepSummary[] = [];
-    let orderIndex = 1;
-
-    baseStepSummaries.forEach((step, idx) => {
-      newSteps.push({
-        ...step,
-        orderIndex: orderIndex++,
-      });
-
-      // 4번째 위치에 중간 점검 삽입 (3번째 스텝 뒤)
-      if (idx === 2) {
-        newSteps.push(this.createCheckpointStep('중간 점검', orderIndex++));
-      }
+        isCompleted,
+        isLocked,
+      };
     });
-
-    // 마지막 위치에 최종 점검 삽입
-    newSteps.push(this.createCheckpointStep('최종 점검', orderIndex++));
-
-    return newSteps;
-  }
-
-  private createCheckpointStep(title: string, orderIndex: number): StepSummary {
-    return {
-      id: this.nextVirtualId(),
-      title,
-      orderIndex,
-      quizCount: 0,
-      isCheckpoint: true,
-      isCompleted: false,
-      isLocked: true,
-    };
-  }
-
-  private nextVirtualId(): number {
-    return this.checkpointIdSeed--;
   }
 
   /**

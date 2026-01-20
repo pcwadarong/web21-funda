@@ -165,8 +165,8 @@ describe('RoadmapService', () => {
         steps: expect.any(Array),
       },
     });
-    expect(result.unit?.steps).toHaveLength(7);
-    expect(result.unit?.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    expect(result.unit?.steps).toHaveLength(2);
+    expect(result.unit?.steps.filter(step => step.isCheckpoint).length).toBe(0);
     expect(result.unit?.steps.find(step => step.id === 10)?.quizCount).toBe(5);
     expect(result.unit?.steps.find(step => step.id === 11)?.quizCount).toBe(4);
   });
@@ -220,17 +220,14 @@ describe('RoadmapService', () => {
       throw new Error('응답에 유닛이 있어야 합니다.');
     }
 
-    // 유닛1: 스텝 1개 + 플레이스홀더 4개 + 중간/최종 점검 → 총 7개
-    expect(unit1.steps).toHaveLength(7);
+    expect(unit1.steps).toHaveLength(1);
     expect(unit1.steps.filter(step => step.id === 10).length).toBe(1);
-    expect(unit1.steps.filter(step => step.isCheckpoint).length).toBe(2);
+    expect(unit1.steps.filter(step => step.isCheckpoint).length).toBe(0);
     expect(unit1.steps.find(step => step.id === 10)?.quizCount).toBe(5);
 
-    // 유닛2: 스텝 2개 + 플레이스홀더 3개 + 중간/최종 점검 → 총 7개
-    expect(unit2.steps).toHaveLength(7);
+    expect(unit2.steps).toHaveLength(2);
     expect(unit2.steps.filter(step => step.id === 11 || step.id === 12).length).toBe(2);
-    // 실제 스텝 중 하나(id: 12)가 체크포인트이므로 총 3개 (실제 스텝 1개 + 중간/최종 점검 2개)
-    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(3);
+    expect(unit2.steps.filter(step => step.isCheckpoint).length).toBe(1);
     expect(unit2.steps.find(step => step.id === 11)?.quizCount).toBe(4);
     expect(unit2.steps.find(step => step.id === 12)?.quizCount).toBe(6);
   });

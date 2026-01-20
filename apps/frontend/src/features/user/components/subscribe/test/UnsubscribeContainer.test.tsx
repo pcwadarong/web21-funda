@@ -10,6 +10,7 @@ describe('UnsubscribeContainer', () => {
   const defaultProps = {
     email: 'test@example.com',
     onUnsubscribe: vi.fn(),
+    isLoading: false,
   };
 
   const renderWithTheme = (props: UnsubscribeContainerProps = defaultProps) =>

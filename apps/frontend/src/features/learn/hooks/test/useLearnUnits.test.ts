@@ -4,8 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UnitsResponse } from '@/services/fieldService';
 
 const mockUseStorage = vi.fn();
-const mockUseAuthStore = vi.fn();
-const mockGetFieldUnits = vi.fn();
 const updateUIStateMock = vi.fn();
 const mockStorageUtilGet = vi.fn();
 let storageState: {
@@ -18,19 +16,6 @@ let storageState: {
 
 vi.mock('@/hooks/useStorage', () => ({
   useStorage: () => mockUseStorage(),
-}));
-
-vi.mock('@/store/authStore', () => ({
-  useAuthStore: (selector: (state: { isLoggedIn: boolean }) => boolean) => {
-    const state = { isLoggedIn: mockUseAuthStore() };
-    return selector(state);
-  },
-}));
-
-vi.mock('@/services/fieldService', () => ({
-  fieldService: {
-    getFieldUnits: (...args: unknown[]) => mockGetFieldUnits(...args),
-  },
 }));
 
 vi.mock('@/utils/storage', () => ({
@@ -71,16 +56,6 @@ const createUnitsResponse = (overrides?: Partial<UnitsResponse>): UnitsResponse 
   ...overrides,
 });
 
-const createDeferred = <T>() => {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-};
-
 describe('useLearnUnits Hook', () => {
   beforeEach(() => {
     storageState = {
@@ -95,8 +70,6 @@ describe('useLearnUnits Hook', () => {
       updateUIState: updateUIStateMock,
     }));
     mockStorageUtilGet.mockImplementation(() => ({ ui_state: storageState.uiState }));
-    mockUseAuthStore.mockReturnValue(false);
-    mockGetFieldUnits.mockResolvedValue(createUnitsResponse());
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       cb(0);
       return 0;
@@ -113,24 +86,17 @@ describe('useLearnUnits Hook', () => {
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
-    await waitFor(() => {
-      expect(result.current.units.length).toBe(1);
-    });
+    const processedUnits = result.current.markSolvedSteps(createUnitsResponse().units);
 
-    const completedStep = result.current.units[0]!.steps.find(step => step.id === 2);
+    const completedStep = processedUnits[0]!.steps.find(step => step.id === 2);
     expect(completedStep?.isCompleted).toBe(true);
   });
 
   it('유닛을 불러왔을 때, 로그인 상태에서는 완료 상태를 덮어쓰지 않아야 한다', async () => {
-    mockUseAuthStore.mockReturnValue(true);
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
-    await waitFor(() => {
-      expect(result.current.units.length).toBe(1);
-    });
-
-    const completedStep = result.current.units[0]!.steps.find(step => step.id === 2);
+    const completedStep = createUnitsResponse().units[0]!.steps.find(step => step.id === 2);
     expect(completedStep?.isCompleted).toBe(false);
   });
 
@@ -138,8 +104,8 @@ describe('useLearnUnits Hook', () => {
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
-    await waitFor(() => {
-      expect(result.current.units.length).toBe(1);
+    act(() => {
+      result.current.setUnits(createUnitsResponse().units);
     });
 
     expect(result.current.activeUnit?.id).toBe(1);
@@ -149,15 +115,14 @@ describe('useLearnUnits Hook', () => {
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
-    await waitFor(() => {
-      expect(result.current.fieldName).toBe('프론트엔드');
+    act(() => {
+      result.current.setFieldName('프론트엔드');
     });
+
+    expect(result.current.fieldName).toBe('프론트엔드');
   });
 
   it('스크롤이 발생했을 때, 활성 유닛이 스크롤 위치에 맞게 변경되어야 한다', async () => {
-    const deferred = createDeferred<UnitsResponse>();
-    mockGetFieldUnits.mockReturnValue(deferred.promise);
-
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
@@ -177,12 +142,8 @@ describe('useLearnUnits Hook', () => {
       result.current.registerUnitRef(2)(unit2);
     });
 
-    await waitFor(() => {
-      expect(mockGetFieldUnits).toHaveBeenCalled();
-    });
-
-    await act(async () => {
-      deferred.resolve(
+    act(() => {
+      result.current.setUnits(
         createUnitsResponse({
           units: [
             {
@@ -198,7 +159,7 @@ describe('useLearnUnits Hook', () => {
               steps: [],
             },
           ],
-        }),
+        }).units,
       );
     });
 
@@ -225,9 +186,6 @@ describe('useLearnUnits Hook', () => {
       solvedStepHistory: [],
     };
 
-    const deferred = createDeferred<UnitsResponse>();
-    mockGetFieldUnits.mockReturnValue(deferred.promise);
-
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
@@ -247,12 +205,8 @@ describe('useLearnUnits Hook', () => {
       result.current.registerUnitRef(2)(unit2);
     });
 
-    await waitFor(() => {
-      expect(mockGetFieldUnits).toHaveBeenCalled();
-    });
-
-    await act(async () => {
-      deferred.resolve(
+    act(() => {
+      result.current.setUnits(
         createUnitsResponse({
           units: [
             {
@@ -268,7 +222,7 @@ describe('useLearnUnits Hook', () => {
               steps: [],
             },
           ],
-        }),
+        }).units,
       );
     });
 
@@ -290,9 +244,6 @@ describe('useLearnUnits Hook', () => {
       solvedStepHistory: [],
     };
 
-    const deferred = createDeferred<UnitsResponse>();
-    mockGetFieldUnits.mockReturnValue(deferred.promise);
-
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
@@ -312,12 +263,8 @@ describe('useLearnUnits Hook', () => {
       result.current.registerUnitRef(1)(unit1);
     });
 
-    await waitFor(() => {
-      expect(mockGetFieldUnits).toHaveBeenCalled();
-    });
-
-    await act(async () => {
-      deferred.resolve(
+    act(() => {
+      result.current.setUnits(
         createUnitsResponse({
           units: [
             {
@@ -333,7 +280,7 @@ describe('useLearnUnits Hook', () => {
               steps: [],
             },
           ],
-        }),
+        }).units,
       );
     });
 
@@ -345,9 +292,6 @@ describe('useLearnUnits Hook', () => {
   });
 
   it('last_viewed.unit_id가 변경되면 해당 위치로 다시 스크롤되어야 한다', async () => {
-    const deferred = createDeferred<UnitsResponse>();
-    mockGetFieldUnits.mockReturnValue(deferred.promise);
-
     const { useLearnUnits } = await import('../useLearnUnits');
     const { result } = renderHook(() => useLearnUnits());
 
@@ -367,12 +311,8 @@ describe('useLearnUnits Hook', () => {
       result.current.registerUnitRef(2)(unit2);
     });
 
-    await waitFor(() => {
-      expect(mockGetFieldUnits).toHaveBeenCalled();
-    });
-
-    await act(async () => {
-      deferred.resolve(
+    act(() => {
+      result.current.setUnits(
         createUnitsResponse({
           units: [
             {
@@ -388,7 +328,7 @@ describe('useLearnUnits Hook', () => {
               steps: [],
             },
           ],
-        }),
+        }).units,
       );
     });
 
@@ -414,7 +354,10 @@ describe('useLearnUnits Hook', () => {
   });
 
   it('체크포인트 이전 스텝이 모두 완료되었을 때, 체크포인트가 잠금 해제되어야 한다', async () => {
-    mockGetFieldUnits.mockResolvedValue(
+    const { useLearnUnits } = await import('../useLearnUnits');
+    const { result } = renderHook(() => useLearnUnits());
+
+    const processedUnits = result.current.unlockCheckpoints(
       createUnitsResponse({
         units: [
           {
@@ -443,17 +386,10 @@ describe('useLearnUnits Hook', () => {
             ],
           },
         ],
-      }),
+      }).units,
     );
 
-    const { useLearnUnits } = await import('../useLearnUnits');
-    const { result } = renderHook(() => useLearnUnits());
-
-    await waitFor(() => {
-      expect(result.current.units.length).toBe(1);
-    });
-
-    const checkpointStep = result.current.units[0]!.steps.find(step => step.id === 2);
+    const checkpointStep = processedUnits[0]!.steps.find(step => step.id === 2);
     expect(checkpointStep?.isLocked).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ import { ThemeStoreProvider, useThemeStore } from '@/store/themeStore';
 import { ToastProvider } from '@/store/toastStore';
 import { darkTheme, lightTheme } from '@/styles/theme';
 
+import { Loading } from './components/Loading';
 import ErrorBoundary from './features/error/components/ErrorBoundary';
 import { ErrorView } from './features/error/components/ErrorView';
 import { AuthProvider } from './providers/AuthProvider';
@@ -35,7 +36,7 @@ function AppContent() {
       />
 
       <ErrorBoundary fallback={<ErrorView {...APP_ERROR_FALLBACK} />}>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<Loading />}>
           <AuthProvider>
             <ToastProvider>
               <ModalProvider>

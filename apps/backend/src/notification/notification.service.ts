@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,9 +6,15 @@ import * as nodemailer from 'nodemailer';
 import { User } from 'src/users/entities';
 import { Brackets, Repository } from 'typeorm';
 
+import { getRemindMailHtml, REMIND_MAIL_VARIANTS } from './constants/mail-templates';
+
+/**
+ * 유저 알림 관련 비즈니스 로직을 처리하는 서비스입니다.
+ */
 @Injectable()
 export class NotificationService {
   private transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(NotificationService.name);
 
   constructor(
     @InjectRepository(User)
@@ -24,16 +30,40 @@ export class NotificationService {
     });
   }
 
+  /**
+   * 매일 새벽 2시, 가입 후 활동이 없는 유저에게 리마인드 메일을 발송하는 배치 작업입니다.
+   * 가입 5일 경과, 스트릭 0, 이메일 수신 동의 유저를 대상으로 이틀 간격 발송합니다.
+   */
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
-  async handleStreakRemindBatch() {
+  async handleStreakRemindBatch(): Promise<void> {
+    try {
+      const targets = await this.fetchTargetUsers();
+
+      for (const user of targets) {
+        await this.sendRemindMail(user);
+        // 초당 발송 제한을 위해 200ms 대기 (초당 최대 5통)
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    } catch (error: unknown) {
+      this.logger.error(
+        'Failed to execute streak reminder batch',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /**
+   * 배송 대상 유저를 DB에서 조회합니다.
+   * @private
+   */
+  private async fetchTargetUsers(): Promise<User[]> {
     const fiveDaysAgo = new Date();
     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
 
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-    // 가입 5일 경과 & streak 0 & 수신동의 & (메일 보낸 적 없거나 2일 경과)
-    const targets = await this.userRepository
+    return this.userRepository
       .createQueryBuilder('user')
       .where('user.currentStreak = :streak', { streak: 0 })
       .andWhere('user.isEmailSubscribed = :subscribed', { subscribed: true })
@@ -48,51 +78,60 @@ export class NotificationService {
         }),
       )
       .getMany();
-
-    // 순차 발송 (초당 발송 제한)
-    for (const user of targets) {
-      await this.sendCustomMail(user);
-
-      // 초당 5통 제한을 위해 각 발송 사이에 200ms 대기
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
   }
 
-  private async sendCustomMail(user: User) {
+  /**
+   * 단일 유저에게 개인화된 리마인드 메일을 발송합니다.
+   * @param user 발송 대상 유저 객체
+   * @private
+   */
+  private async sendRemindMail(user: User): Promise<void> {
+    if (!user.email) return;
+
     try {
-      // 수신 거부 링크
-      const unsubscribeLink = `${process.env.CLIENT_ORIGIN}/unsubscribe?email=${user.email}`; //TODO: 암호화
+      const { subject, html } = this.generateMailContent(user);
 
       await this.transporter.sendMail({
         from: `"Funda" <${this.configService.get('MAIL_USER')}>`,
-        to: user.email!,
-        subject: `${user.displayName || '회원'}님, 오늘 퀴즈 한 번 풀어볼까요? 🔥`,
-        html: `
-         <div style="font-family: sans-serif; text-align: center;">
-            <h2>안녕하세요, ${user.displayName}님!</h2>
-            <p>혹시 어려운 점이 있으셨나요?</p>
-            <p>오늘 단 하나의 퀴즈만 풀어도 <b>연속 1일차</b>가 시작됩니다!</p>
-            <div style="margin: 30px 0;">
-              <a href="${process.env.CLIENT_ORIGIN}/quiz" 
-                 style="background: #6559EA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
-                 지금 바로 퀴즈 풀기
-              </a>
-            </div>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
-            <p style="font-size: 12px; color: #999;">
-              본 메일은 수신 동의를 하신 분들께 발송됩니다. <br>
-              더 이상 알림을 원하지 않으시면 <a href="${unsubscribeLink}">수신 거부</a>를 눌러주세요.
-            </p>
-          </div>
-          `,
+        to: user.email,
+        subject,
+        html,
       });
 
       await this.userRepository.update(user.id, {
         lastRemindEmailSentAt: new Date(),
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Failed to send mail to ${user.id}: ${errorMessage}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to send mail to User(${user.id}): ${message}`);
     }
+  }
+
+  /**
+   * 랜덤하게 제목과 내용을 선택하여 개인화된 메일 컨텐츠를 생성합니다.
+   * @param user 유저 정보
+   * @private
+   */
+  private generateMailContent(user: User): { subject: string; html: string } {
+    const clientOrigin = this.configService.get<string>('CLIENT_ORIGIN') ?? '';
+    const name = user.displayName || '회원';
+
+    // 무작위로 제목과 내용 선택
+    const randomSubjectFn =
+      REMIND_MAIL_VARIANTS.SUBJECTS[
+        Math.floor(Math.random() * REMIND_MAIL_VARIANTS.SUBJECTS.length)
+      ];
+    const randomContent =
+      REMIND_MAIL_VARIANTS.CONTENTS[
+        Math.floor(Math.random() * REMIND_MAIL_VARIANTS.CONTENTS.length)
+      ];
+
+    const quizLink = `${clientOrigin}/quiz`;
+    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email!)}`;
+
+    return {
+      subject: randomSubjectFn!(name),
+      html: getRemindMailHtml(name, randomContent!, quizLink, unsubscribeLink),
+    };
   }
 }

@@ -73,7 +73,7 @@ export const QuizContentCard = ({
         </div>
       )}
 
-      <div css={footerStyle}>
+      <div css={footerStyle(theme)}>
         {showResult ? (
           <>
             <Button
@@ -127,7 +127,7 @@ const headerStyle = css`
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
-  fle-x-wrap: wrap;
+  fle-wrap: wrap;
 
   @media (max-width: 480px) {
     flex-direction: column;
@@ -143,7 +143,7 @@ const titleStyle = (theme: Theme) => css`
   word-break: keep-all;
 `;
 
-const footerStyle = css`
+const footerStyle = (theme: Theme) => css`
   display: flex;
   gap: 12px;
   margin-top: auto;
@@ -154,7 +154,7 @@ const footerStyle = css`
     bottom: 0;
     left: 0;
     right: 0;
-    background: white;
+    background: ${theme.colors.surface.strong};
     padding: 16px 20px 32px;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
     z-index: 10;

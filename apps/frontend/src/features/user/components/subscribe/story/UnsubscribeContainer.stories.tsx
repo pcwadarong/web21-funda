@@ -9,7 +9,8 @@ const meta: Meta<typeof UnsubscribeContainer> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: '설정 컴포넌트입니다. 로그아웃, 다크 모드, 사운드 볼륨 조절을 제공합니다.',
+        component:
+          '이메일 수신 거부 컴포넌트입니다. 사용자가 리마인드 이메일 구독을 해제할 수 있습니다.',
       },
     },
   },

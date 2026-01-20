@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { UnsubscribeContainer } from '@/features/user/components/subscribe/UnsubscribeContainer';
@@ -9,21 +10,28 @@ export default function Unsubscribe() {
   const email = searchParams.get('email');
   const navigate = useNavigate();
   const { showToast } = useToast();
+  //TODO: tanstack query로 수정
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleUnsubscribe = async () => {
     if (!email) {
       showToast('유효하지 않은 이메일 주소입니다.');
       return;
     }
-
+    if (isLoading) return;
+    setIsLoading(true);
     try {
       await notificationService.unsubscribe({ email });
       showToast('정상적으로 수신 거부되었습니다.');
       navigate('/learn');
     } catch {
       showToast('수신 거부 처리 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return <UnsubscribeContainer email={email} onUnsubscribe={handleUnsubscribe} />;
+  return (
+    <UnsubscribeContainer email={email} onUnsubscribe={handleUnsubscribe} isLoading={isLoading} />
+  );
 }

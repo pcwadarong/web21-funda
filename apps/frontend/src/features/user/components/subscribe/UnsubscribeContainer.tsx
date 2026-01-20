@@ -5,9 +5,14 @@ import { Button } from '@/components/Button';
 export interface UnsubscribeContainerProps {
   email: string | null;
   onUnsubscribe: () => void;
+  isLoading: boolean;
 }
 
-export function UnsubscribeContainer({ email, onUnsubscribe }: UnsubscribeContainerProps) {
+export function UnsubscribeContainer({
+  email,
+  onUnsubscribe,
+  isLoading,
+}: UnsubscribeContainerProps) {
   return (
     <main css={containerStyle}>
       <h2>이메일 수신 거부</h2>
@@ -15,7 +20,7 @@ export function UnsubscribeContainer({ email, onUnsubscribe }: UnsubscribeContai
         대상: <strong>{email ?? '이메일 정보 없음'}</strong>
       </p>
       <p>앞으로 Funda의 리마인드 퀴즈 메일을 받지 않으시겠습니까?</p>
-      <Button onClick={onUnsubscribe} variant="primary">
+      <Button onClick={onUnsubscribe} variant="primary" disabled={isLoading}>
         수신 거부 완료
       </Button>
     </main>

@@ -21,6 +21,7 @@ interface QuizContainerProps {
   handleAnswerChange: (answer: AnswerType) => void;
   handleCheckAnswer: () => Promise<void>;
   handleNextQuestion: () => void;
+  heartCount: number;
 }
 
 export const QuizContainer = ({
@@ -35,6 +36,7 @@ export const QuizContainer = ({
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
+  heartCount,
 }: QuizContainerProps) => {
   const currentQuiz = quizzes[currentQuizIndex];
 
@@ -46,6 +48,7 @@ export const QuizContainer = ({
         currentStep={currentQuizIndex + 1}
         totalSteps={quizzes.length}
         completedSteps={questionStatuses.filter(s => s === 'checked').length}
+        heartCount={heartCount}
       />
       <main css={mainStyle}>
         <QuizContentCard

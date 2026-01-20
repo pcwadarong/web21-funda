@@ -28,9 +28,17 @@ export const getRemindMailHtml = (
   content: string,
   quizLink: string,
   unsubscribeLink: string,
-) => `
+) => {
+  const safeName = name
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  return `
 <div style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; text-align: center; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee;">
-  <h2 style="color: #6559EA;">안녕하세요, ${name}님!</h2>
+  <h2 style="color: #6559EA;">안녕하세요, ${safeName}님!</h2>
   <p style="font-size: 16px; line-height: 1.6;">${content}</p>
   <div style="margin: 40px 0;">
     <a href="${quizLink}" 
@@ -45,3 +53,4 @@ export const getRemindMailHtml = (
   </p>
 </div>
 `;
+};

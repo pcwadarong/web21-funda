@@ -21,7 +21,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
         </div>
         <div css={gridStyle}>
           {fields.map(field => (
-            <label
+            <button
               key={field.slug}
               onClick={() => onFieldClick(field.slug)}
               css={fieldLabelStyle(theme)}
@@ -35,7 +35,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
                 <span>로드맵 보기</span>
                 <SVGIcon icon={'NextArrow'} size="sm" />
               </div>
-            </label>
+            </button>
           ))}
         </div>
       </main>
@@ -95,6 +95,7 @@ const gridStyle = css`
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
   padding: 10px 0 30px;
+  min-height: 0;
 
   overflow-y: auto;
   flex: 1;
@@ -124,7 +125,6 @@ const fieldLabelStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.medium};
   transition: all 150ms ease-in-out;
   box-shadow: 0 4px 0 ${theme.colors.border.default};
-  cursor: pointer;
   color: ${theme.colors.text.default};
 
   &:hover {

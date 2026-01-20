@@ -163,6 +163,7 @@ const gridStyle = css`
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
   padding: 10px 0 30px;
+  min-height: 0;
 
   overflow-y: auto;
   scrollbar-width: none;

@@ -80,4 +80,8 @@ const mainStyle = css`
   justify-content: center;
   overflow-y: auto;
   padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;

@@ -47,7 +47,7 @@ export const QuizContentCard = ({
   return (
     <div css={cardStyle(theme)}>
       <div css={headerStyle}>
-        <h2 css={titleStyle(theme)}>{question.content.question}</h2>
+        <h2 css={titleStyle(theme)}>{`Q. ${question.content.question}`}</h2>
         <button
           css={reportButtonStyle(theme, isDarkMode)}
           onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
@@ -111,13 +111,17 @@ const cardStyle = (theme: Theme) => css`
   padding: 32px;
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+  }
 `;
 
 const headerStyle = css`
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
-  padding: 20px 0;
+  padding: 0 0 20px;
 `;
 
 const titleStyle = (theme: Theme) => css`
@@ -126,6 +130,7 @@ const titleStyle = (theme: Theme) => css`
   font-weight: ${theme.typography['20Bold'].fontWeight};
   color: ${theme.colors.text.strong};
   margin: 0;
+  word-break: keep-all;
 `;
 
 const footerStyle = css`

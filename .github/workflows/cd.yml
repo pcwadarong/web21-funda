@@ -34,6 +34,8 @@ jobs:
             "${{ secrets.DB_USER }}" \
             "${{ secrets.DB_PASSWORD }}" \
             "${{ secrets.GRAFANA_ADMIN_PASSWORD }}" \
+            "${{ secrets.MAIL_USER }}" \
+            "${{ secrets.MAIL_PASS }}" \
             "${{ secrets.GRAFANA_ROOT_URL }}" > .env
 
             # 3. BE 전용 환경 변수 주입
@@ -52,7 +54,7 @@ jobs:
 
             docker compose -f $APP_COMPOSE pull
             docker compose -f $MONITOR_COMPOSE pull
-            
+
             docker compose -f $APP_COMPOSE up -d
             docker compose -f $MONITOR_COMPOSE up -d
 

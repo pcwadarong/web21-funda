@@ -43,3 +43,10 @@ export const LongEmail: Story = {
     isLoading: false,
   },
 };
+
+export const Loading: Story = {
+  args: {
+    email: 'funda@example.com',
+    isLoading: true,
+  },
+};

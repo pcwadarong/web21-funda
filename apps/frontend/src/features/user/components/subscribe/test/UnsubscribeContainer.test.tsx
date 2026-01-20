@@ -40,7 +40,7 @@ describe('UnsubscribeContainer', () => {
     const onUnsubscribeMock = vi.fn();
     renderWithTheme({ ...defaultProps, onUnsubscribe: onUnsubscribeMock });
 
-    const button = screen.getByRole('button', { name: /수신 거부 완료/ });
+    const button = screen.getByRole('button', { name: /수신 거부하기/ });
     fireEvent.click(button);
 
     expect(onUnsubscribeMock).toHaveBeenCalledTimes(1);
@@ -49,7 +49,7 @@ describe('UnsubscribeContainer', () => {
   it('isLoading이 true일 때 버튼이 비활성화되어야 한다', () => {
     renderWithTheme({ ...defaultProps, isLoading: true });
 
-    const button = screen.getByRole('button', { name: /수신 거부 완료/ });
+    const button = screen.getByRole('button', { name: /처리 중/ });
     expect(button).toBeDisabled();
   });
 });

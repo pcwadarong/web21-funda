@@ -1,11 +1,11 @@
 import { apiFetch } from './api';
 
-interface UnSubscribeRequest {
+interface UnsubscribeRequest {
   email: string;
   token: string;
 }
 
-interface UnSubscribeResponse {
+interface UnsubscribeResponse {
   success: boolean;
   message: string;
 }
@@ -16,6 +16,6 @@ export const notificationService = {
    * @param email 수신 거부할 이메일 정보
    * @returns 처리 결과 메시지
    */
-  unsubscribe: async (data: UnSubscribeRequest): Promise<UnSubscribeResponse> =>
-    apiFetch.patch<UnSubscribeResponse>('/notification/unsubscribe', data),
+  unsubscribe: async (data: UnsubscribeRequest): Promise<UnsubscribeResponse> =>
+    apiFetch.patch<UnsubscribeResponse>('/notification/unsubscribe', data),
 };

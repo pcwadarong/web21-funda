@@ -15,7 +15,7 @@ import type {
   QuizSubmissionRequest,
   QuizSubmissionResponse,
 } from './dto/quiz-submission.dto';
-import { Field, Quiz, Step } from './entities';
+import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
 
 @Injectable()
 export class RoadmapService {
@@ -26,6 +26,8 @@ export class RoadmapService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    @InjectRepository(CheckpointQuizPool)
+    private readonly checkpointQuizPoolRepository: Repository<CheckpointQuizPool>,
     private readonly codeFormatter: CodeFormatter,
     @InjectRepository(SolveLog)
     private readonly solveLogRepository: Repository<SolveLog>,
@@ -200,17 +202,33 @@ export class RoadmapService {
   async getQuizzesByStepId(stepId: number): Promise<QuizResponse[]> {
     const step = await this.stepRepository.findOne({
       where: { id: stepId },
-      select: { id: true },
+      select: { id: true, isCheckpoint: true },
     });
 
     if (!step) {
       throw new NotFoundException('Step not found.'); // 스텝이 없으면 404
     }
 
-    const quizzes = await this.quizRepository.find({
-      where: { step: { id: stepId } },
-      order: { id: 'ASC' },
-    });
+    let quizzes: Quiz[] = [];
+
+    if (step.isCheckpoint) {
+      const pools = await this.checkpointQuizPoolRepository
+        .createQueryBuilder('pool')
+        .innerJoinAndSelect('pool.quiz', 'quiz')
+        .where('pool.checkpoint_step_id = :stepId', { stepId })
+        .orderBy('RAND()')
+        .limit(10)
+        .getMany();
+
+      quizzes = pools.map(pool => pool.quiz).filter((quiz): quiz is Quiz => Boolean(quiz));
+    } else {
+      quizzes = await this.quizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.step_id = :stepId', { stepId })
+        .orderBy('RAND()')
+        .limit(10)
+        .getMany();
+    }
 
     return Promise.all(quizzes.map(quiz => this.toQuizResponse(quiz)));
   }

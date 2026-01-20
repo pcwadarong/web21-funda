@@ -4,7 +4,7 @@ import { type FindOneOptions, Repository } from 'typeorm';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
 
-import { Field, Quiz, Step } from './entities';
+import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
 
 jest.mock('../common/utils/code-formatter');
@@ -14,6 +14,7 @@ describe('RoadmapService', () => {
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
+  let checkpointQuizPoolRepository: Partial<Repository<CheckpointQuizPool>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
@@ -29,6 +30,13 @@ describe('RoadmapService', () => {
   let findStepMock: jest.Mock<Promise<Step | null>, [FindOneOptions<Step>]>;
   let findQuizMock: jest.Mock<Promise<Quiz | null>, [FindOneOptions<Quiz>]>;
   let createQueryBuilderMock: jest.Mock;
+  let checkpointPoolQueryBuilderMock: {
+    innerJoinAndSelect: jest.Mock;
+    where: jest.Mock;
+    orderBy: jest.Mock;
+    limit: jest.Mock;
+    getMany: jest.Mock;
+  };
   let quizFindMock: jest.Mock;
   let formatMock: jest.Mock;
   let stepStatusFindMock: jest.Mock;
@@ -39,6 +47,13 @@ describe('RoadmapService', () => {
     findStepMock = jest.fn();
     findQuizMock = jest.fn();
     createQueryBuilderMock = jest.fn();
+    checkpointPoolQueryBuilderMock = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
+    };
     quizFindMock = jest.fn();
     formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
     stepStatusFindMock = jest.fn();
@@ -61,6 +76,9 @@ describe('RoadmapService', () => {
     stepRepository = {
       findOne: findStepMock,
     };
+    checkpointQuizPoolRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue(checkpointPoolQueryBuilderMock),
+    };
     solveLogRepository = {
       create: jest.fn(),
       save: jest.fn(),
@@ -79,6 +97,7 @@ describe('RoadmapService', () => {
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
+      checkpointQuizPoolRepository as Repository<CheckpointQuizPool>,
       codeFormatter as CodeFormatter,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
@@ -279,56 +298,67 @@ describe('RoadmapService', () => {
   });
 
   it('스텝별 퀴즈 목록을 응답한다', async () => {
-    findStepMock.mockResolvedValue({ id: 1 } as Step);
-    quizFindMock.mockResolvedValue([
-      {
-        id: 1,
-        type: 'MCQ',
-        question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
-        content: {
+    findStepMock.mockResolvedValue({ id: 1, isCheckpoint: false } as Step);
+    const quizQueryBuilderMock = {
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          type: 'MCQ',
           question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
-          options: [
-            { id: 'c1', text: '<main>' },
-            { id: 'c2', text: '<footer>' },
-            { id: 'c3', text: '<aside>' },
-          ],
+          content: {
+            question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
+            options: [
+              { id: 'c1', text: '<main>' },
+              { id: 'c2', text: '<footer>' },
+              { id: 'c3', text: '<aside>' },
+            ],
+          },
         },
-      },
-      {
-        id: 2,
-        type: 'MATCHING',
-        question: '시멘틱 태그 매칭',
-        content: {
-          left: ['<header>', '<nav>', '<article>', '<aside>'],
-          right: [
-            '문서/섹션의 머리말(제목, 소개 등)',
-            '내비게이션 링크 모음',
-            '독립적으로 배포/재사용 가능한 콘텐츠 단위',
-            '보조 콘텐츠(사이드바, 관련 링크 등)',
-          ],
+        {
+          id: 2,
+          type: 'MATCHING',
+          question: '시멘틱 태그 매칭',
+          content: {
+            left: ['<header>', '<nav>', '<article>', '<aside>'],
+            right: [
+              '문서/섹션의 머리말(제목, 소개 등)',
+              '내비게이션 링크 모음',
+              '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+              '보조 콘텐츠(사이드바, 관련 링크 등)',
+            ],
+          },
         },
-      },
-      {
-        id: 3,
-        type: 'CODE',
-        question: '네비게이션 영역을 의미하는 시멘틱 요소는?',
-        content: JSON.stringify({
-          code: '<{{BLANK}}>\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n</{{BLANK}}>',
-          options: [
-            { id: 'c1', text: 'div' },
-            { id: 'c2', text: 'nav' },
-            { id: 'c3', text: 'section' },
-            { id: 'c4', text: 'article' },
-            { id: 'c5', text: 'span' },
-          ],
-          language: 'html',
-        }),
-      },
-    ] as Quiz[]);
+        {
+          id: 3,
+          type: 'CODE',
+          question: '네비게이션 영역을 의미하는 시멘틱 요소는?',
+          content: JSON.stringify({
+            code: '<{{BLANK}}>\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n</{{BLANK}}>',
+            options: [
+              { id: 'c1', text: 'div' },
+              { id: 'c2', text: 'nav' },
+              { id: 'c3', text: 'section' },
+              { id: 'c4', text: 'article' },
+              { id: 'c5', text: 'span' },
+            ],
+            language: 'html',
+          }),
+        },
+      ] as Quiz[]),
+    };
+    createQueryBuilderMock.mockReturnValue(quizQueryBuilderMock as never);
 
     const result = await service.getQuizzesByStepId(1);
 
     expect(result).toHaveLength(3);
+    expect(quizQueryBuilderMock.where).toHaveBeenCalledWith('quiz.step_id = :stepId', {
+      stepId: 1,
+    });
+    expect(quizQueryBuilderMock.orderBy).toHaveBeenCalledWith('RAND()');
+    expect(quizQueryBuilderMock.limit).toHaveBeenCalledWith(10);
     expect(result[0]).toMatchObject({
       id: 1,
       type: 'MCQ',
@@ -397,6 +427,25 @@ describe('RoadmapService', () => {
     findStepMock.mockResolvedValue(null);
 
     await expect(service.getQuizzesByStepId(99)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('체크포인트 스텝이면 풀에서 퀴즈를 조회한다', async () => {
+    findStepMock.mockResolvedValue({ id: 10, isCheckpoint: true } as Step);
+    checkpointPoolQueryBuilderMock.getMany.mockResolvedValue([
+      { quiz: { id: 101, type: 'MCQ', question: '중간 점검 1', content: {} } },
+      { quiz: { id: 102, type: 'MCQ', question: '중간 점검 2', content: {} } },
+    ] as CheckpointQuizPool[]);
+
+    const result = await service.getQuizzesByStepId(10);
+
+    expect(checkpointPoolQueryBuilderMock.where).toHaveBeenCalledWith(
+      'pool.checkpoint_step_id = :stepId',
+      {
+        stepId: 10,
+      },
+    );
+    expect(checkpointPoolQueryBuilderMock.limit).toHaveBeenCalledWith(10);
+    expect(result.map(quiz => quiz.id)).toEqual([101, 102]);
   });
 
   it('객관식 정답을 채점한다', async () => {

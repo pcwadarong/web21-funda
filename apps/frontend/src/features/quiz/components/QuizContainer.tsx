@@ -70,7 +70,6 @@ const containerStyle = css`
   flex-direction: column;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
 `;
 
 const mainStyle = css`
@@ -83,5 +82,6 @@ const mainStyle = css`
 
   @media (max-width: 768px) {
     padding: 0;
+    align-items: stretch;
   }
 `;

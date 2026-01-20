@@ -2,16 +2,19 @@ import { ThemeProvider } from '@emotion/react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
-import { lightTheme } from '@/styles/theme'; // 실제 테마 경로로 확인 필요
+import { lightTheme } from '@/styles/theme';
 
 import { UnsubscribeContainer, type UnsubscribeContainerProps } from '../UnsubscribeContainer';
 
 describe('UnsubscribeContainer', () => {
-  const defaultProps = {
-    email: 'test@example.com',
-    onUnsubscribe: vi.fn(),
-    isLoading: false,
-  };
+  let defaultProps: UnsubscribeContainerProps;
+  beforeEach(() => {
+    defaultProps = {
+      email: 'test@example.com',
+      onUnsubscribe: vi.fn(),
+      isLoading: false,
+    };
+  });
 
   const renderWithTheme = (props: UnsubscribeContainerProps = defaultProps) =>
     render(
@@ -41,5 +44,12 @@ describe('UnsubscribeContainer', () => {
     fireEvent.click(button);
 
     expect(onUnsubscribeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('isLoading이 true일 때 버튼이 비활성화되어야 한다', () => {
+    renderWithTheme({ ...defaultProps, isLoading: true });
+
+    const button = screen.getByRole('button', { name: /수신 거부 완료/ });
+    expect(button).toBeDisabled();
   });
 });

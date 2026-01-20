@@ -26,17 +26,20 @@ type Story = StoryObj<typeof UnsubscribeContainer>;
 export const Default: Story = {
   args: {
     email: 'funda@example.com',
+    isLoading: false,
   },
 };
 
 export const NoEmail: Story = {
   args: {
     email: null,
+    isLoading: false,
   },
 };
 
 export const LongEmail: Story = {
   args: {
     email: 'this.is.a.very.long.email.address.example@funda.com',
+    isLoading: false,
   },
 };

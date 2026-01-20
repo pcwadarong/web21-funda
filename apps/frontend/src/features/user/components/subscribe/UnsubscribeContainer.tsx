@@ -21,7 +21,7 @@ export function UnsubscribeContainer({
       </p>
       <p>앞으로 Funda의 리마인드 퀴즈 메일을 받지 않으시겠습니까?</p>
       <Button onClick={onUnsubscribe} variant="primary" disabled={isLoading}>
-        수신 거부 완료
+        {isLoading ? '처리 중...' : '수신 거부하기'}
       </Button>
     </main>
   );

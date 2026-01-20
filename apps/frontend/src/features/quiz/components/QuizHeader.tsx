@@ -41,7 +41,7 @@ export const QuizHeader = ({
   return (
     <>
       <header css={headerStyle(theme)}>
-        <div css={headerContentStyle}>
+        <div css={headerContentStyle(heartCount)}>
           <button css={closeButtonStyle(theme)} onClick={handleCloseClick}>
             ✕
           </button>
@@ -52,10 +52,12 @@ export const QuizHeader = ({
             {currentStep}/{totalSteps}
           </div>
         </div>
-        <div css={heartContainerStyle(theme)}>
-          <SVGIcon icon="Heart" size="lg" />
-          <span css={heartValueStyle(theme)}>{heartCount}</span>
-        </div>
+        {heartCount > 0 && (
+          <div css={heartContainerStyle(theme)}>
+            <SVGIcon icon="Heart" size="lg" />
+            <span css={heartValueStyle(theme)}>{heartCount}</span>
+          </div>
+        )}
       </header>
 
       {showExitModal && (
@@ -93,13 +95,13 @@ const headerStyle = (theme: Theme) => css`
   border-bottom: 1px solid ${theme.colors.border.default};
 `;
 
-const headerContentStyle = css`
+const headerContentStyle = (heartCount: number) => css`
   display: flex;
   align-items: center;
   gap: 16px;
   max-width: 45rem;
   width: 100%;
-  margin-left: 80px;
+  ${heartCount === 0 ? '' : 'margin-left: 80px;'}
 `;
 
 const closeButtonStyle = (theme: Theme) => css`

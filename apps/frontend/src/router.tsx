@@ -78,10 +78,6 @@ export const router = createBrowserRouter([
       { path: '/leaderboard', element: <Leaderboard /> },
       { path: '/profile/:userId?', element: <Profile /> },
       { path: '/setting', element: <Setting /> },
-      {
-        path: '/unsubscribe',
-        element: <Unsubscribe />,
-      },
     ],
   },
 
@@ -96,6 +92,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/unsubscribe',
+    element: <Unsubscribe />,
   },
   {
     path: '/initial-fields',

@@ -2,7 +2,7 @@ import { css } from '@emotion/react';
 
 import { Button } from '@/components/Button';
 
-interface UnsubscribeContainerProps {
+export interface UnsubscribeContainerProps {
   email: string | null;
   onUnsubscribe: () => void;
 }

@@ -3,15 +3,22 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
+import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {
   currentStep: number;
   totalSteps: number;
   completedSteps: number;
+  heartCount: number;
 }
 
-export const QuizHeader = ({ currentStep, totalSteps, completedSteps }: QuizHeaderProps) => {
+export const QuizHeader = ({
+  currentStep,
+  totalSteps,
+  completedSteps,
+  heartCount,
+}: QuizHeaderProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
@@ -45,6 +52,10 @@ export const QuizHeader = ({ currentStep, totalSteps, completedSteps }: QuizHead
             {currentStep}/{totalSteps}
           </div>
         </div>
+        <div css={heartContainerStyle(theme)}>
+          <SVGIcon icon="Heart" size="lg" />
+          <span css={heartValueStyle(theme)}>{heartCount}</span>
+        </div>
       </header>
 
       {showExitModal && (
@@ -75,6 +86,7 @@ export const QuizHeader = ({ currentStep, totalSteps, completedSteps }: QuizHead
 const headerStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   padding: 16px 24px;
   background: ${theme.colors.surface.strong};
@@ -87,7 +99,7 @@ const headerContentStyle = css`
   gap: 16px;
   max-width: 45rem;
   width: 100%;
-  margin: 0 auto;
+  margin-left: 80px;
 `;
 
 const closeButtonStyle = (theme: Theme) => css`
@@ -176,4 +188,18 @@ const modalFooterStyle = css`
 
 const modalButtonStyle = css`
   flex: 1;
+`;
+
+const heartContainerStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: ${theme.borderRadius.small};
+`;
+
+const heartValueStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Bold'].fontSize};
+  font-weight: ${theme.typography['16Bold'].fontWeight};
+  color: ${theme.colors.text.default};
 `;

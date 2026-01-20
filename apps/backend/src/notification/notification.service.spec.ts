@@ -1,4 +1,6 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as nodemailer from 'nodemailer';
@@ -38,8 +40,17 @@ describe('NotificationService', () => {
               if (key === 'MAIL_USER') return 'test@gmail.com';
               if (key === 'MAIL_PASS') return 'password';
               if (key === 'CLIENT_ORIGIN') return 'http://localhost:3000';
+              if (key === 'JWT_ACCESS_SECRET') return 'test-secret';
               return null;
             }),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+            verify: jest.fn(),
+            signAsync: jest.fn(),
           },
         },
       ],
@@ -102,6 +113,60 @@ describe('NotificationService', () => {
 
       // Then
       expect(sendMailMock).not.toHaveBeenCalled();
+    });
+
+    it('sendMail이 실패하면 에러를 로깅하고 에러를 전파하지 않아야 한다', async () => {
+      // Given
+      const mockUser = {
+        id: 1,
+        email: 'user@example.com',
+        displayName: '테스터',
+      } as User;
+
+      const mailError = new Error('Mail sending failed');
+      sendMailMock.mockRejectedValueOnce(mailError);
+
+      const queryBuilder = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockUser]),
+      };
+      jest.spyOn(userRepository, 'createQueryBuilder').mockReturnValue(queryBuilder as never);
+      jest.spyOn(userRepository, 'update').mockResolvedValue({} as UpdateResult);
+
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+      // When
+      await expect(service.handleStreakRemindBatch()).resolves.not.toThrow();
+
+      // Then
+      expect(sendMailMock).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Failed to send mail to User(${mockUser.id})`),
+      );
+      // sendMail 실패 시 userRepository.update는 호출되지 않아야 함
+      expect(userRepository.update).not.toHaveBeenCalled();
+
+      loggerErrorSpy.mockRestore();
+    });
+  });
+
+  describe('unsubscribeUser', () => {
+    it('이메일로 유저의 구독을 해지해야 한다', async () => {
+      // Given
+      const email = 'user@example.com';
+      jest.spyOn(userRepository, 'update').mockResolvedValue({} as UpdateResult);
+
+      // When
+      await service.unsubscribeUser(email);
+
+      // Then
+      expect(userRepository.update).toHaveBeenCalledWith(
+        { email },
+        expect.objectContaining({
+          isEmailSubscribed: false,
+        }),
+      );
     });
   });
 });

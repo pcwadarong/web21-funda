@@ -46,7 +46,7 @@ export const Default: Story = {
 
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('효과음')).toBeInTheDocument();
-    await expect(canvas.getByText('효과음')).toBeInTheDocument();
+    await expect(canvas.getByText('화면')).toBeInTheDocument();
+    await expect(canvas.getByText('다크 모드')).toBeInTheDocument();
   },
 };

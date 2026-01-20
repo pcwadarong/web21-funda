@@ -19,6 +19,7 @@ export interface UIState {
     unit_id: number;
   };
   current_quiz_step_id: number;
+  current_step_order_index?: number;
 }
 
 export interface GuestAnswer {

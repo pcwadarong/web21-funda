@@ -6,13 +6,13 @@ import { AuthModule } from './auth/auth.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
 import { createTypeOrmOptions } from './config/typeorm.config';
 import { MetricsModule } from './metrics/metrics.module';
+import { NotificationController } from './notification/notification.controller';
+import { NotificationModule } from './notification/notification.module';
 import { ProgressModule } from './progress/progress.module';
 import { ReportModule } from './report/report.module';
 import { RoadmapModule } from './roadmap/roadmap.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { NotificationController } from './notification/notification.controller';
-import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [

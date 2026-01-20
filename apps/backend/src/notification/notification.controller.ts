@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Patch,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -14,13 +15,14 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 import { UnsubscribeDto } from './dto/unsubscribe.dto';
 import { NotificationService } from './notification.service';
 
 @ApiTags('Notification')
 @Controller('notification')
+@UseGuards(ThrottlerGuard)
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 

@@ -89,6 +89,7 @@ export const Learn = () => {
 
       updateUIState({
         current_quiz_step_id: step.id,
+        current_step_order_index: step.orderIndex,
         last_viewed: {
           field_slug: storageUtil.get().ui_state.last_viewed.field_slug,
           unit_id: currentUnit ?? fallbackUnitId,

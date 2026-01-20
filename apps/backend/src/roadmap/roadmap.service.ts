@@ -1,9 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
-import { SolveLog, StepAttemptStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import {
+  QuizLearningStatus,
+  SolveLog,
+  StepAttemptStatus,
+  UserQuizStatus,
+  UserStepAttempt,
+  UserStepStatus,
+} from '../progress/entities';
 
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
@@ -30,12 +37,9 @@ export class RoadmapService {
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
     private readonly codeFormatter: CodeFormatter,
-    @InjectRepository(SolveLog)
-    private readonly solveLogRepository: Repository<SolveLog>,
-    @InjectRepository(UserStepAttempt)
-    private readonly stepAttemptRepository: Repository<UserStepAttempt>,
     @InjectRepository(UserStepStatus)
     private readonly stepStatusRepository: Repository<UserStepStatus>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -790,27 +794,238 @@ export class RoadmapService {
       return;
     }
 
-    let stepAttempt: UserStepAttempt | null = null;
-    if (stepAttemptId) {
-      stepAttempt = await this.stepAttemptRepository.findOne({
-        where: { id: stepAttemptId, userId },
+    const solvedAt = new Date();
+    const qualityScore = this.calculateQualityScore(isCorrect);
+
+    await this.dataSource.transaction(async manager => {
+      // 풀이 기록과 SRS 상태를 항상 같이 반영하기 위해 트랜잭션으로 묶는다.
+      const stepAttempt = await this.findStepAttemptForSolveLog({
+        manager,
+        userId,
+        quiz,
+        stepAttemptId,
       });
-    } else if (quiz.step?.id) {
-      stepAttempt = await this.stepAttemptRepository.findOne({
-        where: { userId, step: { id: quiz.step.id }, status: StepAttemptStatus.IN_PROGRESS },
-        order: { startedAt: 'DESC' },
+
+      const solveLogRepository = manager.getRepository(SolveLog);
+      const stepAttemptValue = stepAttempt ? stepAttempt : null;
+      const log = solveLogRepository.create({
+        userId,
+        quiz,
+        stepAttempt: stepAttemptValue,
+        isCorrect,
+        quality: qualityScore,
+        solvedAt,
+        duration: null,
+      });
+
+      await solveLogRepository.save(log);
+      await this.updateUserQuizStatusWithSm2({
+        manager,
+        userId,
+        quiz,
+        qualityScore,
+        solvedAt,
+      });
+    });
+  }
+
+  /**
+   * 풀이 로그가 속할 스텝 시도를 찾는다.
+   *
+   * @param params.manager 트랜잭션 매니저
+   * @param params.userId 사용자 ID
+   * @param params.quiz 대상 퀴즈
+   * @param params.stepAttemptId 요청에서 전달된 시도 ID
+   * @returns 스텝 시도 엔티티 또는 null
+   */
+  private async findStepAttemptForSolveLog(params: {
+    manager: EntityManager;
+    userId: number;
+    quiz: Quiz;
+    stepAttemptId?: number;
+  }): Promise<UserStepAttempt | null> {
+    const { manager, userId, quiz, stepAttemptId } = params;
+    const stepAttemptRepository = manager.getRepository(UserStepAttempt);
+
+    if (stepAttemptId) {
+      return stepAttemptRepository.findOne({
+        where: { id: stepAttemptId, userId },
       });
     }
 
-    const log = this.solveLogRepository.create({
-      userId,
-      quiz,
-      stepAttempt: stepAttempt ?? null,
-      isCorrect,
-      solvedAt: new Date(),
-      duration: null,
+    if (!quiz.step || !quiz.step.id) {
+      return null;
+    }
+
+    return stepAttemptRepository.findOne({
+      where: { userId, step: { id: quiz.step.id }, status: StepAttemptStatus.IN_PROGRESS },
+      order: { startedAt: 'DESC' },
+    });
+  }
+
+  /**
+   * SM-2 규칙에 따라 유저 퀴즈 상태를 갱신한다.
+   *
+   * @param params.manager 트랜잭션 매니저
+   * @param params.userId 사용자 ID
+   * @param params.quiz 대상 퀴즈
+   * @param params.qualityScore 풀이 품질 점수
+   * @param params.solvedAt 풀이 시각
+   */
+  private async updateUserQuizStatusWithSm2(params: {
+    manager: EntityManager;
+    userId: number;
+    quiz: Quiz;
+    qualityScore: number;
+    solvedAt: Date;
+  }): Promise<void> {
+    const { manager, userId, quiz, qualityScore, solvedAt } = params;
+    const userQuizStatusRepository = manager.getRepository(UserQuizStatus);
+
+    const existingStatus = await userQuizStatusRepository.findOne({
+      where: { userId, quiz: { id: quiz.id } },
     });
 
-    await this.solveLogRepository.save(log);
+    let baseStatus: UserQuizStatus;
+    if (existingStatus) {
+      baseStatus = existingStatus;
+    } else {
+      baseStatus = userQuizStatusRepository.create({
+        userId,
+        quiz,
+        status: QuizLearningStatus.LEARNING,
+        interval: 0,
+        easeFactor: 2.5,
+        repetition: 0,
+        lastQuality: null,
+        reviewCount: 0,
+        lapseCount: 0,
+        nextReviewAt: null,
+        lastSolvedAt: null,
+        isWrong: false,
+      });
+    }
+
+    let baseEaseFactor = baseStatus.easeFactor;
+    if (baseEaseFactor === null || baseEaseFactor === undefined) {
+      baseEaseFactor = 2.5;
+    }
+    const nextEaseFactor = this.calculateEaseFactor(baseEaseFactor, qualityScore);
+    const isSuccess = qualityScore >= 3;
+    let baseRepetition = baseStatus.repetition;
+    if (baseRepetition === null || baseRepetition === undefined) {
+      baseRepetition = 0;
+    }
+    let baseInterval = baseStatus.interval;
+    if (baseInterval === null || baseInterval === undefined) {
+      baseInterval = 0;
+    }
+    let baseReviewCount = baseStatus.reviewCount;
+    if (baseReviewCount === null || baseReviewCount === undefined) {
+      baseReviewCount = 0;
+    }
+    let baseLapseCount = baseStatus.lapseCount;
+    if (baseLapseCount === null || baseLapseCount === undefined) {
+      baseLapseCount = 0;
+    }
+
+    let nextRepetition = 0;
+    let nextInterval = 1;
+    let nextStatus = QuizLearningStatus.LEARNING;
+    let nextIsWrong = true;
+    let nextLapseCount = baseLapseCount;
+
+    if (isSuccess) {
+      nextRepetition = baseRepetition + 1;
+      nextInterval = this.calculateInterval(nextRepetition, baseInterval, nextEaseFactor);
+      nextStatus = QuizLearningStatus.REVIEW;
+      nextIsWrong = false;
+    } else {
+      nextRepetition = 0;
+      nextInterval = 1;
+      nextStatus = QuizLearningStatus.LEARNING;
+      nextIsWrong = true;
+      nextLapseCount = baseLapseCount + 1;
+    }
+
+    if (isSuccess && nextInterval >= 30) {
+      nextStatus = QuizLearningStatus.MASTERED;
+    }
+
+    baseStatus.easeFactor = nextEaseFactor;
+    baseStatus.repetition = nextRepetition;
+    baseStatus.interval = nextInterval;
+    baseStatus.status = nextStatus;
+    baseStatus.isWrong = nextIsWrong;
+    baseStatus.lastQuality = qualityScore;
+    baseStatus.reviewCount = baseReviewCount + 1;
+    baseStatus.lapseCount = nextLapseCount;
+    baseStatus.lastSolvedAt = solvedAt;
+    baseStatus.nextReviewAt = this.calculateNextReviewAt(solvedAt, nextInterval);
+
+    await userQuizStatusRepository.save(baseStatus);
+  }
+
+  /**
+   * 정답 여부로 기본 품질 점수를 계산한다.
+   *
+   * @param isCorrect 정답 여부
+   * @returns SM-2 품질 점수
+   */
+  private calculateQualityScore(isCorrect: boolean): number {
+    if (isCorrect) {
+      return 5;
+    }
+    return 2;
+  }
+
+  /**
+   * SM-2 공식을 적용해 난이도 계수를 갱신한다.
+   *
+   * @param currentEaseFactor 현재 난이도 계수
+   * @param qualityScore 품질 점수
+   * @returns 갱신된 난이도 계수
+   */
+  private calculateEaseFactor(currentEaseFactor: number, qualityScore: number): number {
+    const scoreGap = 5 - qualityScore;
+    const delta = 0.1 - scoreGap * (0.08 + scoreGap * 0.02);
+    const nextEaseFactor = currentEaseFactor + delta;
+
+    return Math.max(nextEaseFactor, 1.3);
+  }
+
+  /**
+   * SM-2 규칙으로 다음 복습 간격을 계산한다.
+   *
+   * @param repetition 업데이트된 연속 정답 횟수
+   * @param previousInterval 기존 복습 간격(일)
+   * @param easeFactor 갱신된 난이도 계수
+   * @returns 다음 복습 간격(일)
+   */
+  private calculateInterval(
+    repetition: number,
+    previousInterval: number,
+    easeFactor: number,
+  ): number {
+    if (repetition === 1) {
+      return 1;
+    }
+    if (repetition === 2) {
+      return 6;
+    }
+    return Math.round(previousInterval * easeFactor);
+  }
+
+  /**
+   * 복습 간격을 기준으로 다음 복습 일시를 계산한다.
+   *
+   * @param solvedAt 풀이 시각
+   * @param intervalDays 복습 간격(일)
+   * @returns 다음 복습 일시
+   */
+  private calculateNextReviewAt(solvedAt: Date, intervalDays: number): Date {
+    const dayMilliseconds = 24 * 60 * 60 * 1000;
+    const totalOffset = intervalDays * dayMilliseconds;
+    return new Date(solvedAt.getTime() + totalOffset);
   }
 }

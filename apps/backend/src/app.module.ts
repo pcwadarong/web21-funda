@@ -11,6 +11,8 @@ import { ReportModule } from './report/report.module';
 import { RoadmapModule } from './roadmap/roadmap.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { NotificationController } from './notification/notification.controller';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -28,8 +30,9 @@ import { AppService } from './app.service';
     BackofficeModule,
     MetricsModule,
     ReportModule,
+    NotificationModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, NotificationController],
   providers: [AppService],
 })
 export class AppModule {}

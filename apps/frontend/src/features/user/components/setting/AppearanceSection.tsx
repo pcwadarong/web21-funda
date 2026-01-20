@@ -24,7 +24,7 @@ export const AppearanceSection = ({ isDarkMode, onDarkModeToggle }: AppearanceSe
 
       <div css={contentGroupStyle}>
         <div css={rowStyle}>
-          <p css={labelGroupStyle}>다크 모드</p>
+          <p css={labelGroupStyle(theme)}>다크 모드</p>
           <label css={switchStyle(theme)}>
             <input
               type="checkbox"

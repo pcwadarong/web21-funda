@@ -31,7 +31,8 @@ export const rowStyle = css`
   flex-wrap: wrap;
 `;
 
-export const labelGroupStyle = css`
+export const labelGroupStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.default};
   margin: 0;
   white-space: nowrap;
   flex-shrink: 0;

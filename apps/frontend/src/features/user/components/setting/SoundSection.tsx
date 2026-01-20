@@ -30,7 +30,7 @@ export const SoundSection = ({ soundVolume, onSoundVolumeChange }: SoundSectionP
 
       <div css={contentGroupStyle}>
         <div css={rowStyle}>
-          <p css={labelGroupStyle}>효과음</p>
+          <p css={labelGroupStyle(theme)}>효과음</p>
           <div css={volumeControlStyle}>
             <input
               type="range"

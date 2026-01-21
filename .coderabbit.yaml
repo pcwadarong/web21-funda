@@ -1,0 +1,9 @@
+language: 'ko-KR' # 리뷰 언어
+reviews:
+  profile: 'assertive' # 리뷰 스타일
+  request_changes_workflow: false # 가벼운 제안은 Reuqest Changes 없이 코멘트만 남김
+  high_level_summary: true # PR 전체에 대한 요약 제공
+  poem: false # 시적인 표현 사용 안 함
+
+chat:
+  auto_reply: true

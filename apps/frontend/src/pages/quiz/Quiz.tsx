@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import correctSound from '@/assets/audio/correct.mp3';
 import wrongSound from '@/assets/audio/wrong.mp3';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
 import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
+import { ReviewCompletionEffect } from '@/feat/quiz/components/ReviewCompletionEffect';
 import type {
   AnswerType,
   CorrectAnswerType,
@@ -17,6 +18,7 @@ import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { authService } from '@/services/authService';
+import { progressService } from '@/services/progressService';
 import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
 import { useAuthStore, useAuthUser, useIsAuthReady } from '@/store/authStore';
 import { shuffleArray } from '@/utils/shuffleArray';
@@ -43,7 +45,10 @@ export const Quiz = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
+  const [showReviewCompletion, setShowReviewCompletion] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const heartCount = user ? user.heartCount : progress.heart;
 
@@ -82,9 +87,16 @@ export const Quiz = () => {
 
   /** 현재 진행할 스텝 ID */
   const step_id = uiState.current_quiz_step_id;
+  const isReviewMode = searchParams.get('mode') === 'review';
+
+  const reviewQuizzesFromState = useMemo(() => {
+    const state = location.state as { reviewQuizzes?: QuizQuestion[] } | null;
+    return state?.reviewQuizzes ?? null;
+  }, [location.state]);
 
   const { playSound } = useSound();
   const baseScorePerQuiz = 3;
+  const reviewCompletionDelayMs = 2400;
 
   type GuestStepResult = {
     score: number;
@@ -141,7 +153,7 @@ export const Quiz = () => {
    */
 
   const fetchQuizzes = async () => {
-    if (!step_id) {
+    if (!step_id && !isReviewMode) {
       return;
     }
 
@@ -151,6 +163,35 @@ export const Quiz = () => {
     setIsLoading(true);
     setLoadError(false);
     setStepAttemptId(null);
+
+    if (isReviewMode) {
+      if (!isLoggedIn) {
+        navigate('/login');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const quizzesData = reviewQuizzesFromState ?? (await progressService.getReviewQueue());
+        if (quizzesData.length === 0) {
+          setLoadError(true);
+          setIsLoading(false);
+          return;
+        }
+        const finalQuizzes = await shuffleQuizOptions(quizzesData);
+
+        setQuizzes(finalQuizzes);
+        setSelectedAnswers(new Array(finalQuizzes.length).fill(null));
+        setQuestionStatuses(new Array(finalQuizzes.length).fill('idle'));
+        setQuizSolutions(new Array(finalQuizzes.length).fill(null));
+        setIsLoading(false);
+        return;
+      } catch {
+        setLoadError(true);
+        setIsLoading(false);
+        return;
+      }
+    }
 
     /** 퀴즈 시작 정보 저장 */
     if (isLoggedIn) {
@@ -206,7 +247,19 @@ export const Quiz = () => {
   /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
     fetchQuizzes();
-  }, [step_id, isLoggedIn, isAuthReady]);
+  }, [step_id, isLoggedIn, isAuthReady, isReviewMode, reviewQuizzesFromState, navigate]);
+
+  useEffect(() => {
+    if (!showReviewCompletion) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      navigate('/learn');
+    }, reviewCompletionDelayMs);
+
+    return () => clearTimeout(timer);
+  }, [navigate, reviewCompletionDelayMs, showReviewCompletion]);
 
   /** 새로고침 시, 한 문제라도 제출했다면 경고 */
   useEffect(() => {
@@ -260,7 +313,7 @@ export const Quiz = () => {
    */
   const handleCheckAnswer = useCallback(async () => {
     if (!currentQuiz || !currentAnswer) return;
-    if (isLoggedIn && stepAttemptId === null) {
+    if (isLoggedIn && stepAttemptId === null && !isReviewMode) {
       setLoadError(true);
       return;
     }
@@ -325,10 +378,12 @@ export const Quiz = () => {
       });
 
       if (!isLoggedIn) {
-        addGuestStepAnswer(step_id, {
-          quiz_id: currentQuiz.id,
-          is_correct: result.is_correct,
-        });
+        if (!isReviewMode) {
+          addGuestStepAnswer(step_id, {
+            quiz_id: currentQuiz.id,
+            is_correct: result.is_correct,
+          });
+        }
       }
     } catch {
       // 에러 발생 시에도 다음 문제로 넘어갈 수 있도록 함
@@ -343,6 +398,7 @@ export const Quiz = () => {
     playSound,
     step_id,
     stepAttemptId,
+    isReviewMode,
   ]);
 
   /** 마지막 문제 여부 */
@@ -355,6 +411,10 @@ export const Quiz = () => {
     if (!currentQuiz) return;
     if (isLastQuestion) {
       try {
+        if (isReviewMode) {
+          setShowReviewCompletion(true);
+          return;
+        }
         if (isLoggedIn) {
           if (stepAttemptId === null) {
             navigate('/quiz/error');
@@ -413,9 +473,11 @@ export const Quiz = () => {
     finalizeGuestStepAttempt,
     buildGuestResult,
     stepAttemptId,
+    isReviewMode,
   ]);
 
   // 조건부 렌더링은 모든 hooks 호출 후에 배치
+  if (showReviewCompletion) return <ReviewCompletionEffect />;
   if (isLoading) return <QuizLoadingView />;
   if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
 
@@ -433,6 +495,7 @@ export const Quiz = () => {
       handleCheckAnswer={handleCheckAnswer}
       handleNextQuestion={handleNextQuestion}
       heartCount={showHeart ? heartCount : 0}
+      isReviewMode={isReviewMode}
     />
   );
 };

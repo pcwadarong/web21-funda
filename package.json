@@ -15,6 +15,7 @@
     "migration:revert:docker": "docker compose -f docker/local/docker-compose.local.yml exec backend pnpm --filter backend migration:revert",
     "migration:show:docker": "docker compose -f docker/local/docker-compose.local.yml exec backend pnpm --filter backend migration:show",
     "seed:docker": "docker compose -f docker/local/docker-compose.local.yml exec backend pnpm --filter backend seed",
+    "seed:checkpoint-pools:docker": "docker compose -f docker/local/docker-compose.local.yml exec backend pnpm --filter backend seed:checkpoint-pools",
     "test": "turbo run test",
     "postinstall": "husky"
   },

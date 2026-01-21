@@ -56,6 +56,7 @@ const renderCard = (overrides: Partial<React.ComponentProps<typeof QuizContentCa
         onCheck={vi.fn()}
         onNext={vi.fn()}
         isLast={false}
+        isReviewMode={false}
         {...overrides}
       />
     </ThemeProvider>,
@@ -126,8 +127,13 @@ describe('QuizContentCard', () => {
   });
 
   it('status=checked && isLast=true이면 다음 버튼 라벨이 "결과 보기"로 변경된다', () => {
-    renderCard({ status: 'checked', isLast: true });
+    renderCard({ status: 'checked', isLast: true, isReviewMode: false });
     expect(screen.getByRole('button', { name: '결과 보기' })).toBeInTheDocument();
+  });
+
+  it('status=checked && isLast=true && isReviewMode=true이면 다음 버튼 라벨이 "복습 완료"로 변경된다', () => {
+    renderCard({ status: 'checked', isLast: true, isReviewMode: true });
+    expect(screen.getByRole('button', { name: '복습 완료' })).toBeInTheDocument();
   });
 
   it('해설 보기/AI 질문 버튼 클릭 시 openModal이 호출된다', () => {

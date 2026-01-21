@@ -1,6 +1,5 @@
 import { redirect } from 'react-router-dom';
 
-import { Loading } from '@/comp/Loading';
 import { useAuthStore } from '@/store/authStore';
 
 /**
@@ -8,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
  */
 export const protectedLoader = () => {
   const { isLoggedIn, isAuthReady } = useAuthStore.getState();
-  if (!isAuthReady) return <Loading />;
+  if (!isAuthReady) return null;
   if (!isLoggedIn) return redirect('/login');
   return null;
 };
@@ -18,7 +17,7 @@ export const protectedLoader = () => {
  */
 export const guestLoader = () => {
   const { isLoggedIn, isAuthReady } = useAuthStore.getState();
-  if (!isAuthReady) return <Loading />;
+  if (!isAuthReady) return null;
   if (isLoggedIn) return redirect('/learn');
   return null;
 };

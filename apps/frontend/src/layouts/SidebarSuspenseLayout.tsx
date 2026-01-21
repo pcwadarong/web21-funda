@@ -5,11 +5,11 @@ import { Outlet } from 'react-router-dom';
 import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/layouts/Sidebar';
 
-interface SideBarLayoutProps {
+interface SidebarLayoutProps {
   children?: ReactNode;
 }
 
-export const SidebarSuspenseLayout = ({ children }: SideBarLayoutProps) => (
+export const SidebarSuspenseLayout = ({ children }: SidebarLayoutProps) => (
   <div css={containerStyle}>
     <Sidebar />
     <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>

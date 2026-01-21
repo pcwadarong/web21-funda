@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import correctSound from '@/assets/audio/correct.mp3';
 import wrongSound from '@/assets/audio/wrong.mp3';
+import { Loading } from '@/components/Loading';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
-import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
 import { ReviewCompletionEffect } from '@/feat/quiz/components/ReviewCompletionEffect';
 import type {
   AnswerType,
@@ -14,14 +15,17 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
+import {
+  useCompleteStepMutation,
+  useQuizzesByStepQuery,
+  useStartStepMutation,
+  useSubmitQuizMutation,
+} from '@/hooks/queries/quizQueries';
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
-import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
-import { authService } from '@/services/authService';
-import { progressService } from '@/services/progressService';
-import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
+import type { QuizSubmissionRequest } from '@/services/quizService';
 import { useAuthStore, useAuthUser, useIsAuthReady } from '@/store/authStore';
-import { shuffleArray } from '@/utils/shuffleArray';
 /**
  * 퀴즈 풀이 페이지 컴포넌트
  * 퀴즈 데이터 로딩, 답변 상태 관리, 정답 확인 및 페이지 이동 로직을 담당합니다.
@@ -42,7 +46,6 @@ export const Quiz = () => {
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
   const user = useAuthUser();
   const isAuthReady = useIsAuthReady();
-  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
   const [showReviewCompletion, setShowReviewCompletion] = useState(false);
@@ -88,11 +91,36 @@ export const Quiz = () => {
   /** 현재 진행할 스텝 ID */
   const step_id = uiState.current_quiz_step_id;
   const isReviewMode = searchParams.get('mode') === 'review';
+  const startedStepIdRef = useRef<number | null>(null);
 
   const reviewQuizzesFromState = useMemo(() => {
     const state = location.state as { reviewQuizzes?: QuizQuestion[] } | null;
     return state?.reviewQuizzes ?? null;
   }, [location.state]);
+
+  const queryClient = useQueryClient();
+
+  const completeStepMutation = useCompleteStepMutation();
+
+  const startStepMutation = useStartStepMutation();
+
+  const submitQuizMutation = useSubmitQuizMutation();
+
+  const reviewQuery = useReviewQueueQuery({
+    enabled: isReviewMode && !reviewQuizzesFromState && isLoggedIn && isAuthReady,
+  });
+
+  const quizzesQuery = useQuizzesByStepQuery(step_id, {
+    enabled: !isReviewMode && Boolean(step_id) && isAuthReady,
+  });
+
+  const quizzesData = isReviewMode
+    ? (reviewQuizzesFromState ?? reviewQuery.data)
+    : quizzesQuery.data;
+
+  const isQueryLoading = isReviewMode
+    ? !reviewQuizzesFromState && reviewQuery.isLoading
+    : quizzesQuery.isLoading;
 
   const { playSound } = useSound();
   const baseScorePerQuiz = 3;
@@ -151,8 +179,7 @@ export const Quiz = () => {
   /**
    * 퀴즈 데이터 가져오기
    */
-
-  const fetchQuizzes = async () => {
+  const fetchQuizzes = () => {
     if (!step_id && !isReviewMode) {
       return;
     }
@@ -160,94 +187,61 @@ export const Quiz = () => {
     if (!isAuthReady) {
       return;
     }
-    setIsLoading(true);
-    setLoadError(false);
-    setStepAttemptId(null);
 
-    if (isReviewMode) {
-      if (!isLoggedIn) {
-        navigate('/login');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const quizzesData = reviewQuizzesFromState ?? (await progressService.getReviewQueue());
-        if (quizzesData.length === 0) {
-          setLoadError(true);
-          setIsLoading(false);
-          return;
-        }
-        const finalQuizzes = await shuffleQuizOptions(quizzesData);
-
-        setQuizzes(finalQuizzes);
-        setSelectedAnswers(new Array(finalQuizzes.length).fill(null));
-        setQuestionStatuses(new Array(finalQuizzes.length).fill('idle'));
-        setQuizSolutions(new Array(finalQuizzes.length).fill(null));
-        setIsLoading(false);
-        return;
-      } catch {
-        setLoadError(true);
-        setIsLoading(false);
-        return;
-      }
+    if (isReviewMode && !isLoggedIn) {
+      navigate('/login');
+      return;
     }
 
-    /** 퀴즈 시작 정보 저장 */
-    if (isLoggedIn) {
-      try {
-        const startResult = await quizService.startStep(step_id);
-        setStepAttemptId(startResult.stepAttemptId);
-      } catch {
-        setLoadError(true);
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      startGuestStepAttempt(step_id);
+    if (!quizzesData) {
+      return;
     }
 
-    try {
-      // 완전히 준비된 캐시 확인
-      const cachedProcessedData = sessionStorage.getItem(`processed_quizzes_${step_id}`);
-
-      if (cachedProcessedData) {
-        // 미리 가공된 데이터 직접 사용
-        const { quizzes, selectedAnswers, questionStatuses, quizSolutions } =
-          JSON.parse(cachedProcessedData);
-
-        setQuizzes(quizzes);
-        setSelectedAnswers(selectedAnswers);
-        setQuestionStatuses(questionStatuses);
-        setQuizSolutions(quizSolutions);
-
-        sessionStorage.removeItem(`processed_quizzes_${step_id}`);
-        setIsLoading(false);
-        return;
-      }
-
-      // 캐시 없으면 서버에서 가져오기
-      const quizzesData = await quizService.getQuizzesByStep(step_id);
-
-      // 데이터 처리 (호버할 때 안 했으면 여기서)
-      const shuffledQuizzes = await shuffleArray(quizzesData);
-      const finalQuizzes = await shuffleQuizOptions(shuffledQuizzes);
-
-      setQuizzes(finalQuizzes);
-      setSelectedAnswers(new Array(finalQuizzes.length).fill(null));
-      setQuestionStatuses(new Array(finalQuizzes.length).fill('idle'));
-      setQuizSolutions(new Array(finalQuizzes.length).fill(null));
-    } catch {
+    if (quizzesData.length === 0) {
       setLoadError(true);
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    setLoadError(false);
+    setQuizzes(quizzesData);
+    setSelectedAnswers(new Array(quizzesData.length).fill(null));
+    setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
+    setQuizSolutions(new Array(quizzesData.length).fill(null));
   };
 
   /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
     fetchQuizzes();
-  }, [step_id, isLoggedIn, isAuthReady, isReviewMode, reviewQuizzesFromState, navigate]);
+  }, [step_id, isLoggedIn, isAuthReady, isReviewMode, navigate, quizzesData]);
+
+  useEffect(() => {
+    if (!isAuthReady || isReviewMode || !step_id) {
+      return;
+    }
+
+    if (step_id === startedStepIdRef.current) {
+      return;
+    }
+
+    startedStepIdRef.current = step_id;
+    setStepAttemptId(null);
+
+    if (!isLoggedIn) {
+      startGuestStepAttempt(step_id);
+      return;
+    }
+
+    const startStep = async () => {
+      try {
+        const startResult = await startStepMutation.mutateAsync(step_id);
+        setStepAttemptId(startResult.stepAttemptId);
+      } catch {
+        setLoadError(true);
+      }
+    };
+
+    startStep();
+  }, [isAuthReady, isLoggedIn, isReviewMode, startGuestStepAttempt, step_id]);
 
   useEffect(() => {
     if (!showReviewCompletion) {
@@ -337,7 +331,7 @@ export const Quiz = () => {
         payload.step_attempt_id = stepAttemptId;
       }
 
-      const result = await quizService.submitQuiz(currentQuiz.id, payload);
+      const result = await submitQuizMutation.mutateAsync({ quizId: currentQuiz.id, payload });
       const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
         ? { pairs: result.solution.correct_pairs }
         : (result.solution?.correct_option_id ?? null);
@@ -421,13 +415,13 @@ export const Quiz = () => {
             return;
           }
 
-          const result = await quizService.completeStep(step_id, {
-            stepAttemptId,
+          const result = await completeStepMutation.mutateAsync({
+            stepId: step_id,
+            payload: { stepAttemptId },
           });
-          const updatedUser = await authService.getCurrentUser();
-          if (updatedUser) {
-            useAuthStore.getState().actions.setUser(updatedUser);
-          }
+
+          await queryClient.invalidateQueries({ queryKey: ['current-user'] });
+
           navigate('/quiz/result', {
             state: result,
           });
@@ -478,7 +472,7 @@ export const Quiz = () => {
 
   // 조건부 렌더링은 모든 hooks 호출 후에 배치
   if (showReviewCompletion) return <ReviewCompletionEffect />;
-  if (isLoading) return <QuizLoadingView />;
+  if (isQueryLoading) return <Loading text="퀴즈를 불러오는 중입니다" />;
   if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
 
   return (

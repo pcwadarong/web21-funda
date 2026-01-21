@@ -59,9 +59,9 @@ export const Default: Story = {
     const isLoggedIn = globals.authStatus === 'logged-in';
 
     if (isLoggedIn) {
-      await expect(canvas.getByText(/5개 문제 복습 필요/)).toBeInTheDocument();
+      await expect(await canvas.findByText(/5개 문제 복습 필요/)).toBeInTheDocument();
     } else {
-      await expect(canvas.getByText(/로그인 후 문제를 복습해보세요/)).toBeInTheDocument();
+      await expect(canvas.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
     }
   },
 };
@@ -93,8 +93,8 @@ export const LoggedOut: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // 2. 오답 노트 로그인 유도 확인
-    await expect(canvas.getByText(/로그인 후 문제를 복습해보세요/)).toBeInTheDocument();
+    // 2. 복습 노트 로그인 유도 확인
+    await expect(canvas.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
 
     // 3. 오늘의 목표 로그인 유도 확인
     await expect(canvas.getByText(/로그인 후 진도를 저장해보세요/)).toBeInTheDocument();
@@ -142,6 +142,83 @@ const FetchMockProvider = ({ children }: { children: React.ReactNode }) => {
                 },
               ],
             },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (url.endsWith('/api/progress/reviews')) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            code: 200,
+            message: 'ok',
+            result: [
+              {
+                id: 1,
+                type: 'mcq',
+                content: {
+                  question: '복습 문제 1',
+                  options: [
+                    { id: 'c1', text: '선택지 1' },
+                    { id: 'c2', text: '선택지 2' },
+                  ],
+                },
+              },
+              {
+                id: 2,
+                type: 'ox',
+                content: {
+                  question: '복습 문제 2',
+                  options: [
+                    { id: 'o', text: 'O' },
+                    { id: 'x', text: 'X' },
+                  ],
+                },
+              },
+              {
+                id: 3,
+                type: 'matching',
+                content: {
+                  question: '복습 문제 3',
+                  matching_metadata: {
+                    left: [
+                      { id: 'l1', text: '왼쪽 1' },
+                      { id: 'l2', text: '왼쪽 2' },
+                    ],
+                    right: [
+                      { id: 'r1', text: '오른쪽 1' },
+                      { id: 'r2', text: '오른쪽 2' },
+                    ],
+                  },
+                },
+              },
+              {
+                id: 4,
+                type: 'code',
+                content: {
+                  question: '복습 문제 4',
+                  options: [
+                    { id: 'c1', text: '선택지 1' },
+                    { id: 'c2', text: '선택지 2' },
+                  ],
+                  code_metadata: {
+                    language: 'javascript',
+                    snippet: 'const value = 1;',
+                  },
+                },
+              },
+              {
+                id: 5,
+                type: 'mcq',
+                content: {
+                  question: '복습 문제 5',
+                  options: [
+                    { id: 'c1', text: '선택지 1' },
+                    { id: 'c2', text: '선택지 2' },
+                  ],
+                },
+              },
+            ],
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );

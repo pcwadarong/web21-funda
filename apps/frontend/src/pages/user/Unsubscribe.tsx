@@ -5,7 +5,7 @@ import { UnsubscribeContainer } from '@/features/user/components/subscribe/Unsub
 import { notificationService } from '@/services/userService';
 import { useToast } from '@/store/toastStore';
 
-export default function Unsubscribe() {
+export function Unsubscribe() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email');
   const token = searchParams.get('token');

@@ -9,6 +9,7 @@ import { RankingGroupMember } from './entities/ranking-group-member.entity';
 import { RankingTier } from './entities/ranking-tier.entity';
 import { RankingTierName } from './entities/ranking-tier.enum';
 import { RankingWeek } from './entities/ranking-week.entity';
+import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
 import { RankingService } from './ranking.service';
 
 describe('RankingService', () => {
@@ -19,6 +20,7 @@ describe('RankingService', () => {
   let tierRepository: Partial<Repository<RankingTier>>;
   let groupRepository: Partial<Repository<RankingGroup>>;
   let memberRepository: Partial<Repository<RankingGroupMember>>;
+  let weeklyXpRepository: Partial<Repository<RankingWeeklyXp>>;
   let userRepository: Partial<Repository<User>>;
 
   beforeEach(() => {
@@ -42,6 +44,11 @@ describe('RankingService', () => {
       save: jest.fn(),
       count: jest.fn(),
     };
+    weeklyXpRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
     userRepository = {
       findOne: jest.fn(),
       save: jest.fn(),
@@ -59,6 +66,9 @@ describe('RankingService', () => {
       }
       if (entity === RankingGroupMember) {
         return memberRepository as Repository<RankingGroupMember>;
+      }
+      if (entity === RankingWeeklyXp) {
+        return weeklyXpRepository as Repository<RankingWeeklyXp>;
       }
       if (entity === User) {
         return userRepository as Repository<User>;
@@ -169,5 +179,67 @@ describe('RankingService', () => {
         solvedAt,
       }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('주간 XP가 없으면 새로 생성한다', async () => {
+    const solvedAt = getKstNow();
+    const user = { id: 1, currentTierId: 10 } as User;
+    const tier = { id: 10, name: RankingTierName.BRONZE, maxGroupSize: 10 } as RankingTier;
+    const week = { id: 2, weekKey: '2025-01' } as RankingWeek;
+    const weeklyXp = {
+      weekId: week.id,
+      userId: user.id,
+      tierId: tier.id,
+      xp: 3,
+      solvedCount: 1,
+      firstSolvedAt: solvedAt,
+      lastSolvedAt: solvedAt,
+    } as RankingWeeklyXp;
+
+    (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
+    (weeklyXpRepository.findOne as jest.Mock).mockResolvedValue(null);
+    (userRepository.findOne as jest.Mock).mockResolvedValue(user);
+    (tierRepository.findOne as jest.Mock).mockResolvedValue(tier);
+    (weeklyXpRepository.create as jest.Mock).mockReturnValue(weeklyXp);
+
+    await service.addWeeklyXpOnSolveWithManager(manager as EntityManager, {
+      userId: user.id,
+      solvedAt,
+      isCorrect: true,
+    });
+
+    expect(weeklyXpRepository.save).toHaveBeenCalledWith(weeklyXp);
+  });
+
+  it('주간 XP가 있으면 누적 업데이트한다', async () => {
+    const solvedAt = getKstNow();
+    const user = { id: 1, currentTierId: 10 } as User;
+    const tier = { id: 10, name: RankingTierName.BRONZE, maxGroupSize: 10 } as RankingTier;
+    const week = { id: 2, weekKey: '2025-01' } as RankingWeek;
+    const existingWeeklyXp = {
+      weekId: week.id,
+      userId: user.id,
+      tierId: tier.id,
+      xp: 6,
+      solvedCount: 2,
+      firstSolvedAt: solvedAt,
+      lastSolvedAt: solvedAt,
+    } as RankingWeeklyXp;
+
+    (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
+    (weeklyXpRepository.findOne as jest.Mock).mockResolvedValue(existingWeeklyXp);
+    (userRepository.findOne as jest.Mock).mockResolvedValue(user);
+    (tierRepository.findOne as jest.Mock).mockResolvedValue(tier);
+
+    await service.addWeeklyXpOnSolveWithManager(manager as EntityManager, {
+      userId: user.id,
+      solvedAt,
+      isCorrect: false,
+    });
+
+    expect(existingWeeklyXp.xp).toBe(9);
+    expect(existingWeeklyXp.solvedCount).toBe(3);
+    expect(existingWeeklyXp.lastSolvedAt).toBe(solvedAt);
+    expect(weeklyXpRepository.save).toHaveBeenCalledWith(existingWeeklyXp);
   });
 });

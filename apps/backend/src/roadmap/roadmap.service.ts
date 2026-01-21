@@ -676,6 +676,11 @@ export class RoadmapService {
         userId,
         solvedAt,
       });
+      await this.rankingService.addWeeklyXpOnSolveWithManager(manager, {
+        userId,
+        solvedAt,
+        isCorrect,
+      });
     });
   }
 

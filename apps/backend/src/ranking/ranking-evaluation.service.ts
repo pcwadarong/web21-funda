@@ -12,6 +12,7 @@ import { RankingRewardHistory } from './entities/ranking-reward-history.entity';
 import { RankingRewardType } from './entities/ranking-reward-type.enum';
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
 import { RankingTier } from './entities/ranking-tier.entity';
+import { RankingTierName } from './entities/ranking-tier.enum';
 import { RankingTierChangeHistory } from './entities/ranking-tier-change-history.entity';
 import { RankingTierChangeReason } from './entities/ranking-tier-change-reason.enum';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
@@ -198,14 +199,17 @@ export class RankingEvaluationService {
               });
             }
 
-            if (tierChange.reason === RankingTierChangeReason.PROMOTION) {
-              const toTier = tierById.get(tierChange.toTierId);
-              const rewardAmount = toTier ? this.getPromotionRewardAmount(toTier) : 0;
+            const isMasterMaintain =
+              tier.name === RankingTierName.MASTER &&
+              tierChange.reason === RankingTierChangeReason.MAINTAIN;
+            if (tierChange.reason === RankingTierChangeReason.PROMOTION || isMasterMaintain) {
+              const rewardTier = isMasterMaintain ? tier : tierById.get(tierChange.toTierId);
+              const rewardAmount = rewardTier ? this.getPromotionRewardAmount(rewardTier) : 0;
               rewardHistories.push(
                 rewardRepository.create({
                   weekId: week.id,
                   userId: draft.userId,
-                  tierId: tierChange.toTierId,
+                  tierId: rewardTier?.id ?? tier.id,
                   rewardType: RankingRewardType.DIAMOND,
                   amount: rewardAmount,
                 }),

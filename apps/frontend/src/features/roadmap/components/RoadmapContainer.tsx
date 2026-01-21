@@ -4,25 +4,23 @@ import { Link } from 'react-router-dom';
 import SVGIcon from '@/comp/SVGIcon';
 import { UnitCard } from '@/feat/roadmap/components/UnitCard';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
+import { useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 interface RoadmapContainerProps {
   fieldName: string | undefined;
   units: RoadmapUnit[];
-  isLoggedIn: boolean;
   onUnitClick: (unitId: number) => void;
 }
 
-export const RoadmapContainer = ({
-  fieldName,
-  units,
-  isLoggedIn,
-  onUnitClick,
-}: RoadmapContainerProps) => {
+export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapContainerProps) => {
   const theme = useTheme();
 
+  const isLoggedIn = useIsLoggedIn();
+
+  const totalUnits = units.length;
   const completedUnits = units.filter(unit => unit.progress === 100).length;
-  const progressPercent = Math.round((completedUnits / units.length) * 100);
+  const progressPercent = totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
 
   return (
     <div css={containerStyle}>
@@ -43,7 +41,7 @@ export const RoadmapContainer = ({
               <div css={progressSummaryStyle(theme)}>
                 <span css={progressValueStyle(theme)}>{progressPercent}%</span>
                 <span css={progressMetaStyle(theme)}>
-                  {completedUnits}/{units.length} 완료
+                  {completedUnits}/{totalUnits} 완료
                 </span>
               </div>
             )}

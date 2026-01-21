@@ -46,6 +46,7 @@ vi.mock('react-router-dom', async () => {
 
 // authStore 모킹
 const mockUseAuthStore = vi.fn(() => false);
+const mockUseIsAuthReady = vi.fn(() => true);
 const mockUseAuthUser = vi.fn<() => { heartCount: number; currentStreak: number } | null>(
   () => null,
 );
@@ -57,8 +58,23 @@ vi.mock('@/store/authStore', () => ({
   },
   useAuthUser: () => mockUseAuthUser(),
   useIsLoggedIn: () => mockUseAuthStore(),
+  useIsAuthReady: () => mockUseIsAuthReady(),
 }));
 
+const mockFields = [
+  {
+    slug: 'frontend',
+    name: '프론트엔드',
+    description: '프론트엔드',
+    icon: 'Frontend',
+  },
+  {
+    slug: 'backend',
+    name: '백엔드',
+    description: '백엔드',
+    icon: 'Backend',
+  },
+];
 const mockGetFields = vi.fn();
 const mockGetReviewQueue = vi.fn();
 
@@ -66,6 +82,10 @@ vi.mock('@/services/fieldService', () => ({
   fieldService: {
     getFields: () => mockGetFields(),
   },
+}));
+
+vi.mock('@/hooks/queries/fieldQueries', () => ({
+  useFieldsQuery: () => ({ data: { fields: mockFields } }),
 }));
 
 vi.mock('@/services/progressService', () => ({
@@ -106,6 +126,7 @@ const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: (slug: strin
 
 describe('LearnRightSidebar 컴포넌트 테스트', () => {
   beforeEach(() => {
+    mockUseIsAuthReady.mockReturnValue(true);
     mockGetFields.mockResolvedValue({
       fields: [
         {
@@ -131,6 +152,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     updateUIStateMock.mockClear();
     mockNavigate.mockClear();
     mockUseAuthStore.mockReturnValue(false);
+    mockUseIsAuthReady.mockReturnValue(true);
   });
 
   it('기본 렌더링이 올바르게 동작한다', () => {

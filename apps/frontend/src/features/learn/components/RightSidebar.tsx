@@ -5,10 +5,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import type { QuizQuestion } from '@/feat/quiz/types';
+import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { type Field, fieldService } from '@/services/fieldService';
 import { progressService } from '@/services/progressService';
-import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
@@ -27,31 +27,22 @@ export const LearnRightSidebar = ({
 }) => {
   const theme = useTheme();
   const user = useAuthUser();
-  const isLoggedIn = useIsLoggedIn();
   const { progress, updateUIState } = useStorage();
   const navigate = useNavigate();
 
+  const isLoggedIn = useIsLoggedIn();
+  const isAuthReady = useIsAuthReady();
+
   const heartCount = user ? user.heartCount : progress.heart;
 
-  const [fields, setFields] = useState<Field[]>([]);
+  const { data } = useFieldsQuery();
+
+  const fields = data.fields;
   const [reviewQuizzes, setReviewQuizzes] = useState<QuizQuestion[]>([]);
   const [reviewCount, setReviewCount] = useState(0);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
 
   const { showToast } = useToast();
-
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        const data = await fieldService.getFields();
-        setFields(data.fields);
-      } catch (error) {
-        console.error('Failed to fetch fields:', error);
-      }
-    };
-
-    fetchFields();
-  }, []);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -143,6 +134,8 @@ export const LearnRightSidebar = ({
       },
     });
   }, [isLoggedIn, isReviewLoading, navigate, reviewQuizzes, showToast]);
+
+  if (!isAuthReady) return null;
 
   return (
     <aside css={rightSectionStyle}>

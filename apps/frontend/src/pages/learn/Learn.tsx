@@ -1,12 +1,14 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { stepType } from '@/feat/learn/types';
+import { useFieldUnitsQuery } from '@/hooks/queries/fieldQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { quizService } from '@/services/quizService';
+import { useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { storageUtil } from '@/utils/storage';
@@ -17,18 +19,40 @@ export const Learn = () => {
   const navigate = useNavigate();
   const {
     fieldName,
+    setFieldName,
     units,
+    setUnits,
     activeUnit,
+    setActiveUnitId,
     scrollContainerRef,
     headerRef,
     registerUnitRef,
     fieldSlug,
     setFieldSlug,
+    markSolvedSteps,
+    unlockCheckpoints,
   } = useLearnUnits();
 
   const showInProgressToast = useCallback(() => {
     showToast('제작 중입니다');
   }, []);
+
+  const isLoggedIn = useIsLoggedIn();
+
+  const { data } = useFieldUnitsQuery(fieldSlug);
+
+  /**
+   * field_slug를 기준으로 유닛/스텝 데이터를 요청하고 상태로 매핑합니다.
+   */
+  useEffect(() => {
+    setFieldName(data.field.name);
+    setUnits(
+      isLoggedIn
+        ? unlockCheckpoints(data.units ?? [])
+        : unlockCheckpoints(markSolvedSteps(data.units ?? [])),
+    );
+    setActiveUnitId(data.units[0]?.id ?? null);
+  }, [data, isLoggedIn]);
 
   const prefetchedStepsRef = useRef<number[]>([]);
   const MAX_PREFETCH = 3;

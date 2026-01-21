@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { SettingContainer } from '@/features/user/components/SettingContainer';
+import { SettingContainer } from '@/feat/user/components/setting/SettingContainer';
 import { useStorage } from '@/hooks/useStorage';
 import { authService } from '@/services/authService';
 import { useAuthActions } from '@/store/authStore';

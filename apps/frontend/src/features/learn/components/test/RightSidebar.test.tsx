@@ -60,10 +60,17 @@ vi.mock('@/store/authStore', () => ({
 }));
 
 const mockGetFields = vi.fn();
+const mockGetReviewQueue = vi.fn();
 
 vi.mock('@/services/fieldService', () => ({
   fieldService: {
     getFields: () => mockGetFields(),
+  },
+}));
+
+vi.mock('@/services/progressService', () => ({
+  progressService: {
+    getReviewQueue: () => mockGetReviewQueue(),
   },
 }));
 
@@ -115,6 +122,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
         },
       ],
     });
+    mockGetReviewQueue.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -165,25 +173,38 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(heartNumbers.length).toBeGreaterThan(0);
   });
 
-  it('오답 노트 카드가 표시된다', () => {
+  it('복습 노트 카드가 표시된다', () => {
     renderSidebar();
 
-    expect(screen.getByText('오답 노트')).toBeInTheDocument();
+    expect(screen.getByText('복습 노트')).toBeInTheDocument();
   });
 
-  it('비로그인 상태에서 오답 노트에 로그인 링크가 표시된다', () => {
+  it('비로그인 상태에서 복습 노트에 로그인 링크가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(false);
     renderSidebar();
 
-    expect(screen.getByText(/로그인 후 문제를 복습해보세요/)).toBeInTheDocument();
+    expect(screen.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
   });
 
-  it('로그인 상태에서 오답 노트에 문제 개수가 표시된다', () => {
+  it('로그인 상태에서 복습 노트에 문제 개수가 표시된다', async () => {
     mockUseAuthStore.mockReturnValue(true);
     mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
+    mockGetReviewQueue.mockResolvedValue([
+      { id: 1, type: 'mcq', content: { question: '문제 1', options: [] } },
+      { id: 2, type: 'ox', content: { question: '문제 2', options: [] } },
+      {
+        id: 3,
+        type: 'code',
+        content: {
+          question: '문제 3',
+          options: [],
+          code_metadata: { language: 'javascript', snippet: 'const a = 1;' },
+        },
+      },
+    ]);
     renderSidebar();
 
-    expect(screen.getByText(/5개 문제 복습 필요/)).toBeInTheDocument();
+    expect(await screen.findByText(/3개 문제 복습 필요/)).toBeInTheDocument();
   });
 
   it('오늘의 목표 카드가 표시된다', () => {

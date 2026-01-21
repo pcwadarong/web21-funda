@@ -18,6 +18,7 @@ interface QuizContainerProps {
   questionStatuses: QuestionStatus[];
   isCheckDisabled: boolean;
   isLastQuestion: boolean;
+  isReviewMode: boolean;
   handleAnswerChange: (answer: AnswerType) => void;
   handleCheckAnswer: () => Promise<void>;
   handleNextQuestion: () => void;
@@ -32,6 +33,7 @@ export const QuizContainer = ({
   questionStatuses,
   isCheckDisabled,
   isLastQuestion,
+  isReviewMode,
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
@@ -59,6 +61,7 @@ export const QuizContainer = ({
           onCheck={handleCheckAnswer}
           onNext={handleNextQuestion}
           isLast={isLastQuestion}
+          isReviewMode={isReviewMode}
         />
       </main>
     </div>

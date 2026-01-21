@@ -25,6 +25,7 @@ interface QuizContentCardProps {
   onCheck: () => void;
   onNext: () => void;
   isLast: boolean;
+  isReviewMode: boolean;
 }
 
 export const QuizContentCard = ({
@@ -38,11 +39,21 @@ export const QuizContentCard = ({
   onCheck,
   onNext,
   isLast,
+  isReviewMode,
 }: QuizContentCardProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
   const showResult = status === 'checked';
+  let nextButtonLabel = '다음 문제';
+
+  if (isLast) {
+    if (isReviewMode) {
+      nextButtonLabel = '복습 완료';
+    } else {
+      nextButtonLabel = '결과 보기';
+    }
+  }
 
   return (
     <div css={cardStyle(theme)}>
@@ -84,7 +95,7 @@ export const QuizContentCard = ({
               해설 보기
             </Button>
             <Button variant="primary" onClick={onNext} css={flexBtn}>
-              {isLast ? '결과 보기' : '다음 문제'}
+              {nextButtonLabel}
             </Button>
             <Button
               variant="secondary"

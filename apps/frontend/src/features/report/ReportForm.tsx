@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
-import { reportService } from '@/services/reportService';
+import { useCreateReportMutation } from '@/hooks/queries/reportQueries';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
@@ -25,6 +25,8 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
   const [selectedOption, setSelectedOption] = useState<string[]>([]);
   const [otherText, setOtherText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const createReportMutation = useCreateReportMutation();
 
   const handleOptionClick = (optionId: string) => {
     setSelectedOption(
@@ -58,8 +60,11 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
 
     try {
       setIsSubmitting(true);
-      const response = await reportService.createReport(quizId, {
-        report_description,
+      const response = await createReportMutation.mutateAsync({
+        quizId,
+        data: {
+          report_description,
+        },
       });
 
       if (response?.id) {

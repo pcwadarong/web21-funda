@@ -8,7 +8,7 @@ export const Loading = ({ text = 'Loading' }: { text?: string }) => {
   const { isDarkMode } = useThemeStore();
 
   return (
-    <div css={containerStyle(theme)}>
+    <div css={containerStyle(theme)} role="status" aria-live="polite" aria-busy="true">
       <div css={dotContainerStyle}>
         <div css={dotStyle(theme, isDarkMode)}></div>
         <div css={dotStyle(theme, isDarkMode)}></div>

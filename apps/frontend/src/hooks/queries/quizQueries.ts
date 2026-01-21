@@ -3,7 +3,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { QuizSubmissionRequest, StepCompletionPayload } from '@/services/quizService';
 import { quizService } from '@/services/quizService';
 
-export const useQuizzesByStepQuery = (stepId?: number) =>
+export const useQuizzesByStepQuery = (stepId: number) =>
   useSuspenseQuery({
     queryKey: ['quizzes-by-step', stepId],
     queryFn: () => quizService.getQuizzesByStep(stepId as number),

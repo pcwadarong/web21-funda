@@ -20,7 +20,7 @@ export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapConta
 
   const totalUnits = units.length;
   const completedUnits = units.filter(unit => unit.progress === 100).length;
-  const progressPercent = totalUnits === 0 ? 0 : Math.round((completedUnits / units.length) * 100);
+  const progressPercent = totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
 
   return (
     <div css={containerStyle}>

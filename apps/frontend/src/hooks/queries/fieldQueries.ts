@@ -8,19 +8,19 @@ export const useFieldsQuery = () =>
     queryFn: () => fieldService.getFields(),
   });
 
-export const useFieldUnitsQuery = (fieldSlug?: string) =>
+export const useFieldUnitsQuery = (fieldSlug: string) =>
   useSuspenseQuery({
     queryKey: ['field-units', fieldSlug],
     queryFn: () => fieldService.getFieldUnits(fieldSlug as string),
   });
 
-export const useFieldRoadmapQuery = (fieldSlug?: string) =>
+export const useFieldRoadmapQuery = (fieldSlug: string) =>
   useSuspenseQuery({
     queryKey: ['field-roadmap', fieldSlug],
     queryFn: () => fieldService.getFieldRoadmap(fieldSlug as string),
   });
 
-export const useFirstUnitQuery = (fieldSlug?: string) =>
+export const useFirstUnitQuery = (fieldSlug: string) =>
   useSuspenseQuery({
     queryKey: ['field-first-unit', fieldSlug],
     queryFn: () => fieldService.getFirstUnit(fieldSlug as string),

@@ -2,7 +2,12 @@ import { useMutation } from '@tanstack/react-query';
 
 import { reportService } from '@/services/reportService';
 
-type ReportResponse = Awaited<ReturnType<typeof reportService.createReport>>;
+type ReportResponse = {
+  id: number;
+  quizId: number;
+  report_description: string;
+  createdAt: string;
+};
 type CreateReportVariables = {
   quizId: number;
   data: Parameters<typeof reportService.createReport>[1];

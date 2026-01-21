@@ -3,9 +3,13 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { progressService } from '@/services/progressService';
 
+type SyncStepHistoryResponse = {
+  syncedCount: number;
+};
+
 export const useSyncStepHistoryMutation = () =>
-  useMutation({
-    mutationFn: (stepIds: number[]) => progressService.syncStepHistory(stepIds),
+  useMutation<SyncStepHistoryResponse, Error, number[]>({
+    mutationFn: stepIds => progressService.syncStepHistory(stepIds),
   });
 
 export const useReviewQueueQuery = (

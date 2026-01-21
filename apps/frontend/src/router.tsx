@@ -7,6 +7,7 @@ import { Login } from '@/pages/auth/Login';
 import { GlobalError } from '@/pages/common/GlobalError';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
+import Unsubscribe from '@/pages/user/Unsubscribe';
 import { useAuthStore } from '@/store/authStore';
 
 const AdminQuizUpload = lazy(() =>
@@ -115,6 +116,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/unsubscribe',
+    element: <Unsubscribe />,
   },
   {
     path: '/initial-fields',

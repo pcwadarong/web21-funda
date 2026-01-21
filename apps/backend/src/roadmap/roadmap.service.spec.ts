@@ -1,8 +1,15 @@
 import { NotFoundException } from '@nestjs/common';
-import { type FindOneOptions, Repository } from 'typeorm';
+import { type DataSource, type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
-import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import { QuizContentService } from '../common/utils/quiz-content.service';
+import {
+  QuizLearningStatus,
+  SolveLog,
+  UserQuizStatus,
+  UserStepAttempt,
+  UserStepStatus,
+} from '../progress/entities';
 
 import { Field, Quiz, Step } from './entities';
 import { RoadmapService } from './roadmap.service';
@@ -14,10 +21,10 @@ describe('RoadmapService', () => {
   let fieldRepository: Partial<Repository<Field>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
-  let solveLogRepository: Partial<Repository<SolveLog>>;
-  let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
+  let dataSource: Partial<DataSource>;
   let codeFormatter: Partial<CodeFormatter>;
+  let quizContentService: QuizContentService;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -61,28 +68,24 @@ describe('RoadmapService', () => {
     stepRepository = {
       findOne: findStepMock,
     };
-    solveLogRepository = {
-      create: jest.fn(),
-      save: jest.fn(),
-    };
-    stepAttemptRepository = {
-      findOne: jest.fn(),
-    };
     stepStatusRepository = {
       find: stepStatusFindMock,
+    };
+    dataSource = {
+      transaction: jest.fn(),
     };
     codeFormatter = {
       format: formatMock,
     };
+    quizContentService = new QuizContentService(codeFormatter as CodeFormatter);
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
-      codeFormatter as CodeFormatter,
-      solveLogRepository as Repository<SolveLog>,
-      stepAttemptRepository as Repository<UserStepAttempt>,
+      quizContentService,
       stepStatusRepository as Repository<UserStepStatus>,
+      dataSource as DataSource,
     );
   });
 
@@ -482,5 +485,177 @@ describe('RoadmapService', () => {
         null,
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('정답 제출 시 SRS 상태를 갱신한다', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    const quiz = {
+      id: 10,
+      type: 'MCQ',
+      answer: { value: 'c2' },
+      explanation: '설명입니다.',
+      step: { id: 1 },
+    } as Quiz;
+    findQuizMock.mockResolvedValue(quiz);
+
+    const solveLogRepository: Partial<Repository<SolveLog>> = {
+      create: jest.fn().mockImplementation(log => log),
+      save: jest.fn(),
+    };
+    const userQuizStatusRepository: Partial<Repository<UserQuizStatus>> = {
+      findOne: jest.fn().mockResolvedValue({
+        userId: 1,
+        quiz,
+        status: QuizLearningStatus.LEARNING,
+        interval: 0,
+        easeFactor: 2.5,
+        repetition: 0,
+        lastQuality: null,
+        reviewCount: 0,
+        lapseCount: 0,
+        nextReviewAt: null,
+        lastSolvedAt: null,
+        isWrong: false,
+      }),
+      save: jest.fn(),
+    };
+    const stepAttemptRepository: Partial<Repository<UserStepAttempt>> = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+    const manager = {
+      getRepository: jest.fn((entity: unknown) => {
+        if (entity === SolveLog) {
+          return solveLogRepository;
+        }
+        if (entity === UserQuizStatus) {
+          return userQuizStatusRepository;
+        }
+        if (entity === UserStepAttempt) {
+          return stepAttemptRepository;
+        }
+        return null;
+      }),
+    };
+    (dataSource.transaction as jest.Mock).mockImplementation(async callback => callback(manager));
+
+    await service.submitQuiz(
+      10,
+      {
+        quiz_id: 10,
+        type: 'MCQ',
+        selection: { option_id: 'c2' },
+      },
+      1,
+    );
+
+    expect(solveLogRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        quiz,
+        isCorrect: true,
+        quality: 5,
+      }),
+    );
+
+    const savedStatus = (userQuizStatusRepository.save as jest.Mock).mock.calls[0][0];
+    expect(savedStatus.status).toBe(QuizLearningStatus.REVIEW);
+    expect(savedStatus.repetition).toBe(1);
+    expect(savedStatus.interval).toBe(1);
+    expect(savedStatus.reviewCount).toBe(1);
+    expect(savedStatus.lapseCount).toBe(0);
+    expect(savedStatus.isWrong).toBe(false);
+    expect(savedStatus.lastQuality).toBe(5);
+    expect(savedStatus.easeFactor).toBeCloseTo(2.6, 5);
+    expect(savedStatus.lastSolvedAt).toEqual(new Date('2026-01-01T09:00:00.000Z'));
+    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-02T09:00:00.000Z'));
+
+    jest.useRealTimers();
+  });
+
+  it('오답 제출 시 SRS 상태를 리셋한다', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    const quiz = {
+      id: 11,
+      type: 'MCQ',
+      answer: { value: 'c1' },
+      explanation: '설명입니다.',
+      step: { id: 1 },
+    } as Quiz;
+    findQuizMock.mockResolvedValue(quiz);
+
+    const solveLogRepository: Partial<Repository<SolveLog>> = {
+      create: jest.fn().mockImplementation(log => log),
+      save: jest.fn(),
+    };
+    const userQuizStatusRepository: Partial<Repository<UserQuizStatus>> = {
+      findOne: jest.fn().mockResolvedValue({
+        userId: 1,
+        quiz,
+        status: QuizLearningStatus.REVIEW,
+        interval: 6,
+        easeFactor: 2.5,
+        repetition: 2,
+        lastQuality: 5,
+        reviewCount: 3,
+        lapseCount: 1,
+        nextReviewAt: new Date('2026-01-10T00:00:00.000Z'),
+        lastSolvedAt: new Date('2025-12-31T00:00:00.000Z'),
+        isWrong: false,
+      }),
+      save: jest.fn(),
+    };
+    const stepAttemptRepository: Partial<Repository<UserStepAttempt>> = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+    const manager = {
+      getRepository: jest.fn((entity: unknown) => {
+        if (entity === SolveLog) {
+          return solveLogRepository;
+        }
+        if (entity === UserQuizStatus) {
+          return userQuizStatusRepository;
+        }
+        if (entity === UserStepAttempt) {
+          return stepAttemptRepository;
+        }
+        return null;
+      }),
+    };
+    (dataSource.transaction as jest.Mock).mockImplementation(async callback => callback(manager));
+
+    await service.submitQuiz(
+      11,
+      {
+        quiz_id: 11,
+        type: 'MCQ',
+        selection: { option_id: 'c2' },
+      },
+      1,
+    );
+
+    expect(solveLogRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        quiz,
+        isCorrect: false,
+        quality: 2,
+      }),
+    );
+
+    const savedStatus = (userQuizStatusRepository.save as jest.Mock).mock.calls[0][0];
+    expect(savedStatus.status).toBe(QuizLearningStatus.LEARNING);
+    expect(savedStatus.repetition).toBe(0);
+    expect(savedStatus.interval).toBe(1);
+    expect(savedStatus.reviewCount).toBe(4);
+    expect(savedStatus.lapseCount).toBe(2);
+    expect(savedStatus.isWrong).toBe(true);
+    expect(savedStatus.lastQuality).toBe(2);
+    expect(savedStatus.easeFactor).toBeCloseTo(2.18, 5);
+    expect(savedStatus.lastSolvedAt).toEqual(new Date('2026-01-01T09:00:00.000Z'));
+    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-02T09:00:00.000Z'));
+
+    jest.useRealTimers();
   });
 });

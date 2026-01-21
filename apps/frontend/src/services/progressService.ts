@@ -1,3 +1,5 @@
+import type { QuizQuestion } from '@/feat/quiz/types';
+
 import { apiFetch } from './api';
 
 interface SyncStepHistoryResponse {
@@ -11,5 +13,12 @@ export const progressService = {
    */
   async syncStepHistory(stepIds: number[]): Promise<SyncStepHistoryResponse> {
     return apiFetch.post<SyncStepHistoryResponse>('/progress/steps/sync', { stepIds });
+  },
+
+  /**
+   * 복습 노트 대상 퀴즈 목록 조회
+   */
+  async getReviewQueue(): Promise<QuizQuestion[]> {
+    return apiFetch.get<QuizQuestion[]>('/progress/reviews');
   },
 };

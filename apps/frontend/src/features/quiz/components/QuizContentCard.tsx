@@ -25,6 +25,7 @@ interface QuizContentCardProps {
   onCheck: () => void;
   onNext: () => void;
   isLast: boolean;
+  isReviewMode: boolean;
 }
 
 export const QuizContentCard = ({
@@ -38,16 +39,26 @@ export const QuizContentCard = ({
   onCheck,
   onNext,
   isLast,
+  isReviewMode,
 }: QuizContentCardProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
   const showResult = status === 'checked';
+  let nextButtonLabel = '다음 문제';
+
+  if (isLast) {
+    if (isReviewMode) {
+      nextButtonLabel = '복습 완료';
+    } else {
+      nextButtonLabel = '결과 보기';
+    }
+  }
 
   return (
     <div css={cardStyle(theme)}>
       <div css={headerStyle}>
-        <h2 css={titleStyle(theme)}>{question.content.question}</h2>
+        <h2 css={titleStyle(theme)}>{`Q. ${question.content.question}`}</h2>
         <button
           css={reportButtonStyle(theme, isDarkMode)}
           onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
@@ -73,7 +84,7 @@ export const QuizContentCard = ({
         </div>
       )}
 
-      <div css={footerStyle}>
+      <div css={footerStyle(theme)}>
         {showResult ? (
           <>
             <Button
@@ -84,7 +95,7 @@ export const QuizContentCard = ({
               해설 보기
             </Button>
             <Button variant="primary" onClick={onNext} css={flexBtn}>
-              {isLast ? '결과 보기' : '다음 문제'}
+              {nextButtonLabel}
             </Button>
             <Button
               variant="secondary"
@@ -105,19 +116,33 @@ export const QuizContentCard = ({
 };
 
 const cardStyle = (theme: Theme) => css`
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 45rem;
+  max-width: 48rem;
+  min-height: fit-content;
   background: ${theme.colors.surface.strong};
   padding: 32px;
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+    min-height: 100%;
+    padding: 24px 20px 140px;
+  }
 `;
 
 const headerStyle = css`
   display: flex;
   justify-content: space-between;
   margin-bottom: 24px;
-  padding: 20px 0;
+  fle-wrap: wrap;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
 `;
 
 const titleStyle = (theme: Theme) => css`
@@ -126,12 +151,25 @@ const titleStyle = (theme: Theme) => css`
   font-weight: ${theme.typography['20Bold'].fontWeight};
   color: ${theme.colors.text.strong};
   margin: 0;
+  word-break: keep-all;
 `;
 
-const footerStyle = css`
+const footerStyle = (theme: Theme) => css`
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: auto;
+  padding-top: 32px;
+
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: ${theme.colors.surface.strong};
+    padding: 16px 20px 32px;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+  }
 `;
 
 const flexBtn = css`
@@ -168,4 +206,10 @@ const reportButtonStyle = (theme: Theme, isDarkMode: boolean) => css`
   border-radius: ${theme.borderRadius.xlarge};
   text-wrap: nowrap;
   margin-left: 10px;
+  width: fit-content;
+
+  @media (max-width: 480px) {
+    margin-top: 12px;
+    align-self: end;
+  }
 `;

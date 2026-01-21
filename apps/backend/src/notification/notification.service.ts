@@ -160,14 +160,13 @@ export class NotificationService {
    * @returns JWT 토큰 문자열
    */
   generateUnsubscribeToken(email: string): string {
-    const secret = this.configService.get<string>('JWT_ACCESS_SECRET', 'local-access-secret');
     const payload = {
       email,
       type: 'unsubscribe',
     };
     // 토큰은 7일간 유효
     return this.jwtService.sign(payload, {
-      secret,
+      secret: this.configService.get<string>('JWT_UNSUBSCRIBE_SECRET', 'local-unsubscribe-secret'),
       expiresIn: '7d',
     });
   }
@@ -180,9 +179,11 @@ export class NotificationService {
    */
   async verifyUnsubscribeToken(token: string, email: string): Promise<void> {
     try {
-      const secret = this.configService.get<string>('JWT_ACCESS_SECRET', 'local-access-secret');
       const payload = this.jwtService.verify<{ email: string; type: string }>(token, {
-        secret,
+        secret: this.configService.get<string>(
+          'JWT_UNSUBSCRIBE_SECRET',
+          'local-unsubscribe-secret',
+        ),
       });
 
       if (payload.type !== 'unsubscribe') throw new UnauthorizedException('Invalid token type');

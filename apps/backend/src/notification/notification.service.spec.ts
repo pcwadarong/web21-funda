@@ -41,7 +41,7 @@ describe('NotificationService', () => {
               if (key === 'MAIL_USER') return 'test@gmail.com';
               if (key === 'MAIL_PASS') return 'password';
               if (key === 'CLIENT_ORIGIN') return 'http://localhost:3000';
-              if (key === 'JWT_ACCESS_SECRET') return 'test-secret';
+              if (key === 'JWT_UNSUBSCRIBE_SECRET') return 'test-unsubscribe-secret';
               return null;
             }),
           },

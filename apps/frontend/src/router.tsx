@@ -40,7 +40,7 @@ const QuizResultError = lazy(() =>
   import('@/pages/quiz/QuizResultError').then(module => ({ default: module.QuizResultError })),
 );
 const ReviewResult = lazy(() =>
-  import('@/pages/quiz/QuizReivewResult').then(module => ({ default: module.ReviewResult })),
+  import('@/pages/quiz/QuizReviewResult').then(module => ({ default: module.ReviewResult })),
 );
 const Profile = lazy(() =>
   import('@/pages/user/Profile').then(module => ({ default: module.Profile })),

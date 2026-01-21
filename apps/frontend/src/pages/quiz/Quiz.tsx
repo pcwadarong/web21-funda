@@ -140,16 +140,19 @@ export const Quiz = () => {
 
     if (!cachedProcessedData) return false;
 
-    const { quizzes, selectedAnswers, questionStatuses, quizSolutions } =
-      JSON.parse(cachedProcessedData);
-
-    setQuizzes(quizzes);
-    setSelectedAnswers(selectedAnswers);
-    setQuestionStatuses(questionStatuses);
-    setQuizSolutions(quizSolutions);
-
-    sessionStorage.removeItem(`processed_quizzes_${stepId}`);
-    return true;
+    try {
+      const { quizzes, selectedAnswers, questionStatuses, quizSolutions } =
+        JSON.parse(cachedProcessedData);
+      setQuizzes(quizzes);
+      setSelectedAnswers(selectedAnswers);
+      setQuestionStatuses(questionStatuses);
+      setQuizSolutions(quizSolutions);
+      sessionStorage.removeItem(`processed_quizzes_${stepId}`);
+      return true;
+    } catch {
+      sessionStorage.removeItem(`processed_quizzes_${stepId}`);
+      return false;
+    }
   }, []);
 
   /**
@@ -292,8 +295,6 @@ export const Quiz = () => {
     isAuthReady,
     isReviewMode,
     prepareReviewQuizzes,
-    shuffleQuizOptions,
-    shuffleArray,
     step_id,
   ]);
 

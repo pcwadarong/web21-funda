@@ -4,7 +4,7 @@ interface ReportRequest {
   report_description: string;
 }
 
-interface ReportResponse {
+export interface ReportResponse {
   id: number;
   quizId: number;
   report_description: string;
@@ -20,4 +20,12 @@ export const reportService = {
    */
   createReport: async (quizId: number, data: ReportRequest): Promise<ReportResponse> =>
     apiFetch.post<ReportResponse>(`/quizzes/${quizId}/reports`, data),
+
+  /**
+   * 모든 신고 목록을 조회합니다.
+   * @returns 신고 목록
+   */
+  async getReports(): Promise<ReportResponse[]> {
+    return apiFetch.get<ReportResponse[]>('/quizzes/reports');
+  },
 };

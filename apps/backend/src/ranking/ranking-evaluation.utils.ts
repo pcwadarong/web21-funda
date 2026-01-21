@@ -1,7 +1,7 @@
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
+import { RankingTier } from './entities/ranking-tier.entity';
 import { RankingTierChangeReason } from './entities/ranking-tier-change-reason.enum';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
-import { RankingTier } from './entities/ranking-tier.entity';
 
 export interface RankingMemberScore {
   userId: number;

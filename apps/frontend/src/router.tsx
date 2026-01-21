@@ -3,7 +3,6 @@ import { createBrowserRouter, redirect } from 'react-router-dom';
 
 import { SideBarLayout } from '@/layouts/SideBarLayout';
 import { AdminRouteGuard } from '@/pages/admin/AdminRouteGuard';
-import { AdminQuizUpload } from '@/pages/admin/QuizUpload';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
 import { GlobalError } from '@/pages/common/GlobalError';

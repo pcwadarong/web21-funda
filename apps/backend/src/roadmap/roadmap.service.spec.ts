@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { type DataSource, type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
+import { QuizContentService } from '../common/utils/quiz-content.service';
 import {
   QuizLearningStatus,
   SolveLog,
@@ -11,12 +12,9 @@ import {
 } from '../progress/entities';
 import { User } from '../users/entities/user.entity';
 
-import { Field, Quiz, Step } from './entities';
-import { RoadmapService } from './roadmap.service';
-import { QuizContentService } from '../common/utils/quiz-content.service';
-
-
 import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
+import { RoadmapService } from './roadmap.service';
+
 jest.mock('../common/utils/code-formatter');
 
 describe('RoadmapService', () => {

@@ -19,6 +19,7 @@ import {
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 
+import type { UploadedQuizFile } from './dto/quizzes-upload.dto';
 import { BackofficeService } from './backoffice.service';
 
 @ApiTags('Admin')
@@ -63,7 +64,7 @@ export class BackofficeController {
       },
     },
   })
-  async uploadQuizzes(@UploadedFile() file: any) {
+  async uploadQuizzes(@UploadedFile() file: UploadedQuizFile) {
     if (!file) {
       throw new BadRequestException('업로드된 파일이 없습니다.');
     }

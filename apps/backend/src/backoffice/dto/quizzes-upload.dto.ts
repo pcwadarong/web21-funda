@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export interface UploadedQuizFile {
+  buffer: Buffer;
+  originalname?: string;
+  mimetype?: string;
+  size?: number;
+}
+
 export interface QuizJsonlRow {
   field_slug: string;
   field_name: string;
@@ -38,5 +45,5 @@ export class QuizzesUploadDto {
     format: 'binary',
     description: '업로드할 JSONL 데이터 파일',
   })
-  file: any;
+  file!: UploadedQuizFile;
 }

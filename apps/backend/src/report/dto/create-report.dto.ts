@@ -17,12 +17,18 @@ export type ReportReason = (typeof REPORT_REASONS)[number];
 
 @ValidatorConstraint({ name: 'isValidReportDescription', async: false })
 export class IsValidReportDescriptionConstraint implements ValidatorConstraintInterface {
-  validate(value: any): boolean {
-    // 1. 타입 및 기본 빈 값 검증 (이 로직이 IsNotEmpty를 대체함)
-    if (typeof value !== 'string') return false;
+  validate(value: unknown): boolean {
+    // 신고 사유가 문자열이 아닌 경우를 명확히 차단하려고 명시적으로 검사한다.
+    if (typeof value !== 'string') {
+      return false;
+    }
 
-    // 2. 의미 있는 문자열 추출 (쉼표만 있는 경우 ", , ," 방지)
-    const hasContent = value.split(',').some(part => part.trim().length > 0);
+    // 쉼표만 입력된 문자열을 허용하지 않기 위해 실제 내용 존재 여부를 확인한다.
+    const segments = value.split(',');
+    const hasContent = segments.some(part => {
+      const trimmed = part.trim();
+      return trimmed.length > 0;
+    });
 
     return hasContent;
   }

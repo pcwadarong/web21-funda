@@ -122,6 +122,32 @@ export const Leaderboard = () => {
     );
   }
 
+  // 아직 랭킹에 들어가지 않았을 경우 스켈레톤 UI 처리
+  const isUnassignedGroup = weeklyRanking.groupIndex === null;
+
+  if (isUnassignedGroup) {
+    return (
+      <main css={pageStyle}>
+        <div css={pageContentStyle}>
+          <header css={headerStyle}>
+            <div>
+              <p css={pageEyebrowStyle(theme)}>Leaderboard</p>
+              <h1 css={pageTitleStyle(theme)}>랭킹</h1>
+            </div>
+          </header>
+          <div css={stateCardStyle(theme)}>
+            이번 주차에 아직 랭킹이 없습니다. 문제를 풀면 랭킹이 생성됩니다.
+          </div>
+          <div css={skeletonListStyle}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} css={skeletonRowStyle(theme)} />
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   const leagueTitle = `${weeklyRanking.tier.name} 리그`;
   const groupedMembers = groupMembersByZone(weeklyRanking.members);
   const remainingDaysText = buildRemainingDaysText(weeklyRanking.weekKey);
@@ -618,4 +644,17 @@ const stateCardStyle = (theme: Theme) => css`
   border: 1px solid ${theme.colors.border.default};
   background: ${theme.colors.surface.strong};
   color: ${theme.colors.text.weak};
+`;
+
+const skeletonListStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const skeletonRowStyle = (theme: Theme) => css`
+  height: 56px;
+  border-radius: ${theme.borderRadius.medium};
+  border: 1px solid ${theme.colors.border.default};
+  background: ${theme.colors.surface.default};
 `;

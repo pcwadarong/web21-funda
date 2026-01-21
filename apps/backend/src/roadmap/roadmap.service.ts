@@ -13,6 +13,7 @@ import {
   UserStepAttempt,
   UserStepStatus,
 } from '../progress/entities';
+import { RankingService } from '../ranking/ranking.service';
 import { User } from '../users/entities/user.entity';
 
 import type { FieldListResponse } from './dto/field-list.dto';
@@ -49,6 +50,7 @@ export class RoadmapService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly rankingService: RankingService,
   ) {}
 
   /**
@@ -668,6 +670,10 @@ export class RoadmapService {
         userId,
         quiz,
         qualityScore,
+        solvedAt,
+      });
+      await this.rankingService.assignUserToGroupOnFirstSolveWithManager(manager, {
+        userId,
         solvedAt,
       });
     });

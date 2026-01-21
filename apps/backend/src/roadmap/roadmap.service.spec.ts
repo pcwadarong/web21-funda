@@ -2,7 +2,6 @@ import { NotFoundException } from '@nestjs/common';
 import { type DataSource, type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
-import { QuizContentService } from '../common/utils/quiz-content.service';
 import {
   QuizLearningStatus,
   SolveLog,
@@ -10,10 +9,14 @@ import {
   UserStepAttempt,
   UserStepStatus,
 } from '../progress/entities';
+import { User } from '../users/entities/user.entity';
+
+import { Field, Quiz, Step } from './entities';
+import { RoadmapService } from './roadmap.service';
+import { QuizContentService } from '../common/utils/quiz-content.service';
+
 
 import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
-import { RoadmapService } from './roadmap.service';
-
 jest.mock('../common/utils/code-formatter');
 
 describe('RoadmapService', () => {
@@ -25,6 +28,7 @@ describe('RoadmapService', () => {
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
+  let userRepository: Partial<Repository<User>>;
   let dataSource: Partial<DataSource>;
   let codeFormatter: Partial<CodeFormatter>;
   let quizContentService: QuizContentService;
@@ -98,6 +102,10 @@ describe('RoadmapService', () => {
     stepStatusRepository = {
       find: stepStatusFindMock,
     };
+    userRepository = {
+      findOne: jest.fn(),
+      save: jest.fn(),
+    };
     dataSource = {
       transaction: jest.fn(),
     };
@@ -116,6 +124,7 @@ describe('RoadmapService', () => {
       stepAttemptRepository as Repository<UserStepAttempt>,
       quizContentService,
       stepStatusRepository as Repository<UserStepStatus>,
+      userRepository as Repository<User>,
       dataSource as DataSource,
     );
   });

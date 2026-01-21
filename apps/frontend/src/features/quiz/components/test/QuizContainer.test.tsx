@@ -129,6 +129,7 @@ const renderContainer = (props: Partial<React.ComponentProps<typeof QuizContaine
     handleAnswerChange: vi.fn(),
     handleCheckAnswer: vi.fn().mockResolvedValue(undefined),
     handleNextQuestion: vi.fn(),
+    heartCount: 0,
     ...props,
   };
 

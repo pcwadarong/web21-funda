@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import { User } from '../users/entities/user.entity';
 
 import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
 import { FieldsController } from './fields.controller';
@@ -22,6 +23,7 @@ import { StepsController } from './steps.controller';
       SolveLog,
       UserStepAttempt,
       UserStepStatus,
+      User,
       CheckpointQuizPool,
     ]),
   ],

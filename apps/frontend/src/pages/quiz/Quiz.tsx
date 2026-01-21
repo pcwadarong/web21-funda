@@ -20,7 +20,7 @@ import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { authService } from '@/services/authService';
 import { progressService } from '@/services/progressService';
 import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
-import { useAuthStore, useIsAuthReady } from '@/store/authStore';
+import { useAuthStore, useAuthUser, useIsAuthReady } from '@/store/authStore';
 import { shuffleArray } from '@/utils/shuffleArray';
 /**
  * 퀴즈 풀이 페이지 컴포넌트
@@ -36,8 +36,11 @@ export const Quiz = () => {
     addGuestStepAnswer,
     finalizeGuestStepAttempt,
     getGuestStepAttempt,
+    progress,
+    updateProgress,
   } = useStorage();
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const user = useAuthUser();
   const isAuthReady = useIsAuthReady();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -46,6 +49,12 @@ export const Quiz = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+
+  const heartCount = user ? user.heartCount : progress.heart;
+
+  // orderIndex가 4 또는 5일 때만 heart 표시
+  const showHeart =
+    uiState.current_step_order_index === 4 || uiState.current_step_order_index === 5;
 
   /** 불러온 문제 배열 */
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
@@ -337,6 +346,22 @@ export const Quiz = () => {
       if (result.is_correct) playSound({ src: correctSound, currentTime: 0.05 });
       else playSound({ src: wrongSound, currentTime: 0.05 });
 
+      // heart 차감 처리
+      if (!result.is_correct && showHeart) {
+        if (isLoggedIn && result.user_heart_count !== undefined && user) {
+          // 로그인 사용자: 응답받은 heart count로 user 정보 업데이트
+          useAuthStore.getState().actions.setUser({
+            ...user,
+            heartCount: result.user_heart_count,
+          });
+        } else if (!isLoggedIn) {
+          // 미로그인 사용자: localStorage에서 heart 차감
+          updateProgress({
+            heart: Math.max(0, progress.heart - 1),
+          });
+        }
+      }
+
       setQuizSolutions(prev => {
         const newSolutions = [...prev];
         newSolutions[currentQuizIndex] = {
@@ -469,6 +494,7 @@ export const Quiz = () => {
       handleAnswerChange={handleAnswerChange}
       handleCheckAnswer={handleCheckAnswer}
       handleNextQuestion={handleNextQuestion}
+      heartCount={showHeart ? heartCount : 0}
       isReviewMode={isReviewMode}
     />
   );

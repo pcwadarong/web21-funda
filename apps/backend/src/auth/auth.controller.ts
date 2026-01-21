@@ -235,6 +235,9 @@ export class AuthController {
       throw new UnauthorizedException('유저 정보를 찾을 수 없습니다.');
     }
 
+    // Heart 회복 처리
+    await this.authService.recoverHeartPublic(user);
+
     return {
       result: {
         user: this.authService.toAuthUserProfile(user),

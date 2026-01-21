@@ -25,4 +25,5 @@ export interface QuizSubmissionResponse {
     correct_pairs?: MatchingPair[];
     explanation?: string | null;
   };
+  user_heart_count?: number;
 }

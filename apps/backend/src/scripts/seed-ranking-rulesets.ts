@@ -40,12 +40,12 @@ async function seedRankingRulesets(): Promise<void> {
         demote_ratio,
         is_master
       )
-      SELECT id, 100, 50, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'BRONZE'
-      UNION ALL SELECT id, 120, 50, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'SILVER'
-      UNION ALL SELECT id, 140, 60, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'GOLD'
-      UNION ALL SELECT id, 160, 70, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'SAPPHIRE'
-      UNION ALL SELECT id, 180, 80, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'RUBY'
-      UNION ALL SELECT id, 0, 150, 0.0, 0.2, true FROM ranking_tiers WHERE name = 'MASTER'
+      SELECT id, 150, 70, 0.1, 0.2, false FROM ranking_tiers WHERE name = 'BRONZE'
+      UNION ALL SELECT id, 200, 80, 0.1, 0.2, false FROM ranking_tiers WHERE name = 'SILVER'
+      UNION ALL SELECT id, 300, 90, 0.1, 0.2, false FROM ranking_tiers WHERE name = 'GOLD'
+      UNION ALL SELECT id, 400, 100, 0.1, 0.2, false FROM ranking_tiers WHERE name = 'SAPPHIRE'
+      UNION ALL SELECT id, 500, 110, 0.1, 0.2, false FROM ranking_tiers WHERE name = 'RUBY'
+      UNION ALL SELECT id, 0, 220, 0.0, 0.2, true FROM ranking_tiers WHERE name = 'MASTER'
       ON DUPLICATE KEY UPDATE
         promote_min_xp = VALUES(promote_min_xp),
         demote_min_xp = VALUES(demote_min_xp),

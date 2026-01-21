@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { UnsubscribeContainer } from '@/features/user/components/subscribe/UnsubscribeContainer';
-import { notificationService } from '@/services/userService';
+import { useUnsubscribeMutation } from '@/hooks/queries/userQueries';
 import { useToast } from '@/store/toastStore';
 
 export default function Unsubscribe() {
@@ -14,6 +14,8 @@ export default function Unsubscribe() {
   //TODO: tanstack query로 수정
   const [isLoading, setIsLoading] = useState(false);
 
+  const unsubscribeMutation = useUnsubscribeMutation();
+
   const handleUnsubscribe = async () => {
     if (!email || !token) {
       showToast('유효하지 않은 접근입니다. 메일의 링크를 다시 확인해주세요.');
@@ -24,7 +26,7 @@ export default function Unsubscribe() {
     setIsLoading(true);
 
     try {
-      await notificationService.unsubscribe({ email, token });
+      await unsubscribeMutation.mutateAsync({ email, token });
       showToast('정상적으로 수신 거부되었습니다.');
       navigate('/learn');
     } catch {

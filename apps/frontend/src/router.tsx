@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/authStore';
 const AdminQuizUpload = lazy(() =>
   import('@/pages/admin/QuizUpload').then(module => ({ default: module.AdminQuizUpload })),
 );
+const Reports = lazy(() => import('@/pages/Reports').then(module => ({ default: module.Reports })));
 const ServicePreparation = lazy(() =>
   import('@/pages/common/ServicePreparation').then(module => ({
     default: module.ServicePreparation,
@@ -118,6 +119,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/reports',
+    element: <Reports />,
   },
   {
     path: '/unsubscribe',

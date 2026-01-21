@@ -18,6 +18,7 @@ import { QuizResult } from '@/pages/quiz/QuizResult';
 import { QuizResultError } from '@/pages/quiz/QuizResultError';
 import { Profile } from '@/pages/user/Profile';
 import { Setting } from '@/pages/user/Setting';
+import Unsubscribe from '@/pages/user/Unsubscribe';
 import { useAuthStore } from '@/store/authStore';
 
 // 보호된 페이지를 위한 공통 로더
@@ -91,6 +92,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/unsubscribe',
+    element: <Unsubscribe />,
   },
   {
     path: '/initial-fields',

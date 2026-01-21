@@ -6,7 +6,7 @@ import { quizService } from '@/services/quizService';
 export const useQuizzesByStepQuery = (stepId: number) =>
   useSuspenseQuery({
     queryKey: ['quizzes-by-step', stepId],
-    queryFn: () => quizService.getQuizzesByStep(stepId as number),
+    queryFn: () => quizService.getQuizzesByStep(stepId),
   });
 
 export const useSubmitQuizMutation = () =>

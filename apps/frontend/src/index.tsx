@@ -7,6 +7,16 @@ import App from './app';
 
 import './styles/main.css';
 
+const queryClient = new QueryClient();
+
+declare global {
+  interface Window {
+    __TANSTACK_QUERY_CLIENT__: QueryClient;
+  }
+}
+
+window.__TANSTACK_QUERY_CLIENT__ = queryClient;
+
 const startApp = async () => {
   const enableMsw = import.meta.env.VITE_ENABLE_MSW === 'true';
 
@@ -15,8 +25,6 @@ const startApp = async () => {
       onUnhandledRequest: 'bypass', // 처리 안 된 요청은 통과
     });
   }
-
-  const queryClient = new QueryClient();
 
   createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>

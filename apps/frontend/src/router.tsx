@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { createBrowserRouter, redirect } from 'react-router-dom';
 
 import { SideBarLayout } from '@/layouts/SideBarLayout';
@@ -8,18 +9,43 @@ import { Login } from '@/pages/auth/Login';
 import { GlobalError } from '@/pages/common/GlobalError';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
-import { ServicePreparation } from '@/pages/common/ServicePreparation';
-import { Leaderboard } from '@/pages/Leaderboard';
-import { InitialFields } from '@/pages/learn/InitialFields';
-import { Learn } from '@/pages/learn/Learn';
-import { Roadmap } from '@/pages/learn/Roadmap';
-import { SelectField } from '@/pages/learn/SelectField';
-import { Quiz } from '@/pages/quiz/Quiz';
-import { QuizResult } from '@/pages/quiz/QuizResult';
-import { QuizResultError } from '@/pages/quiz/QuizResultError';
-import { Profile } from '@/pages/user/Profile';
-import { Setting } from '@/pages/user/Setting';
+import Unsubscribe from '@/pages/user/Unsubscribe';
 import { useAuthStore } from '@/store/authStore';
+
+const AdminQuizUpload = lazy(() =>
+  import('@/pages/admin/QuizUpload').then(module => ({ default: module.AdminQuizUpload })),
+);
+const ServicePreparation = lazy(() =>
+  import('@/pages/common/ServicePreparation').then(module => ({
+    default: module.ServicePreparation,
+  })),
+);
+const Leaderboard = lazy(() =>
+  import('@/pages/Leaderboard').then(module => ({ default: module.Leaderboard })),
+);
+const InitialFields = lazy(() =>
+  import('@/pages/learn/InitialFields').then(module => ({ default: module.InitialFields })),
+);
+const Learn = lazy(() => import('@/pages/learn/Learn').then(module => ({ default: module.Learn })));
+const Roadmap = lazy(() =>
+  import('@/pages/learn/Roadmap').then(module => ({ default: module.Roadmap })),
+);
+const SelectField = lazy(() =>
+  import('@/pages/learn/SelectField').then(module => ({ default: module.SelectField })),
+);
+const Quiz = lazy(() => import('@/pages/quiz/Quiz').then(module => ({ default: module.Quiz })));
+const QuizResult = lazy(() =>
+  import('@/pages/quiz/QuizResult').then(module => ({ default: module.QuizResult })),
+);
+const QuizResultError = lazy(() =>
+  import('@/pages/quiz/QuizResultError').then(module => ({ default: module.QuizResultError })),
+);
+const Profile = lazy(() =>
+  import('@/pages/user/Profile').then(module => ({ default: module.Profile })),
+);
+const Setting = lazy(() =>
+  import('@/pages/user/Setting').then(module => ({ default: module.Setting })),
+);
 
 // 보호된 페이지를 위한 공통 로더
 const protectedLoader = () => {
@@ -93,6 +119,10 @@ export const router = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    path: '/unsubscribe',
+    element: <Unsubscribe />,
   },
   {
     path: '/initial-fields',

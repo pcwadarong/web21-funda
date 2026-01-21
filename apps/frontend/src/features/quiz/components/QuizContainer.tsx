@@ -18,6 +18,7 @@ interface QuizContainerProps {
   questionStatuses: QuestionStatus[];
   isCheckDisabled: boolean;
   isLastQuestion: boolean;
+  isReviewMode: boolean;
   handleAnswerChange: (answer: AnswerType) => void;
   handleCheckAnswer: () => Promise<void>;
   handleNextQuestion: () => void;
@@ -32,6 +33,7 @@ export const QuizContainer = ({
   questionStatuses,
   isCheckDisabled,
   isLastQuestion,
+  isReviewMode,
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
@@ -59,6 +61,7 @@ export const QuizContainer = ({
           onCheck={handleCheckAnswer}
           onNext={handleNextQuestion}
           isLast={isLastQuestion}
+          isReviewMode={isReviewMode}
         />
       </main>
     </div>
@@ -70,7 +73,6 @@ const containerStyle = css`
   flex-direction: column;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
 `;
 
 const mainStyle = css`
@@ -80,4 +82,9 @@ const mainStyle = css`
   justify-content: center;
   overflow-y: auto;
   padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 0;
+    align-items: stretch;
+  }
 `;

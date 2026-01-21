@@ -70,7 +70,6 @@ const containerStyle = () => css`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
 `;
 
 const panelStyle = css`
@@ -80,6 +79,11 @@ const panelStyle = css`
   display: flex;
   flex-direction: column;
   gap: 16px;
+  word-break: keep-all;
+
+  @media (max-width: 480px) {
+    padding: 48px 24px;
+  }
 `;
 
 const titleStyle = (theme: Theme) => css`
@@ -108,6 +112,10 @@ const gridStyle = css`
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(1, 1fr);
   }
 `;
 

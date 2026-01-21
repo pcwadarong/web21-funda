@@ -10,21 +10,16 @@ import { lightTheme } from '@/styles/theme';
 
 // 하위 컴포넌트 모킹
 vi.mock('@/feat/quiz/components/QuizContentCard', () => ({
-  QuizContentCard: ({
-    question,
-    status,
-    isSubmitDisabled,
-    onAnswerChange,
-    onCheck,
-    onNext,
-  }: {
+  QuizContentCard: (props: {
     question: unknown;
     status: 'idle' | 'checking' | 'checked';
     isSubmitDisabled: boolean;
     onAnswerChange: (a: unknown) => void;
     onCheck: () => void;
     onNext: () => void;
+    isReviewMode: boolean;
   }) => {
+    const { question, status, isSubmitDisabled, onAnswerChange, onCheck, onNext } = props;
     type MatchingQuestion = {
       type?: string;
       content?: {
@@ -130,6 +125,7 @@ const renderContainer = (props: Partial<React.ComponentProps<typeof QuizContaine
     questionStatuses: ['idle' as const],
     isCheckDisabled: true,
     isLastQuestion: false,
+    isReviewMode: false,
     handleAnswerChange: vi.fn(),
     handleCheckAnswer: vi.fn().mockResolvedValue(undefined),
     handleNextQuestion: vi.fn(),

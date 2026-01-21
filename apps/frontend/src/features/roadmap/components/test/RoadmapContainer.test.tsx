@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RoadmapContainer } from '@/feat/roadmap/components/RoadmapContainer';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
+import { useAuthStore } from '@/store/authStore';
 import { lightTheme } from '@/styles/theme';
 
 vi.mock('@/comp/SVGIcon', () => ({
@@ -40,14 +41,21 @@ const mockUnits: RoadmapUnit[] = [
   },
 ];
 
-const renderContainer = (props: Partial<React.ComponentProps<typeof RoadmapContainer>> = {}) => {
+const renderContainer = (
+  props: Partial<React.ComponentProps<typeof RoadmapContainer>> & { isLoggedIn?: boolean } = {},
+) => {
   const defaultProps = {
     fieldName: 'Frontend',
     units: mockUnits,
-    isLoggedIn: false,
     onUnitClick: vi.fn(),
     ...props,
   };
+
+  if (typeof props.isLoggedIn === 'boolean') {
+    useAuthStore.setState({ isLoggedIn: props.isLoggedIn });
+  } else {
+    useAuthStore.setState({ isLoggedIn: false });
+  }
 
   return render(
     <ThemeProvider theme={lightTheme}>

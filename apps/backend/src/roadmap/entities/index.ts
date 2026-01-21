@@ -1,3 +1,4 @@
+export * from './checkpoint-quiz-pool.entity';
 export * from './field.entity';
 export * from './quiz.entity';
 export * from './step.entity';

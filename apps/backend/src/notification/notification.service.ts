@@ -200,10 +200,14 @@ export class NotificationService {
    * @param email 구독 해지할 이메일 주소
    */
   async unsubscribeUser(email: string): Promise<void> {
-    await this.userRepository.update(
+    const result = await this.userRepository.update(
       { email }, // 조건: 해당 이메일을 가진 유저
       { isEmailSubscribed: false }, // 변경할 내용
     );
-    this.logger.log('User unsubscribed via email-based request.');
+    if (result.affected && result.affected > 0) {
+      this.logger.log('User unsubscribed via email-based request.');
+    } else {
+      this.logger.debug('Unsubscribe request for non-existent or already unsubscribed user.');
+    }
   }
 }

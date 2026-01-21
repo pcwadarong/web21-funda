@@ -28,11 +28,10 @@ type Story = StoryObj<typeof ReviewCompletionEffect>;
 
 export const Default: Story = {
   render: () => {
-    // 애니메이션을 다시 보기 위한 새로고침용 상태
     const [key, setKey] = useState(0);
 
     return (
-      <div style={{ position: 'relative' }}>
+      <div>
         <button
           onClick={() => setKey(prev => prev + 1)}
           style={{

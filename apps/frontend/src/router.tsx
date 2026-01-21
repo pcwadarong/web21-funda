@@ -2,6 +2,8 @@ import { lazy } from 'react';
 import { createBrowserRouter, redirect } from 'react-router-dom';
 
 import { SideBarLayout } from '@/layouts/SideBarLayout';
+import { AdminRouteGuard } from '@/pages/admin/AdminRouteGuard';
+import { AdminQuizUpload } from '@/pages/admin/QuizUpload';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
 import { GlobalError } from '@/pages/common/GlobalError';
@@ -108,6 +110,7 @@ export const router = createBrowserRouter([
   // 관리자 (Admin)
   {
     path: '/admin',
+    element: <AdminRouteGuard />,
     children: [
       {
         path: 'quizzes',

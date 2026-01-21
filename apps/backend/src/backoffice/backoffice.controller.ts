@@ -3,6 +3,7 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -15,12 +16,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { QuizzesUploadDto } from './dto/quizzes-upload.dto';
+import { AdminGuard } from '../auth/guards/admin.guard';
+import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
+
 import { BackofficeService } from './backoffice.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth('accessToken')
 @Controller('admin')
+@UseGuards(JwtAccessGuard, AdminGuard)
 export class BackofficeController {
   constructor(private readonly backofficeService: BackofficeService) {}
 
@@ -32,11 +36,19 @@ export class BackofficeController {
     description: 'JSONL 파일을 통해 Field, Unit, Step, Quiz를 한 번에 계층적으로 업로드합니다.',
   })
   @ApiBody({
-    type: QuizzesUploadDto,
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['file'],
+    },
   })
   @ApiCreatedResponse({
     description: '업로드 결과 요약',
-    // UploadSummary 인터페이스 구조에 맞춘 예시
     schema: {
       example: {
         processed: 10,
@@ -52,9 +64,10 @@ export class BackofficeController {
     },
   })
   async uploadQuizzes(@UploadedFile() file: any) {
-    if (!file) throw new BadRequestException('업로드된 파일이 없습니다.');
+    if (!file) {
+      throw new BadRequestException('업로드된 파일이 없습니다.');
+    }
 
-    // 서비스의 메서드명과 일치시킴
     return this.backofficeService.uploadQuizzesFromJsonl(file.buffer);
   }
 }

@@ -142,14 +142,15 @@ export class NotificationService {
       REMIND_MAIL_VARIANTS.CONTENTS[
         Math.floor(Math.random() * REMIND_MAIL_VARIANTS.CONTENTS.length)
       ];
+    if (!randomSubjectFn || !randomContent)
+      throw new Error('Mail template variants are not configured');
 
     const quizLink = `${clientOrigin}/quiz`;
-    const unsubscribeToken = this.generateUnsubscribeToken(user.email!);
-    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email!)}&token=${encodeURIComponent(unsubscribeToken)}`;
-
+    const unsubscribeToken = this.generateUnsubscribeToken(user.email as string);
+    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email as string)}&token=${encodeURIComponent(unsubscribeToken)}`;
     return {
-      subject: randomSubjectFn!(name),
-      html: getRemindMailHtml(name, randomContent!, quizLink, unsubscribeLink),
+      subject: randomSubjectFn(name),
+      html: getRemindMailHtml(name, randomContent, quizLink, unsubscribeLink),
     };
   }
 

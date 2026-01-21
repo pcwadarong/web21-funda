@@ -5,12 +5,20 @@ import { In, Repository } from 'typeorm';
 import { getKstNow, getKstWeekInfo } from '../common/utils/kst-date';
 import { User } from '../users/entities/user.entity';
 
-import type { MyTierResult, WeeklyRankingEntry, WeeklyRankingResult } from './dto/ranking.dto';
+import type {
+  MyTierResult,
+  RankingZone,
+  WeeklyRankingEntry,
+  WeeklyRankingResult,
+} from './dto/ranking.dto';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
+import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
 import { RankingTier } from './entities/ranking-tier.entity';
 import { RankingTierName } from './entities/ranking-tier.enum';
+import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
+import { buildRankingSnapshots } from './ranking-evaluation.utils';
 
 @Injectable()
 export class RankingQueryService {
@@ -23,6 +31,8 @@ export class RankingQueryService {
     private readonly weeklyXpRepository: Repository<RankingWeeklyXp>,
     @InjectRepository(RankingTier)
     private readonly tierRepository: Repository<RankingTier>,
+    @InjectRepository(RankingTierRule)
+    private readonly tierRuleRepository: Repository<RankingTierRule>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
@@ -128,6 +138,7 @@ export class RankingQueryService {
       };
     });
 
+    const rankZoneMap = await this.buildRankZoneMap(member.tier?.id ?? null, rankingSeeds);
     const sorted = [...rankingSeeds].sort((left, right) => {
       if (left.xp !== right.xp) {
         return right.xp - left.xp;
@@ -147,6 +158,7 @@ export class RankingQueryService {
       xp: entry.xp,
       rank: index + 1,
       isMe: entry.userId === userId,
+      rankZone: rankZoneMap.get(entry.userId) ?? 'MAINTAIN',
     }));
 
     const myRank = members.find(entry => entry.userId === userId)?.rank ?? null;
@@ -172,5 +184,53 @@ export class RankingQueryService {
 
   private async findDefaultTier(): Promise<RankingTier | null> {
     return this.tierRepository.findOne({ where: { name: RankingTierName.BRONZE } });
+  }
+
+  /**
+   * 랭킹 결과에 승급/유지/강등 구역을 매핑한다.
+   *
+   * @param tierId 티어 ID
+   * @param members 랭킹 계산 대상 목록
+   * @returns 사용자별 구역 매핑
+   */
+  private async buildRankZoneMap(
+    tierId: number | null,
+    members: Array<{ userId: number; xp: number; lastSolvedAt: Date }>,
+  ): Promise<Map<number, RankingZone>> {
+    if (!tierId || members.length === 0) {
+      return new Map();
+    }
+
+    const rule = await this.tierRuleRepository.findOne({ where: { tierId } });
+    if (!rule) {
+      return new Map();
+    }
+
+    const snapshots = buildRankingSnapshots({ members, rule });
+    const zoneMap = new Map<number, RankingZone>();
+
+    snapshots.forEach(snapshot => {
+      zoneMap.set(snapshot.userId, this.mapSnapshotStatusToZone(snapshot.status));
+    });
+
+    return zoneMap;
+  }
+
+  /**
+   * 스냅샷 상태를 랭킹 구역으로 변환한다.
+   *
+   * @param status 스냅샷 상태
+   * @returns 랭킹 구역
+   */
+  private mapSnapshotStatusToZone(status: RankingSnapshotStatus): RankingZone {
+    if (status === RankingSnapshotStatus.PROMOTED) {
+      return 'PROMOTION';
+    }
+
+    if (status === RankingSnapshotStatus.DEMOTED) {
+      return 'DEMOTION';
+    }
+
+    return 'MAINTAIN';
   }
 }

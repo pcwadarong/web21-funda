@@ -10,11 +10,6 @@ interface TierInfo {
   orderIndex: number;
 }
 
-interface RankingMeResult {
-  tier: TierInfo;
-  diamondCount: number;
-}
-
 interface RankingMember {
   rank: number;
   userId: number;
@@ -22,6 +17,7 @@ interface RankingMember {
   profileImageUrl: string | null;
   xp: number;
   isMe: boolean;
+  rankZone: RankingZone;
 }
 
 interface WeeklyRankingResult {
@@ -34,11 +30,12 @@ interface WeeklyRankingResult {
   members: RankingMember[];
 }
 
+type RankingZone = 'PROMOTION' | 'MAINTAIN' | 'DEMOTION';
+
 export const Leaderboard = () => {
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [rankingMe, setRankingMe] = useState<RankingMeResult | null>(null);
   const [weeklyRanking, setWeeklyRanking] = useState<WeeklyRankingResult | null>(null);
 
   useEffect(() => {
@@ -49,14 +46,12 @@ export const Leaderboard = () => {
       setErrorMessage(null);
 
       try {
-        const meResult = await apiFetch.get<RankingMeResult>('/ranking/me');
         const weeklyResult = await apiFetch.get<WeeklyRankingResult>('/ranking/weekly');
 
         if (!isMounted) {
           return;
         }
 
-        setRankingMe(meResult);
         setWeeklyRanking(weeklyResult);
       } catch (error) {
         if (!isMounted) {
@@ -111,7 +106,7 @@ export const Leaderboard = () => {
     );
   }
 
-  if (!rankingMe || !weeklyRanking) {
+  if (!weeklyRanking) {
     return (
       <main css={pageStyle}>
         <div css={pageContentStyle}>
@@ -128,6 +123,8 @@ export const Leaderboard = () => {
   }
 
   const leagueTitle = `${weeklyRanking.tier.name} 리그`;
+  const groupedMembers = groupMembersByZone(weeklyRanking.members);
+  const remainingDaysText = buildRemainingDaysText(weeklyRanking.weekKey);
 
   return (
     <main css={pageStyle}>
@@ -149,16 +146,7 @@ export const Leaderboard = () => {
           </div>
           <div css={summaryRightStyle}>
             <div css={summaryItemStyle(theme)}>
-              <span>내 랭킹</span>
-              <strong>{weeklyRanking.myRank}위</strong>
-            </div>
-            <div css={summaryItemStyle(theme)}>
-              <span>주간 XP</span>
-              <strong>{weeklyRanking.myWeeklyXp}점</strong>
-            </div>
-            <div css={summaryItemStyle(theme)}>
-              <span>다이아</span>
-              <strong>{rankingMe.diamondCount}개</strong>
+              <span>{remainingDaysText}</span>
             </div>
           </div>
         </section>
@@ -167,48 +155,66 @@ export const Leaderboard = () => {
           <header css={listHeaderStyle}>
             <div>
               <p css={listTitleTextStyle(theme)}>이번 주차 랭킹</p>
-              <p css={listTitleSubTextStyle(theme)}>
-                {weeklyRanking.weekKey} · {leagueTitle}
-              </p>
             </div>
           </header>
 
-          <ol css={listStyle}>
-            {weeklyRanking.members.map(member => {
-              let meBadge = null;
-
-              if (member.isMe) {
-                meBadge = <span css={meBadgeStyle(theme)}>나</span>;
-              }
-
-              return (
-                <li key={member.userId} css={rankingRowStyle(theme, member.isMe)}>
-                  <span css={rankNumberStyle(theme, member.isMe)}>{member.rank}</span>
-                  <div css={avatarStyle(theme)}>
-                    {member.profileImageUrl ? (
-                      <img
-                        src={member.profileImageUrl}
-                        alt={`${member.displayName} 프로필`}
-                        css={avatarImageStyle}
-                      />
-                    ) : (
-                      <span css={avatarTextStyle(theme)}>{getAvatarLabel(member.displayName)}</span>
-                    )}
-                  </div>
-                  <div css={nameBlockStyle}>
-                    <span css={memberNameStyle(theme)}>{member.displayName}</span>
-                    {meBadge}
-                  </div>
-                  <div css={xpBlockStyle}>
-                    <span css={xpValueStyle(theme)}>{member.xp.toLocaleString()} XP</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          <div css={zoneSectionStyle}>
+            <div css={zoneHeaderStyle(theme)}>승급권</div>
+            {renderMemberList(groupedMembers.promotion, theme)}
+          </div>
+          <div css={zoneSectionStyle}>
+            <div css={zoneHeaderStyle(theme)}>유지권</div>
+            {renderMemberList(groupedMembers.maintain, theme)}
+          </div>
+          <div css={zoneSectionStyle}>
+            <div css={zoneHeaderStyle(theme)}>강등권</div>
+            {renderMemberList(groupedMembers.demotion, theme)}
+          </div>
         </section>
       </div>
     </main>
+  );
+};
+
+const renderMemberList = (members: RankingMember[], theme: Theme) => {
+  if (members.length === 0) {
+    return <div css={emptyTextStyle(theme)}>해당 구역에 인원이 없습니다.</div>;
+  }
+
+  return (
+    <ol css={listStyle}>
+      {members.map(member => {
+        let meBadge = null;
+
+        if (member.isMe) {
+          meBadge = <span css={meBadgeStyle(theme)}>나</span>;
+        }
+
+        return (
+          <li key={member.userId} css={rankingRowStyle(theme, member.isMe)}>
+            <span css={rankNumberStyle(theme, member.isMe)}>{member.rank}</span>
+            <div css={avatarStyle(theme)}>
+              {member.profileImageUrl ? (
+                <img
+                  src={member.profileImageUrl}
+                  alt={`${member.displayName} 프로필`}
+                  css={avatarImageStyle}
+                />
+              ) : (
+                <span css={avatarTextStyle(theme)}>{getAvatarLabel(member.displayName)}</span>
+              )}
+            </div>
+            <div css={nameBlockStyle}>
+              <span css={memberNameStyle(theme)}>{member.displayName}</span>
+              {meBadge}
+            </div>
+            <div css={xpBlockStyle}>
+              <span css={xpValueStyle(theme)}>{member.xp.toLocaleString()} XP</span>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 };
 
@@ -221,6 +227,138 @@ const getAvatarLabel = (displayName: string) => {
 
   return trimmedName.slice(0, 2).toUpperCase();
 };
+
+/**
+ * 승급/유지/강등 구역으로 사용자를 분리한다.
+ *
+ * @param {RankingMember[]} members - 주간 랭킹 멤버 목록
+ * @returns 구역별 멤버 목록
+ */
+const groupMembersByZone = (members: RankingMember[]) => {
+  const grouped = {
+    promotion: [] as RankingMember[],
+    maintain: [] as RankingMember[],
+    demotion: [] as RankingMember[],
+  };
+
+  members.forEach(member => {
+    if (member.rankZone === 'PROMOTION') {
+      grouped.promotion.push(member);
+      return;
+    }
+
+    if (member.rankZone === 'DEMOTION') {
+      grouped.demotion.push(member);
+      return;
+    }
+
+    grouped.maintain.push(member);
+  });
+
+  return grouped;
+};
+
+/**
+ * 주차 키를 기준으로 종료까지 남은 날짜 문구를 생성한다.
+ *
+ * @param {string} weekKey - YYYY-WW 형식의 주차 키
+ * @returns {string} 남은 날짜 문구
+ */
+const buildRemainingDaysText = (weekKey: string) => {
+  const remainingDays = calculateRemainingDaysFromWeekKey(weekKey);
+
+  if (remainingDays === null) {
+    return '종료 정보 없음';
+  }
+
+  if (remainingDays <= 0) {
+    return '오늘 종료';
+  }
+
+  if (remainingDays === 1) {
+    return '1일 후 종료';
+  }
+
+  return `${remainingDays}일 후 종료`;
+};
+
+/**
+ * 주차 키를 기준으로 종료까지 남은 날짜를 계산한다.
+ * - KST 기준 월요일 00:00 시작, 다음 주 월요일 00:00 종료로 계산한다.
+ *
+ * @param {string} weekKey - YYYY-WW 형식의 주차 키
+ * @returns {number | null} 남은 일수 (계산 불가 시 null)
+ */
+const calculateRemainingDaysFromWeekKey = (weekKey: string) => {
+  const parsedWeekKey = parseWeekKey(weekKey);
+
+  if (!parsedWeekKey) {
+    return null;
+  }
+
+  const { year, week } = parsedWeekKey;
+  const weekStartUtc = getIsoWeekMondayUtc(year, week);
+  const weekStartKstUtc = new Date(weekStartUtc.getTime() - KST_OFFSET_MS);
+  const weekEndUtcTimestamp = weekStartKstUtc.getTime() + WEEK_MS;
+  const nowUtcTimestamp = Date.now();
+  const remainingMs = weekEndUtcTimestamp - nowUtcTimestamp;
+
+  if (remainingMs <= 0) {
+    return 0;
+  }
+
+  const remainingDays = Math.ceil(remainingMs / DAY_MS);
+
+  return remainingDays;
+};
+
+/**
+ * 주차 키를 연도/주차 정보로 파싱한다.
+ *
+ * @param {string} weekKey - YYYY-WW 형식의 주차 키
+ * @returns {{ year: number; week: number } | null} 파싱 결과
+ */
+const parseWeekKey = (weekKey: string) => {
+  const matchResult = /^(\d{4})-(\d{2})$/.exec(weekKey);
+
+  if (!matchResult) {
+    return null;
+  }
+
+  const year = Number(matchResult[1]);
+  const week = Number(matchResult[2]);
+
+  if (Number.isNaN(year) || Number.isNaN(week)) {
+    return null;
+  }
+
+  if (week < 1 || week > 53) {
+    return null;
+  }
+
+  return { year, week };
+};
+
+/**
+ * ISO 주차 기준으로 월요일 00:00(UTC)을 반환한다.
+ *
+ * @param {number} year - ISO 연도
+ * @param {number} week - ISO 주차
+ * @returns {Date} UTC 기준 월요일 00:00
+ */
+const getIsoWeekMondayUtc = (year: number, week: number) => {
+  const jan4Utc = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4Utc.getUTCDay();
+  const daysFromMonday = (jan4Day + 6) % 7;
+  const week1MondayUtc = new Date(Date.UTC(year, 0, 4 - daysFromMonday));
+  const targetWeekOffset = (week - 1) * 7 * DAY_MS;
+
+  return new Date(week1MondayUtc.getTime() + targetWeekOffset);
+};
+
+const DAY_MS = 1000 * 60 * 60 * 24;
+const WEEK_MS = DAY_MS * 7;
+const KST_OFFSET_MS = 1000 * 60 * 60 * 9;
 
 const pageStyle = css`
   flex: 1;
@@ -333,12 +471,6 @@ const listTitleTextStyle = (theme: Theme) => css`
   color: ${theme.colors.text.strong};
 `;
 
-const listTitleSubTextStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  color: ${theme.colors.text.weak};
-`;
-
 const listStyle = css`
   display: flex;
   flex-direction: column;
@@ -346,6 +478,29 @@ const listStyle = css`
   list-style: none;
   padding: 0;
   margin: 0;
+`;
+
+const zoneSectionStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+`;
+
+const zoneHeaderStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Bold'].fontSize};
+  line-height: ${theme.typography['12Bold'].lineHeight};
+  font-weight: ${theme.typography['12Bold'].fontWeight};
+  color: ${theme.colors.text.weak};
+`;
+
+const emptyTextStyle = (theme: Theme) => css`
+  padding: 8px 12px;
+  border-radius: ${theme.borderRadius.small};
+  background: ${theme.colors.surface.default};
+  color: ${theme.colors.text.weak};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  line-height: ${theme.typography['12Medium'].lineHeight};
 `;
 
 const rankingRowStyle = (theme: Theme, isMe: boolean) => {
@@ -454,7 +609,7 @@ const xpBlockStyle = css`
 const xpValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   line-height: ${theme.typography['12Medium'].lineHeight};
-  color: ${theme.colors.text.weak};
+  color: ${theme.colors.text.default};
 `;
 
 const stateCardStyle = (theme: Theme) => css`

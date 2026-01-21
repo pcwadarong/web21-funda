@@ -23,11 +23,20 @@ export class NotificationService {
     private configService: ConfigService,
     private jwtService: JwtService,
   ) {
+    const mailUser = this.configService.get<string>('MAIL_USER');
+    const mailPass = this.configService.get<string>('MAIL_PASS');
+
+    // 메일 계정 설정이 누락되면 애플리케이션을 즉시 실패시켜 런타임 오류를 방지
+    if (!mailUser || !mailPass) {
+      this.logger.error('MAIL_USER or MAIL_PASS is missing. Check environment configuration.');
+      throw new Error('Mail credentials are not configured');
+    }
+
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: this.configService.get('MAIL_USER'),
-        pass: this.configService.get('MAIL_PASS'),
+        user: mailUser,
+        pass: mailPass,
       },
     });
   }

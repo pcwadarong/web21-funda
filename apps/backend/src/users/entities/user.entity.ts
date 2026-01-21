@@ -3,10 +3,14 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+import { RankingTier } from '../../ranking/entities/ranking-tier.entity';
 
 import { UserRefreshToken } from './user-refresh-token.entity';
 
@@ -38,6 +42,13 @@ export class User {
 
   @Column({ name: 'display_name', type: 'varchar', length: 100 })
   displayName!: string;
+
+  @Column({ name: 'current_tier_id', type: 'int', nullable: true })
+  currentTierId?: number | null;
+
+  @ManyToOne(() => RankingTier, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'current_tier_id' })
+  currentTier?: RankingTier | null;
 
   @Column({ name: 'profile_image_url', type: 'varchar', length: 500, nullable: true })
   profileImageUrl?: string | null;

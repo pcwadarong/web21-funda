@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import { useCurrentUserQuery } from '@/hooks/queries/authQueries';
-import { progressService } from '@/services/progressService';
+import { useSyncStepHistoryMutation } from '@/hooks/queries/progressQueries';
 import { useAuthActions } from '@/store/authStore';
 import { storageUtil } from '@/utils/storage';
 
@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const hasSynced = useRef(false);
 
   const { data } = useCurrentUserQuery();
+  const syncStepHistoryMutation = useSyncStepHistoryMutation();
 
   // 로컬 기록 서버와 동기화
   const syncLocalProgress = useCallback(async () => {
@@ -25,7 +26,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     hasSynced.current = true;
     try {
-      await progressService.syncStepHistory(stepIds);
+      await syncStepHistoryMutation.mutateAsync(stepIds);
       storageUtil.set({ ...storage, solved_step_history: [] });
     } catch {
       hasSynced.current = false;

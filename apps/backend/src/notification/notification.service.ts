@@ -23,11 +23,20 @@ export class NotificationService {
     private configService: ConfigService,
     private jwtService: JwtService,
   ) {
+    const mailUser = this.configService.get<string>('MAIL_USER');
+    const mailPass = this.configService.get<string>('MAIL_PASS');
+
+    // 메일 계정 설정이 누락되면 애플리케이션을 즉시 실패시켜 런타임 오류를 방지
+    if (!mailUser || !mailPass) {
+      this.logger.error('MAIL_USER or MAIL_PASS is missing. Check environment configuration.');
+      throw new Error('Mail credentials are not configured');
+    }
+
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: this.configService.get('MAIL_USER'),
-        pass: this.configService.get('MAIL_PASS'),
+        user: mailUser,
+        pass: mailPass,
       },
     });
   }
@@ -133,14 +142,15 @@ export class NotificationService {
       REMIND_MAIL_VARIANTS.CONTENTS[
         Math.floor(Math.random() * REMIND_MAIL_VARIANTS.CONTENTS.length)
       ];
+    if (!randomSubjectFn || !randomContent)
+      throw new Error('Mail template variants are not configured');
 
     const quizLink = `${clientOrigin}/quiz`;
-    const unsubscribeToken = this.generateUnsubscribeToken(user.email!);
-    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email!)}&token=${encodeURIComponent(unsubscribeToken)}`;
-
+    const unsubscribeToken = this.generateUnsubscribeToken(user.email as string);
+    const unsubscribeLink = `${clientOrigin}/unsubscribe?email=${encodeURIComponent(user.email as string)}&token=${encodeURIComponent(unsubscribeToken)}`;
     return {
-      subject: randomSubjectFn!(name),
-      html: getRemindMailHtml(name, randomContent!, quizLink, unsubscribeLink),
+      subject: randomSubjectFn(name),
+      html: getRemindMailHtml(name, randomContent, quizLink, unsubscribeLink),
     };
   }
 
@@ -150,14 +160,13 @@ export class NotificationService {
    * @returns JWT 토큰 문자열
    */
   generateUnsubscribeToken(email: string): string {
-    const secret = this.configService.get<string>('JWT_ACCESS_SECRET', 'local-access-secret');
     const payload = {
       email,
       type: 'unsubscribe',
     };
     // 토큰은 7일간 유효
     return this.jwtService.sign(payload, {
-      secret,
+      secret: this.configService.get<string>('JWT_UNSUBSCRIBE_SECRET', 'local-unsubscribe-secret'),
       expiresIn: '7d',
     });
   }
@@ -170,9 +179,11 @@ export class NotificationService {
    */
   async verifyUnsubscribeToken(token: string, email: string): Promise<void> {
     try {
-      const secret = this.configService.get<string>('JWT_ACCESS_SECRET', 'local-access-secret');
       const payload = this.jwtService.verify<{ email: string; type: string }>(token, {
-        secret,
+        secret: this.configService.get<string>(
+          'JWT_UNSUBSCRIBE_SECRET',
+          'local-unsubscribe-secret',
+        ),
       });
 
       if (payload.type !== 'unsubscribe') throw new UnauthorizedException('Invalid token type');
@@ -189,10 +200,14 @@ export class NotificationService {
    * @param email 구독 해지할 이메일 주소
    */
   async unsubscribeUser(email: string): Promise<void> {
-    await this.userRepository.update(
+    const result = await this.userRepository.update(
       { email }, // 조건: 해당 이메일을 가진 유저
       { isEmailSubscribed: false }, // 변경할 내용
     );
-    this.logger.log('User unsubscribed via email-based request.');
+    if (result.affected && result.affected > 0) {
+      this.logger.log('User unsubscribed via email-based request.');
+    } else {
+      this.logger.debug('Unsubscribe request for non-existent or already unsubscribed user.');
+    }
   }
 }

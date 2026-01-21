@@ -175,35 +175,40 @@ describe('NotificationService', () => {
   describe('verifyUnsubscribeToken', () => {
     const token = 'test-token';
     const email = 'user@example.com';
-
     it('유효한 토큰이면 예외 없이 통과해야 한다', async () => {
       // Given
       jest.spyOn(jwtService, 'verify').mockReturnValue({
         email,
         type: 'unsubscribe',
       } as never);
-
       // When & Then
       await expect(service.verifyUnsubscribeToken(token, email)).resolves.not.toThrow();
     });
-
     it('이메일이 일치하지 않으면 UnauthorizedException을 던져야 한다', async () => {
       // Given
       jest.spyOn(jwtService, 'verify').mockReturnValue({
         email: 'other@example.com',
         type: 'unsubscribe',
       } as never);
-
       // When & Then
       await expect(service.verifyUnsubscribeToken(token, email)).rejects.toThrow('Email mismatch');
     });
-
+    it('토큰 타입이 unsubscribe가 아니면 UnauthorizedException을 던져야 한다', async () => {
+      // Given
+      jest.spyOn(jwtService, 'verify').mockReturnValue({
+        email,
+        type: 'access', // wrong type
+      } as never);
+      // When & Then
+      await expect(service.verifyUnsubscribeToken(token, email)).rejects.toThrow(
+        'Invalid token type',
+      );
+    });
     it('만료되었거나 무효한 토큰이면 UnauthorizedException을 던져야 한다', async () => {
       // Given
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('invalid token');
       });
-
       // When & Then
       await expect(service.verifyUnsubscribeToken(token, email)).rejects.toThrow(
         'Invalid or expired token',

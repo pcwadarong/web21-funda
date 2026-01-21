@@ -1,5 +1,7 @@
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
+import { RankingTierChangeReason } from './entities/ranking-tier-change-reason.enum';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
+import { RankingTier } from './entities/ranking-tier.entity';
 
 export interface RankingMemberScore {
   userId: number;
@@ -14,6 +16,12 @@ export interface RankingSnapshotDraft {
   status: RankingSnapshotStatus;
   promoteCutXp: number | null;
   demoteCutXp: number | null;
+}
+
+export interface RankingTierChangeDraft {
+  fromTierId: number;
+  toTierId: number;
+  reason: RankingTierChangeReason;
 }
 
 const compareMembers = (left: RankingMemberScore, right: RankingMemberScore): number => {
@@ -147,4 +155,61 @@ export const buildRankingSnapshots = (params: {
       demoteCutXp,
     };
   });
+};
+
+const buildTierIndexMap = (tiers: RankingTier[]): Map<number, number> => {
+  const sortedTiers = [...tiers].sort((left, right) => left.orderIndex - right.orderIndex);
+  return new Map(sortedTiers.map((tier, index) => [tier.id, index]));
+};
+
+/**
+ * 승급/강등 결과에 따라 실제 티어 변경을 결정한다.
+ *
+ * @param params.tiers 전체 티어 목록
+ * @param params.tierId 현재 티어 ID
+ * @param params.status 평가 결과
+ * @returns 티어 변경 결과
+ */
+export const resolveTierChange = (params: {
+  tiers: RankingTier[];
+  tierId: number;
+  status: RankingSnapshotStatus;
+}): RankingTierChangeDraft => {
+  const { tiers, tierId, status } = params;
+  const sortedTiers = [...tiers].sort((left, right) => left.orderIndex - right.orderIndex);
+  const tierIndexMap = buildTierIndexMap(sortedTiers);
+  const currentIndex = tierIndexMap.get(tierId);
+
+  if (currentIndex === undefined) {
+    return {
+      fromTierId: tierId,
+      toTierId: tierId,
+      reason: RankingTierChangeReason.MAINTAIN,
+    };
+  }
+
+  const previousTier = currentIndex > 0 ? sortedTiers[currentIndex - 1] : null;
+  const nextTier = currentIndex < sortedTiers.length - 1 ? sortedTiers[currentIndex + 1] : null;
+
+  if (status === RankingSnapshotStatus.PROMOTED && nextTier) {
+    return {
+      fromTierId: tierId,
+      toTierId: nextTier.id,
+      reason: RankingTierChangeReason.PROMOTION,
+    };
+  }
+
+  if (status === RankingSnapshotStatus.DEMOTED && previousTier) {
+    return {
+      fromTierId: tierId,
+      toTierId: previousTier.id,
+      reason: RankingTierChangeReason.DEMOTION,
+    };
+  }
+
+  return {
+    fromTierId: tierId,
+    toTierId: tierId,
+    reason: RankingTierChangeReason.MAINTAIN,
+  };
 };

@@ -4,17 +4,19 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, In, LessThanOrEqual } from 'typeorm';
 
 import { getKstNow } from '../common/utils/kst-date';
+import { User } from '../users/entities/user.entity';
 
 import { RankingGroup } from './entities/ranking-group.entity';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
 import { RankingTier } from './entities/ranking-tier.entity';
+import { RankingTierChangeHistory } from './entities/ranking-tier-change-history.entity';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeekStatus } from './entities/ranking-week-status.enum';
 import { RankingWeeklySnapshot } from './entities/ranking-weekly-snapshot.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
-import { buildRankingSnapshots } from './ranking-evaluation.utils';
+import { buildRankingSnapshots, resolveTierChange } from './ranking-evaluation.utils';
 
 @Injectable()
 export class RankingEvaluationService {
@@ -68,6 +70,8 @@ export class RankingEvaluationService {
       const memberRepository = manager.getRepository(RankingGroupMember);
       const weeklyXpRepository = manager.getRepository(RankingWeeklyXp);
       const snapshotRepository = manager.getRepository(RankingWeeklySnapshot);
+      const tierChangeRepository = manager.getRepository(RankingTierChangeHistory);
+      const userRepository = manager.getRepository(User);
 
       const week = await weekRepository.findOne({
         where: { id: weekId },
@@ -87,6 +91,9 @@ export class RankingEvaluationService {
       const tiers = await tierRepository.find({ order: { orderIndex: 'ASC' } });
       const rules = await ruleRepository.find();
       const ruleByTierId = new Map<number, RankingTierRule>(rules.map(rule => [rule.tierId, rule]));
+
+      const tierChanges: RankingTierChangeHistory[] = [];
+      const userUpdates: Array<{ userId: number; tierId: number }> = [];
 
       for (const tier of tiers) {
         const rule = ruleByTierId.get(tier.id);
@@ -146,7 +153,40 @@ export class RankingEvaluationService {
           if (snapshots.length > 0) {
             await snapshotRepository.save(snapshots);
           }
+
+          for (const draft of snapshotDrafts) {
+            const tierChange = resolveTierChange({
+              tiers,
+              tierId: tier.id,
+              status: draft.status,
+            });
+
+            tierChanges.push(
+              tierChangeRepository.create({
+                weekId: week.id,
+                userId: draft.userId,
+                fromTierId: tierChange.fromTierId,
+                toTierId: tierChange.toTierId,
+                reason: tierChange.reason,
+              }),
+            );
+
+            if (tierChange.toTierId !== tierChange.fromTierId) {
+              userUpdates.push({
+                userId: draft.userId,
+                tierId: tierChange.toTierId,
+              });
+            }
+          }
         }
+      }
+
+      if (tierChanges.length > 0) {
+        await tierChangeRepository.save(tierChanges);
+      }
+
+      for (const update of userUpdates) {
+        await userRepository.update(update.userId, { currentTierId: update.tierId });
       }
 
       week.status = RankingWeekStatus.EVALUATED;

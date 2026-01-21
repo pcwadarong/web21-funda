@@ -1,6 +1,8 @@
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
+import { RankingTier } from './entities/ranking-tier.entity';
+import { RankingTierChangeReason } from './entities/ranking-tier-change-reason.enum';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
-import { buildRankingSnapshots } from './ranking-evaluation.utils';
+import { buildRankingSnapshots, resolveTierChange } from './ranking-evaluation.utils';
 
 const createRule = (override: Partial<RankingTierRule>): RankingTierRule =>
   ({
@@ -67,5 +69,53 @@ describe('buildRankingSnapshots', () => {
 
     expect(snapshots[0]?.status).toBe(RankingSnapshotStatus.MAINTAINED);
     expect(snapshots[1]?.status).toBe(RankingSnapshotStatus.DEMOTED);
+  });
+});
+
+describe('resolveTierChange', () => {
+  const tiers = [
+    { id: 1, orderIndex: 1 } as RankingTier,
+    { id: 2, orderIndex: 2 } as RankingTier,
+    { id: 3, orderIndex: 3 } as RankingTier,
+  ];
+
+  it('승급이면 다음 티어로 이동한다', () => {
+    const result = resolveTierChange({
+      tiers,
+      tierId: 2,
+      status: RankingSnapshotStatus.PROMOTED,
+    });
+
+    expect(result.toTierId).toBe(3);
+    expect(result.reason).toBe(RankingTierChangeReason.PROMOTION);
+  });
+
+  it('강등이면 이전 티어로 이동한다', () => {
+    const result = resolveTierChange({
+      tiers,
+      tierId: 2,
+      status: RankingSnapshotStatus.DEMOTED,
+    });
+
+    expect(result.toTierId).toBe(1);
+    expect(result.reason).toBe(RankingTierChangeReason.DEMOTION);
+  });
+
+  it('최상위/최하위에서 승급/강등을 유지 처리한다', () => {
+    const topResult = resolveTierChange({
+      tiers,
+      tierId: 3,
+      status: RankingSnapshotStatus.PROMOTED,
+    });
+    const bottomResult = resolveTierChange({
+      tiers,
+      tierId: 1,
+      status: RankingSnapshotStatus.DEMOTED,
+    });
+
+    expect(topResult.toTierId).toBe(3);
+    expect(bottomResult.toTierId).toBe(1);
+    expect(topResult.reason).toBe(RankingTierChangeReason.MAINTAIN);
+    expect(bottomResult.reason).toBe(RankingTierChangeReason.MAINTAIN);
   });
 });

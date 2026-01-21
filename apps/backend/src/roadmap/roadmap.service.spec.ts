@@ -373,64 +373,66 @@ describe('RoadmapService', () => {
     };
     createQueryBuilderMock.mockReturnValue(quizQueryBuilderMock as never);
 
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+
     const result = await service.getQuizzesByStepId(1);
+
+    randomSpy.mockRestore();
 
     expect(result).toHaveLength(3);
     expect(quizQueryBuilderMock.where).toHaveBeenCalledWith('quiz.step_id = :stepId', {
       stepId: 1,
     });
-    expect(quizQueryBuilderMock.orderBy).toHaveBeenCalledWith('RAND()');
-    expect(quizQueryBuilderMock.limit).toHaveBeenCalledWith(10);
     expect(result[0]).toMatchObject({
-      id: 1,
+      id: 2,
       type: 'MCQ',
       content: {
         question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
         options: [
-          { id: 'c1', text: '<main>' },
           { id: 'c2', text: '<footer>' },
           { id: 'c3', text: '<aside>' },
+          { id: 'c1', text: '<main>' },
         ],
       },
     });
     expect(result[1]).toMatchObject({
-      id: 2,
+      id: 3,
       type: 'MATCHING',
       content: {
         question: '시멘틱 태그 매칭',
         matching_metadata: {
           left: [
-            { id: '<header>', text: '<header>' },
-            { id: '<nav>', text: '<nav>' },
-            { id: '<article>', text: '<article>' },
             { id: '<aside>', text: '<aside>' },
+            { id: '<article>', text: '<article>' },
+            { id: '<nav>', text: '<nav>' },
+            { id: '<header>', text: '<header>' },
           ],
           right: [
-            { id: '문서/섹션의 머리말(제목, 소개 등)', text: '문서/섹션의 머리말(제목, 소개 등)' },
-            { id: '내비게이션 링크 모음', text: '내비게이션 링크 모음' },
-            {
-              id: '독립적으로 배포/재사용 가능한 콘텐츠 단위',
-              text: '독립적으로 배포/재사용 가능한 콘텐츠 단위',
-            },
             {
               id: '보조 콘텐츠(사이드바, 관련 링크 등)',
               text: '보조 콘텐츠(사이드바, 관련 링크 등)',
             },
+            {
+              id: '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+              text: '독립적으로 배포/재사용 가능한 콘텐츠 단위',
+            },
+            { id: '내비게이션 링크 모음', text: '내비게이션 링크 모음' },
+            { id: '문서/섹션의 머리말(제목, 소개 등)', text: '문서/섹션의 머리말(제목, 소개 등)' },
           ],
         },
       },
     });
     expect(result[2]).toMatchObject({
-      id: 3,
+      id: 1,
       type: 'CODE',
       content: {
         question: '네비게이션 영역을 의미하는 시멘틱 요소는?',
         options: [
-          { id: 'c1', text: 'div' },
           { id: 'c2', text: 'nav' },
           { id: 'c3', text: 'section' },
           { id: 'c4', text: 'article' },
           { id: 'c5', text: 'span' },
+          { id: 'c1', text: 'div' },
         ],
         code_metadata: {
           language: 'html',
@@ -458,7 +460,11 @@ describe('RoadmapService', () => {
       { quiz: { id: 102, type: 'MCQ', question: '중간 점검 2', content: {} } },
     ] as CheckpointQuizPool[]);
 
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+
     const result = await service.getQuizzesByStepId(10);
+
+    randomSpy.mockRestore();
 
     expect(checkpointPoolQueryBuilderMock.where).toHaveBeenCalledWith(
       'pool.checkpoint_step_id = :stepId',
@@ -466,8 +472,7 @@ describe('RoadmapService', () => {
         stepId: 10,
       },
     );
-    expect(checkpointPoolQueryBuilderMock.limit).toHaveBeenCalledWith(10);
-    expect(result.map(quiz => quiz.id)).toEqual([101, 102]);
+    expect(result.map(quiz => quiz.id)).toEqual([102, 101]);
   });
 
   it('객관식 정답을 채점한다', async () => {

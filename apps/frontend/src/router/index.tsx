@@ -1,15 +1,17 @@
 import { lazy } from 'react';
-import { createBrowserRouter, redirect } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
-import { AdminRouteGuard } from '@/pages/admin/AdminRouteGuard';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
+import { AdminGuard } from '@/router/guards/AdminGuard';
+import { GuestGuard } from '@/router/guards/GuestGuard';
+import { LoginGuard } from '@/router/guards/LoginGuard';
+import { guestLoader, protectedLoader } from '@/router/loaders/authLoaders';
 // import { ServicePreparation } from '@/pages/common/ServicePreparation';
-import { useAuthStore } from '@/store/authStore';
 
 // Lazy loading 컴포넌트들
 const AdminQuizUpload = lazy(() =>
@@ -39,56 +41,68 @@ const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
 );
 
-const protectedLoader = () => {
-  const { isLoggedIn, isAuthReady } = useAuthStore.getState();
-  if (!isAuthReady) return null;
-  if (!isLoggedIn) return redirect('/login');
-  return null;
-};
-
 export const router = createBrowserRouter([
   {
     path: '/',
     children: [
+      // 공용 페이지
       { index: true, element: <Landing /> },
-      { path: 'login', element: <Login /> },
-      { path: 'auth/check', element: <AuthCheck /> },
 
-      // 사이드바가 있는 페이지들
+      // 비로그인 사용자 전용
       {
-        element: <SidebarSuspenseLayout />,
+        element: <GuestGuard />,
+        loader: guestLoader,
         children: [
-          { path: 'learn', element: <Learn /> },
-          { path: 'learn/select-field', element: <SelectField /> },
-          { path: 'learn/roadmap', element: <Roadmap /> },
-          { path: 'leaderboard', element: <Leaderboard />, loader: protectedLoader },
-          { path: 'profile/:userId?', element: <Profile />, loader: protectedLoader },
-          { path: 'setting', element: <Setting />, loader: protectedLoader },
+          { path: 'login', element: <Login /> },
+          { path: 'auth/check', element: <AuthCheck /> },
+          { path: 'initial-fields', element: <InitialFields /> },
         ],
       },
 
-      // 사이드바가 없는 페이지들
+      // 로그인 사용자 전용
       {
-        element: <PageSuspenseLayout />,
+        element: <LoginGuard />,
+        loader: protectedLoader,
         children: [
+          // 사이드바가 있는 페이지 그룹
           {
-            path: 'quiz',
+            element: <SidebarSuspenseLayout />,
             children: [
-              { index: true, element: <Quiz /> },
-              { path: 'result', element: <QuizResult /> },
-              { path: 'error', element: <QuizResultError /> },
+              { path: 'learn', element: <Learn /> },
+              { path: 'learn/select-field', element: <SelectField /> },
+              { path: 'learn/roadmap', element: <Roadmap /> },
+              { path: 'leaderboard', element: <Leaderboard /> },
+              { path: 'profile/:userId?', element: <Profile /> },
+              { path: 'setting', element: <Setting /> },
             ],
           },
-          { path: 'initial-fields', element: <InitialFields /> },
-          { path: 'unsubscribe', element: <Unsubscribe /> },
+          // 사이드바가 없는 페이지 그룹
           {
-            path: 'admin',
-            element: <AdminRouteGuard />,
-            children: [{ path: 'quizzes/upload', element: <AdminQuizUpload /> }],
+            element: <PageSuspenseLayout />,
+            children: [
+              {
+                path: 'quiz',
+                children: [
+                  { index: true, element: <Quiz /> },
+                  { path: 'result', element: <QuizResult /> },
+                  { path: 'error', element: <QuizResultError /> },
+                ],
+              },
+
+              { path: 'unsubscribe', element: <Unsubscribe /> },
+
+              // 관리자 전용 (이중 보호)
+              {
+                path: 'admin',
+                element: <AdminGuard />,
+                children: [{ path: 'quizzes/upload', element: <AdminQuizUpload /> }],
+              },
+            ],
           },
         ],
       },
 
+      // 404 페이지
       { path: '*', element: <NotFound /> },
     ],
   },

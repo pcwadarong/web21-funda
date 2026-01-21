@@ -8,9 +8,12 @@ import { User } from '../users/entities/user.entity';
 
 import { RankingGroup } from './entities/ranking-group.entity';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
+import { RankingRewardHistory } from './entities/ranking-reward-history.entity';
+import { RankingRewardType } from './entities/ranking-reward-type.enum';
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
 import { RankingTier } from './entities/ranking-tier.entity';
 import { RankingTierChangeHistory } from './entities/ranking-tier-change-history.entity';
+import { RankingTierChangeReason } from './entities/ranking-tier-change-reason.enum';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeekStatus } from './entities/ranking-week-status.enum';
@@ -21,6 +24,19 @@ import { buildRankingSnapshots, resolveTierChange } from './ranking-evaluation.u
 @Injectable()
 export class RankingEvaluationService {
   private readonly logger = new Logger(RankingEvaluationService.name);
+  private readonly promotionRewardByTierOrder = new Map<number, number>([
+    [1, 0],
+    [2, 10],
+    [3, 20],
+    [4, 40],
+    [5, 60],
+    [6, 100],
+  ]);
+
+  private getPromotionRewardAmount(tier: RankingTier): number {
+    // 보상 수량이 확정되기 전까지는 임시 정책을 사용한다.
+    return this.promotionRewardByTierOrder.get(tier.orderIndex) ?? 0;
+  }
 
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
@@ -72,6 +88,7 @@ export class RankingEvaluationService {
       const snapshotRepository = manager.getRepository(RankingWeeklySnapshot);
       const tierChangeRepository = manager.getRepository(RankingTierChangeHistory);
       const userRepository = manager.getRepository(User);
+      const rewardRepository = manager.getRepository(RankingRewardHistory);
 
       const week = await weekRepository.findOne({
         where: { id: weekId },
@@ -91,9 +108,12 @@ export class RankingEvaluationService {
       const tiers = await tierRepository.find({ order: { orderIndex: 'ASC' } });
       const rules = await ruleRepository.find();
       const ruleByTierId = new Map<number, RankingTierRule>(rules.map(rule => [rule.tierId, rule]));
+      const tierById = new Map<number, RankingTier>(tiers.map(tier => [tier.id, tier]));
 
       const tierChanges: RankingTierChangeHistory[] = [];
+      const rewardHistories: RankingRewardHistory[] = [];
       const userUpdates: Array<{ userId: number; tierId: number }> = [];
+      const userRewardUpdates = new Map<number, number>();
 
       for (const tier of tiers) {
         const rule = ruleByTierId.get(tier.id);
@@ -177,12 +197,39 @@ export class RankingEvaluationService {
                 tierId: tierChange.toTierId,
               });
             }
+
+            if (tierChange.reason === RankingTierChangeReason.PROMOTION) {
+              const toTier = tierById.get(tierChange.toTierId);
+              const rewardAmount = toTier ? this.getPromotionRewardAmount(toTier) : 0;
+              rewardHistories.push(
+                rewardRepository.create({
+                  weekId: week.id,
+                  userId: draft.userId,
+                  tierId: tierChange.toTierId,
+                  rewardType: RankingRewardType.DIAMOND,
+                  amount: rewardAmount,
+                }),
+              );
+
+              if (rewardAmount > 0) {
+                const currentAmount = userRewardUpdates.get(draft.userId) ?? 0;
+                userRewardUpdates.set(draft.userId, currentAmount + rewardAmount);
+              }
+            }
           }
         }
       }
 
       if (tierChanges.length > 0) {
         await tierChangeRepository.save(tierChanges);
+      }
+
+      if (rewardHistories.length > 0) {
+        await rewardRepository.save(rewardHistories);
+      }
+
+      for (const [userId, amount] of userRewardUpdates.entries()) {
+        await userRepository.increment({ id: userId }, 'diamondCount', amount);
       }
 
       for (const update of userUpdates) {

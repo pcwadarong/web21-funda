@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { RankingGroup } from './entities/ranking-group.entity';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
+import { RankingRewardHistory } from './entities/ranking-reward-history.entity';
 import { RankingTier } from './entities/ranking-tier.entity';
 import { RankingTierChangeHistory } from './entities/ranking-tier-change-history.entity';
 import { RankingTierRule } from './entities/ranking-tier-rule.entity';
@@ -20,6 +21,7 @@ import { RankingEvaluationService } from './ranking-evaluation.service';
       RankingTierRule,
       RankingGroup,
       RankingGroupMember,
+      RankingRewardHistory,
       RankingTierChangeHistory,
       RankingWeeklyXp,
       RankingWeeklySnapshot,

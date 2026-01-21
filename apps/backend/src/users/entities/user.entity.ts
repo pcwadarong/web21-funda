@@ -67,6 +67,9 @@ export class User {
   @Column({ name: 'max_heart_count', type: 'int', default: 5 })
   maxHeartCount!: number;
 
+  @Column({ name: 'diamond_count', type: 'int', default: 0 })
+  diamondCount!: number;
+
   // 하트는 일단 lazy 방식으로 하트 주기 계산을 위해 마지막 싱크 시각을 저장하도록.. 근데 나중에 수정될 수 있음
   @Column({
     name: 'last_heart_synced_at',

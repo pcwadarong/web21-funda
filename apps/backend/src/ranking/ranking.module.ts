@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { User } from '../users/entities/user.entity';
+
 import { RankingGroup } from './entities/ranking-group.entity';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
 import { RankingRewardHistory } from './entities/ranking-reward-history.entity';
@@ -27,6 +29,7 @@ import { RankingQueryService } from './ranking-query.service';
       RankingTierChangeHistory,
       RankingWeeklyXp,
       RankingWeeklySnapshot,
+      User,
     ]),
   ],
   controllers: [RankingController],

@@ -1,5 +1,6 @@
 import { css, useTheme } from '@emotion/react';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 
 import { CodeBlock } from '@/comp/CodeBlock';
@@ -38,6 +39,7 @@ export const MarkdownRenderer = ({ text, className }: MarkdownRendererProps) => 
     <div css={[markdownContainerStyle, className]}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           p: ({ children }) => <p css={markdownParagraphStyle(theme)}>{children}</p>,
           ul: ({ children }) => <ul css={markdownListStyle(theme)}>{children}</ul>,
@@ -102,7 +104,7 @@ const markdownListItemStyle = (theme: Theme) => css`
 `;
 
 const markdownHeadingStyle = (theme: Theme, level: 1 | 2 | 3 | 4) => css`
-  font-size: ${level === 1 ? '36px' : level === 2 ? '32px' : level === 3 ? '24px' : '16px'};
+  font-size: ${level === 1 ? '32px' : level === 2 ? '24px' : level === 3 ? '20px' : '16px'};
   font-weight: 700;
   margin: 0;
   margin-top: ${level === 1 ? '0' : '16px'};

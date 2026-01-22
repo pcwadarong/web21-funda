@@ -98,7 +98,7 @@ export const Empty: Story = {
 
 export const SingleMember: Story = {
   args: {
-    members: [mockMembers[0]],
+    members: [mockMembers[0]!],
   },
 };
 

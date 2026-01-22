@@ -9,6 +9,7 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import { AiAskModal } from '@/features/ai-ask/components/AiAskModal';
 import ReportModal from '@/features/report/ReportForm';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -99,7 +100,11 @@ export const QuizContentCard = ({
             </Button>
             <Button
               variant="secondary"
-              onClick={() => openModal('AI 질문', <div>AI 답변</div>)}
+              onClick={() =>
+                openModal('AI에게 질문하기', <AiAskModal quiz={question} />, {
+                  maxWidth: 880,
+                })
+              }
               css={flexBtn}
             >
               AI 질문

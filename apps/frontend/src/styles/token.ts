@@ -14,6 +14,7 @@ export const palette = {
   },
   primary: {
     surface: '#b4b5ff8e',
+    semilight: '#D1CEF9',
     light: '#A29AFF',
     main: '#6559EA',
     dark: '#4A3FB8',

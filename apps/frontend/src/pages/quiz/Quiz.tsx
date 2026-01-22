@@ -62,7 +62,6 @@ export const Quiz = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
-  const [showReviewCompletion, setShowReviewCompletion] = useState(false);
   const [showHeartExhaustedModal, setShowHeartExhaustedModal] = useState(false);
 
   const navigate = useNavigate();

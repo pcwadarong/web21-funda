@@ -1,8 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
 
-import type { CorrectAnswerType } from '@/feat/quiz/types';
 import { ModalProvider } from '@/store/modalStore';
 import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';

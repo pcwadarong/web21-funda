@@ -26,3 +26,8 @@ export const DEFAULT_AI_PARAMS = {
 } as const;
 
 export const DEFAULT_CLOVA_PARAMS = DEFAULT_AI_PARAMS;
+
+export const DEFAULT_GEMINI_PARAMS = {
+  ...DEFAULT_AI_PARAMS,
+  maxTokens: 2048,
+} as const;

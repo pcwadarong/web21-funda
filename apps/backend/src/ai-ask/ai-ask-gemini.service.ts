@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 
 import { AiAskPromptService } from './ai-ask-prompt.service';
-import { DEFAULT_AI_PARAMS } from './clova.constants';
+import { DEFAULT_GEMINI_PARAMS } from './clova.constants';
 
 @Injectable()
 export class AiAskGeminiService {
@@ -90,11 +90,11 @@ export class AiAskGeminiService {
       },
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       generationConfig: {
-        temperature: DEFAULT_AI_PARAMS.temperature,
-        topP: DEFAULT_AI_PARAMS.topP,
-        topK: DEFAULT_AI_PARAMS.topK,
-        maxOutputTokens: DEFAULT_AI_PARAMS.maxTokens,
-        stopSequences: DEFAULT_AI_PARAMS.stopBefore,
+        temperature: DEFAULT_GEMINI_PARAMS.temperature,
+        topP: DEFAULT_GEMINI_PARAMS.topP,
+        topK: DEFAULT_GEMINI_PARAMS.topK,
+        maxOutputTokens: DEFAULT_GEMINI_PARAMS.maxTokens,
+        stopSequences: DEFAULT_GEMINI_PARAMS.stopBefore,
       },
     };
   }

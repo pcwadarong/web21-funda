@@ -213,6 +213,30 @@ export class AiAskClovaService {
       }
     }
 
+    const remaining = buffer + decoder.decode();
+    if (remaining.length > 0) {
+      const lines = remaining.split('\n');
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine.startsWith('data:')) {
+          continue;
+        }
+
+        const data = trimmedLine.substring(5).trim();
+        if (data === '[DONE]' || data.includes('[DONE]')) {
+          continue;
+        }
+
+        const chunk = this.extractStreamChunk(data);
+        if (chunk.length === 0) {
+          continue;
+        }
+
+        fullContent += chunk;
+        onChunk(chunk);
+      }
+    }
+
     return fullContent;
   }
 

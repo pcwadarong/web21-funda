@@ -180,6 +180,14 @@ export class AiAskGeminiService {
       }
     }
 
+    const remaining = buffer + decoder.decode();
+    if (remaining.length > 0) {
+      this.parseRemainingGeminiBuffer(remaining, chunk => {
+        fullContent += chunk;
+        onChunk(chunk);
+      });
+    }
+
     return fullContent;
   }
 
@@ -202,5 +210,41 @@ export class AiAskGeminiService {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), ms);
     return { controller, timeoutId };
+  }
+
+  /**
+   * 남은 버퍼에서 JSON 조각을 파싱한다.
+   *
+   * @param buffer 종료 시 잔여 버퍼
+   * @param onChunk 파싱한 조각 처리
+   */
+  private parseRemainingGeminiBuffer(buffer: string, onChunk: (chunk: string) => void): void {
+    let startIndex: number | null = null;
+    let braceCount = 0;
+
+    for (let i = 0; i < buffer.length; i += 1) {
+      const char = buffer[i];
+      if (char === '{') {
+        if (braceCount === 0) {
+          startIndex = i;
+        }
+        braceCount += 1;
+      } else if (char === '}') {
+        braceCount -= 1;
+        if (braceCount === 0 && startIndex !== null) {
+          const jsonStr = buffer.substring(startIndex, i + 1);
+          startIndex = null;
+          try {
+            const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+            const chunk = this.extractContent(parsed);
+            if (chunk) {
+              onChunk(chunk);
+            }
+          } catch {
+            // 종료 시 잔여 버퍼는 일부 손상될 수 있어 무시한다.
+          }
+        }
+      }
+    }
   }
 }

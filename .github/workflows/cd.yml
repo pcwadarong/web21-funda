@@ -52,11 +52,11 @@ jobs:
             APP_COMPOSE=docker/production/docker-compose.deploy.yml
             MONITOR_COMPOSE=docker/monitoring/docker-compose.monitoring.production.yml
 
-            docker compose -f $APP_COMPOSE pull
-            docker compose -f $MONITOR_COMPOSE pull
+            docker compose --env-file .env -f $APP_COMPOSE pull
+            docker compose --env-file .env -f $MONITOR_COMPOSE pull
 
-            docker compose -f $APP_COMPOSE up -d
-            docker compose -f $MONITOR_COMPOSE up -d
+            docker compose --env-file .env -f $APP_COMPOSE up -d
+            docker compose --env-file .env -f $MONITOR_COMPOSE up -d
 
             # 7. DB 마이그레이션
             docker compose -f $APP_COMPOSE exec -T backend \

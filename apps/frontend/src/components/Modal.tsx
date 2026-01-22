@@ -6,14 +6,15 @@ interface ModalProps {
   title: string;
   content: React.ReactNode;
   onClose: () => void;
+  maxWidth?: number;
 }
 
-export const Modal = ({ title, content, onClose }: ModalProps) => {
+export const Modal = ({ title, content, onClose, maxWidth = 500 }: ModalProps) => {
   const theme = useTheme();
 
   return (
     <div css={modalOverlayStyle} onClick={onClose}>
-      <div css={modalContentStyle(theme)} onClick={e => e.stopPropagation()}>
+      <div css={modalContentStyle(theme, maxWidth)} onClick={e => e.stopPropagation()}>
         <div css={modalHeaderStyle}>
           <h2 css={modalTitleStyle(theme)}>{title}</h2>
           <button css={modalCloseButtonStyle} onClick={onClose}>
@@ -39,14 +40,14 @@ const modalOverlayStyle = css`
   z-index: 1000;
 `;
 
-const modalContentStyle = (theme: Theme) => css`
+const modalContentStyle = (theme: Theme, maxWidth: number) => css`
   background: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.large};
   padding: 24px;
   width: 90%;
-  max-width: 500px;
+  max-width: ${maxWidth}px;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   color: ${theme.colors.text.strong};
 `;

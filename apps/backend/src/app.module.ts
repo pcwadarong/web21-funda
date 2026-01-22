@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AiAskModule } from './ai-ask/ai-ask.module';
 import { AuthModule } from './auth/auth.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
 import { createTypeOrmOptions } from './config/typeorm.config';
@@ -34,6 +35,7 @@ import { AppService } from './app.service';
     ScheduleModule.forRoot(),
     NotificationModule,
     RankingModule,
+    AiAskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

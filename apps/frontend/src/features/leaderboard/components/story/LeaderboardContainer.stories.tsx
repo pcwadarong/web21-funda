@@ -126,7 +126,9 @@ const meta: Meta<typeof LeaderboardContainer> = {
   decorators: [
     Story => (
       <ThemeProvider theme={lightTheme}>
-        <div style={{ backgroundColor: lightTheme.colors.surface.default, minHeight: '100vh' }}>
+        <div
+          style={{ background: 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)' }}
+        >
           <Story />
         </div>
       </ThemeProvider>

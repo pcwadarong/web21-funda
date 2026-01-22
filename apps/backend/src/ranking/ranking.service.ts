@@ -220,36 +220,60 @@ export class RankingService {
   ): Promise<RankingGroup> {
     const groupRepository = manager.getRepository(RankingGroup);
     const memberRepository = manager.getRepository(RankingGroupMember);
+    const maxRetryCount = 2;
+    let attemptCount = 0;
 
-    const lastGroup = await groupRepository.findOne({
-      where: { weekId: week.id, tierId: tier.id },
-      order: { groupIndex: 'DESC' },
-      lock: { mode: 'pessimistic_write' },
-    });
+    while (attemptCount <= maxRetryCount) {
+      const lastGroup = await groupRepository.findOne({
+        where: { weekId: week.id, tierId: tier.id },
+        order: { groupIndex: 'DESC' },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (!lastGroup) {
-      const created = groupRepository.create({
+      if (!lastGroup) {
+        const created = groupRepository.create({
+          weekId: week.id,
+          tierId: tier.id,
+          groupIndex: 1,
+          capacity: tier.maxGroupSize,
+        });
+
+        try {
+          return await groupRepository.save(created);
+        } catch (error) {
+          if (!(error instanceof QueryFailedError)) {
+            throw error;
+          }
+
+          // 동시 생성으로 유니크 제약이 발생하면 다시 시도한다.
+          attemptCount += 1;
+          continue;
+        }
+      }
+
+      const memberCount = await memberRepository.count({ where: { groupId: lastGroup.id } });
+      if (memberCount < lastGroup.capacity) {
+        return lastGroup;
+      }
+
+      const nextGroup = groupRepository.create({
         weekId: week.id,
         tierId: tier.id,
-        groupIndex: 1,
+        groupIndex: lastGroup.groupIndex + 1,
         capacity: tier.maxGroupSize,
       });
 
-      return groupRepository.save(created);
+      try {
+        return await groupRepository.save(nextGroup);
+      } catch (error) {
+        if (!(error instanceof QueryFailedError)) {
+          throw error;
+        }
+
+        attemptCount += 1;
+      }
     }
 
-    const memberCount = await memberRepository.count({ where: { groupId: lastGroup.id } });
-    if (memberCount < lastGroup.capacity) {
-      return lastGroup;
-    }
-
-    const nextGroup = groupRepository.create({
-      weekId: week.id,
-      tierId: tier.id,
-      groupIndex: lastGroup.groupIndex + 1,
-      capacity: tier.maxGroupSize,
-    });
-
-    return groupRepository.save(nextGroup);
+    throw new Error('경쟁 상태로 그룹 생성에 실패했습니다.');
   }
 }

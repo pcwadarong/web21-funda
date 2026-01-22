@@ -38,6 +38,15 @@ jobs:
             "${{ secrets.MAIL_PASS }}" \
             "${{ secrets.GRAFANA_ROOT_URL }}" > .env
 
+            # docker compose 변수 치환이 확실히 동작하도록 환경 변수를 내보냄
+            export NCR_REGISTRY="${{ secrets.NCR_REGISTRY }}"
+            export DB_USER="${{ secrets.DB_USER }}"
+            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            export GRAFANA_ADMIN_PASSWORD="${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+            export MAIL_USER="${{ secrets.MAIL_USER }}"
+            export MAIL_PASS="${{ secrets.MAIL_PASS }}"
+            export GRAFANA_ROOT_URL="${{ secrets.GRAFANA_ROOT_URL }}"
+
             # 3. BE 전용 환경 변수 주입
             mkdir -p apps/backend
             printf '%s' "${{ secrets.ENV_BE_PROD }}" > apps/backend/.env.production
@@ -59,7 +68,7 @@ jobs:
             docker compose --env-file .env -f $MONITOR_COMPOSE up -d
 
             # 7. DB 마이그레이션
-            docker compose -f $APP_COMPOSE exec -T backend \
+            docker compose --env-file .env -f $APP_COMPOSE exec -T backend \
               node ./node_modules/typeorm/cli.js -d dist/config/typeorm.data-source.js migration:run
 
             # 8. 정리

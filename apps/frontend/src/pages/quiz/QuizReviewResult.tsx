@@ -7,7 +7,7 @@ import { ReviewCompletionEffect } from '@/feat/quiz/components/ReviewCompletionE
  * 리뷰 완료 결과 페이지
  * ReviewCompletionEffect를 표시하고 일정 시간 후 학습 페이지로 이동합니다.
  */
-export const ReviewResult = () => {
+export const QuizReviewResult = () => {
   const navigate = useNavigate();
 
   useEffect(() => {

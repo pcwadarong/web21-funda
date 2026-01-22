@@ -1,9 +1,10 @@
 import { ThemeProvider } from '@emotion/react';
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RankingRow } from '@/feat/leaderboard/components/RankingRow';
 import type { RankingMember } from '@/feat/leaderboard/types';
+import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
 
 // SVGIcon 모킹
@@ -12,6 +13,21 @@ vi.mock('@/components/SVGIcon', () => ({
     <span data-testid={`svg-icon-${icon}`} data-style={JSON.stringify(style)} />
   ),
 }));
+
+const ensureMatchMedia = () => {
+  if (typeof window.matchMedia === 'function') return;
+
+  window.matchMedia = vi.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+};
 
 const mockMember: RankingMember = {
   rank: 1,
@@ -25,14 +41,22 @@ const mockMember: RankingMember = {
 
 const renderRankingRow = (member: RankingMember = mockMember) =>
   render(
-    <ThemeProvider theme={lightTheme}>
-      <RankingRow member={member} />
-    </ThemeProvider>,
+    <ThemeStoreProvider>
+      <ThemeProvider theme={lightTheme}>
+        <RankingRow member={member} />
+      </ThemeProvider>
+    </ThemeStoreProvider>,
   );
 
 describe('RankingRow 컴포넌트 테스트', () => {
+  beforeEach(() => {
+    localStorage.setItem('theme', 'light');
+    ensureMatchMedia();
+  });
+
   afterEach(() => {
     cleanup();
+    localStorage.removeItem('theme');
   });
 
   it('기본 렌더링이 올바르게 동작한다', () => {
@@ -171,14 +195,14 @@ describe('RankingRow 컴포넌트 테스트', () => {
       expect(screen.getByText('john doe')).toBeInTheDocument();
     });
 
-    it('이름이 비어있을 때 "알수없음"을 표시한다', () => {
+    it('이름이 비어있을 때 "??"을 표시한다', () => {
       renderRankingRow({
         ...mockMember,
         displayName: '',
         profileImageUrl: null,
       });
 
-      expect(screen.getByText('알수없음')).toBeInTheDocument();
+      expect(screen.getByText('??')).toBeInTheDocument();
     });
   });
 });

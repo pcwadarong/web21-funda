@@ -13,6 +13,14 @@ import { darkTheme, lightTheme } from '@/styles/theme';
 
 const queryClient = new QueryClient();
 
+declare global {
+  interface Window {
+    __TANSTACK_QUERY_CLIENT__: QueryClient;
+  }
+}
+
+window.__TANSTACK_QUERY_CLIENT__ = queryClient;
+
 const APP_ERROR_FALLBACK = {
   title: '서비스 이용에 불편을 드려 죄송합니다.',
   description: '일시적인 오류가 발생했습니다.',

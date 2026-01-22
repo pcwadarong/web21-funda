@@ -19,10 +19,7 @@ interface MarkdownRendererProps {
  * @returns 언어 문자열 또는 null
  */
 const extractLanguage = (className?: string | null): string | null => {
-  if (!className) {
-    return null;
-  }
-
+  if (!className) return null;
   const match = className.match(/language-(\w+)/);
   return match && match[1] ? match[1] : null;
 };
@@ -31,7 +28,7 @@ const extractLanguage = (className?: string | null): string | null => {
  * 마크다운 텍스트를 렌더링하는 공통 컴포넌트
  *
  * @param text 마크다운 텍스트
- * @param className 추가 CSS 클래스
+ * @param customCss 추가 CSS 클래스
  *
  * `@security` rehypeRaw 플러그인으로 raw HTML을 렌더링합니다.
  * 신뢰할 수 없는 사용자 입력은 sanitize 후 전달해야 합니다.

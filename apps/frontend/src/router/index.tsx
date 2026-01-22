@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
           },
           // 사이드바가 없는 페이지 그룹
           {
-            element: <PageSuspenseLayout />,
+            element: <SidebarSuspenseLayout />,
             children: [
               // 관리자 전용 (이중 보호)
               {

@@ -81,6 +81,7 @@ export const AdminQuizUploadContainer = memo(
 
 const outerContainerStyle = css`
   display: flex;
+  width: 100%;
   justify-content: center;
   align-items: flex-start;
   padding: 40px 24px;

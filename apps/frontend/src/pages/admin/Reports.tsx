@@ -93,6 +93,11 @@ const containerStyle = css`
   align-items: flex-start;
   padding: 40px 24px;
   min-height: 100vh;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;
 
 const cardStyle = (theme: Theme) => css`
@@ -102,6 +107,11 @@ const cardStyle = (theme: Theme) => css`
   padding: 32px;
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    border-radius: 0;
+    height: 100vh;
+  }
 `;
 
 const titleStyle = (theme: Theme) => css`
@@ -128,7 +138,7 @@ const cellStyle = (theme: Theme) => css`
   padding: 12px 16px;
   border: 1px solid ${theme.colors.border.default};
   color: ${theme.colors.text.default};
-  font-size: ${theme.typography['20Medium'].fontSize};
+  font-size: ${theme.typography['16Medium'].fontSize};
   text-align: left;
   word-break: break-word;
 

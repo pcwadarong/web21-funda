@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 
 import { getKstNextDayStart, getKstNow } from '../common/utils/kst-date';
 import { QuizContentService } from '../common/utils/quiz-content.service';
+import { DEFAULT_SCORE_WEIGHTS } from '../common/utils/score-weights';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 import { Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
@@ -264,11 +265,7 @@ export class ProgressService {
 
   private mergeScoreWeights(options?: Partial<ScoreCalculationOptions>): ScoreCalculationOptions {
     return {
-      baseScorePerQuiz: 3,
-      correctBonus: 0,
-      wrongBonus: 0,
-      difficultyMultiplier: 0,
-      speedBonus: 0,
+      ...DEFAULT_SCORE_WEIGHTS,
       ...(options ?? {}),
     };
   }

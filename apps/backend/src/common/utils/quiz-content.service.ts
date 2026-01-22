@@ -96,7 +96,7 @@ export class QuizContentService {
       return undefined;
     }
 
-    return options;
+    return this.shuffleArray(options);
   }
 
   /**
@@ -140,8 +140,8 @@ export class QuizContentService {
     }
 
     const record = value as Record<string, unknown>;
-    const left = this.normalizeMatchingItems(record.left);
-    const right = this.normalizeMatchingItems(record.right);
+    const left = this.shuffleArray(this.normalizeMatchingItems(record.left));
+    const right = this.shuffleArray(this.normalizeMatchingItems(record.right));
 
     if (left.length === 0 || right.length === 0) {
       return undefined;
@@ -245,5 +245,24 @@ export class QuizContentService {
       return String(value).trim();
     }
     return null;
+  }
+
+  /**
+   * 노출 순서가 정답 단서로 활용되지 않도록 보기 순서를 섞어준다.
+   *
+   * @param array 섞을 배열
+   * @returns 섞인 배열 (원본 보존)
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled: T[] = [...array];
+
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i]!;
+      shuffled[i] = shuffled[j]!;
+      shuffled[j] = temp;
+    }
+
+    return shuffled;
   }
 }

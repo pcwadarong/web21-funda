@@ -1,7 +1,9 @@
 import { css, useTheme } from '@emotion/react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
+import { apiFetch } from '@/services/api';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
@@ -17,6 +19,40 @@ export const Sidebar = () => {
   const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
+  const [tierName, setTierName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTier = async () => {
+      if (!isLoggedIn || !user) {
+        setTierName(null);
+        return;
+      }
+
+      try {
+        const result = await apiFetch.get<RankingMeResult>('/ranking/me');
+        if (!isMounted) {
+          return;
+        }
+        if (result.tier) {
+          setTierName(result.tier.name);
+        } else {
+          setTierName(null);
+        }
+      } catch {
+        if (isMounted) {
+          setTierName(null);
+        }
+      }
+    };
+
+    fetchTier();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoggedIn, user]);
 
   // 활성화된 네비게이션 아이템 찾기
   const activeItemId = NAV_ITEMS.find(item => {
@@ -70,7 +106,7 @@ export const Sidebar = () => {
           </div>
           <div css={userInfoStyle}>
             <div css={userNameStyle(theme)}>{user.displayName}</div>
-            <div css={userLevelStyle(theme)}>{user.experience} XP</div>
+            <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
           </div>
         </div>
       )}
@@ -304,3 +340,20 @@ const userLevelStyle = (theme: Theme) => css`
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${theme.colors.text.weak};
 `;
+
+interface RankingMeResult {
+  tier: {
+    id: number;
+    name: string;
+    orderIndex: number;
+  } | null;
+  diamondCount: number;
+}
+
+const buildTierLabel = (tierName: string | null) => {
+  if (!tierName) {
+    return '티어 정보 없음';
+  }
+
+  return `${tierName} 티어`;
+};

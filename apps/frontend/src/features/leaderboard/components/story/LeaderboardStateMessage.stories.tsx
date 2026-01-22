@@ -40,7 +40,7 @@ const meta: Meta<typeof LeaderboardStateMessage> = {
 export default meta;
 type Story = StoryObj<typeof LeaderboardStateMessage>;
 
-export const Error: Story = {
+export const ErrorState: Story = {
   args: {
     state: 'error',
   },

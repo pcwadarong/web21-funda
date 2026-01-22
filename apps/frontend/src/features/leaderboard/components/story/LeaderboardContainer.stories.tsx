@@ -154,7 +154,7 @@ export const Loading: Story = {
   },
 };
 
-export const Error: Story = {
+export const ErrorState: Story = {
   args: {
     weeklyRanking: null,
     isLoading: false,

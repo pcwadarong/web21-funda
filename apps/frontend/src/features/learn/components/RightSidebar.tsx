@@ -108,9 +108,10 @@ export const LearnRightSidebar = ({
     navigate('/quiz?mode=review', {
       state: {
         reviewQuizzes: quizzes,
+        reviewFieldSlug: fieldSlug,
       },
     });
-  }, [isLoggedIn, navigate, showToast, reviewQueueData, refetchReviewQueue]);
+  }, [fieldSlug, isLoggedIn, navigate, refetchReviewQueue, reviewQueueData, showToast]);
 
   if (!isAuthReady) return null;
   if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
@@ -177,7 +178,7 @@ export const LearnRightSidebar = ({
         </div>
         {isLoggedIn && user ? (
           <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
-            {`${reviewCount}개 문제 복습 필요`}
+            복습 시작
           </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>

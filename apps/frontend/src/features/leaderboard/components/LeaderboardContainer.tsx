@@ -80,11 +80,9 @@ export const LeaderboardContainer = ({
             </section>
 
             <section css={leaderboardCardStyle(theme)} data-section="ranking">
-              <div css={zoneSectionStyle}>
-                <MemberList members={groupedMembers!.promotion} />
-              </div>
-              <div css={zoneSectionStyle}>
-                <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+              {weeklyRanking!.tier.name !== 'MASTER' && (
+                <div css={zoneSectionStyle}>
+                  <MemberList members={groupedMembers!.promotion} />
                   <SVGIcon
                     icon="ArrowLeft"
                     style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
@@ -92,19 +90,26 @@ export const LeaderboardContainer = ({
                   />
                   <span>승급권</span>
                 </div>
-                <MemberList members={groupedMembers!.maintain} />
-              </div>
+              )}
               <div css={zoneSectionStyle}>
-                <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
-                  <SVGIcon
-                    icon="ArrowLeft"
-                    style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
-                    size="sm"
-                  />
-                  <span>강등권</span>
+                <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                  <MemberList members={groupedMembers!.maintain} />
                 </div>
-                <MemberList members={groupedMembers!.demotion} />
               </div>
+              {/* BRONZE가 아닐 때만 강등권 표시 */}
+              {weeklyRanking!.tier.name !== 'BRONZE' && (
+                <div css={zoneSectionStyle}>
+                  <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                    <SVGIcon
+                      icon="ArrowLeft"
+                      style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
+                      size="sm"
+                    />
+                    <span>강등권</span>
+                  </div>
+                  <MemberList members={groupedMembers!.demotion} />
+                </div>
+              )}
             </section>
           </>
         )}

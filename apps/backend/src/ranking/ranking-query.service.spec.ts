@@ -7,6 +7,7 @@ import { RankingGroup } from './entities/ranking-group.entity';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
 import { RankingTier } from './entities/ranking-tier.entity';
 import { RankingTierName } from './entities/ranking-tier.enum';
+import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
 import { RankingQueryService } from './ranking-query.service';
@@ -17,6 +18,7 @@ describe('RankingQueryService', () => {
   let memberRepository: Partial<Repository<RankingGroupMember>>;
   let weeklyXpRepository: Partial<Repository<RankingWeeklyXp>>;
   let tierRepository: Partial<Repository<RankingTier>>;
+  let tierRuleRepository: Partial<Repository<RankingTierRule>>;
   let userRepository: Partial<Repository<User>>;
 
   beforeEach(() => {
@@ -24,6 +26,7 @@ describe('RankingQueryService', () => {
     memberRepository = { findOne: jest.fn(), find: jest.fn() };
     weeklyXpRepository = { find: jest.fn() };
     tierRepository = { findOne: jest.fn() };
+    tierRuleRepository = { findOne: jest.fn() };
     userRepository = { findOne: jest.fn() };
 
     service = new RankingQueryService(
@@ -31,6 +34,7 @@ describe('RankingQueryService', () => {
       memberRepository as Repository<RankingGroupMember>,
       weeklyXpRepository as Repository<RankingWeeklyXp>,
       tierRepository as Repository<RankingTier>,
+      tierRuleRepository as Repository<RankingTierRule>,
       userRepository as Repository<User>,
     );
   });
@@ -56,6 +60,14 @@ describe('RankingQueryService', () => {
   it('주간 랭킹을 그룹 기준으로 정렬해서 반환한다', async () => {
     const week = { id: 1, weekKey: '2025-01' } as RankingWeek;
     const tier = { id: 3, name: RankingTierName.GOLD, orderIndex: 3 } as RankingTier;
+    const tierRule = {
+      tierId: 3,
+      promoteMinXp: 0,
+      demoteMinXp: 0,
+      promoteRatio: '0.5',
+      demoteRatio: '0.5',
+      isMaster: false,
+    } as RankingTierRule;
     const group = { id: 7, groupIndex: 1 } as RankingGroup;
     const member = { weekId: 1, userId: 1, tier, group, groupId: 7 } as RankingGroupMember;
     const members = [
@@ -71,11 +83,13 @@ describe('RankingQueryService', () => {
     (memberRepository.findOne as jest.Mock).mockResolvedValue(member);
     (memberRepository.find as jest.Mock).mockResolvedValue(members);
     (weeklyXpRepository.find as jest.Mock).mockResolvedValue(weeklyXpList);
+    (tierRuleRepository.findOne as jest.Mock).mockResolvedValue(tierRule);
 
     const result = await service.getWeeklyRanking(1, '2025-01');
 
     expect(result.members[0]?.userId).toBe(1);
     expect(result.members[0]?.rank).toBe(1);
+    expect(result.members[0]?.rankZone).toBe('PROMOTION');
     expect(result.myRank).toBe(1);
     expect(result.tier?.id).toBe(3);
   });

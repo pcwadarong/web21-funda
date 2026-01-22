@@ -13,6 +13,7 @@ export interface WeeklyRankingEntry {
   xp: number;
   rank: number;
   isMe: boolean;
+  rankZone: RankingZone;
 }
 
 export interface WeeklyRankingResult {
@@ -29,3 +30,5 @@ export interface MyTierResult {
   tier: RankingTierSummary | null;
   diamondCount: number;
 }
+
+export type RankingZone = 'PROMOTION' | 'MAINTAIN' | 'DEMOTION';

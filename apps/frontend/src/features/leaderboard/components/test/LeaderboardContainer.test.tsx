@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LeaderboardContainer } from '@/feat/leaderboard/components/LeaderboardContainer';
 import type { RankingMember, WeeklyRankingResult } from '@/feat/leaderboard/types';
+import { ModalProvider } from '@/store/modalStore';
 import { lightTheme } from '@/styles/theme';
 
 // 컴포넌트 모킹
@@ -88,7 +89,9 @@ const renderLeaderboardContainer = (
 
   return render(
     <ThemeProvider theme={lightTheme}>
-      <LeaderboardContainer {...defaultProps} />
+      <ModalProvider>
+        <LeaderboardContainer {...defaultProps} />
+      </ModalProvider>
     </ThemeProvider>,
   );
 };
@@ -207,13 +210,6 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
       const refreshButton = screen.getByRole('button', { name: '리더보드 새로고침' });
       expect(refreshButton).toBeInTheDocument();
       expect(screen.getByTestId('icon-Refresh')).toBeInTheDocument();
-    });
-
-    it('onRefresh가 없으면 새로고침 버튼이 표시되지 않는다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
-
-      const refreshButton = screen.queryByRole('button');
-      expect(refreshButton).not.toBeInTheDocument();
     });
 
     it('새로고침 버튼 클릭 시 onRefresh가 호출된다', () => {

@@ -79,3 +79,66 @@ export const getKstNextDayStart = (date: Date): Date => {
 
   return new Date(Date.UTC(year, month, day + 1, 0, 0, 0, 0));
 };
+
+interface KstWeekInfo {
+  weekKey: string;
+  startsAt: Date;
+  endsAt: Date;
+}
+
+const getIsoWeekInfo = (date: Date): { weekYear: number; weekNumber: number } => {
+  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayOfWeek = target.getUTCDay();
+  const isoDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+  target.setUTCDate(target.getUTCDate() + 4 - isoDay);
+
+  const weekYear = target.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(weekYear, 0, 1));
+  const diffDays = Math.floor((target.getTime() - yearStart.getTime()) / 86400000) + 1;
+  const weekNumber = Math.ceil(diffDays / 7);
+
+  return { weekYear, weekNumber };
+};
+
+const getKstWeekStart = (date: Date): Date => {
+  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayOfWeek = base.getUTCDay();
+  const isoDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+  base.setUTCDate(base.getUTCDate() - (isoDay - 1));
+  base.setUTCHours(0, 0, 0, 0);
+
+  return base;
+};
+
+/**
+ * KST 기준 주차 키(YYYY-WW)를 반환한다.
+ *
+ * @param date 기준 시각
+ * @returns 주차 키
+ */
+export const getKstWeekKey = (date: Date): string => {
+  const { weekYear, weekNumber } = getIsoWeekInfo(date);
+  const paddedWeek = String(weekNumber).padStart(2, '0');
+
+  return `${weekYear}-${paddedWeek}`;
+};
+
+/**
+ * KST 기준 주차 정보(주차 키와 시작/종료 시각)를 계산한다.
+ *
+ * @param date 기준 시각
+ * @returns 주차 정보
+ */
+export const getKstWeekInfo = (date: Date): KstWeekInfo => {
+  const startsAt = getKstWeekStart(date);
+  const endsAt = new Date(startsAt);
+  endsAt.setUTCDate(endsAt.getUTCDate() + 7);
+
+  return {
+    weekKey: getKstWeekKey(date),
+    startsAt,
+    endsAt,
+  };
+};

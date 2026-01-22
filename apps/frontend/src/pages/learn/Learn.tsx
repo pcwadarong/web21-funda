@@ -1,13 +1,14 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { Modal } from '@/comp/Modal';
 import { LearnContainer } from '@/feat/learn/components/LearnContainer';
 import { useLearnUnits } from '@/feat/learn/hooks/useLearnUnits';
 import type { stepType } from '@/feat/learn/types';
 import { useFieldUnitsQuery } from '@/hooks/queries/fieldQueries';
 import { usePrefetchQuizzesByStep } from '@/hooks/queries/quizQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { useIsLoggedIn } from '@/store/authStore';
+import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import { storageUtil } from '@/utils/storage';
 
@@ -15,6 +16,9 @@ export const Learn = () => {
   const { showToast } = useToast();
   const { updateUIState } = useStorage();
   const navigate = useNavigate();
+  const user = useAuthUser();
+  const [showHeartModal, setShowHeartModal] = useState(false);
+  const [heartModalMessage, setHeartModalMessage] = useState('');
   const {
     fieldName,
     setFieldName,
@@ -75,6 +79,15 @@ export const Learn = () => {
         return;
       }
 
+      // 하트 필요 스텝 (orderIndex 4, 5)인 경우 하트 체크
+      if ((step.orderIndex === 4 || step.orderIndex === 5) && isLoggedIn && user) {
+        if (user.heartCount <= 0) {
+          setHeartModalMessage('하트가 채워지면 다시 도전해주세요!');
+          setShowHeartModal(true);
+          return;
+        }
+      }
+
       updateUIState({
         current_quiz_step_id: step.id,
         current_step_order_index: step.orderIndex,
@@ -86,11 +99,18 @@ export const Learn = () => {
 
       navigate('/quiz');
     },
-    [navigate, showInProgressToast, updateUIState, units],
+    [navigate, showInProgressToast, updateUIState, units, isLoggedIn, user],
   );
 
   return (
     <>
+      {showHeartModal && (
+        <Modal
+          title="알림"
+          content={<div style={{ fontSize: '18px', fontWeight: '600' }}>{heartModalMessage}</div>}
+          onClose={() => setShowHeartModal(false)}
+        />
+      )}
       <LearnContainer
         fieldName={fieldName}
         units={units}

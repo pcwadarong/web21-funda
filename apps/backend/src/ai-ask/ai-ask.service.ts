@@ -6,8 +6,12 @@ import { Quiz } from '../roadmap/entities/quiz.entity';
 
 import { AiQuestionListQueryDto } from './dto/ai-question-list-query.dto';
 import { CreateAiQuestionDto } from './dto/create-ai-question.dto';
-import { AiAnswerStatus, AiQuestionAnswer } from './entities/ai-question-answer.entity';
-import { AiAskClovaService } from './ai-ask-clova.service';
+import {
+  AiAnswerStatus,
+  AiProviderType,
+  AiQuestionAnswer,
+} from './entities/ai-question-answer.entity';
+import { AiAskProviderService } from './ai-ask-provider.service';
 
 export interface AiQuestionAnswerView {
   id: number;
@@ -31,7 +35,7 @@ export class AiAskService {
     private readonly aiQuestionAnswerRepository: Repository<AiQuestionAnswer>,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
-    private readonly aiAskClovaService: AiAskClovaService,
+    private readonly aiAskProviderService: AiAskProviderService,
   ) {}
 
   /**
@@ -86,18 +90,20 @@ export class AiAskService {
       throw new BadRequestException('질문 내용이 비어 있습니다.');
     }
 
+    const provider = this.resolveProviderType();
     const entity = this.aiQuestionAnswerRepository.create({
       quiz,
       userId,
       userQuestion: trimmedQuestion,
       aiAnswer: null,
+      provider,
       status: AiAnswerStatus.PENDING,
     });
 
     const saved = await this.aiQuestionAnswerRepository.save(entity);
 
     try {
-      const aiAnswer = await this.aiAskClovaService.requestAnswer(quiz, trimmedQuestion);
+      const aiAnswer = await this.aiAskProviderService.requestAnswer(quiz, trimmedQuestion);
       saved.aiAnswer = aiAnswer;
       saved.status = AiAnswerStatus.COMPLETED;
     } catch {
@@ -130,11 +136,13 @@ export class AiAskService {
       throw new BadRequestException('질문 내용이 비어 있습니다.');
     }
 
+    const provider = this.resolveProviderType();
     const entity = this.aiQuestionAnswerRepository.create({
       quiz,
       userId,
       userQuestion: trimmedQuestion,
       aiAnswer: null,
+      provider,
       status: AiAnswerStatus.PENDING,
     });
 
@@ -180,7 +188,7 @@ export class AiAskService {
     userId: number,
   ): Promise<AiQuestionAnswerView> {
     try {
-      const aiAnswer = await this.aiAskClovaService.requestAnswerStream(
+      const aiAnswer = await this.aiAskProviderService.requestAnswerStream(
         quiz,
         userQuestion,
         onChunk,
@@ -193,5 +201,13 @@ export class AiAskService {
 
     const updated = await this.aiQuestionAnswerRepository.save(entity);
     return this.toView(updated, userId);
+  }
+
+  private resolveProviderType(): AiProviderType {
+    const provider = this.aiAskProviderService.getProviderType();
+    if (provider === 'gemini') {
+      return AiProviderType.GEMINI;
+    }
+    return AiProviderType.CLOVA;
   }
 }

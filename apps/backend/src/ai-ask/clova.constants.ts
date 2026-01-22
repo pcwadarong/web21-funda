@@ -14,7 +14,7 @@ export const CLOVA_SYSTEM_PROMPT = `
 6) 답변은 한국어로 작성하고, 문장을 너무 짧게 끊지 않습니다. 적절한 길이로 설명합니다.
 `;
 
-export const DEFAULT_CLOVA_PARAMS = {
+export const DEFAULT_AI_PARAMS = {
   topP: 0.85,
   topK: 0,
   maxTokens: 900,
@@ -24,3 +24,5 @@ export const DEFAULT_CLOVA_PARAMS = {
   seed: 0,
   includeAiFilters: true,
 } as const;
+
+export const DEFAULT_CLOVA_PARAMS = DEFAULT_AI_PARAMS;

@@ -100,70 +100,79 @@ export class AiAskGeminiService {
   }
 
   private extractContent(raw: unknown): string {
-    const object = raw as Record<string, unknown>;
-    const candidates = object?.candidates as Array<Record<string, unknown>> | undefined;
-    const parts = candidates?.[0]?.content as Record<string, unknown> | undefined;
-    const contentParts = parts?.parts as Array<Record<string, unknown>> | undefined;
-    const text = contentParts
-      ?.map(part => part.text)
-      .filter(Boolean)
-      .join('');
+    // raw가 배열/객체 형태 모두 올 수 있으므로 후보 객체만 안전하게 추출한다.
+    const data = raw as Record<string, unknown>;
+    const candidates = data?.candidates as Array<Record<string, unknown>> | undefined;
+    const candidate = candidates?.[0] as Record<string, unknown> | undefined;
+    const content = candidate?.content as Record<string, unknown> | undefined;
+    const parts = content?.parts as Array<Record<string, unknown>> | undefined;
 
-    return typeof text === 'string' ? text : '';
+    // Gemini 2.x에서 thought 등 다른 필드가 섞일 수 있어 text만 추출한다.
+    if (!Array.isArray(parts)) {
+      return '';
+    }
+
+    return parts
+      .map(part => part.text)
+      .filter((text): text is string => typeof text === 'string')
+      .join('');
   }
 
   private async parseSseStream(
     response: Response,
     onChunk: (chunk: string) => void,
   ): Promise<string> {
-    if (!response.body) {
+    const reader = response.body?.getReader();
+    if (!reader) {
       throw new BadRequestException('스트리밍 응답을 읽을 수 없습니다.');
     }
 
-    const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = '';
     let fullContent = '';
+    let buffer = '';
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) {
-          continue;
+      // Gemini 스트림은 JSON 객체들이 배열/줄바꿈으로 이어져 오므로
+      // 완전한 JSON 객체 단위로 잘라 파싱한다.
+      let startIndex: number | null = null;
+      let braceCount = 0;
+
+      for (let i = 0; i < buffer.length; i += 1) {
+        const char = buffer[i];
+        if (char === '{') {
+          if (braceCount === 0) {
+            startIndex = i;
+          }
+          braceCount += 1;
+        } else if (char === '}') {
+          braceCount -= 1;
+          if (braceCount === 0 && startIndex !== null) {
+            const jsonStr = buffer.substring(startIndex, i + 1);
+            buffer = buffer.substring(i + 1);
+            i = -1;
+            startIndex = null;
+
+            try {
+              const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+              const chunk = this.extractContent(parsed);
+              if (chunk) {
+                fullContent += chunk;
+                onChunk(chunk);
+              }
+            } catch {
+              // 파싱 실패는 다음 청크에서 복구될 수 있으므로 무시한다.
+            }
+          }
         }
-
-        const data = trimmed.substring(5).trim();
-        if (!data || data === '[DONE]') {
-          continue;
-        }
-
-        const chunk = this.extractStreamChunk(data);
-        if (!chunk) {
-          continue;
-        }
-
-        fullContent += chunk;
-        onChunk(chunk);
       }
     }
 
     return fullContent;
-  }
-
-  private extractStreamChunk(jsonData: string): string {
-    try {
-      const parsed = JSON.parse(jsonData) as Record<string, unknown>;
-      return this.extractContent(parsed);
-    } catch {
-      return '';
-    }
   }
 
   private validateApiKey(): void {

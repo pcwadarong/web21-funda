@@ -10,6 +10,10 @@ import Game from '@/assets/field-icons/game.svg?react';
 import Mobile from '@/assets/field-icons/mobile.svg?react';
 import Github from '@/assets/github.svg?react';
 import Google from '@/assets/google.svg?react';
+import Brain from '@/assets/landing-icons/brain.svg?react';
+import GraphDown from '@/assets/landing-icons/graph-down.svg?react';
+import GraphUp from '@/assets/landing-icons/graph-up.svg?react';
+import Lightning from '@/assets/landing-icons/lightning.svg?react';
 import Lock from '@/assets/lock.svg?react';
 import Logo from '@/assets/logo.svg?react';
 import Logout from '@/assets/logout.svg?react';
@@ -62,6 +66,10 @@ export const IconMap = {
   Start,
   Timer,
   Graph,
+  Brain,
+  GraphDown,
+  GraphUp,
+  Lightning,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

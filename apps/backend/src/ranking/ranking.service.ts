@@ -130,18 +130,76 @@ export class RankingService {
         lastSolvedAt: solvedAt,
       });
 
-      await weeklyXpRepository.save(createdWeeklyXp);
-      return;
+      try {
+        await weeklyXpRepository.save(createdWeeklyXp);
+        return;
+      } catch (error) {
+        if (!(error instanceof QueryFailedError)) {
+          throw error;
+        }
+
+        // 동시 생성 경쟁으로 유니크 제약이 발생했을 수 있다.
+        const existingAfterRace = await weeklyXpRepository
+          .createQueryBuilder('weeklyXp')
+          .setLock('pessimistic_write')
+          .where('weeklyXp.weekId = :weekId', { weekId: week.id })
+          .andWhere('weeklyXp.userId = :userId', { userId })
+          .getOne();
+
+        if (!existingAfterRace) {
+          throw error;
+        }
+
+        this.applyWeeklyXpIncrement(existingAfterRace, gainedXp, solvedAt);
+        await weeklyXpRepository.save(existingAfterRace);
+        return;
+      }
     }
 
-    existingWeeklyXp.xp += gainedXp;
-    existingWeeklyXp.solvedCount += 1;
-    existingWeeklyXp.lastSolvedAt = solvedAt;
-    if (!existingWeeklyXp.firstSolvedAt) {
-      existingWeeklyXp.firstSolvedAt = solvedAt;
-    }
+    this.applyWeeklyXpIncrement(existingWeeklyXp, gainedXp, solvedAt);
 
-    await weeklyXpRepository.save(existingWeeklyXp);
+    try {
+      await weeklyXpRepository.save(existingWeeklyXp);
+    } catch (error) {
+      if (!(error instanceof QueryFailedError)) {
+        throw error;
+      }
+
+      // 삽입 경쟁으로 실패한 경우 재조회 후 누적을 다시 적용한다.
+      const existingAfterRace = await weeklyXpRepository
+        .createQueryBuilder('weeklyXp')
+        .setLock('pessimistic_write')
+        .where('weeklyXp.weekId = :weekId', { weekId: week.id })
+        .andWhere('weeklyXp.userId = :userId', { userId })
+        .getOne();
+
+      if (!existingAfterRace) {
+        throw error;
+      }
+
+      this.applyWeeklyXpIncrement(existingAfterRace, gainedXp, solvedAt);
+      await weeklyXpRepository.save(existingAfterRace);
+    }
+  }
+
+  /**
+   * 주간 XP 누적 값을 갱신한다.
+   *
+   * @param weeklyXp 주간 XP 엔티티
+   * @param gainedXp 적립 XP
+   * @param solvedAt 풀이 시각
+   */
+  private applyWeeklyXpIncrement(
+    weeklyXp: RankingWeeklyXp,
+    gainedXp: number,
+    solvedAt: Date,
+  ): void {
+    weeklyXp.xp += gainedXp;
+    weeklyXp.solvedCount += 1;
+    weeklyXp.lastSolvedAt = solvedAt;
+    if (!weeklyXp.firstSolvedAt) {
+      weeklyXp.firstSolvedAt = solvedAt;
+    }
   }
 
   private async findOrCreateWeek(

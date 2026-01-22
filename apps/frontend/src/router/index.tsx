@@ -113,7 +113,10 @@ export const router = createBrowserRouter([
               {
                 path: 'admin',
                 element: <AdminGuard />,
-                children: [{ path: 'quizzes/upload', element: <AdminQuizUpload /> }],
+                children: [
+                  { path: 'quizzes/upload', element: <AdminQuizUpload /> },
+                  { path: 'quizzes/reports', element: <Reports /> },
+                ],
               },
             ],
           },

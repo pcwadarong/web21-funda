@@ -32,6 +32,7 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
   const currentItemIdRef = useRef<number | null>(null);
   const isLoggedIn = useIsLoggedIn();
   const { showToast } = useToast();
+  const maxQuestionLength = 1000;
 
   const preview = useMemo(() => buildQuizPreview(quiz), [quiz]);
 
@@ -69,6 +70,11 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
 
     if (!isLoggedIn) {
       showToast('AI 질문을 하시려면 로그인이 필요합니다.');
+      return;
+    }
+
+    if (trimmed.length > maxQuestionLength) {
+      showToast(`질문은 ${maxQuestionLength}자 이하로 입력해주세요.`);
       return;
     }
 
@@ -279,6 +285,7 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
           value={input}
           onChange={event => setInput(event.target.value)}
           placeholder="궁금한 것을 질문해보세요."
+          maxLength={maxQuestionLength}
           disabled={isStreaming}
         />
         <Button

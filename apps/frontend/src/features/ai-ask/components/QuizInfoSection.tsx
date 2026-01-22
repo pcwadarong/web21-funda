@@ -128,11 +128,11 @@ const renderMatching = (
     return (
       <div css={matchingAnswerContainerStyle}>
         <ul css={matchingAnswerListStyle}>
-          {correctPairs.map((pair, index) => {
+          {correctPairs.map(pair => {
             const leftItem = preview.matching!.left.find(item => item.id === pair.left);
             const rightItem = preview.matching!.right.find(item => item.id === pair.right);
             return (
-              <li key={index} css={matchingAnswerItemStyle(theme)}>
+              <li key={`${pair.left}-${pair.right}`} css={matchingAnswerItemStyle(theme)}>
                 <TextWithCodeStyle text={leftItem?.text || pair.left} /> -{' '}
                 <TextWithCodeStyle text={rightItem?.text || pair.right} />
               </li>

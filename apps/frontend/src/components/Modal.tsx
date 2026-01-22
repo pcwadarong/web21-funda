@@ -20,6 +20,7 @@ export const Modal = ({ title, content, onClose, maxWidth = 500, padding = true 
       role="button"
       tabIndex={0}
       onKeyDown={event => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           onClose();
@@ -31,7 +32,6 @@ export const Modal = ({ title, content, onClose, maxWidth = 500, padding = true 
         role="presentation"
         tabIndex={-1}
         onClick={e => e.stopPropagation()}
-        onKeyDown={e => e.stopPropagation()}
       >
         <div css={modalHeaderStyle}>
           <h2 css={modalTitleStyle(theme)}>{title}</h2>

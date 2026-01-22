@@ -7,10 +7,6 @@ import type { Theme } from '@/styles/theme';
 import type { ChatInputFooterProps } from './types';
 
 /**
- * 채팅 입력 푸터 컴포넌트 Props
- */
-
-/**
  * AI 질문 입력 폼과 안내 문구를 포함하는 푸터 컴포넌트
  *
  * @description

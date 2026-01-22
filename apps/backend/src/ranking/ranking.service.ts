@@ -157,29 +157,7 @@ export class RankingService {
     }
 
     this.applyWeeklyXpIncrement(existingWeeklyXp, gainedXp, solvedAt);
-
-    try {
-      await weeklyXpRepository.save(existingWeeklyXp);
-    } catch (error) {
-      if (!(error instanceof QueryFailedError)) {
-        throw error;
-      }
-
-      // 삽입 경쟁으로 실패한 경우 재조회 후 누적을 다시 적용한다.
-      const existingAfterRace = await weeklyXpRepository
-        .createQueryBuilder('weeklyXp')
-        .setLock('pessimistic_write')
-        .where('weeklyXp.weekId = :weekId', { weekId: week.id })
-        .andWhere('weeklyXp.userId = :userId', { userId })
-        .getOne();
-
-      if (!existingAfterRace) {
-        throw error;
-      }
-
-      this.applyWeeklyXpIncrement(existingAfterRace, gainedXp, solvedAt);
-      await weeklyXpRepository.save(existingAfterRace);
-    }
+    await weeklyXpRepository.save(existingWeeklyXp);
   }
 
   /**

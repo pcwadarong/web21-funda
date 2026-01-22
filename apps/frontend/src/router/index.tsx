@@ -20,7 +20,7 @@ const AdminQuizUpload = lazy(() =>
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
-const Reports = lazy(() => import('@/pages/Reports').then(m => ({ default: m.Reports })));
+const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
 );

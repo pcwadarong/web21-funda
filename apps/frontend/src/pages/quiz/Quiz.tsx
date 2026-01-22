@@ -144,6 +144,19 @@ export const Quiz = () => {
     ? !reviewQuizzesFromState && reviewQuery.isLoading
     : quizzesQuery.isLoading;
 
+  const isQueryError = isReviewMode
+    ? !reviewQuizzesFromState && reviewQuery.isError
+    : quizzesQuery.isError;
+
+  const handleRetry = () => {
+    setLoadError(false);
+    if (isReviewMode) {
+      if (!reviewQuizzesFromState) reviewQuery.refetch();
+      return;
+    }
+    quizzesQuery.refetch();
+  };
+
   /** 효과음 재생 */
   const { playSound } = useSound();
 
@@ -502,7 +515,7 @@ export const Quiz = () => {
   // 렌더링
   // 조건부 렌더링은 모든 hooks 호출 후에 배치
   if (isQueryLoading) return <Loading text="퀴즈를 불러오는 중입니다" />;
-  if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
+  if (isQueryError || loadError) return <QuizLoadErrorView onRetry={handleRetry} />;
 
   return (
     <>

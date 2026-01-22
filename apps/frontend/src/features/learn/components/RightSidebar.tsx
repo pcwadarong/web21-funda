@@ -89,7 +89,7 @@ export const LearnRightSidebar = ({
         showToast('복습 문제를 불러오지 못했습니다.');
         return;
       }
-      quizzes = result.data ?? [];
+      quizzes = result.data;
     }
 
     if (quizzes.length === 0) {

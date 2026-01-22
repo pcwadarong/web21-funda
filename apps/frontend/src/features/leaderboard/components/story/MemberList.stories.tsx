@@ -31,7 +31,7 @@ const mockMembers: RankingMember[] = [
     profileImageUrl: null,
     xp: 1100,
     isMe: false,
-    rankZone: 'PROMOTION',
+    rankZone: 'MAINTAIN',
   },
   {
     rank: 4,
@@ -40,7 +40,7 @@ const mockMembers: RankingMember[] = [
     profileImageUrl: null,
     xp: 1050,
     isMe: false,
-    rankZone: 'MAINTAIN',
+    rankZone: 'DEMOTION',
   },
   {
     rank: 5,
@@ -49,7 +49,7 @@ const mockMembers: RankingMember[] = [
     profileImageUrl: null,
     xp: 980,
     isMe: false,
-    rankZone: 'MAINTAIN',
+    rankZone: 'DEMOTION',
   },
 ];
 
@@ -71,8 +71,7 @@ const meta: Meta<typeof MemberList> = {
       <ThemeProvider theme={lightTheme}>
         <div
           style={{
-            backgroundColor: lightTheme.colors.surface.default,
-            minHeight: '100vh',
+            backgroundColor: lightTheme.colors.surface.strong,
             padding: '24px',
           }}
         >

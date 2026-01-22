@@ -62,7 +62,6 @@ const modalTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
-  margin: 0;
 `;
 
 const modalCloseButtonStyle = (theme: Theme) => css`

@@ -150,7 +150,6 @@ const titleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   color: ${theme.colors.text.strong};
-  margin: 0;
   word-break: keep-all;
 `;
 

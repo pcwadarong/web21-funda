@@ -131,6 +131,7 @@ const heroHeadingStyle = (theme: Theme) => css`
   line-height: ${theme.typography['20Medium'].lineHeight};
   font-weight: ${theme.typography['20Medium'].fontWeight};
   color: ${theme.colors.grayscale[600]};
+  margin-bottom: 1rem;
 `;
 
 const progressSummaryStyle = (theme: Theme) => css`

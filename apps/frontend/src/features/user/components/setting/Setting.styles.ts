@@ -33,7 +33,6 @@ export const rowStyle = css`
 
 export const labelGroupStyle = (theme: Theme) => css`
   color: ${theme.colors.text.default};
-  margin: 0;
   white-space: nowrap;
   flex-shrink: 0;
   flex-grow: 1;

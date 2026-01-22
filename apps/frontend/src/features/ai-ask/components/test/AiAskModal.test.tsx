@@ -107,6 +107,8 @@ describe('AiAskModal', () => {
     vi.clearAllMocks();
     mockGetAiQuestions.mockResolvedValue([]);
     mockIsLoggedIn.mockReturnValue(true);
+    // fetch를 매 테스트마다 다시 모킹
+    global.fetch = vi.fn();
   });
   afterEach(() => {
     cleanup();

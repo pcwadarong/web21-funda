@@ -25,16 +25,15 @@ export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapConta
   return (
     <div css={containerStyle}>
       <main css={mainStyle}>
-        <section css={heroStyle}>
-          <div css={heroTopStyle}>
-            <Link to="/learn/select-field" css={backLinkStyle(theme)}>
-              <SVGIcon icon="ArrowLeft" size="sm" />
-              분야 선택으로 돌아가기
-            </Link>
-          </div>
-          <div css={heroTopStyle}>
+        <header css={headerStyle}>
+          <Link to="/learn/select-field" css={backLinkStyle(theme)}>
+            <SVGIcon icon="ArrowLeft" size="sm" />
+            분야 선택으로 돌아가기
+          </Link>
+
+          <div css={heroStyle}>
             <div css={heroTitleStyle}>
-              <span css={heroLabelStyle(theme)}>{fieldName} 로드맵</span>
+              <h1 css={heroLabelStyle(theme)}>{fieldName} 로드맵</h1>
               <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
             </div>
             {isLoggedIn && (
@@ -46,7 +45,7 @@ export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapConta
               </div>
             )}
           </div>
-        </section>
+        </header>
         <section css={gridStyle}>
           {units.map(unit => (
             <UnitCard
@@ -84,21 +83,13 @@ const mainStyle = css`
   }
 `;
 
-const heroStyle = css`
+const headerStyle = css`
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
   margin-bottom: 10px;
-`;
-
-const heroTopStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
 `;
 
 const backLinkStyle = (theme: Theme) => css`
@@ -109,8 +100,16 @@ const backLinkStyle = (theme: Theme) => css`
   font-weight: ${theme.typography['12Medium'].fontWeight};
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
+  width: fit-content;
+`;
+
+const heroStyle = css`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 `;
 
 const heroTitleStyle = css`
@@ -124,6 +123,7 @@ const heroLabelStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.primary.main};
+  margin: 0;
 `;
 
 const heroHeadingStyle = (theme: Theme) => css`

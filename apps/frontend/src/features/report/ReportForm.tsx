@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
-import { reportService } from '@/services/reportService';
+import { useCreateReportMutation } from '@/hooks/queries/reportQueries';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
@@ -26,6 +26,8 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
   const [otherText, setOtherText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const createReportMutation = useCreateReportMutation();
+
   const handleOptionClick = (optionId: string) => {
     setSelectedOption(
       prev =>
@@ -44,7 +46,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
   };
 
   const handleSubmit = async () => {
-    if (selectedOption.length === 0) return;
+    if (selectedOption.length === 0 || isSubmitting) return;
 
     // 선택된 옵션들의 라벨을 ", "로 연결
     const selectedLabels = selectedOption
@@ -58,8 +60,11 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
 
     try {
       setIsSubmitting(true);
-      const response = await reportService.createReport(quizId, {
-        report_description,
+      const response = await createReportMutation.mutateAsync({
+        quizId,
+        data: {
+          report_description,
+        },
       });
 
       if (response?.id) {
@@ -120,7 +125,9 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
 
       <Button
         variant="primary"
-        disabled={!selectedOption || (selectedOption.includes('other') && !otherText.trim())}
+        disabled={
+          isSubmitting || !selectedOption || (selectedOption.includes('other') && !otherText.trim())
+        }
         onClick={handleSubmit}
         css={btn}
       >

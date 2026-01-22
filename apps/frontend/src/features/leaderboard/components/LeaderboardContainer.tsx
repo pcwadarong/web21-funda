@@ -83,18 +83,18 @@ export const LeaderboardContainer = ({
               {weeklyRanking!.tier.name !== 'MASTER' && (
                 <div css={zoneSectionStyle}>
                   <MemberList members={groupedMembers!.promotion} />
-                  <SVGIcon
-                    icon="ArrowLeft"
-                    style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
-                    size="sm"
-                  />
-                  <span>승급권</span>
+                  <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                    <SVGIcon
+                      style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
+                      icon="ArrowLeft"
+                      size="sm"
+                    />
+                    <span>승급권</span>
+                  </div>
                 </div>
               )}
               <div css={zoneSectionStyle}>
-                <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
-                  <MemberList members={groupedMembers!.maintain} />
-                </div>
+                <MemberList members={groupedMembers!.maintain} />
               </div>
               {/* BRONZE가 아닐 때만 강등권 표시 */}
               {weeklyRanking!.tier.name !== 'BRONZE' && (

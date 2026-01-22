@@ -45,13 +45,12 @@ const mockMembers: RankingMember[] = [
   },
 ];
 
-const renderMemberList = (members: RankingMember[] = mockMembers) => {
-  return render(
+const renderMemberList = (members: RankingMember[] = mockMembers) =>
+  render(
     <ThemeProvider theme={lightTheme}>
       <MemberList members={members} />
     </ThemeProvider>,
   );
-};
 
 describe('MemberList 컴포넌트 테스트', () => {
   afterEach(() => {

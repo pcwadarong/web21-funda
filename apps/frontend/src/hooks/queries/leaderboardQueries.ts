@@ -13,6 +13,8 @@ export const useWeeklyRanking = () =>
     queryKey: leaderboardKeys.weekly(),
     queryFn: () => rankingService.getWeeklyRanking(),
     staleTime: 0,
+    refetchInterval: 1000 * 60,
+    refetchIntervalInBackground: false,
   });
 
 export const useRankingMe = (enabled: boolean = true) =>

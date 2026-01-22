@@ -158,6 +158,7 @@ const fieldDescriptionStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   color: ${theme.colors.text.light};
   flex-grow: 1;
+  text-align: left;
 `;
 
 const goRoadmap = (theme: Theme) => css`

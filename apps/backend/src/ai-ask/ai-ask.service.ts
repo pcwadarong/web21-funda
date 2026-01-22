@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { type FindManyOptions, Repository } from 'typeorm';
+import { type FindManyOptions, Not, Repository } from 'typeorm';
 
 import { Quiz } from '../roadmap/entities/quiz.entity';
 
@@ -58,7 +58,7 @@ export class AiAskService {
     const limit = query.limit;
 
     const findOptions: FindManyOptions<AiQuestionAnswer> = {
-      where: { quiz: { id: quizId } },
+      where: { quiz: { id: quizId }, status: Not(AiAnswerStatus.FAILED) },
       order: { createdAt: 'DESC' },
       relations: ['quiz'],
     };

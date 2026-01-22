@@ -22,6 +22,8 @@ jobs:
           corepack enable
           corepack prepare pnpm@10.28.0 --activate
 
+      # 커밋용 수정사항
+
       # 1-2. pnpm store 캐시
       - name: get pnpm store path
         id: pnpm-store

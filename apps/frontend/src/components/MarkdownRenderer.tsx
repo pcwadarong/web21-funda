@@ -1,3 +1,4 @@
+import type { SerializedStyles } from '@emotion/react';
 import { css, useTheme } from '@emotion/react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -8,7 +9,7 @@ import type { Theme } from '@/styles/theme';
 
 interface MarkdownRendererProps {
   text: string;
-  className?: string;
+  customCss?: SerializedStyles;
 }
 
 /**
@@ -31,12 +32,15 @@ const extractLanguage = (className?: string | null): string | null => {
  *
  * @param text 마크다운 텍스트
  * @param className 추가 CSS 클래스
+ *
+ * `@security` rehypeRaw 플러그인으로 raw HTML을 렌더링합니다.
+ * 신뢰할 수 없는 사용자 입력은 sanitize 후 전달해야 합니다.
  */
-export const MarkdownRenderer = ({ text, className }: MarkdownRendererProps) => {
+export const MarkdownRenderer = ({ text, customCss }: MarkdownRendererProps) => {
   const theme = useTheme();
 
   return (
-    <div css={[markdownContainerStyle, className]}>
+    <div css={[markdownContainerStyle, customCss]}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}

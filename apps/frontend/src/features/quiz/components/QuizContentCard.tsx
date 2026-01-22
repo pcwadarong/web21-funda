@@ -88,13 +88,6 @@ export const QuizContentCard = ({
       <div css={footerStyle(theme)}>
         {showResult ? (
           <>
-            <Button
-              variant="secondary"
-              onClick={() => openModal('해설', <div>상세 해설</div>)}
-              css={flexBtn}
-            >
-              해설 보기
-            </Button>
             <Button variant="primary" onClick={onNext} css={flexBtn}>
               {nextButtonLabel}
             </Button>

@@ -77,6 +77,8 @@ export const LeaderboardContainer = ({
                 <div css={summaryMainStyle}>
                   <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
                   <button
+                    type="button"
+                    aria-label="리더보드 안내 열기"
                     css={infoButtonStyle(theme)}
                     onClick={() =>
                       openModal('리더보드란?', <InfoLeaderBoardModal />, {

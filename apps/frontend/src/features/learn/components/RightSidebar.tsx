@@ -47,7 +47,7 @@ export const LearnRightSidebar = ({
     },
   );
 
-  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
+  const { data: rankingMe } = useRankingMe(isLoggedIn && isAuthReady && !!user);
   const diamondCount = rankingMe?.diamondCount ?? 0;
 
   const { showToast } = useToast();

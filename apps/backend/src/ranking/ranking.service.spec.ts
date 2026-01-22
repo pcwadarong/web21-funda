@@ -60,7 +60,7 @@ describe('RankingService', () => {
       createQueryBuilder: jest.fn(() => weeklyXpQueryBuilder),
       create: jest.fn(),
       save: jest.fn(),
-    };
+    } as unknown as Partial<Repository<RankingWeeklyXp>>;
     userRepository = {
       findOne: jest.fn(),
       save: jest.fn(),

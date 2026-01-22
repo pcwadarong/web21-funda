@@ -1,4 +1,4 @@
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { authService } from '@/services/authService';
 
@@ -16,7 +16,13 @@ export const useCurrentUserQuery = () =>
     },
   });
 
-export const useLogoutMutation = () =>
-  useMutation({
+export const useLogoutMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: () => authService.logout(),
+    onSuccess: () => {
+      queryClient.clear();
+    },
   });
+};

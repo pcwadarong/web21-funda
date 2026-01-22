@@ -241,7 +241,7 @@ export const Quiz = () => {
     };
 
     startStep();
-  }, [isAuthReady, isLoggedIn, isReviewMode, startGuestStepAttempt, step_id]);
+  }, [isAuthReady, isLoggedIn, isReviewMode, startGuestStepAttempt, startStepMutation, step_id]);
 
   useEffect(() => {
     if (!showReviewCompletion) {

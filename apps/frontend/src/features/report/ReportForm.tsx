@@ -46,7 +46,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
   };
 
   const handleSubmit = async () => {
-    if (selectedOption.length === 0) return;
+    if (selectedOption.length === 0 || isSubmitting) return;
 
     // 선택된 옵션들의 라벨을 ", "로 연결
     const selectedLabels = selectedOption
@@ -125,7 +125,9 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
 
       <Button
         variant="primary"
-        disabled={!selectedOption || (selectedOption.includes('other') && !otherText.trim())}
+        disabled={
+          isSubmitting || !selectedOption || (selectedOption.includes('other') && !otherText.trim())
+        }
         onClick={handleSubmit}
         css={btn}
       >

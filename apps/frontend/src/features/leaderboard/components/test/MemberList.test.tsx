@@ -85,7 +85,7 @@ describe('MemberList 컴포넌트 테스트', () => {
   });
 
   it('단일 멤버가 올바르게 렌더링된다', () => {
-    renderMemberList([mockMembers[0]]);
+    renderMemberList([mockMembers[0]!]);
 
     expect(screen.getByTestId('ranking-row-1')).toBeInTheDocument();
     expect(screen.queryByTestId('ranking-row-2')).not.toBeInTheDocument();
@@ -93,8 +93,8 @@ describe('MemberList 컴포넌트 테스트', () => {
   });
 
   it('많은 수의 멤버가 올바르게 렌더링된다', () => {
-    const manyMembers = Array.from({ length: 10 }, (_, i) => ({
-      ...mockMembers[0],
+    const manyMembers: RankingMember[] = Array.from({ length: 10 }, (_, i) => ({
+      ...mockMembers[0]!,
       userId: i + 1,
       rank: i + 1,
       displayName: `사용자${i + 1}`,

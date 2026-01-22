@@ -240,7 +240,7 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
         isStreaming={isStreaming}
         maxQuestionLength={maxQuestionLength}
       />
-      <div style={{ height: '120px' }} aria-hidden="true"></div>
+      <div style={{ height: '150px' }} aria-hidden="true"></div>
     </div>
   );
 };

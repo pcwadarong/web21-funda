@@ -44,7 +44,7 @@ describe('useSound Hook', () => {
       }),
     );
 
-    const { useSound } = await import('./useSound');
+    const { useSound } = await import('../useSound');
     const { result } = renderHook(() => useSound());
 
     // 재생 요청
@@ -81,7 +81,7 @@ describe('useSound Hook', () => {
     const AudioMock = vi.fn(FakeAudio as unknown as () => FakeAudio);
     vi.stubGlobal('Audio', AudioMock);
 
-    const { useSound } = await import('./useSound');
+    const { useSound } = await import('../useSound');
     const { result } = renderHook(() => useSound());
 
     // 재생 요청

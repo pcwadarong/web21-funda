@@ -12,7 +12,9 @@ const useIntersectionObserver = <T extends Element>(options: IntersectionObserve
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
+    const observer = new IntersectionObserver(entries => {
+      const entry = entries[0];
+      if (!entry) return;
       setIsVisible(entry.isIntersecting);
     }, options);
 

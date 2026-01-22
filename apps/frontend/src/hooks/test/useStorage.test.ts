@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { useStorage } from './useStorage';
+import { useStorage } from '../useStorage';
 
 describe('useStorage Hook', () => {
   // 각 테스트 시작 전에 로컬 스토리지를 비웁니다.

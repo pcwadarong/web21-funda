@@ -2,6 +2,7 @@ import type { UseQueryOptions } from '@tanstack/react-query';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { QuizQuestion } from '@/feat/quiz/types';
+import { leaderboardKeys } from '@/hooks/queries/leaderboardQueries';
 import type { QuizSubmissionRequest, StepCompletionPayload } from '@/services/quizService';
 import { quizService } from '@/services/quizService';
 
@@ -35,11 +36,17 @@ export const useSubmitQuizMutation = () =>
       quizService.submitQuiz(quizId, payload),
   });
 
-export const useCompleteStepMutation = () =>
-  useMutation({
+export const useCompleteStepMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: ({ stepId, payload }: { stepId: number; payload: StepCompletionPayload }) =>
       quizService.completeStep(stepId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leaderboardKeys.weekly() });
+    },
   });
+};
 
 export const useStartStepMutation = () =>
   useMutation({

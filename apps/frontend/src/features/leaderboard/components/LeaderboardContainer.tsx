@@ -1,4 +1,4 @@
-import { useTheme } from '@emotion/react';
+import { keyframes, useTheme } from '@emotion/react';
 import { css, type Theme } from '@emotion/react';
 
 import SVGIcon from '@/comp/SVGIcon';
@@ -12,12 +12,16 @@ interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
   isLoading: boolean;
   errorMessage: string | null;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const LeaderboardContainer = ({
   weeklyRanking,
   isLoading,
   errorMessage,
+  onRefresh,
+  isRefreshing = false,
 }: LeaderboardContainerProps) => {
   const theme = useTheme();
 
@@ -46,6 +50,16 @@ export const LeaderboardContainer = ({
       <div css={pageContentStyle}>
         <header css={headerStyle}>
           <h1 css={pageTitleStyle(theme)}>LEADERBOARD</h1>
+          {onRefresh && (
+            <button
+              css={refreshButtonStyle(theme, isRefreshing)}
+              onClick={onRefresh}
+              type="button"
+              disabled={isRefreshing}
+            >
+              <SVGIcon icon="Refresh" size="sm" />
+            </button>
+          )}
         </header>
 
         {isLoading ? (
@@ -116,7 +130,7 @@ const pageContentStyle = css`
 
 const headerStyle = css`
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
@@ -129,6 +143,31 @@ const pageTitleStyle = (theme: Theme) => css`
   color: ${theme.colors.primary.main};
   letter-spacing: 0.12em;
   padding-left: 0.5rem;
+`;
+
+const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: black;
+  border-radius: ${theme.borderRadius.medium};
+  transition: background-color 150ms ease;
+
+  ${isRefreshing &&
+  css`
+    animation: ${keyframes`
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    `} 1s linear infinite;
+  `}
+
+  &:hover {
+    background: ${isRefreshing ? 'transparent' : theme.colors.surface.bold};
+  }
 `;
 
 const summaryCardStyle = (theme: Theme) => css`

@@ -15,6 +15,7 @@ import Logo from '@/assets/logo.svg?react';
 import Logout from '@/assets/logout.svg?react';
 import Minus from '@/assets/minus.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
+import Refresh from '@/assets/refresh.svg?react';
 import Report from '@/assets/report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
@@ -49,6 +50,7 @@ export const IconMap = {
   Logout,
   Minus,
   NextArrow,
+  Refresh,
   Report,
   RoundStar,
   Book,

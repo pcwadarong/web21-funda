@@ -1,0 +1,116 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { Quiz } from '../roadmap/entities/quiz.entity';
+
+import { AiQuestionListQueryDto } from './dto/ai-question-list-query.dto';
+import { CreateAiQuestionDto } from './dto/create-ai-question.dto';
+import { AiAnswerStatus, AiQuestionAnswer } from './entities/ai-question-answer.entity';
+
+export interface AiQuestionAnswerView {
+  id: number;
+  quizId: number;
+  question: string;
+  answer: string | null;
+  status: AiAnswerStatus;
+  createdAt: Date;
+  isMine: boolean;
+}
+
+@Injectable()
+export class AiAskService {
+  constructor(
+    @InjectRepository(AiQuestionAnswer)
+    private readonly aiQuestionAnswerRepository: Repository<AiQuestionAnswer>,
+    @InjectRepository(Quiz)
+    private readonly quizRepository: Repository<Quiz>,
+  ) {}
+
+  /**
+   * 퀴즈별 AI 질문 목록을 최신순으로 조회한다.
+   *
+   * @param quizId - 조회할 퀴즈 ID
+   * @param userId - 요청 사용자 ID (선택)
+   * @param query - 조회 옵션
+   * @returns AI 질문/답변 목록
+   */
+  async getAiQuestions(
+    quizId: number,
+    userId: number | null,
+    query: AiQuestionListQueryDto,
+  ): Promise<AiQuestionAnswerView[]> {
+    await this.ensureQuizExists(quizId);
+
+    const defaultLimit = 20;
+    const requestedLimit = query.limit;
+    const limit = requestedLimit ?? defaultLimit;
+
+    const entities = await this.aiQuestionAnswerRepository.find({
+      where: { quiz: { id: quizId } },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+
+    return entities.map(entity => this.toView(entity, userId));
+  }
+
+  /**
+   * AI 질문을 생성하고 PENDING 상태로 저장한다.
+   *
+   * @param quizId - 질문을 남길 퀴즈 ID
+   * @param userId - 질문 작성자 ID
+   * @param dto - 질문 내용 DTO
+   * @returns 저장된 질문 정보
+   */
+  async createAiQuestion(
+    quizId: number,
+    userId: number,
+    dto: CreateAiQuestionDto,
+  ): Promise<AiQuestionAnswerView> {
+    const quiz = await this.ensureQuizExists(quizId);
+
+    const trimmedQuestion = dto.question.trim();
+    if (trimmedQuestion.length === 0) {
+      throw new BadRequestException('질문 내용이 비어 있습니다.');
+    }
+
+    const entity = this.aiQuestionAnswerRepository.create({
+      quiz,
+      userId,
+      userQuestion: trimmedQuestion,
+      aiAnswer: null,
+      status: AiAnswerStatus.PENDING,
+    });
+
+    const saved = await this.aiQuestionAnswerRepository.save(entity);
+    return this.toView(saved, userId);
+  }
+
+  private toView(entity: AiQuestionAnswer, userId: number | null): AiQuestionAnswerView {
+    const isMine = userId !== null && entity.userId === userId;
+    const quizId = entity.quizId ?? entity.quiz?.id;
+    if (quizId === undefined) {
+      throw new Error('퀴즈 정보를 확인할 수 없습니다.');
+    }
+
+    return {
+      id: entity.id,
+      quizId,
+      question: entity.userQuestion,
+      answer: entity.aiAnswer ?? null,
+      status: entity.status,
+      createdAt: entity.createdAt,
+      isMine,
+    };
+  }
+
+  private async ensureQuizExists(quizId: number): Promise<Quiz> {
+    const quiz = await this.quizRepository.findOne({ where: { id: quizId } });
+    if (!quiz) {
+      throw new NotFoundException('퀴즈 정보를 찾을 수 없습니다.');
+    }
+
+    return quiz;
+  }
+}

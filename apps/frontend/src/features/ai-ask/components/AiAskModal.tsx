@@ -1,10 +1,9 @@
 import { css, keyframes, useTheme } from '@emotion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import { Button } from '@/comp/Button';
 import { CodeBlock } from '@/comp/CodeBlock';
+import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
 import SVGIcon from '@/comp/SVGIcon';
 import type { QuizQuestion } from '@/feat/quiz/types';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
@@ -268,7 +267,7 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
                       {item.status === 'failed' ? (
                         'AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
                       ) : (
-                        <MarkdownAnswer text={item.answer ?? ''} />
+                        <MarkdownRenderer text={item.answer ?? ''} />
                       )}
                     </div>
                   )}
@@ -451,41 +450,6 @@ const TypingDots = () => {
   );
 };
 
-/**
- * 답변 텍스트를 마크다운 렌더러로 출력한다.
- *
- * @param text 응답 텍스트
- */
-const MarkdownAnswer = ({ text }: { text: string }) => (
-  <div css={markdownContainerStyle}>
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        p: ({ children }) => <p css={markdownParagraphStyle}>{children}</p>,
-        ul: ({ children }) => <ul css={markdownListStyle}>{children}</ul>,
-        ol: ({ children }) => <ol css={markdownListStyle}>{children}</ol>,
-        li: ({ children }) => <li css={markdownListItemStyle}>{children}</li>,
-        h1: ({ children }) => <h1 css={markdownHeadingStyle(1)}>{children}</h1>,
-        h2: ({ children }) => <h2 css={markdownHeadingStyle(2)}>{children}</h2>,
-        h3: ({ children }) => <h3 css={markdownHeadingStyle(3)}>{children}</h3>,
-        code: ({ className, children }) => {
-          const language = extractLanguage(className);
-          if (!className) {
-            return <code css={inlineCodeStyle}>{children}</code>;
-          }
-          return (
-            <CodeBlock language={language ?? undefined}>
-              {String(children).replace(/\n$/, '')}
-            </CodeBlock>
-          );
-        },
-      }}
-    >
-      {text}
-    </ReactMarkdown>
-  </div>
-);
-
 const containerStyle = css`
   display: flex;
   flex-direction: column;
@@ -625,57 +589,6 @@ const answerTextStyle = (theme: Theme) => css`
   line-height: ${theme.typography['12Medium'].lineHeight};
   color: ${theme.colors.text.default};
 `;
-
-const markdownContainerStyle = css`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const markdownParagraphStyle = css`
-  margin: 0;
-`;
-
-const markdownListStyle = css`
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-`;
-
-const markdownListItemStyle = css`
-  margin: 0;
-`;
-
-const markdownHeadingStyle = (level: 1 | 2 | 3) => css`
-  font-size: ${level === 1 ? '18px' : level === 2 ? '16px' : '14px'};
-  font-weight: 700;
-  margin: 0;
-`;
-
-const inlineCodeStyle = css`
-  font-family: 'D2Coding', monospace;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.08);
-  font-size: 0.9em;
-`;
-
-/**
- * 코드 블록 className에서 언어 정보를 추출한다.
- *
- * @param className 코드 블록 className
- * @returns 언어 문자열 또는 null
- */
-const extractLanguage = (className?: string | null): string | null => {
-  if (!className) {
-    return null;
-  }
-
-  const match = className.match(/language-(\w+)/);
-  return match && match[1] ? match[1] : null;
-};
 
 const inputBarStyle = (theme: Theme) => css`
   display: flex;

@@ -2,10 +2,12 @@ import { css, keyframes, type Theme, useTheme } from '@emotion/react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
+import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
 import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
+import { useModal } from '@/store/modalStore';
 
 interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
@@ -23,6 +25,7 @@ export const LeaderboardContainer = ({
   isRefreshing = false,
 }: LeaderboardContainerProps) => {
   const theme = useTheme();
+  const { openModal } = useModal();
 
   // 상태 결정
   let stateType: 'error' | 'empty' | 'unassigned' | 'normal' = 'normal';
@@ -69,8 +72,20 @@ export const LeaderboardContainer = ({
         ) : (
           <>
             <section css={summaryCardStyle(theme)} data-section="summary">
-              <div css={summaryLeftStyle}>
-                <p css={summaryTitleStyle(theme)}>{leagueTitle}</p>
+              <div>
+                <div css={summaryMainStyle}>
+                  <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
+                  <button
+                    css={infoButtonStyle(theme)}
+                    onClick={() =>
+                      openModal('리더보드란?', <InfoLeaderBoardModal />, {
+                        maxWidth: 880,
+                      })
+                    }
+                  >
+                    <span>?</span>
+                  </button>
+                </div>
                 <p css={summarySubTextStyle(theme)}>
                   {weeklyRanking!.weekKey}주차 · 그룹 {weeklyRanking!.groupIndex} · 총{' '}
                   {weeklyRanking!.totalMembers}명
@@ -189,9 +204,10 @@ const summaryCardStyle = (theme: Theme) => css`
   flex-wrap: wrap;
 `;
 
-const summaryLeftStyle = css`
+const summaryMainStyle = css`
   display: flex;
-  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
 `;
 
 const summaryTitleStyle = (theme: Theme) => css`
@@ -199,6 +215,22 @@ const summaryTitleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   margin-bottom: 0.5rem;
+`;
+
+const infoButtonStyle = (theme: Theme) => css`
+  color: ${theme.colors.primary.main};
+  padding: 0.5rem;
+  margin: -0.5rem;
+
+  span {
+    display: inline-block;
+    background: ${theme.colors.grayscale[200]};
+    width: 24px;
+    border-radius: 100px;
+    margin-bottom: 6px;
+    font-weight: bold;
+    padding-bottom: 2px;
+  }
 `;
 
 const summarySubTextStyle = (theme: Theme) => css`

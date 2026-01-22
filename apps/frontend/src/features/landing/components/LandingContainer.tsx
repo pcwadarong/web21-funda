@@ -1,6 +1,9 @@
 import { css, keyframes, useTheme } from '@emotion/react';
 import React from 'react';
 
+import GrassImage from '@/assets/landing-icons/grass.png';
+import QuizImage from '@/assets/landing-icons/quiz.png';
+import RankingImage from '@/assets/landing-icons/ranking.png';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
@@ -13,33 +16,25 @@ interface LandingContainerProps {
 
 export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContainerProps) => {
   const theme = useTheme();
-  const featureCards = [
-    {
-      title: '기억을 확실히 잡는 리듬',
-      caption: '짧고 선명한 퀴즈로 몰입을 유지해요.',
-    },
-    {
-      title: '학습 진행 현황',
-      caption: '오늘의 루틴과 레벨업을 한눈에.',
-    },
-    {
-      title: '어제의 실수 노트',
-      caption: '자주 틀리는 개념을 빠르게 복기합니다.',
-    },
-  ];
   const reviewScores = [
-    { value: 0, emoji: '😭', color: colors.light.error.surface },
-    { value: 1, emoji: '😟', color: colors.light.grayscale[200] },
-    { value: 2, emoji: '😐', color: colors.light.grayscale[300] },
-    { value: 3, emoji: '🙂', color: colors.light.success.light },
-    { value: 4, emoji: '😊', color: colors.light.primary.surface },
-    { value: 5, emoji: '😍', color: colors.light.primary.light },
+    { value: 0, emoji: '😭', borderColor: '#FFA2A2', color: '#C10007', backgroundColor: '#FFE2E2' },
+    { value: 1, emoji: '😢', borderColor: '#FFB86A', color: '#CA3500', backgroundColor: '#FFEDD4' },
+    { value: 2, emoji: '😐', borderColor: '#FFDF20', color: '#A65F00', backgroundColor: '#FEF9C2' },
+    { value: 3, emoji: '🙂', borderColor: '#BBF451', color: '#497D00', backgroundColor: '#ECFCCA' },
+    { value: 4, emoji: '😊', borderColor: '#7BF1A8', color: '#008236', backgroundColor: '#DCFCE7' },
+    {
+      value: 5,
+      emoji: '😍',
+      borderColor: '#6559EA',
+      color: '#6559EA',
+      backgroundColor: '#6559EA1A',
+    },
   ];
   const needsList = [
-    'CS 기초를 확실하게 다지고 싶은 주니어 개발자',
-    '체계적인 로드맵을 따라 학습하고 싶은 분',
-    '짧은 리듬으로 학습을 쌓고 싶은 예비 개발자',
-    '지루한 암기보다 인터랙티브한 학습을 원하는 분',
+    'CS 기초가 부족해 기술 면접이 두려운 주니어 개발자',
+    '체계적인 로드맵을 따라 학습하고 싶은 초보자',
+    '출퇴근 길 5분, 틈틈이 실력을 쌓고 싶은 효율 중시 개발자',
+    '지루한 강의보다 인터랙티브한 퀴즈로 체득하고 싶은 분',
   ];
 
   return (
@@ -97,18 +92,22 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
               </div>
             </div>
             <div css={practiceCardStyle(theme)}>
-              <div css={practiceTopTextStyle(theme)}>
-                실무 면접 및 설계에
-                <br />
-                필요한 필수 지식
+              <div css={practiceGrayGroupStyle}>
+                <div css={practiceBottomTextStyle(theme)}>
+                  내가 안다고
+                  <br />
+                  착각하는 CS 지식
+                </div>
+                <div css={practiceGrayPillStyle(theme)} aria-hidden="true" />
               </div>
-              <div css={practiceBottomTextStyle(theme)}>
-                내가 안다고
-                <br />
-                착각하는 CS 지식
+              <div css={practicePurpleGroupStyle}>
+                <div css={practiceTopTextStyle(theme)}>
+                  실무 면접 및 설계에
+                  <br />
+                  필요한 필수 지식
+                </div>
+                <div css={practicePurplePillStyle(theme)} aria-hidden="true" />
               </div>
-              <div css={practiceGrayPillStyle(theme)} aria-hidden="true" />
-              <div css={practicePurplePillStyle(theme)} aria-hidden="true" />
             </div>
             <p css={darkCaptionStyle(theme)}>
               성장의 본질은 결국{' '}
@@ -138,26 +137,18 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
             <div css={graphCardStyle(theme)}>
               <div css={graphHeaderStyle(theme)}>
                 <div css={graphTitleStyle(theme)}>
-                  <span css={graphTitleIconStyle(theme)}>
-                    <SVGIcon icon="ComputerScience" size="sm" />
-                  </span>
+                  <SVGIcon icon="Brain" size="sm" />
                   <span>일반적인 학습</span>
                 </div>
                 <span css={graphTagStyle(theme)}>급격한 망각</span>
               </div>
               <div css={graphFrameStyle(theme)}>
-                <svg viewBox="0 0 220 120" css={graphSvgStyle}>
-                  <polyline
-                    points="10,20 60,50 110,80 160,96 210,110"
-                    fill="none"
-                    stroke={colors.light.grayscale[300]}
-                    strokeWidth="3"
-                    strokeDasharray="6 6"
-                  />
-                </svg>
-                <span css={graphAxisTopStyle(theme)}>100%</span>
-                <span css={graphAxisBottomStyle(theme)}>0%</span>
-                <span css={graphLabelStyle(theme)}>시간</span>
+                <div css={graphInnerFrameStyle}>
+                  <SVGIcon icon="GraphDown" css={graphSvgStyle} />
+                </div>
+                <span css={[graphAxisStyle(theme), graphAxisTopStyle]}>100%</span>
+                <span css={[graphAxisStyle(theme), graphAxisBottomStyle]}>0%</span>
+                <span css={[graphAxisStyle(theme), graphLabelStyle]}>시간</span>
               </div>
             </div>
             <div css={graphArrowStyle(theme)} aria-hidden="true">
@@ -165,27 +156,39 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
             </div>
             <div css={[graphCardStyle(theme), graphCardActiveStyle(theme)]}>
               <div css={graphHeaderActiveStyle(theme)}>
-                <span>Funda 복습 시스템</span>
-                <span css={graphBadgeStyle(theme)}>영구 기억화</span>
+                <div css={graphTitleActiveStyle(theme)}>
+                  <SVGIcon icon="Lightning" size="sm" />
+                  <span>Funda 복습 시스템</span>
+                </div>
+                <span css={[graphTagStyle(theme), graphActiveTagStyle(theme)]}>영구 기억화</span>
               </div>
               <div css={[graphFrameStyle(theme), graphFrameActiveStyle(theme)]}>
-                <svg viewBox="0 0 220 120" css={graphSvgStyle}>
-                  <polyline
-                    points="10,100 50,100 50,82 90,82 90,68 130,68 130,52 170,52 170,40 210,40"
-                    fill="none"
-                    stroke={theme.colors.primary.main}
-                    strokeWidth="3"
-                  />
-                </svg>
-                <span css={graphAxisTopActiveStyle(theme)}>100%</span>
-                <span css={graphAxisBottomActiveStyle(theme)}>0%</span>
-                <span css={graphLabelActiveStyle(theme)}>시간</span>
-                <span css={graphMarkerStyle(theme, '22%', '58%')} />
-                <span css={graphMarkerStyle(theme, '46%', '46%')} />
-                <span css={graphMarkerStyle(theme, '72%', '32%')} />
-                <span css={graphMarkerLabelStyle(theme, '18%', '52%')}>Day 1</span>
-                <span css={graphMarkerLabelStyle(theme, '41%', '40%')}>Day 6</span>
-                <span css={graphMarkerLabelStyle(theme, '66%', '26%')}>Day 14</span>
+                <div css={[graphInnerFrameStyle, graphInnerFrameActiveStyle]}>
+                  <SVGIcon icon="GraphUp" css={graphSvgStyle} />
+                </div>
+                <span
+                  css={[graphAxisStyle(theme), graphAxisTopStyle, graphAxisTopActiveStyle(theme)]}
+                >
+                  100%
+                </span>
+                <span
+                  css={[
+                    graphAxisStyle(theme),
+                    graphAxisBottomStyle,
+                    graphAxisBottomActiveStyle(theme),
+                  ]}
+                >
+                  0%
+                </span>
+                <span css={[graphAxisStyle(theme), graphLabelStyle, graphLabelActiveStyle(theme)]}>
+                  시간
+                </span>
+                <span css={graphMarkerStyle(theme, '86px', '125px')} />
+                <span css={graphMarkerStyle(theme, '150px', '94px')} />
+                <span css={graphMarkerStyle(theme, '214px', '60px')} />
+                <span css={graphMarkerLabelStyle(theme, '76px', '121px')}>Day 1</span>
+                <span css={graphMarkerLabelStyle(theme, '140px', '90px')}>Day 6</span>
+                <span css={graphMarkerLabelStyle(theme, '204px', '56px')}>Day 14</span>
               </div>
             </div>
           </div>
@@ -196,14 +199,25 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
             <div css={reviewListHeaderStyle(theme)}>오늘의 복습 리스트</div>
             <div css={reviewListPanelStyle(theme)}>
               <div css={codeBlockStyle(theme)}>
-                <code>const result = array.____(item =&gt; item &gt; 5)</code>
+                <code>
+                  <span>const result = array.</span>
+                  <span>_____(item =&gt; item &gt; 5)</span>
+                </code>
               </div>
               <div css={reviewListQuestionStyle(theme)}>빈 칸에 들어갈 배열 메서드는?</div>
             </div>
             <div css={reviewListHintStyle(theme)}>이 개념을 얼마나 잘 기억하고 있나요?</div>
             <div css={reviewScoreRowStyle}>
               {reviewScores.map(score => (
-                <div key={score.value} css={reviewScoreItemStyle(theme, score.color)}>
+                <div
+                  key={score.value}
+                  css={reviewScoreItemStyle(
+                    theme,
+                    score.color,
+                    score.borderColor,
+                    score.backgroundColor,
+                  )}
+                >
                   <div css={reviewScoreEmojiStyle}>{score.emoji}</div>
                   <div css={reviewScoreValueStyle(theme)}>{score.value}</div>
                 </div>
@@ -216,16 +230,31 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       <section css={purpleSectionStyle(theme)}>
         <div css={sectionInnerStyle}>
           <div css={sectionHeaderStyle}>
-            <h2 css={sectionTitleLightStyle(theme)}>언제 어디서나 부담없이 게임처럼 재미있게</h2>
+            <h2 css={sectionTitleLightStyle(theme)}>
+              언제 어디서나 부담없이
+              <br />
+              게임처럼 재미있게
+            </h2>
           </div>
           <div css={featureCardRowStyle}>
-            {featureCards.map((feature, index) => (
-              <div key={feature.title} css={featureCardStyle(theme)}>
-                <div css={featureCardScreenStyle(theme, index)} />
-                <div css={featureCardTitleStyle(theme)}>{feature.title}</div>
-                <p css={featureCardCaptionStyle(theme)}>{feature.caption}</p>
+            <div css={featureCardStyle(theme)}>
+              <div css={featureCardTitleStyle(theme)}>가벼운 퀴즈</div>
+              <div css={featureCardImageStyle}>
+                <img src={QuizImage} alt="quiz example image" />
               </div>
-            ))}
+            </div>
+            <div css={featureCardStyle(theme)}>
+              <div css={featureCardTitleStyle(theme)}>랭킹 1위 달성</div>
+              <div css={featureCardImageStyle}>
+                <img src={RankingImage} alt="ranking example image" />
+              </div>
+            </div>
+            <div css={featureCardStyle(theme)}>
+              <div css={featureCardTitleStyle(theme)}>매일 매일 심는 잔디</div>
+              <div css={featureCardImageStyle}>
+                <img src={GrassImage} alt="grass example image" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -233,7 +262,7 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       <section css={needsSectionStyle(theme)}>
         <div css={sectionInnerStyle}>
           <div css={sectionHeaderStyle}>
-            <h2 css={sectionTitleStyle(theme)}>이런 분들께 핀다가 필요합니다</h2>
+            <h2 css={sectionTitleStyle(theme)}>이런 분들께 펀다가 필요합니다</h2>
           </div>
           <ul css={needsListStyle}>
             {needsList.map(item => (
@@ -249,8 +278,17 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       <section css={ctaSectionStyle(theme)}>
         <div css={sectionInnerStyle}>
           <div css={ctaInnerStyle}>
-            <h2 css={ctaTitleStyle(theme)}>지금 바로 시작해보세요.</h2>
-            <p css={ctaSubtitleStyle(theme)}>첫 번째 퀴즈까지 단 10초면 충분합니다.</p>
+            <h2 css={ctaTitleStyle(theme)}>
+              지금 바로 시작해보세요.
+              <br />첫 번째 퀴즈까지 단 10초면 충분합니다.
+            </h2>
+            <p css={ctaSubtitleStyle(theme)}>
+              로그인 없이도 즉시 도전할 수 있습니다.
+              <br />
+              펀다의 모든 콘텐츠는 100% 무료로 제공됩니다.
+              <br />
+              나중에 로그인하면 오늘의 도전 기록을 안전하게 저장해 드릴게요.
+            </p>
             <Button variant="secondary" onClick={onStart} css={ctaButtonStyle(theme)}>
               퀴즈 도전하기
             </Button>
@@ -576,8 +614,8 @@ const chatBubbleStyleBottom = (theme: Theme) => css`
 `;
 
 const practiceCardStyle = (theme: Theme) => css`
-  width: min(550px, 80vw);
-  height: min(400px, 60vh);
+  width: min(480px, 80vw);
+  height: min(360px, 60vh);
   background: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.xlarge};
   padding: 32px 36px;
@@ -593,10 +631,27 @@ const practiceCardStyle = (theme: Theme) => css`
   }
 `;
 
-const practiceTopTextStyle = (theme: Theme) => css`
+const practiceGrayGroupStyle = css`
   position: absolute;
-  top: 50px;
-  right: 125px;
+  left: clamp(10px, 12vw, 90px);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+`;
+
+const practicePurpleGroupStyle = css`
+  position: absolute;
+  right: clamp(10px, 12vw, 90px);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+`;
+
+const practiceTopTextStyle = (theme: Theme) => css`
   text-align: center;
   color: ${theme.colors.primary.main};
   font-size: ${theme.typography['12Medium'].fontSize};
@@ -604,18 +659,13 @@ const practiceTopTextStyle = (theme: Theme) => css`
 `;
 
 const practiceBottomTextStyle = (theme: Theme) => css`
-  position: absolute;
-  left: 125px;
-  bottom: 55px;
+  text-align: center;
   color: ${theme.colors.text.light};
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
 `;
 
 const practiceGrayPillStyle = (theme: Theme) => css`
-  position: absolute;
-  left: 110px;
-  bottom: 0;
   width: 120px;
   height: 40px;
   border-radius: ${theme.borderRadius.medium};
@@ -625,11 +675,8 @@ const practiceGrayPillStyle = (theme: Theme) => css`
 `;
 
 const practicePurplePillStyle = (theme: Theme) => css`
-  position: absolute;
-  right: 110px;
-  bottom: 0;
   width: 120px;
-  height: 300px;
+  height: clamp(10px, 50vh, 260px);
   border-radius: ${theme.borderRadius.medium};
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
@@ -658,15 +705,15 @@ const sectionHeaderStyle = css`
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 40px;
+  gap: 24px;
+  margin-bottom: 60px;
 `;
 
 const sectionTitleStyle = (theme: Theme) => css`
   margin: 0;
   font-size: clamp(28px, 3.6vw, ${theme.typography['36ExtraBold'].fontSize});
   line-height: clamp(36px, 4vw, ${theme.typography['36ExtraBold'].lineHeight});
-  font-weight: ${theme.typography['36ExtraBold'].fontWeight};
+  font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${theme.colors.text.strong};
 `;
 
@@ -687,6 +734,7 @@ const graphRowStyle = css`
   justify-content: center;
   gap: 16px;
   flex-wrap: wrap;
+  margin-bottom: 60px;
 `;
 
 const graphTitleStyle = (theme: Theme) => css`
@@ -694,33 +742,15 @@ const graphTitleStyle = (theme: Theme) => css`
   align-items: center;
   gap: 8px;
   font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  color: ${theme.colors.text.strong};
-`;
-
-const graphTitleIconStyle = (theme: Theme) => css`
-  width: 28px;
-  height: 28px;
-  border-radius: ${theme.borderRadius.small};
-  background: ${theme.colors.surface.bold};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: ${theme.colors.text.light};
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
+  color: #6a7282;
 `;
 
 const graphCardStyle = (theme: Theme) => css`
-  width: min(320px, 90vw);
-  background: ${theme.colors.surface.strong};
+  width: min(380px, 90vw);
+  background: #f9fafb;
   border-radius: ${theme.borderRadius.large};
-  padding: 20px;
-  border: 1px solid ${theme.colors.border.default};
-  box-shadow: 0 12px 24px rgba(20, 20, 43, 0.1);
+  padding: 24px;
+  border: 2px solid ${theme.colors.border.default};
   animation: ${fadeUp} 700ms ease-out;
   display: flex;
   flex-direction: column;
@@ -733,110 +763,113 @@ const graphCardStyle = (theme: Theme) => css`
 
 const graphCardActiveStyle = (theme: Theme) => css`
   border-color: ${theme.colors.primary.light};
-  background: linear-gradient(
-    180deg,
-    ${theme.colors.primary.light} 0%,
-    ${theme.colors.primary.main} 100%
-  );
-  box-shadow: 0 22px 36px rgba(101, 89, 234, 0.35);
+  background: linear-gradient(135deg, rgba(101, 89, 234, 0.1) 0%, rgba(162, 154, 255, 0.1) 100%);
+  box-shadow: 0 12px 24px rgba(20, 20, 43, 0.1);
   color: ${theme.colors.surface.strong};
-  align-items: center;
 `;
 
 const graphHeaderStyle = (theme: Theme) => css`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
-  margin-bottom: 16px;
 `;
 
 const graphHeaderActiveStyle = (theme: Theme) => css`
   display: flex;
-  justify-content: center;
   align-items: center;
   gap: 12px;
-  font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
   color: ${theme.colors.surface.strong};
-  margin-bottom: 16px;
+`;
+
+const graphTitleActiveStyle = (theme: Theme) => css`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: ${theme.typography['16Bold'].fontSize};
+  color: ${theme.colors.primary.main};
 `;
 
 const graphTagStyle = (theme: Theme) => css`
   padding: 4px 10px;
   border-radius: 999px;
   background: ${theme.colors.surface.strong};
-  border: 1px solid ${theme.colors.border.default};
-  color: ${theme.colors.text.light};
+  border: 1px solid #e5e7eb;
+  color: #6a7282;
   font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
+`;
+
+const graphActiveTagStyle = (theme: Theme) => css`
+  color: ${theme.colors.primary.main};
+  border-color: ${theme.colors.primary.main};
 `;
 
 const graphFrameStyle = (theme: Theme) => css`
   position: relative;
   background: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.large};
-  padding: 18px 16px 24px;
-  border: 1px solid ${theme.colors.border.default};
+  padding: 36px 42px;
+  border: 1px solid #e5e7eb;
+`;
+
+const graphInnerFrameStyle = css`
+  height: 145px;
+  padding-top: 15px;
+  border-left: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+`;
+
+const graphInnerFrameActiveStyle = css`
+  padding-top: 0;
+  padding-bottom: 15px;
 `;
 
 const graphFrameActiveStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};
   border: 1px solid rgba(255, 255, 255, 0.7);
   width: 100%;
+  border: 1px solid #e5e7eb;
 `;
 
 const graphSvgStyle = css`
-  width: 100%;
-  height: 120px;
+  width: 100% !important;
+  height: 100% !important;
   display: block;
 `;
 
-const graphAxisTopStyle = (theme: Theme) => css`
+const graphAxisStyle = (theme: Theme) => css`
   position: absolute;
-  left: 14px;
-  top: 12px;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
 `;
 
-const graphAxisBottomStyle = (theme: Theme) => css`
-  position: absolute;
-  left: 14px;
-  bottom: 12px;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.weak};
+const graphAxisTopStyle = css`
+  left: 48px;
+  top: 32px;
 `;
 
-const graphLabelStyle = (theme: Theme) => css`
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.weak};
+const graphAxisBottomStyle = css`
+  left: 50px;
+  bottom: 40px;
+`;
+
+const graphLabelStyle = css`
+  right: 40px;
+  bottom: 14px;
 `;
 
 const graphAxisTopActiveStyle = (theme: Theme) => css`
-  position: absolute;
-  left: 14px;
-  top: 12px;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.primary.main};
 `;
 
 const graphAxisBottomActiveStyle = (theme: Theme) => css`
-  position: absolute;
-  left: 14px;
-  bottom: 12px;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.primary.main};
 `;
 
 const graphLabelActiveStyle = (theme: Theme) => css`
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.primary.main};
 `;
@@ -867,27 +900,17 @@ const graphArrowStyle = (theme: Theme) => css`
   padding: 4px 10px;
 `;
 
-const graphBadgeStyle = (theme: Theme) => css`
-  align-self: center;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: ${theme.colors.surface.strong};
-  color: ${theme.colors.primary.main};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-`;
-
 const reviewPillStyle = (theme: Theme) => css`
   margin: 28px auto 32px;
   width: fit-content;
-  padding: 12px 22px;
-  border-radius: 999px;
-  background: ${theme.colors.primary.surface};
+  padding: 12px 60px;
+  border-radius: ${theme.borderRadius.medium};
+  background: ${theme.colors.primary.semilight};
   color: ${theme.colors.primary.dark};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   font-size: ${theme.typography['12Medium'].fontSize};
   position: relative;
-  box-shadow: 0 14px 24px rgba(101, 89, 234, 0.18);
+  box-shadow: 0 12px 24px rgba(20, 20, 43, 0.1);
   text-align: center;
 
   &::after {
@@ -898,7 +921,8 @@ const reviewPillStyle = (theme: Theme) => css`
     bottom: -8px;
     border-width: 8px 8px 0 8px;
     border-style: solid;
-    border-color: ${theme.colors.primary.surface} transparent transparent transparent;
+    border-color: ${theme.colors.primary.semilight} transparent transparent transparent;
+    box-shadow: 0 12px 24px rgba(20, 20, 43, 0.1);
   }
 `;
 
@@ -922,7 +946,7 @@ const reviewListHeaderStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Bold'].fontSize};
   font-weight: ${theme.typography['16Bold'].fontWeight};
   color: ${theme.colors.primary.main};
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 `;
 
 const reviewListPanelStyle = (theme: Theme) => css`
@@ -930,17 +954,32 @@ const reviewListPanelStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.large};
   border: 1px solid ${theme.colors.border.default};
   padding: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 `;
 
 const codeBlockStyle = (theme: Theme) => css`
   background: ${colors.light.grayscale[900]};
   color: ${colors.light.grayscale[50]};
-  border-radius: ${theme.borderRadius.large};
-  padding: 14px 16px;
+  border-radius: ${theme.borderRadius.medium};
+  padding: 18px 16px;
   font-family: 'D2Coding', monospace;
   font-size: ${theme.typography['12Medium'].fontSize};
   margin-bottom: 12px;
+  text-align: left;
+
+  code {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  code > span:nth-child(1) {
+    color: #05df72;
+  }
+
+  code > span:nth-child(2) {
+    color: #ffdf20;
+  }
 `;
 
 const reviewListQuestionStyle = (theme: Theme) => css`
@@ -966,8 +1005,15 @@ const reviewScoreRowStyle = css`
   }
 `;
 
-const reviewScoreItemStyle = (theme: Theme, borderColor: string) => css`
-  background: ${theme.colors.surface.strong};
+const reviewScoreItemStyle = (
+  theme: Theme,
+  color: string,
+  borderColor: string,
+  backgroundColor: string,
+) => css`
+  height: 80px;
+  color: ${color};
+  background-color: ${backgroundColor};
   border-radius: ${theme.borderRadius.medium};
   border: 2px solid ${borderColor};
   padding: 10px 6px;
@@ -976,6 +1022,8 @@ const reviewScoreItemStyle = (theme: Theme, borderColor: string) => css`
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
 `;
 
 const reviewScoreEmojiStyle = css`
@@ -987,7 +1035,6 @@ const reviewScoreValueStyle = (theme: Theme) => css`
   margin-top: 6px;
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.text.strong};
 `;
 
 const purpleSectionStyle = (theme: Theme) => css`
@@ -995,7 +1042,8 @@ const purpleSectionStyle = (theme: Theme) => css`
   background: linear-gradient(
     180deg,
     ${theme.colors.primary.main} 0%,
-    ${theme.colors.primary.dark} 100%
+    ${theme.colors.primary.main} 80%,
+    ${theme.colors.surface.bold} 100%
   );
   color: ${theme.colors.surface.strong};
 `;
@@ -1017,37 +1065,28 @@ const featureCardRowStyle = css`
 `;
 
 const featureCardStyle = (theme: Theme) => css`
-  background: ${theme.colors.surface.strong};
+  height: 310px;
+  background: ${theme.colors.surface.default};
   border-radius: ${theme.borderRadius.medium};
   padding: 18px;
   box-shadow: 0 16px 26px rgba(21, 21, 47, 0.3);
-  color: ${theme.colors.text.strong};
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
   min-height: 180px;
 `;
 
-const featureCardScreenStyle = (theme: Theme, index: number) => css`
-  height: 110px;
-  border-radius: ${theme.borderRadius.medium};
-  background: ${[
-    `linear-gradient(135deg, ${theme.colors.primary.surface} 0%, ${theme.colors.surface.strong} 100%)`,
-    `linear-gradient(135deg, ${theme.colors.surface.bold} 0%, ${theme.colors.surface.strong} 100%)`,
-    `linear-gradient(135deg, ${theme.colors.surface.default} 0%, ${theme.colors.surface.strong} 100%)`,
-  ][index % 3]};
-  border: 1px solid ${theme.colors.border.default};
-`;
-
 const featureCardTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
+  color: #4a5565;
 `;
 
-const featureCardCaptionStyle = (theme: Theme) => css`
-  margin: 0;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.weak};
+const featureCardImageStyle = css`
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const needsSectionStyle = (theme: Theme) => css`
@@ -1056,6 +1095,7 @@ const needsSectionStyle = (theme: Theme) => css`
 `;
 
 const needsListStyle = css`
+  width: min(450px, 80vw);
   display: grid;
   gap: 16px;
   margin: 0;
@@ -1073,7 +1113,7 @@ const needsItemStyle = (theme: Theme) => css`
   align-items: center;
   gap: 12px;
   box-shadow: 0 10px 20px rgba(20, 20, 43, 0.1);
-  font-size: ${theme.typography['12Medium'].fontSize};
+  font-size: ${theme.typography['16Medium'].fontSize};
   color: ${theme.colors.text.strong};
 `;
 
@@ -1081,8 +1121,8 @@ const checkBadgeStyle = (theme: Theme) => css`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: ${theme.colors.primary.surface};
-  color: ${theme.colors.primary.dark};
+  background: ${theme.colors.primary.light};
+  color: ${theme.colors.surface.strong};
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1111,12 +1151,13 @@ const ctaInnerStyle = css`
 const ctaTitleStyle = (theme: Theme) => css`
   margin: 0;
   font-size: clamp(24px, 4vw, ${theme.typography['36ExtraBold'].fontSize});
-  font-weight: ${theme.typography['36ExtraBold'].fontWeight};
+  font-weight: ${theme.typography['32Medium'].fontWeight};
 `;
 
 const ctaSubtitleStyle = (theme: Theme) => css`
   margin: 0;
   font-size: ${theme.typography['12Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
   color: rgba(245, 246, 255, 0.8);
 `;
 

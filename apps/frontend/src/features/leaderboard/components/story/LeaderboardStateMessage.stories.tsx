@@ -22,8 +22,8 @@ const meta: Meta<typeof LeaderboardStateMessage> = {
       <ThemeProvider theme={lightTheme}>
         <div
           style={{
-            backgroundColor: lightTheme.colors.surface.default,
-            minHeight: '100vh',
+            background: 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)',
+            minHeight: '400px',
             padding: '24px',
           }}
         >

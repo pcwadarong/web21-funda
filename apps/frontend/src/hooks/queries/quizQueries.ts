@@ -1,13 +1,33 @@
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import type { UseQueryOptions } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import type { QuizQuestion } from '@/feat/quiz/types';
 import type { QuizSubmissionRequest, StepCompletionPayload } from '@/services/quizService';
 import { quizService } from '@/services/quizService';
 
-export const useQuizzesByStepQuery = (stepId: number) =>
-  useSuspenseQuery({
+export const useQuizzesByStepQuery = (
+  stepId: number,
+  options?: Omit<
+    UseQueryOptions<QuizQuestion[], Error, QuizQuestion[], ['quizzes-by-step', number]>,
+    'queryKey' | 'queryFn'
+  >,
+) =>
+  useQuery({
     queryKey: ['quizzes-by-step', stepId],
     queryFn: () => quizService.getQuizzesByStep(stepId),
+    staleTime: 1000 * 60 * 5,
+    ...options,
   });
+
+export const usePrefetchQuizzesByStep = () => {
+  const queryClient = useQueryClient();
+  return (stepId: number) =>
+    queryClient.prefetchQuery({
+      queryKey: ['quizzes-by-step', stepId],
+      queryFn: () => quizService.getQuizzesByStep(stepId),
+      staleTime: 1000 * 60 * 5,
+    });
+};
 
 export const useSubmitQuizMutation = () =>
   useMutation({

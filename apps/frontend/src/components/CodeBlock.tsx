@@ -151,7 +151,6 @@ const badgeStyle = (theme: Theme) => css`
 `;
 
 const preStyle = css`
-  margin: 0;
   padding: 20px;
   overflow-x: auto;
   white-space: pre-wrap;

@@ -97,7 +97,7 @@ describe('SelectFieldContainer 컴포넌트 테스트', () => {
     const onFieldClick = vi.fn();
     renderContainer({ onFieldClick });
 
-    const frontendCard = screen.getByText('프론트엔드').closest('label');
+    const frontendCard = screen.getByText('프론트엔드').closest('button');
     fireEvent.click(frontendCard!);
 
     expect(onFieldClick).toHaveBeenCalledWith('frontend');
@@ -107,7 +107,7 @@ describe('SelectFieldContainer 컴포넌트 테스트', () => {
     const onFieldClick = vi.fn();
     renderContainer({ onFieldClick });
 
-    const backendCard = screen.getByText('백엔드').closest('label');
+    const backendCard = screen.getByText('백엔드').closest('button');
     fireEvent.click(backendCard!);
 
     expect(onFieldClick).toHaveBeenCalledWith('backend');

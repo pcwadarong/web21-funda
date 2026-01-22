@@ -184,9 +184,9 @@ describe('QuizContainer 컴포넌트 테스트', () => {
     expect(handleNextQuestion).toHaveBeenCalled();
   });
 
-  it('퀴즈가 없을 때 로딩 메시지가 표시된다', () => {
-    renderContainer({ quizzes: [] });
+  it('퀴즈가 없을 때 렌더링되지 않는다', () => {
+    const { container } = renderContainer({ quizzes: [] });
 
-    expect(screen.getByText('데이터를 불러오는 중입니다...')).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });

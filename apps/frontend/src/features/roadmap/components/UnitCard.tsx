@@ -149,7 +149,6 @@ const cardTitleStyle = (theme: Theme) => css`
 `;
 
 const cardDescriptionStyle = (theme: Theme) => css`
-  margin: 0;
   font-size: ${theme.typography['12Medium'].fontSize};
   line-height: ${theme.typography['12Medium'].lineHeight};
   font-weight: ${theme.typography['12Medium'].fontWeight};

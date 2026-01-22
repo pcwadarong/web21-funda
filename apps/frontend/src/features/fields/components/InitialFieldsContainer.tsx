@@ -91,7 +91,6 @@ const titleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['24Bold'].lineHeight};
   font-weight: ${theme.typography['24Bold'].fontWeight};
   color: ${theme.colors.primary.main};
-  margin: 0;
   text-align: center;
 `;
 
@@ -100,7 +99,7 @@ const instructionStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.weak};
-  margin-top: 0;
+  margin-bottom: 1.5rem;
   text-align: center;
 `;
 

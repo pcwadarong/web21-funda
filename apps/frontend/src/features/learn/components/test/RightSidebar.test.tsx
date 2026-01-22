@@ -1,4 +1,5 @@
 import { ThemeProvider } from '@emotion/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type * as ReactRouterDom from 'react-router-dom';
 import { MemoryRouter } from 'react-router-dom';
@@ -97,29 +98,34 @@ vi.mock('@/services/progressService', () => ({
 const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: (slug: string) => void }) => {
   const setFieldSlug = props?.setFieldSlug ?? (() => {});
   const fieldSlug = props?.fieldSlug ?? 'FE';
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   return {
     setFieldSlug,
     ...render(
-      <ThemeProvider theme={lightTheme}>
-        <ToastProvider>
-          <ModalProvider>
-            <MemoryRouter>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  backgroundColor: lightTheme.colors.surface.default,
-                  minHeight: '100vh',
-                  padding: '24px',
-                }}
-              >
-                <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
-              </div>
-            </MemoryRouter>
-          </ModalProvider>
-        </ToastProvider>
-      </ThemeProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={lightTheme}>
+          <ToastProvider>
+            <ModalProvider>
+              <MemoryRouter>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    backgroundColor: lightTheme.colors.surface.default,
+                    minHeight: '100vh',
+                    padding: '24px',
+                  }}
+                >
+                  <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
+                </div>
+              </MemoryRouter>
+            </ModalProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </QueryClientProvider>,
     ),
   };
 };

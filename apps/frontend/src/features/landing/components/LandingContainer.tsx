@@ -1,11 +1,12 @@
 import { css, keyframes, useTheme } from '@emotion/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import GrassImage from '@/assets/landing-icons/grass.png';
 import QuizImage from '@/assets/landing-icons/quiz.png';
 import RankingImage from '@/assets/landing-icons/ranking.png';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import useIntersectionObserver from '@/hooks/useIntersectionObserver';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
@@ -16,6 +17,25 @@ interface LandingContainerProps {
 
 export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContainerProps) => {
   const theme = useTheme();
+  const darkReveal = useScrollReveal<HTMLDivElement>();
+  const reviewHeaderReveal = useScrollReveal<HTMLDivElement>();
+  const reviewGraphReveal = useScrollReveal<HTMLDivElement>();
+  const reviewPillReveal = useScrollReveal<HTMLDivElement>();
+  const reviewListReveal = useScrollReveal<HTMLDivElement>();
+  const featureCardReveals = [
+    useScrollReveal<HTMLDivElement>(),
+    useScrollReveal<HTMLDivElement>(),
+    useScrollReveal<HTMLDivElement>(),
+  ];
+  const purpleReveal = useScrollReveal<HTMLDivElement>();
+  const needsHeaderReveal = useScrollReveal<HTMLDivElement>();
+  const needsItemReveals = [
+    useScrollReveal<HTMLLIElement>(),
+    useScrollReveal<HTMLLIElement>(),
+    useScrollReveal<HTMLLIElement>(),
+    useScrollReveal<HTMLLIElement>(),
+  ];
+  const ctaReveal = useScrollReveal<HTMLDivElement>();
   const reviewScores = [
     { value: 0, emoji: '😭', borderColor: '#FFA2A2', color: '#C10007', backgroundColor: '#FFE2E2' },
     { value: 1, emoji: '😢', borderColor: '#FFB86A', color: '#CA3500', backgroundColor: '#FFEDD4' },
@@ -35,6 +55,11 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
     '체계적인 로드맵을 따라 학습하고 싶은 초보자',
     '출퇴근 길 5분, 틈틈이 실력을 쌓고 싶은 효율 중시 개발자',
     '지루한 강의보다 인터랙티브한 퀴즈로 체득하고 싶은 분',
+  ];
+  const featureCards = [
+    { title: '가벼운 퀴즈', image: QuizImage, alt: 'quiz example image' },
+    { title: '랭킹 1위 달성', image: RankingImage, alt: 'ranking example image' },
+    { title: '매일 매일 심는 잔디', image: GrassImage, alt: 'grass example image' },
   ];
 
   return (
@@ -81,7 +106,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       </section>
 
       <section css={darkSectionStyle(theme)}>
-        <div css={sectionInnerStyle}>
+        <div
+          ref={darkReveal.ref}
+          css={[
+            sectionInnerStyle,
+            scrollRevealStyle,
+            darkReveal.revealed && scrollRevealVisibleStyle,
+          ]}
+        >
           <div css={darkInnerStyle}>
             <div css={chatRowStyle}>
               <div css={[chatBubbleStyle(theme), chatBubbleStyleTop(theme)]}>
@@ -98,7 +130,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
                   <br />
                   착각하는 CS 지식
                 </div>
-                <div css={practiceGrayPillStyle(theme)} aria-hidden="true" />
+                <div
+                  css={[
+                    practiceGrayPillStyle(theme),
+                    riseInitStyle,
+                    darkReveal.revealed && riseActiveStyle,
+                  ]}
+                  aria-hidden="true"
+                />
               </div>
               <div css={practicePurpleGroupStyle}>
                 <div css={practiceTopTextStyle(theme)}>
@@ -106,7 +145,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
                   <br />
                   필요한 필수 지식
                 </div>
-                <div css={practicePurplePillStyle(theme)} aria-hidden="true" />
+                <div
+                  css={[
+                    practicePurplePillStyle(theme),
+                    riseInitStyle,
+                    darkReveal.revealed && riseDelayedStyle,
+                  ]}
+                  aria-hidden="true"
+                />
               </div>
             </div>
             <p css={darkCaptionStyle(theme)}>
@@ -120,7 +166,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
 
       <section css={reviewSectionStyle(theme)}>
         <div css={sectionInnerStyle}>
-          <div css={sectionHeaderStyle}>
+          <div
+            ref={reviewHeaderReveal.ref}
+            css={[
+              sectionHeaderStyle,
+              scrollRevealStyle,
+              reviewHeaderReveal.revealed && scrollRevealVisibleStyle,
+            ]}
+          >
             <h2 css={sectionTitleStyle(theme)}>
               머리가 아닌 입에 붙을 때까지,
               <br />
@@ -133,7 +186,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
             </p>
           </div>
 
-          <div css={graphRowStyle}>
+          <div
+            ref={reviewGraphReveal.ref}
+            css={[
+              graphRowStyle,
+              scrollRevealStyle,
+              reviewGraphReveal.revealed && scrollRevealVisibleStyle,
+            ]}
+          >
             <div css={graphCardStyle(theme)}>
               <div css={graphHeaderStyle(theme)}>
                 <div css={graphTitleStyle(theme)}>
@@ -193,9 +253,25 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
             </div>
           </div>
 
-          <div css={reviewPillStyle(theme)}>지금쯤 이 문제를 복습하기 최적의 타이밍이에요!</div>
+          <div
+            ref={reviewPillReveal.ref}
+            css={[
+              reviewPillStyle(theme),
+              scrollRevealStyle,
+              reviewPillReveal.revealed && scrollRevealVisibleStyle,
+            ]}
+          >
+            지금쯤 이 문제를 복습하기 최적의 타이밍이에요!
+          </div>
 
-          <div css={reviewListCardStyle(theme)}>
+          <div
+            ref={reviewListReveal.ref}
+            css={[
+              reviewListCardStyle(theme),
+              scrollRevealStyle,
+              reviewListReveal.revealed && scrollRevealVisibleStyle,
+            ]}
+          >
             <div css={reviewListHeaderStyle(theme)}>오늘의 복습 리스트</div>
             <div css={reviewListPanelStyle(theme)}>
               <div css={codeBlockStyle(theme)}>
@@ -228,7 +304,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       </section>
 
       <section css={purpleSectionStyle(theme)}>
-        <div css={sectionInnerStyle}>
+        <div
+          ref={purpleReveal.ref}
+          css={[
+            sectionInnerStyle,
+            scrollRevealStyle,
+            purpleReveal.revealed && scrollRevealVisibleStyle,
+          ]}
+        >
           <div css={sectionHeaderStyle}>
             <h2 css={sectionTitleLightStyle(theme)}>
               언제 어디서나 부담없이
@@ -237,36 +320,50 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
             </h2>
           </div>
           <div css={featureCardRowStyle}>
-            <div css={featureCardStyle(theme)}>
-              <div css={featureCardTitleStyle(theme)}>가벼운 퀴즈</div>
-              <div css={featureCardImageStyle}>
-                <img src={QuizImage} alt="quiz example image" />
+            {featureCards.map((card, index) => (
+              <div
+                key={card.title}
+                ref={featureCardReveals[index]?.ref}
+                css={[
+                  featureCardStyle(theme),
+                  slideFromRightStyle,
+                  slideDelayStyle(index),
+                  featureCardReveals[index]?.revealed && slideFromRightVisibleStyle,
+                ]}
+              >
+                <div css={featureCardTitleStyle(theme)}>{card.title}</div>
+                <div css={featureCardImageStyle}>
+                  <img src={card.image} alt={card.alt} />
+                </div>
               </div>
-            </div>
-            <div css={featureCardStyle(theme)}>
-              <div css={featureCardTitleStyle(theme)}>랭킹 1위 달성</div>
-              <div css={featureCardImageStyle}>
-                <img src={RankingImage} alt="ranking example image" />
-              </div>
-            </div>
-            <div css={featureCardStyle(theme)}>
-              <div css={featureCardTitleStyle(theme)}>매일 매일 심는 잔디</div>
-              <div css={featureCardImageStyle}>
-                <img src={GrassImage} alt="grass example image" />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       <section css={needsSectionStyle(theme)}>
         <div css={sectionInnerStyle}>
-          <div css={sectionHeaderStyle}>
+          <div
+            ref={needsHeaderReveal.ref}
+            css={[
+              sectionHeaderStyle,
+              scrollRevealStyle,
+              needsHeaderReveal.revealed && scrollRevealVisibleStyle,
+            ]}
+          >
             <h2 css={sectionTitleStyle(theme)}>이런 분들께 펀다가 필요합니다</h2>
           </div>
           <ul css={needsListStyle}>
-            {needsList.map(item => (
-              <li key={item} css={needsItemStyle(theme)}>
+            {needsList.map((item, index) => (
+              <li
+                key={item}
+                ref={needsItemReveals[index]?.ref}
+                css={[
+                  needsItemStyle(theme),
+                  scrollRevealStyle,
+                  needsItemReveals[index]?.revealed && scrollRevealVisibleStyle,
+                ]}
+              >
                 <span css={checkBadgeStyle(theme)}>✓</span>
                 {item}
               </li>
@@ -276,7 +373,14 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       </section>
 
       <section css={ctaSectionStyle(theme)}>
-        <div css={sectionInnerStyle}>
+        <div
+          ref={ctaReveal.ref}
+          css={[
+            sectionInnerStyle,
+            scrollRevealStyle,
+            ctaReveal.revealed && scrollRevealVisibleStyle,
+          ]}
+        >
           <div css={ctaInnerStyle}>
             <h2 css={ctaTitleStyle(theme)}>
               지금 바로 시작해보세요.
@@ -320,10 +424,110 @@ const floatCard = keyframes`
   }
 `;
 
+const floatTopBubble = keyframes`
+  0%,
+  100% {
+    transform: translate3d(40px, -60px, 0);
+  }
+  50% {
+    transform: translate3d(40px, -64px, 0);
+  }
+`;
+
+const floatBottomBubble = keyframes`
+  0%,
+  100% {
+    transform: translate3d(-40px, -25px, 0);
+  }
+  50% {
+    transform: translate3d(-40px, -29px, 0);
+  }
+`;
+
+const riseUp = keyframes`
+  0% {
+    height: 0;
+  }
+  100% {
+    height: var(--pill-height);
+  }
+`;
+
+const riseInitStyle = css`
+  height: 0;
+  overflow: hidden;
+  animation: none;
+
+  @media (prefers-reduced-motion: reduce) {
+    height: var(--pill-height);
+  }
+`;
+
+const riseActiveStyle = css`
+  animation: ${riseUp} 600ms ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
+const riseDelayedStyle = css`
+  animation: ${riseUp} 700ms ease-out both;
+  animation-delay: 0.4s;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
 const pageStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.default};
   color: ${theme.colors.text.default};
   min-height: 100vh;
+`;
+
+const scrollRevealStyle = css`
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+  will-change: opacity, transform;
+
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+`;
+
+const scrollRevealVisibleStyle = css`
+  opacity: 1;
+  transform: translateY(0);
+`;
+
+const slideFromRightStyle = css`
+  opacity: 0;
+  transform: translateX(48px);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+  will-change: transform, opacity;
+
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+`;
+
+const slideFromRightVisibleStyle = css`
+  opacity: 1;
+  transform: translateX(0);
+`;
+
+const slideDelayStyle = (index: number) => css`
+  transition-delay: ${index * 240}ms;
 `;
 
 const sectionInnerStyle = css`
@@ -530,10 +734,11 @@ const heroCardMiniStyle = (theme: Theme) => css`
 const darkSectionStyle = (theme: Theme) => css`
   position: relative;
   padding: 300px 24px 150px;
-  background: linear-gradient(
-    180deg,
-    ${colors.light.grayscale[900]} 0%,
-    ${colors.light.grayscale[800]} 100%
+  background: radial-gradient(
+    circle at center,
+    ${colors.light.grayscale[700]} 0%,
+    ${colors.light.grayscale[900]} 40%,
+    ${colors.light.grayscale[900]} 100%
   );
   color: ${theme.colors.surface.strong};
   margin-top: -60px;
@@ -587,12 +792,16 @@ const chatBubbleStyle = (theme: Theme) => css`
 
 const chatBubbleStyleTop = (theme: Theme) => css`
   background: ${theme.colors.primary.semilight};
-  transform: translateX(40px) translateY(-60px);
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  animation: ${floatTopBubble} 4s ease-in-out infinite;
+  animation-delay: 0.2s;
   z-index: 1;
 
   &::after {
     left: 15px;
-    bottom: -8px;
+    bottom: -7px;
     border-width: 8px 8px 0 8px;
     border-style: solid;
     border-color: ${theme.colors.primary.semilight} transparent transparent transparent;
@@ -601,12 +810,16 @@ const chatBubbleStyleTop = (theme: Theme) => css`
 
 const chatBubbleStyleBottom = (theme: Theme) => css`
   background: ${theme.colors.primary.light};
-  transform: translateX(-40px) translateY(-25px);
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  animation: ${floatBottomBubble} 4s ease-in-out infinite;
+  animation-delay: -0.3s;
   z-index: 0;
 
   &::after {
     right: 15px;
-    bottom: -8px;
+    bottom: -7px;
     border-width: 8px 8px 0 8px;
     border-style: solid;
     border-color: ${theme.colors.primary.light} transparent transparent transparent;
@@ -666,8 +879,9 @@ const practiceBottomTextStyle = (theme: Theme) => css`
 `;
 
 const practiceGrayPillStyle = (theme: Theme) => css`
+  --pill-height: 40px;
   width: 120px;
-  height: 40px;
+  height: var(--pill-height);
   border-radius: ${theme.borderRadius.medium};
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
@@ -675,8 +889,9 @@ const practiceGrayPillStyle = (theme: Theme) => css`
 `;
 
 const practicePurplePillStyle = (theme: Theme) => css`
+  --pill-height: clamp(10px, 50vh, 260px);
   width: 120px;
-  height: clamp(10px, 50vh, 260px);
+  height: var(--pill-height);
   border-radius: ${theme.borderRadius.medium};
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
@@ -1147,6 +1362,24 @@ const ctaInnerStyle = css`
   gap: 12px;
   align-items: center;
 `;
+
+const REVEAL_OPTIONS = {
+  rootMargin: '0px 0px -20% 0px',
+  threshold: 0.2,
+};
+
+const useScrollReveal = <T extends HTMLElement>() => {
+  const [ref, isVisible] = useIntersectionObserver<T>(REVEAL_OPTIONS);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    if (isVisible) {
+      setRevealed(true);
+    }
+  }, [isVisible]);
+
+  return { ref, revealed };
+};
 
 const ctaTitleStyle = (theme: Theme) => css`
   margin: 0;

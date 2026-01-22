@@ -53,6 +53,7 @@ export class AiAskClovaService {
 
     const prompt = this.promptService.buildPrompt(quiz, userQuestion);
     const apiRequest = this.buildApiRequest(prompt.system, prompt.user);
+    const { controller, timeoutId } = this.createTimeoutController(20000);
 
     const response = await fetch(this.apiUrl, {
       method: 'POST',
@@ -62,6 +63,9 @@ export class AiAskClovaService {
         Accept: 'application/json',
       },
       body: JSON.stringify(apiRequest),
+      signal: controller.signal,
+    }).finally(() => {
+      clearTimeout(timeoutId);
     });
 
     if (!response.ok) {
@@ -92,6 +96,7 @@ export class AiAskClovaService {
 
     const prompt = this.promptService.buildPrompt(quiz, userQuestion);
     const apiRequest = this.buildApiRequest(prompt.system, prompt.user);
+    const { controller, timeoutId } = this.createTimeoutController(20000);
 
     const response = await fetch(this.apiUrl, {
       method: 'POST',
@@ -101,6 +106,9 @@ export class AiAskClovaService {
         Accept: 'text/event-stream',
       },
       body: JSON.stringify(apiRequest),
+      signal: controller.signal,
+    }).finally(() => {
+      clearTimeout(timeoutId);
     });
 
     if (!response.ok || !response.body) {
@@ -206,6 +214,21 @@ export class AiAskClovaService {
     }
 
     return fullContent;
+  }
+
+  /**
+   * 외부 API 요청이 오래 걸릴 때를 대비해 타임아웃 컨트롤러를 만든다.
+   *
+   * @param ms 타임아웃 밀리초
+   * @returns abort controller와 타이머 ID
+   */
+  private createTimeoutController(ms: number): {
+    controller: AbortController;
+    timeoutId: NodeJS.Timeout;
+  } {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ms);
+    return { controller, timeoutId };
   }
 
   /**

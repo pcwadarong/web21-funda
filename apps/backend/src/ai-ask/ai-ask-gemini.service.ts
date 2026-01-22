@@ -34,11 +34,15 @@ export class AiAskGeminiService {
 
     const prompt = this.promptService.buildPrompt(quiz, userQuestion);
     const body = this.buildRequestBody(prompt.system, prompt.user);
+    const { controller, timeoutId } = this.createTimeoutController(20000);
 
     const response = await fetch(`${this.apiUrl}:generateContent?key=${this.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
+    }).finally(() => {
+      clearTimeout(timeoutId);
     });
 
     if (!response.ok) {
@@ -67,11 +71,15 @@ export class AiAskGeminiService {
 
     const prompt = this.promptService.buildPrompt(quiz, userQuestion);
     const body = this.buildRequestBody(prompt.system, prompt.user);
+    const { controller, timeoutId } = this.createTimeoutController(20000);
 
     const response = await fetch(`${this.apiUrl}:streamGenerateContent?key=${this.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
+    }).finally(() => {
+      clearTimeout(timeoutId);
     });
 
     if (!response.ok || !response.body) {
@@ -179,5 +187,20 @@ export class AiAskGeminiService {
     if (this.apiKey.length === 0) {
       throw new BadRequestException('GEMINI_API_KEY가 설정되지 않았습니다.');
     }
+  }
+
+  /**
+   * 외부 API 요청이 오래 걸릴 때를 대비해 타임아웃 컨트롤러를 만든다.
+   *
+   * @param ms 타임아웃 밀리초
+   * @returns abort controller와 타이머 ID
+   */
+  private createTimeoutController(ms: number): {
+    controller: AbortController;
+    timeoutId: NodeJS.Timeout;
+  } {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), ms);
+    return { controller, timeoutId };
   }
 }

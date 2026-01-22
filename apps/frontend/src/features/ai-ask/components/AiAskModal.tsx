@@ -5,7 +5,7 @@ import { Button } from '@/comp/Button';
 import { CodeBlock } from '@/comp/CodeBlock';
 import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
 import SVGIcon from '@/comp/SVGIcon';
-import type { QuizQuestion } from '@/feat/quiz/types';
+import type { CorrectAnswerType, MatchingPair, QuizQuestion } from '@/feat/quiz/types';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import { getAiQuestions } from '@/services/aiAskService';
 import { BASE_URL } from '@/services/api';
@@ -21,9 +21,10 @@ type SseEvent = {
 
 interface AiAskModalProps {
   quiz: QuizQuestion;
+  correctAnswer: CorrectAnswerType | null;
 }
 
-export const AiAskModal = ({ quiz }: AiAskModalProps) => {
+export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
   const theme = useTheme();
   const [items, setItems] = useState<AiQuestionAnswer[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -202,104 +203,84 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
   };
 
   return (
-    <div css={containerStyle}>
-      <section css={summaryStyle(theme)}>
-        <div css={summaryTitleStyle(theme)}>문제 정보</div>
-        <div css={summaryQuestionStyle(theme)}>
-          {<TextWithCodeStyle text={`Q. ${preview.question}`} />}
-        </div>
-        {preview.options.length > 0 && (
-          <div css={sectionBlockStyle}>
-            <div css={sectionLabelStyle(theme)}>보기</div>
-            <ul css={summaryListStyle(theme)}>
-              {preview.options.map(option => (
-                <li key={option}>{option}</li>
-              ))}
-            </ul>
+    <div css={modalWrapperStyle}>
+      <div css={containerStyle}>
+        <section css={summaryStyle(theme)}>
+          <div css={summaryTitleStyle(theme)}>문제 정보</div>
+          <div css={summaryQuestionStyle(theme)}>
+            {<TextWithCodeStyle text={`Q. ${preview.question}`} />}
           </div>
-        )}
-        {preview.matching && (
-          <div css={sectionBlockStyle}>
-            <div css={sectionLabelStyle(theme)}>매칭 항목</div>
-            <div css={matchingGridStyle}>
-              <div>
-                <div css={matchingLabelStyle(theme)}>왼쪽</div>
-                <ul css={summaryListStyle(theme)}>
-                  {preview.matching.left.map(item => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <div css={matchingLabelStyle(theme)}>오른쪽</div>
-                <ul css={summaryListStyle(theme)}>
-                  {preview.matching.right.map(item => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+          {preview.code && (
+            <div css={sectionBlockStyle}>
+              <div css={sectionLabelStyle(theme)}>코드</div>
+              <CodeBlock language={preview.code.language}>{preview.code.snippet}</CodeBlock>
             </div>
-          </div>
-        )}
-        {preview.code && (
+          )}
           <div css={sectionBlockStyle}>
-            <div css={sectionLabelStyle(theme)}>코드</div>
-            <CodeBlock language={preview.code.language}>{preview.code.snippet}</CodeBlock>
+            <div css={sectionLabelStyle(theme)}>정답</div>
+            {preview.matching
+              ? renderMatching(theme, preview, correctAnswer)
+              : renderOptions(theme, preview, correctAnswer)}
           </div>
-        )}
-      </section>
+        </section>
 
-      <section css={listSectionStyle}>
-        {items.length === 0 && <div css={emptyStyle(theme)}>아직 등록된 질문이 없습니다.</div>}
-        {items.map(item => {
-          const isExpanded = expandedIds.has(item.id);
-          const statusLabel = getStatusLabel(item);
-          return (
-            <article key={item.id} css={qaItemStyle(theme)}>
-              <button css={qaQuestionStyle(theme)} onClick={() => handleToggle(item.id)}>
-                {item.isMine && <span css={badgeStyle(theme)}>나의 질문</span>}
-                <span css={questionTextStyle(theme)}>{item.question}</span>
-                <span css={statusStyle(theme)}>{statusLabel}</span>
-              </button>
-              {isExpanded && (
-                <div css={qaAnswerStyle(theme)}>
-                  {item.status === 'pending' && (!item.answer || item.answer.length === 0) ? (
-                    <TypingDots />
-                  ) : (
-                    <div css={answerTextStyle(theme)}>
-                      {item.status === 'failed' ? (
-                        'AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
-                      ) : (
-                        <MarkdownRenderer text={item.answer ?? ''} />
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </article>
-          );
-        })}
-      </section>
-
-      <form css={inputBarStyle(theme)} onSubmit={handleSubmit}>
-        <input
-          css={inputStyle(theme)}
-          value={input}
-          onChange={event => setInput(event.target.value)}
-          placeholder="궁금한 것을 질문해보세요."
-          maxLength={maxQuestionLength}
-          disabled={isStreaming}
-        />
-        <Button
-          type="submit"
-          variant="primary"
-          css={sendButtonStyle(theme)}
-          aria-label="질문 전송"
-          disabled={isStreaming || input.trim().length === 0}
-        >
-          <SVGIcon icon="NextArrow" size="sm" />
-        </Button>
-      </form>
+        <section css={listSectionStyle}>
+          {items.length === 0 && <div css={emptyStyle(theme)}>등록된 질문이 없습니다.</div>}
+          {items.map(item => {
+            const isExpanded = expandedIds.has(item.id);
+            const statusLabel = getStatusLabel(item);
+            return (
+              <article key={item.id} css={qaItemStyle(theme)}>
+                <button css={qaQuestionStyle(theme)} onClick={() => handleToggle(item.id)}>
+                  {item.isMine && <span css={badgeStyle(theme)}>나의 질문</span>}
+                  <span css={questionTextStyle(theme)}>{item.question}</span>
+                  <span css={statusStyle(theme)}>{statusLabel}</span>
+                </button>
+                {isExpanded && (
+                  <div css={qaAnswerStyle(theme)}>
+                    {item.status === 'pending' && (!item.answer || item.answer.length === 0) ? (
+                      <TypingDots />
+                    ) : (
+                      <div css={answerTextStyle(theme)}>
+                        {item.status === 'failed' ? (
+                          'AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
+                        ) : (
+                          <MarkdownRenderer text={item.answer ?? ''} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </section>
+      </div>
+      <footer css={footerStyle(theme)}>
+        <form css={inputBarStyle} onSubmit={handleSubmit}>
+          <input
+            css={inputStyle(theme)}
+            value={input}
+            onChange={event => setInput(event.target.value)}
+            placeholder="궁금한 것을 질문해보세요."
+            maxLength={maxQuestionLength}
+            disabled={isStreaming}
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            css={sendButtonStyle(theme)}
+            aria-label="질문 전송"
+            disabled={isStreaming || input.trim().length === 0}
+          >
+            <SVGIcon icon="Send" size="sm" />
+          </Button>
+        </form>
+        <span css={captionStyle(theme)}>
+          AI는 실수를 할 수 있습니다. 중요한 정보는 확인이 필요합니다.
+        </span>
+      </footer>
+      <div style={{ height: '120px' }}></div>
     </div>
   );
 };
@@ -399,19 +380,25 @@ const parseJson = <T,>(value: string): T | null => {
  */
 const buildQuizPreview = (quiz: QuizQuestion) => {
   const baseQuestion = quiz.content.question;
-  const options: string[] = [];
+  const options: Array<{ id: string; text: string }> = [];
 
   if ('options' in quiz.content && quiz.content.options) {
     for (const option of quiz.content.options) {
-      options.push(option.text);
+      options.push({ id: option.id, text: option.text });
     }
   }
 
   const matching =
     quiz.type === 'matching' && 'matching_metadata' in quiz.content
       ? {
-          left: quiz.content.matching_metadata.left.map(item => item.text),
-          right: quiz.content.matching_metadata.right.map(item => item.text),
+          left: quiz.content.matching_metadata.left.map(item => ({
+            id: item.id,
+            text: item.text,
+          })),
+          right: quiz.content.matching_metadata.right.map(item => ({
+            id: item.id,
+            text: item.text,
+          })),
         }
       : null;
 
@@ -423,7 +410,7 @@ const buildQuizPreview = (quiz: QuizQuestion) => {
         }
       : null;
 
-  return { question: baseQuestion, options, matching, code };
+  return { question: baseQuestion, options, matching, code, type: quiz.type };
 };
 
 /**
@@ -442,6 +429,159 @@ const getStatusLabel = (item: AiQuestionAnswer) => {
   return '답변 완료';
 };
 
+/**
+ * correctAnswer에서 correct_option_id를 추출한다.
+ *
+ * @param correctAnswer 정답 데이터
+ * @returns correct_option_id 또는 null
+ */
+const extractCorrectOptionId = (correctAnswer: CorrectAnswerType | null): string | null => {
+  if (!correctAnswer) return null;
+
+  // 객체 형태인 경우 (예: { correct_option_id: "c3" })
+  if (typeof correctAnswer === 'object' && 'correct_option_id' in correctAnswer) {
+    return correctAnswer.correct_option_id as string;
+  }
+
+  // 문자열인 경우
+  if (typeof correctAnswer === 'string') {
+    return correctAnswer;
+  }
+
+  return null;
+};
+
+/**
+ * correctAnswer에서 correct_pairs를 추출한다.
+ *
+ * @param correctAnswer 정답 데이터
+ * @returns correct_pairs 배열 또는 null
+ */
+const extractCorrectPairs = (correctAnswer: CorrectAnswerType | null): MatchingPair[] | null => {
+  if (!correctAnswer) return null;
+
+  // 객체 형태인 경우
+  if (typeof correctAnswer === 'object') {
+    // { pairs: [...] } 형태
+    if ('pairs' in correctAnswer && Array.isArray(correctAnswer.pairs)) {
+      return correctAnswer.pairs as MatchingPair[];
+    }
+    // { correct_pairs: [...] } 형태
+    if ('correct_pairs' in correctAnswer && Array.isArray(correctAnswer.correct_pairs)) {
+      return correctAnswer.correct_pairs as MatchingPair[];
+    }
+  }
+
+  return null;
+};
+
+/**
+ * 선지 옵션을 렌더링한다. (MCQ, Code, OX)
+ *
+ * @param theme 테마
+ * @param preview 퀴즈 미리보기 데이터
+ * @param correctAnswer 정답 데이터
+ * @returns JSX 요소
+ */
+const renderOptions = (
+  theme: Theme,
+  preview: ReturnType<typeof buildQuizPreview>,
+  correctAnswer: CorrectAnswerType | null,
+) => {
+  const correctOptionId = extractCorrectOptionId(correctAnswer);
+
+  // OX 타입인 경우
+  if (preview.type === 'ox') {
+    if (correctOptionId) {
+      const answerText = correctOptionId.toLowerCase() === 'o' ? 'O' : 'X';
+      return (
+        <div css={oxAnswerStyle(theme)}>
+          <TextWithCodeStyle text={`${answerText}`} />
+        </div>
+      );
+    }
+    return null;
+  }
+
+  // MCQ, Code 타입인 경우
+  return (
+    <ul css={summaryOptionStyle(theme)}>
+      {preview.options.map(option => {
+        const isCorrect = correctOptionId === option.id;
+        return (
+          <li key={option.id} css={isCorrect ? correctOptionItemStyle(theme) : undefined}>
+            <TextWithCodeStyle text={option.text} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
+
+/**
+ * 매칭 항목을 렌더링한다.
+ *
+ * @param theme 테마
+ * @param preview 퀴즈 미리보기 데이터
+ * @param correctAnswer 정답 데이터
+ * @returns JSX 요소
+ */
+const renderMatching = (
+  theme: Theme,
+  preview: ReturnType<typeof buildQuizPreview>,
+  correctAnswer: CorrectAnswerType | null,
+) => {
+  const correctPairs = extractCorrectPairs(correctAnswer);
+
+  if (!preview.matching) return null;
+
+  // 정답이 있는 경우 정답 쌍을 표시
+  if (correctPairs && correctPairs.length > 0) {
+    return (
+      <div css={matchingAnswerContainerStyle}>
+        <ul css={matchingAnswerListStyle}>
+          {correctPairs.map((pair, index) => {
+            const leftItem = preview.matching!.left.find(item => item.id === pair.left);
+            const rightItem = preview.matching!.right.find(item => item.id === pair.right);
+            return (
+              <li key={index} css={matchingAnswerItemStyle(theme)}>
+                <TextWithCodeStyle text={leftItem?.text || pair.left} /> -{' '}
+                <TextWithCodeStyle text={rightItem?.text || pair.right} />
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  }
+
+  // 정답이 없는 경우 기존 방식으로 표시
+  return (
+    <div css={matchingGridStyle}>
+      <div>
+        <div css={matchingLabelStyle(theme)}>왼쪽</div>
+        <ul css={summaryOptionStyle(theme)}>
+          {preview.matching.left.map(item => (
+            <li key={item.id}>
+              <TextWithCodeStyle text={item.text} />
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <div css={matchingLabelStyle(theme)}>오른쪽</div>
+        <ul css={summaryOptionStyle(theme)}>
+          {preview.matching.right.map(item => (
+            <li key={item.id}>
+              <TextWithCodeStyle text={item.text} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 const TypingDots = () => {
   const theme = useTheme();
   return (
@@ -452,12 +592,19 @@ const TypingDots = () => {
     </div>
   );
 };
+const modalWrapperStyle = css`
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+`;
 
 const containerStyle = css`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 70vh;
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px;
 `;
 
 const summaryStyle = (theme: Theme) => css`
@@ -484,12 +631,18 @@ const summaryQuestionStyle = (theme: Theme) => css`
   word-break: break-word;
 `;
 
-const summaryListStyle = (theme: Theme) => css`
-  margin: 0;
-  padding-left: 18px;
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
+const summaryOptionStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    background: ${theme.colors.surface.strong};
+    border-radius: ${theme.borderRadius.small};
+    padding: 4px 10px;
+  }
 `;
 
 const sectionBlockStyle = css`
@@ -523,7 +676,6 @@ const matchingLabelStyle = (theme: Theme) => css`
 
 const listSectionStyle = css`
   flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -593,13 +745,31 @@ const answerTextStyle = (theme: Theme) => css`
   color: ${theme.colors.text.default};
 `;
 
-const inputBarStyle = (theme: Theme) => css`
+const footerStyle = (theme: Theme) => css`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: ${theme.colors.surface.strong};
+
+  /* footer 상단에 그림자를 주어 경계를 명확히 하면 스크롤되는 내용과 겹쳐 보이지 않습니다. */
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid ${theme.colors.border.default};
+
+  padding: 16px 24px;
+`;
+
+const inputBarStyle = css`
   display: flex;
   gap: 8px;
   align-items: center;
   position: sticky;
   bottom: 0;
-  background: ${theme.colors.surface.strong};
+
   padding-top: 8px;
 `;
 
@@ -608,10 +778,10 @@ const inputStyle = (theme: Theme) => css`
   height: 44px;
   border-radius: 999px;
   border: 1px solid ${theme.colors.border.default};
+
   padding: 0 16px;
-  font-size: ${theme.typography['12Medium'].fontSize};
+  font-size: ${theme.typography['16Medium'].fontSize};
   color: ${theme.colors.text.default};
-  background: ${theme.colors.surface.default};
 `;
 
 const sendButtonStyle = (theme: Theme) => css`
@@ -625,14 +795,9 @@ const sendButtonStyle = (theme: Theme) => css`
   justify-content: center;
   background: ${theme.colors.primary.main};
 
-  &:hover {
-    transform: none;
-    filter: brightness(1.03);
-    box-shadow: none;
-  }
-
+  &:hover,
   &:active {
-    transform: scale(0.98);
+    filter: brightness(1.5);
     box-shadow: none;
   }
 `;
@@ -673,4 +838,48 @@ const dotStyle = (theme: Theme) => css`
   border-radius: 50%;
   background: ${theme.colors.text.weak};
   animation: ${dotPulse} 1s infinite ease-in-out;
+`;
+
+const correctOptionItemStyle = (theme: Theme) => css`
+  outline: 1.5px solid ${theme.colors.primary.light};
+  border-radius: ${theme.borderRadius.small};
+`;
+
+const oxAnswerStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Bold'].fontSize};
+  font-weight: ${theme.typography['16Bold'].fontWeight};
+  color: ${theme.colors.text.strong};
+  padding: 8px 12px;
+  background: ${theme.colors.surface.strong};
+  border-radius: ${theme.borderRadius.small};
+`;
+
+const matchingAnswerContainerStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const matchingAnswerListStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const matchingAnswerItemStyle = (theme: Theme) => css`
+  background: ${theme.colors.surface.strong};
+  border-radius: ${theme.borderRadius.small};
+  padding: 8px 12px;
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  color: ${theme.colors.text.default};
+`;
+
+const captionStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Medium'].fontSize};
+  color: ${theme.colors.text.weak};
+  text-align: center;
 `;

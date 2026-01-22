@@ -97,9 +97,14 @@ export const QuizContentCard = ({
             <Button
               variant="secondary"
               onClick={() =>
-                openModal('AI에게 질문하기', <AiAskModal quiz={question} />, {
-                  maxWidth: 880,
-                })
+                openModal(
+                  'AI에게 질문하기',
+                  <AiAskModal quiz={question} correctAnswer={correctAnswer ?? null} />,
+                  {
+                    maxWidth: 880,
+                    padding: false,
+                  },
+                )
               }
               css={flexBtn}
             >

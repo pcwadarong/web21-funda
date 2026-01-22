@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { action } from 'storybook/actions';
 
 import { ModalProvider } from '@/store/modalStore';
 import { ThemeStoreProvider } from '@/store/themeStore';
@@ -63,7 +64,7 @@ const InteractiveWrapper = (args: {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log('Submit:', input);
+    action('onSubmit')(input);
   };
 
   return (

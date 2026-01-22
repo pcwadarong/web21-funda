@@ -14,8 +14,25 @@ export const Modal = ({ title, content, onClose, maxWidth = 500, padding = true 
   const theme = useTheme();
 
   return (
-    <div css={modalOverlayStyle} onClick={onClose}>
-      <div css={modalContentStyle(theme, maxWidth, padding)} onClick={e => e.stopPropagation()}>
+    <div
+      css={modalOverlayStyle}
+      onClick={onClose}
+      role="button"
+      tabIndex={0}
+      onKeyDown={event => {
+        if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+    >
+      <div
+        css={modalContentStyle(theme, maxWidth, padding)}
+        role="presentation"
+        tabIndex={-1}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+      >
         <div css={modalHeaderStyle}>
           <h2 css={modalTitleStyle(theme)}>{title}</h2>
           <button css={modalCloseButtonStyle} onClick={onClose}>

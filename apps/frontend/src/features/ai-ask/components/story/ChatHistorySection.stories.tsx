@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { action } from 'storybook/actions';
 
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import { ModalProvider } from '@/store/modalStore';
@@ -95,12 +96,6 @@ const meta: Meta<typeof ChatHistorySection> = {
   component: ChatHistorySection,
   parameters: {
     layout: 'padded',
-    docs: {
-      description: {
-        component:
-          'AI 질문/답변 히스토리를 표시하는 섹션 컴포넌트입니다. 질문 클릭 시 답변을 확장/축소하며, 스트리밍, 완료, 실패 상태를 모두 처리합니다.',
-      },
-    },
   },
   tags: ['autodocs'],
   decorators: [
@@ -109,13 +104,7 @@ const meta: Meta<typeof ChatHistorySection> = {
         <ThemeProvider theme={lightTheme}>
           <ModalProvider>
             <div
-              style={{
-                maxWidth: '800px',
-                margin: '0 auto',
-                padding: '20px',
-                background: 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)',
-                minHeight: '400px',
-              }}
+              style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', minHeight: '400px' }}
             >
               <Story />
             </div>
@@ -124,30 +113,32 @@ const meta: Meta<typeof ChatHistorySection> = {
       </ThemeStoreProvider>
     ),
   ],
+  // 공통 action 설정
+  argTypes: {
+    onToggle: { action: 'toggled' },
+  },
 };
 
 export default meta;
 type Story = StoryObj<typeof ChatHistorySection>;
 
-// Interactive wrapper to handle state
-const InteractiveWrapper = (args: { items: AiQuestionAnswer[] }) => {
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([2]));
+// ✅ 상태 변화가 필요한 대화형 래퍼
+const InteractiveWrapper = ({ items }: { items: AiQuestionAnswer[] }) => {
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([items[0]?.id]));
 
   const handleToggle = (id: number) => {
+    // Action 패널에 로그 기록
+    action('onToggle')(id);
+
     setExpandedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
-  return (
-    <ChatHistorySection items={args.items} expandedIds={expandedIds} onToggle={handleToggle} />
-  );
+  return <ChatHistorySection items={items} expandedIds={expandedIds} onToggle={handleToggle} />;
 };
 
 export const Default: Story = {

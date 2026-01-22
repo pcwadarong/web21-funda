@@ -1,7 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 
 import * as S from '@/feat/quiz/components/quizOptions/QuizOption.styles';
-import type { QuizOptionProps } from '@/features/quiz//types';
+import type { QuizOptionProps } from '@/features/quiz/types';
 import type { Theme } from '@/styles/theme';
 import { TextWithCodeStyle } from '@/utils/textParser';
 

@@ -40,21 +40,25 @@ export const QuizInfoSection = ({ preview, correctAnswer }: QuizInfoSectionProps
       <h2 id="quiz-info-title" css={summaryTitleStyle(theme)}>
         문제 정보
       </h2>
-      <div css={summaryQuestionStyle(theme)} role="heading" aria-level={3}>
+      <h3 css={summaryQuestionStyle(theme)}>
         <TextWithCodeStyle text={`Q. ${preview.question}`} />
-      </div>
+      </h3>
       {preview.code && (
-        <div css={sectionBlockStyle} aria-label="코드 예시">
-          <h3 css={sectionLabelStyle(theme)}>코드</h3>
+        <section css={sectionBlockStyle} aria-labelledby="quiz-code-title">
+          <h3 id="quiz-code-title" css={sectionLabelStyle(theme)}>
+            코드
+          </h3>
           <CodeBlock language={preview.code.language}>{preview.code.snippet}</CodeBlock>
-        </div>
+        </section>
       )}
-      <div css={sectionBlockStyle} aria-label="정답">
-        <h3 css={sectionLabelStyle(theme)}>정답</h3>
+      <section css={sectionBlockStyle} aria-labelledby="quiz-answer-title">
+        <h3 id="quiz-answer-title" css={sectionLabelStyle(theme)}>
+          정답
+        </h3>
         {preview.matching
           ? renderMatching(theme, preview, correctAnswer)
           : renderOptions(theme, preview, correctAnswer)}
-      </div>
+      </section>
     </section>
   );
 };

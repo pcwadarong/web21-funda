@@ -12,13 +12,15 @@ vi.mock('@/comp/Button', () => ({
     onClick,
     disabled,
     'aria-label': ariaLabel,
+    type = 'button',
   }: {
     children: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
     'aria-label'?: string;
+    type?: 'button' | 'submit' | 'reset';
   }) => (
-    <button onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
+    <button type={type} onClick={onClick} disabled={disabled} aria-label={ariaLabel}>
       {children}
     </button>
   ),

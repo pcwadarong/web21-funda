@@ -53,7 +53,7 @@ export const TextWithCodeStyle = ({ text }: { text: string }) => {
       // 매치된 코드 부분 (백틱 또는 태그 제거)
       const codeContent = match[0].startsWith('`')
         ? match[0].slice(1, -1) // 백틱 제거
-        : match[0].slice(1, -1); // < > 제거
+        : match[0]; // < > 유지
 
       // 빈 내용 방지
       if (codeContent.length > 0) {

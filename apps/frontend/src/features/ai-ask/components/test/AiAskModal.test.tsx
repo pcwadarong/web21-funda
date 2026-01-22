@@ -42,7 +42,7 @@ vi.mock('../ChatHistorySection', () => ({
   }) => (
     <div data-testid="chat-history-section">
       {items.map(item => (
-        <button key={item.id} onClick={() => onToggle(item.id)}>
+        <button type="button" key={item.id} onClick={() => onToggle(item.id)}>
           {item.question}
         </button>
       ))}
@@ -77,6 +77,7 @@ vi.mock('../ChatInputFooter', () => ({
 }));
 
 // Mock fetch for SSE streaming
+const originalFetch = global.fetch;
 global.fetch = vi.fn();
 
 const mockQuiz: QuizQuestion = {
@@ -107,10 +108,10 @@ describe('AiAskModal', () => {
     mockGetAiQuestions.mockResolvedValue([]);
     mockIsLoggedIn.mockReturnValue(true);
   });
-
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    global.fetch = originalFetch;
   });
 
   describe('초기 렌더링', () => {

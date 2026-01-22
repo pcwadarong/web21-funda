@@ -1,25 +1,14 @@
 import { css, useTheme } from '@emotion/react';
-import React from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 
+import type { ChatInputFooterProps } from './types';
+
 /**
  * 채팅 입력 푸터 컴포넌트 Props
  */
-interface ChatInputFooterProps {
-  /** 입력 필드의 현재 값 */
-  input: string;
-  /** 입력 값 변경 핸들러 */
-  onInputChange: (value: string) => void;
-  /** 폼 제출 핸들러 */
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  /** 현재 스트리밍 중인지 여부 */
-  isStreaming: boolean;
-  /** 질문 최대 길이 제한 */
-  maxQuestionLength: number;
-}
 
 /**
  * AI 질문 입력 폼과 안내 문구를 포함하는 푸터 컴포넌트
@@ -45,7 +34,7 @@ export const ChatInputFooter = ({
   const isDisabled = isStreaming || input.trim().length === 0;
 
   return (
-    <footer css={footerStyle(theme)} role="contentinfo" aria-label="질문 입력">
+    <footer css={footerStyle(theme)} aria-label="질문 입력">
       <form css={inputBarStyle} onSubmit={onSubmit} aria-label="AI 질문 입력 폼" noValidate>
         <label htmlFor="ai-question-input" css={srOnlyStyle}>
           AI에게 질문하기

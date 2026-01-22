@@ -1,5 +1,6 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { action } from 'storybook/actions';
 
 import { LeaderboardContainer } from '@/feat/leaderboard/components/LeaderboardContainer';
 import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
@@ -299,9 +300,7 @@ export const WithRefresh: Story = {
     weeklyRanking: mockWeeklyRanking,
     isLoading: false,
     errorMessage: null,
-    onRefresh: () => {
-      console.log('리더보드 새로고침');
-    },
+    onRefresh: action('리더보드 새로고침'),
     isRefreshing: false,
   },
 };
@@ -311,9 +310,7 @@ export const Refreshing: Story = {
     weeklyRanking: mockWeeklyRanking,
     isLoading: false,
     errorMessage: null,
-    onRefresh: () => {
-      console.log('리더보드 새로고침');
-    },
+    onRefresh: action('리더보드 새로고침'),
     isRefreshing: true,
   },
 };

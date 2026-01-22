@@ -5,7 +5,7 @@ import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
 import { leaderboardInfoContent } from './leaderboardInfo';
 
 export const InfoLeaderBoardModal = () => (
-  <div css={containerStyle}>
+  <div css={containerStyle} tabIndex={0} role="region" aria-label="리더보드 정보">
     <MarkdownRenderer text={leaderboardInfoContent} />
   </div>
 );

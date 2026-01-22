@@ -44,9 +44,9 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
   return (
     <section css={listSectionStyle} aria-label="질문 및 답변 목록">
       {items.length === 0 && (
-        <div css={emptyStyle(theme)} role="status" aria-live="polite">
+        <output css={emptyStyle(theme)} aria-live="polite">
           등록된 질문이 없습니다.
-        </div>
+        </output>
       )}
       {items.map(item => {
         const isExpanded = expandedIds.has(item.id);
@@ -63,6 +63,7 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
           >
             <button
               id={questionId}
+              type="button"
               css={qaQuestionStyle(theme)}
               onClick={() => onToggle(item.id)}
               onKeyDown={e => handleKeyDown(e, item.id)}

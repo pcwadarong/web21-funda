@@ -111,9 +111,13 @@ export class RankingService {
     const user = await this.findUserOrThrow(manager, userId);
     const tier = await this.findOrAssignTier(manager, user);
 
-    const existingWeeklyXp = await weeklyXpRepository.findOne({
-      where: { weekId: week.id, userId },
-    });
+    // 동시 요청에서 누적 값이 누락되지 않도록 잠금으로 조회한다.
+    const existingWeeklyXp = await weeklyXpRepository
+      .createQueryBuilder('weeklyXp')
+      .setLock('pessimistic_write')
+      .where('weeklyXp.weekId = :weekId', { weekId: week.id })
+      .andWhere('weeklyXp.userId = :userId', { userId })
+      .getOne();
 
     if (!existingWeeklyXp) {
       const createdWeeklyXp = weeklyXpRepository.create({

@@ -22,6 +22,12 @@ describe('RankingService', () => {
   let memberRepository: Partial<Repository<RankingGroupMember>>;
   let weeklyXpRepository: Partial<Repository<RankingWeeklyXp>>;
   let userRepository: Partial<Repository<User>>;
+  let weeklyXpQueryBuilder: {
+    setLock: jest.Mock;
+    where: jest.Mock;
+    andWhere: jest.Mock;
+    getOne: jest.Mock;
+  };
 
   beforeEach(() => {
     weekRepository = {
@@ -44,8 +50,14 @@ describe('RankingService', () => {
       save: jest.fn(),
       count: jest.fn(),
     };
+    weeklyXpQueryBuilder = {
+      setLock: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getOne: jest.fn(),
+    };
     weeklyXpRepository = {
-      findOne: jest.fn(),
+      createQueryBuilder: jest.fn(() => weeklyXpQueryBuilder),
       create: jest.fn(),
       save: jest.fn(),
     };
@@ -197,7 +209,7 @@ describe('RankingService', () => {
     } as RankingWeeklyXp;
 
     (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
-    (weeklyXpRepository.findOne as jest.Mock).mockResolvedValue(null);
+    weeklyXpQueryBuilder.getOne.mockResolvedValue(null);
     (userRepository.findOne as jest.Mock).mockResolvedValue(user);
     (tierRepository.findOne as jest.Mock).mockResolvedValue(tier);
     (weeklyXpRepository.create as jest.Mock).mockReturnValue(weeklyXp);
@@ -227,7 +239,7 @@ describe('RankingService', () => {
     } as RankingWeeklyXp;
 
     (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
-    (weeklyXpRepository.findOne as jest.Mock).mockResolvedValue(existingWeeklyXp);
+    weeklyXpQueryBuilder.getOne.mockResolvedValue(existingWeeklyXp);
     (userRepository.findOne as jest.Mock).mockResolvedValue(user);
     (tierRepository.findOne as jest.Mock).mockResolvedValue(tier);
 

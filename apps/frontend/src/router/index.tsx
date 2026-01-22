@@ -51,6 +51,32 @@ export const router = createBrowserRouter([
     children: [
       // 공용 페이지
       { index: true, element: <Landing /> },
+      {
+        element: <PageSuspenseLayout />, // 사이드바 없는 레이아웃
+        children: [
+          {
+            path: 'quiz',
+            children: [
+              { index: true, element: <Quiz /> },
+              { path: 'result', element: <QuizResult /> },
+              { path: 'error', element: <QuizResultError /> },
+              { path: 'review-result', element: <QuizReviewResult /> },
+            ],
+          },
+        ],
+      },
+      {
+        element: <SidebarSuspenseLayout />,
+        children: [
+          { path: 'learn', element: <Learn /> },
+          { path: 'learn/select-field', element: <SelectField /> },
+          { path: 'learn/roadmap', element: <Roadmap /> },
+          { path: 'leaderboard', element: <Leaderboard /> },
+          { path: 'profile/:userId?', element: <Profile /> },
+          { path: 'setting', element: <Setting /> },
+          { path: 'unsubscribe', element: <Unsubscribe /> },
+        ],
+      },
 
       // 비로그인 사용자 전용
       {
@@ -76,30 +102,14 @@ export const router = createBrowserRouter([
                 path: '/reports',
                 element: <Reports />,
               },
-              { path: 'learn', element: <Learn /> },
-              { path: 'learn/select-field', element: <SelectField /> },
-              { path: 'learn/roadmap', element: <Roadmap /> },
               { path: 'leaderboard', element: <Leaderboard /> },
               { path: 'profile/:userId?', element: <Profile /> },
-              { path: 'setting', element: <Setting /> },
             ],
           },
           // 사이드바가 없는 페이지 그룹
           {
             element: <PageSuspenseLayout />,
             children: [
-              {
-                path: 'quiz',
-                children: [
-                  { index: true, element: <Quiz /> },
-                  { path: 'result', element: <QuizResult /> },
-                  { path: 'error', element: <QuizResultError /> },
-                  { path: 'review-result', element: <QuizReviewResult /> },
-                ],
-              },
-
-              { path: 'unsubscribe', element: <Unsubscribe /> },
-
               // 관리자 전용 (이중 보호)
               {
                 path: 'admin',

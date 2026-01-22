@@ -12,6 +12,7 @@ import { BASE_URL } from '@/services/api';
 import { useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
+import { TextWithCodeStyle } from '@/utils/textParser';
 
 type SseEvent = {
   event: string;
@@ -204,7 +205,9 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
     <div css={containerStyle}>
       <section css={summaryStyle(theme)}>
         <div css={summaryTitleStyle(theme)}>문제 정보</div>
-        <div css={summaryQuestionStyle(theme)}>{`Q. ${preview.question}`}</div>
+        <div css={summaryQuestionStyle(theme)}>
+          {<TextWithCodeStyle text={`Q. ${preview.question}`} />}
+        </div>
         {preview.options.length > 0 && (
           <div css={sectionBlockStyle}>
             <div css={sectionLabelStyle(theme)}>보기</div>

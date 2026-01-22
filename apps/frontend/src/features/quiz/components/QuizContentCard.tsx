@@ -14,6 +14,7 @@ import ReportModal from '@/features/report/ReportForm';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
+import { TextWithCodeStyle } from '@/utils/textParser';
 
 interface QuizContentCardProps {
   question: QuizQuestion;
@@ -59,7 +60,9 @@ export const QuizContentCard = ({
   return (
     <div css={cardStyle(theme)}>
       <div css={headerStyle}>
-        <h2 css={titleStyle(theme)}>{`Q. ${question.content.question}`}</h2>
+        <h2 css={titleStyle(theme)}>
+          Q. <TextWithCodeStyle text={question.content.question} />
+        </h2>
         <button
           css={reportButtonStyle(theme, isDarkMode)}
           onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
@@ -81,7 +84,7 @@ export const QuizContentCard = ({
       {showResult && explanation && (
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
-          <span css={explanationTextStyle(theme)}>{explanation}</span>
+          <span css={explanationTextStyle(theme)}>{<TextWithCodeStyle text={explanation} />}</span>
         </div>
       )}
 

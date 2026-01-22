@@ -5,6 +5,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 
 import { CodeBlock } from '@/comp/CodeBlock';
+import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 
 interface MarkdownRendererProps {
@@ -35,6 +36,7 @@ const extractLanguage = (className?: string | null): string | null => {
  */
 export const MarkdownRenderer = ({ text, customCss }: MarkdownRendererProps) => {
   const theme = useTheme();
+  const { isDarkMode } = useThemeStore();
 
   return (
     <div css={[markdownContainerStyle, customCss]}>
@@ -62,7 +64,7 @@ export const MarkdownRenderer = ({ text, customCss }: MarkdownRendererProps) => 
 
             if (!className) {
               return (
-                <code css={inlineCodeStyle(theme)} {...rest}>
+                <code css={inlineCodeStyle(theme, isDarkMode)} {...rest}>
                   {children}
                 </code>
               );
@@ -142,14 +144,14 @@ const tableCellStyle = (theme: Theme, isHeader: boolean) => css`
   font-weight: ${isHeader ? 700 : 400};
 `;
 
-const inlineCodeStyle = (theme: Theme) => css`
+export const inlineCodeStyle = (theme: Theme, isDarkMode: boolean) => css`
   font-family: 'D2Coding', monospace;
   padding: 2px 5px;
   margin: 0 2px;
   border-radius: 4px;
-  background: ${theme.colors.grayscale[200]};
+  background: ${theme.colors.surface.bold};
   border: 1px solid ${theme.colors.border.default};
   font-size: 0.85em;
-  color: ${theme.colors.primary.main}; /* 텍스트 색상에 포인트를 줌 */
+  color: ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
   vertical-align: middle;
 `;

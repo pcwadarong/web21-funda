@@ -3,6 +3,7 @@ import { css, useTheme } from '@emotion/react';
 import * as S from '@/feat/quiz/components/quizOptions/QuizOption.styles';
 import type { QuizOptionProps } from '@/features/quiz//types';
 import type { Theme } from '@/styles/theme';
+import { TextWithCodeStyle } from '@/utils/textParser';
 
 export const QuizOption = ({
   label,
@@ -29,7 +30,9 @@ export const QuizOption = ({
       disabled={disabled}
     >
       <span css={optionLabelStyle(theme, isSelected, isCorrect, isWrong)}>{label}</span>
-      <span css={optionTextStyle(theme)}>{option}</span>
+      <span css={optionTextStyle(theme)}>
+        <TextWithCodeStyle text={option} />
+      </span>
     </button>
   );
 };

@@ -130,13 +130,16 @@ export class RoadmapService {
         const progress = Math.round((completedSteps.length / (totalSteps + 2)) * 100) || 0; // +2는 체크포인트 고려 (DB에 없어서 +2를 추가)
         const successRateArray = userSteps.map(step => step.successRate || 0);
         const successRate =
-          Math.round(
-            successRateArray.reduce((acc, cur) => acc + cur, 0) / successRateArray.length,
-          ) || 0;
+          successRateArray.length > 0
+            ? Math.round(
+                successRateArray.reduce((acc, cur) => acc + cur, 0) / successRateArray.length,
+              )
+            : 0;
 
         return {
           id: unit.id,
           title: unit.title,
+          description: unit.description ?? '',
           orderIndex: unit.orderIndex,
           progress,
           successRate,

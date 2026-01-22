@@ -2,6 +2,7 @@ import type { SerializedStyles } from '@emotion/react';
 import { css, useTheme } from '@emotion/react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
 import { CodeBlock } from '@/comp/CodeBlock';
@@ -11,6 +12,7 @@ import type { Theme } from '@/styles/theme';
 interface MarkdownRendererProps {
   text: string;
   customCss?: SerializedStyles;
+  allowHtml?: boolean;
 }
 
 /**
@@ -34,7 +36,7 @@ const extractLanguage = (className?: string | null): string | null => {
  * `@security` rehypeRaw 플러그인으로 raw HTML을 렌더링합니다.
  * 신뢰할 수 없는 사용자 입력은 sanitize 후 전달해야 합니다.
  */
-export const MarkdownRenderer = ({ text, customCss }: MarkdownRendererProps) => {
+export const MarkdownRenderer = ({ text, customCss, allowHtml = false }: MarkdownRendererProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
 
@@ -42,7 +44,7 @@ export const MarkdownRenderer = ({ text, customCss }: MarkdownRendererProps) => 
     <div css={[markdownContainerStyle, customCss]}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
+        rehypePlugins={allowHtml ? [rehypeRaw, [rehypeSanitize, defaultSchema]] : []}
         components={{
           p: ({ children }) => <p css={markdownParagraphStyle(theme)}>{children}</p>,
           ul: ({ children }) => <ul css={markdownListStyle(theme)}>{children}</ul>,

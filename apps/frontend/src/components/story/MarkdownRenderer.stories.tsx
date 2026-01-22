@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import React from 'react';
 
 import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
 
 // 재사용 가능한 중앙 정렬 decorator
-export const CenteredDecorator = (Story: React.ComponentType) => (
+export const CenteredDecorator = (Story: () => JSX.Element) => (
   <div style={{ maxWidth: '600px', margin: '0 auto' }}>
     <Story />
   </div>

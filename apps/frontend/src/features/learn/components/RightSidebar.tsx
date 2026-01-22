@@ -6,6 +6,7 @@ import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
@@ -45,6 +46,9 @@ export const LearnRightSidebar = ({
       enabled: isLoggedIn && isAuthReady,
     },
   );
+
+  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
+  const diamondCount = rankingMe?.diamondCount ?? 0;
 
   const { showToast } = useToast();
   const [isNavigatingReview, setIsNavigatingReview] = useState(false);
@@ -104,10 +108,9 @@ export const LearnRightSidebar = ({
     navigate('/quiz?mode=review', {
       state: {
         reviewQuizzes: quizzes,
-        reviewFieldSlug: fieldSlug,
       },
     });
-  }, [fieldSlug, isLoggedIn, navigate, refetchReviewQueue, reviewQueueData, showToast]);
+  }, [isLoggedIn, navigate, showToast, reviewQueueData, refetchReviewQueue]);
 
   if (!isAuthReady) return null;
   if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
@@ -146,8 +149,7 @@ export const LearnRightSidebar = ({
               <span css={statIconStyle}>
                 <SVGIcon icon="Diamond" size="md" />
               </span>
-              {/* //TODO: 다이아 추가 */}
-              {/* <span css={statValueStyle(theme)}>{user.diamond}</span> */}
+              <span css={statValueStyle(theme)}>{diamondCount}</span>
             </div>
             <div css={statContainerStyle(theme)}>
               <span css={statIconStyle}>
@@ -175,7 +177,7 @@ export const LearnRightSidebar = ({
         </div>
         {isLoggedIn && user ? (
           <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
-            복습 시작
+            {`${reviewCount}개 문제 복습 필요`}
           </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>

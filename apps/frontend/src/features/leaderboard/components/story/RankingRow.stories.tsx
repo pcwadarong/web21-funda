@@ -33,8 +33,7 @@ const meta: Meta<typeof RankingRow> = {
       <ThemeProvider theme={lightTheme}>
         <div
           style={{
-            backgroundColor: lightTheme.colors.surface.default,
-            minHeight: '100vh',
+            backgroundColor: lightTheme.colors.surface.strong,
             padding: '24px',
           }}
         >
@@ -110,6 +109,33 @@ export const LongName: Story = {
     member: {
       ...mockMember,
       displayName: '매우긴이름을가진사용자닉네임입니다',
+    },
+  },
+};
+
+export const Promotion: Story = {
+  args: {
+    member: {
+      ...mockMember,
+      rankZone: 'PROMOTION',
+    },
+  },
+};
+
+export const Demotion: Story = {
+  args: {
+    member: {
+      ...mockMember,
+      rankZone: 'DEMOTION',
+    },
+  },
+};
+
+export const Maintain: Story = {
+  args: {
+    member: {
+      ...mockMember,
+      rankZone: 'MAINTAIN',
     },
   },
 };

@@ -15,11 +15,11 @@ export const CLOVA_SYSTEM_PROMPT = `
 `;
 
 export const DEFAULT_CLOVA_PARAMS = {
-  topP: 0.8,
+  topP: 0.85,
   topK: 0,
-  maxTokens: 700,
-  temperature: 0.4,
-  repeatPenalty: 1.1,
+  maxTokens: 900,
+  temperature: 0.35,
+  repeatPenalty: 1.05,
   stopBefore: [] as string[],
   seed: 0,
   includeAiFilters: true,

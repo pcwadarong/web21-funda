@@ -38,11 +38,6 @@ jobs:
             "${{ secrets.MAIL_PASS }}" \
             "${{ secrets.GRAFANA_ROOT_URL }}" > .env
 
-            # 경고 원인을 확인하기 위해 파일 존재와 값 길이만 출력
-            pwd
-            ls -al .env
-            awk -F= '{print $1 "=" length($2)}' .env
-
             # 3. BE 전용 환경 변수 주입
             mkdir -p apps/backend
             printf '%s' "${{ secrets.ENV_BE_PROD }}" > apps/backend/.env.production

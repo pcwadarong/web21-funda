@@ -1,4 +1,6 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
@@ -9,7 +11,7 @@ interface LoginFormProps {
   onGitHubLogin: () => void;
 }
 
-export const LoginForm = ({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
+export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
   const theme = useTheme();
 
   return (
@@ -20,6 +22,7 @@ export const LoginForm = ({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
         </div>
         <h1 css={titleStyle(theme)}>Funda</h1>
         <p css={taglineStyle(theme)}>재미있게 배우는 개발 지식</p>
+
         <div css={buttonGroupStyle}>
           <Button
             variant="secondary"
@@ -36,11 +39,23 @@ export const LoginForm = ({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
             <span>GitHub로 계속하기</span>
           </Button>
         </div>
-        <p css={socialProofStyle(theme)}>10,000+명의 개발자가 함께 공부하고 있어요!</p>
+
+        <p css={policyTextStyle(theme)}>
+          계속 진행하면 Funda의{' '}
+          <Link to="/terms" css={linkStyle(theme)}>
+            이용약관
+          </Link>{' '}
+          및{' '}
+          <Link to="/privacy" css={linkStyle(theme)}>
+            개인정보처리방침
+          </Link>
+          에 동의하며, <br /> 학습 독려를 위한 <strong>이메일 알림 수신</strong>에 동의하는 것으로
+          간주됩니다.
+        </p>
       </div>
     </div>
   );
-};
+});
 
 const containerStyle = () => css`
   min-height: 100vh;
@@ -79,7 +94,6 @@ const titleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${theme.colors.primary.main};
-  margin: 0;
 `;
 
 const taglineStyle = (theme: Theme) => css`
@@ -87,7 +101,6 @@ const taglineStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.light};
-  margin: 0;
 `;
 
 const buttonGroupStyle = css`
@@ -105,11 +118,20 @@ const loginButtonStyle = css`
   gap: 8px;
 `;
 
-const socialProofStyle = (theme: Theme) => css`
+const linkStyle = (theme: Theme) => css`
+  color: ${theme.colors.primary.main};
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const policyTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${theme.colors.text.weak};
-  margin: 0;
-  margin-top: 8px;
+  text-align: center;
+  word-break: keep-all;
+  margin-top: 16px;
 `;

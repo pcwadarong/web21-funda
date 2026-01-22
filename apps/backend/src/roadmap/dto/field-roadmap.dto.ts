@@ -1,6 +1,7 @@
 export interface RoadmapUnit {
   id: number;
   title: string;
+  description?: string;
   orderIndex: number;
   progress: number;
   successRate: number;

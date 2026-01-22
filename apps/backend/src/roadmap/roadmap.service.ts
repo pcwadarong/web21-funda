@@ -1,27 +1,35 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
-import { SolveLog, StepAttemptStatus, UserStepAttempt, UserStepStatus } from '../progress/entities';
+import { getKstNow } from '../common/utils/kst-date';
+import { QuizContentService } from '../common/utils/quiz-content.service';
+import {
+  QuizLearningStatus,
+  SolveLog,
+  StepAttemptStatus,
+  UserQuizStatus,
+  UserStepAttempt,
+  UserStepStatus,
+} from '../progress/entities';
+import { RankingService } from '../ranking/ranking.service';
+import { User } from '../users/entities/user.entity';
 
 import type { FieldListResponse } from './dto/field-list.dto';
 import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
 import type { FirstUnitResponse, UnitSummary } from './dto/first-unit.dto';
-import type { QuizContent, QuizResponse } from './dto/quiz-list.dto';
+import type { QuizResponse } from './dto/quiz-list.dto';
 import type {
   MatchingPair,
   QuizSubmissionRequest,
   QuizSubmissionResponse,
 } from './dto/quiz-submission.dto';
-import { Field, Quiz, Step } from './entities';
+import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
 
 @Injectable()
 export class RoadmapService {
-  // TODO(임시): DB에 없는 체크포인트/플레이스홀더 스텝을 음수 ID로 생성한다.
-  private checkpointIdSeed = -1;
-
   constructor(
     @InjectRepository(Field)
     private readonly fieldRepository: Repository<Field>,
@@ -29,13 +37,20 @@ export class RoadmapService {
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    @InjectRepository(CheckpointQuizPool)
+    private readonly checkpointQuizPoolRepository: Repository<CheckpointQuizPool>,
     private readonly codeFormatter: CodeFormatter,
     @InjectRepository(SolveLog)
     private readonly solveLogRepository: Repository<SolveLog>,
     @InjectRepository(UserStepAttempt)
     private readonly stepAttemptRepository: Repository<UserStepAttempt>,
+    private readonly quizContentService: QuizContentService,
     @InjectRepository(UserStepStatus)
     private readonly stepStatusRepository: Repository<UserStepStatus>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
+    private readonly rankingService: RankingService,
   ) {}
 
   /**
@@ -115,13 +130,16 @@ export class RoadmapService {
         const progress = Math.round((completedSteps.length / (totalSteps + 2)) * 100) || 0; // +2는 체크포인트 고려 (DB에 없어서 +2를 추가)
         const successRateArray = userSteps.map(step => step.successRate || 0);
         const successRate =
-          Math.round(
-            successRateArray.reduce((acc, cur) => acc + cur, 0) / successRateArray.length,
-          ) || 0;
+          successRateArray.length > 0
+            ? Math.round(
+                successRateArray.reduce((acc, cur) => acc + cur, 0) / successRateArray.length,
+              )
+            : 0;
 
         return {
           id: unit.id,
           title: unit.title,
+          description: unit.description ?? '',
           orderIndex: unit.orderIndex,
           progress,
           successRate,
@@ -203,25 +221,63 @@ export class RoadmapService {
   async getQuizzesByStepId(stepId: number): Promise<QuizResponse[]> {
     const step = await this.stepRepository.findOne({
       where: { id: stepId },
-      select: { id: true },
+      select: { id: true, isCheckpoint: true },
     });
 
     if (!step) {
       throw new NotFoundException('Step not found.'); // 스텝이 없으면 404
     }
 
-    const quizzes = await this.quizRepository.find({
-      where: { step: { id: stepId } },
-      order: { id: 'ASC' },
-    });
+    let quizzes: Quiz[] = [];
 
-    return Promise.all(quizzes.map(quiz => this.toQuizResponse(quiz)));
+    if (step.isCheckpoint) {
+      const pools = await this.checkpointQuizPoolRepository
+        .createQueryBuilder('pool')
+        .innerJoinAndSelect('pool.quiz', 'quiz')
+        .where('pool.checkpoint_step_id = :stepId', { stepId })
+        .getMany();
+
+      const poolQuizzes = pools
+        .map(pool => pool.quiz)
+        .filter((quiz): quiz is Quiz => Boolean(quiz));
+
+      quizzes = this.shuffleArray(poolQuizzes).slice(0, 10);
+    } else {
+      const stepQuizzes = await this.quizRepository
+        .createQueryBuilder('quiz')
+        .where('quiz.step_id = :stepId', { stepId })
+        .getMany();
+
+      quizzes = this.shuffleArray(stepQuizzes).slice(0, 10);
+    }
+
+    return Promise.all(quizzes.map(quiz => this.quizContentService.toQuizResponse(quiz)));
+  }
+
+  /**
+   * Fisher-Yates 알고리즘을 사용하여 배열을 랜덤하게 섞는다.
+   *
+   * @param array 섞을 배열
+   * @returns 섞인 배열 (원본 보존)
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled: T[] = [...array];
+
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i]!;
+      shuffled[i] = shuffled[j]!;
+      shuffled[j] = temp;
+    }
+
+    return shuffled;
   }
 
   /**
    * 퀴즈 정답 제출을 검증한다.
    * @param quizId 퀴즈 ID
    * @param payload 사용자가 제출한 답안
+   * @param userId 사용자 ID
    * @returns 채점 결과와 정답 정보
    */
   async submitQuiz(
@@ -245,6 +301,17 @@ export class RoadmapService {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
+      // 오답이고 로그인 사용자면 heart 차감
+      let userHeartCount: number | undefined;
+      if (!isCorrect && userId) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (user) {
+          user.heartCount = Math.max(0, user.heartCount - 1);
+          await this.userRepository.save(user);
+          userHeartCount = user.heartCount;
+        }
+      }
+
       const result: QuizSubmissionResponse = {
         quiz_id: quiz.id,
         is_correct: isCorrect,
@@ -252,6 +319,7 @@ export class RoadmapService {
           ...(correctPairs.length > 0 ? { correct_pairs: correctPairs } : {}),
           explanation: quiz.explanation ?? null,
         },
+        ...(userHeartCount !== undefined ? { user_heart_count: userHeartCount } : {}),
       };
 
       await this.saveSolveLog({
@@ -267,6 +335,17 @@ export class RoadmapService {
     const correctOptionId = this.getOptionAnswer(quiz.answer);
     const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
+    // 오답이고 로그인 사용자면 heart 차감
+    let userHeartCount: number | undefined;
+    if (!isCorrect && userId) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (user) {
+        user.heartCount = Math.max(0, user.heartCount - 1);
+        await this.userRepository.save(user);
+        userHeartCount = user.heartCount;
+      }
+    }
+
     const result: QuizSubmissionResponse = {
       quiz_id: quiz.id,
       is_correct: isCorrect,
@@ -274,6 +353,7 @@ export class RoadmapService {
         ...(correctOptionId ? { correct_option_id: correctOptionId } : {}),
         explanation: quiz.explanation ?? null,
       },
+      ...(userHeartCount !== undefined ? { user_heart_count: userHeartCount } : {}),
     };
 
     await this.saveSolveLog({
@@ -365,95 +445,6 @@ export class RoadmapService {
   }
 
   /**
-   * 퀴즈 엔티티를 응답 DTO로 변환한다.
-   * @param quiz 퀴즈 엔티티
-   * @returns 퀴즈 응답 DTO
-   */
-  private async toQuizResponse(quiz: Quiz): Promise<QuizResponse> {
-    return {
-      id: quiz.id,
-      type: quiz.type,
-      content: await this.normalizeQuizContent(quiz),
-    };
-  }
-
-  /**
-   * 퀴즈 content를 안전하게 정규화한다.
-   * @param quiz 퀴즈 엔티티
-   * @returns 정규화된 content
-   */
-  private async normalizeQuizContent(quiz: Quiz): Promise<QuizContent> {
-    const rawObject = this.toContentObject(quiz.content);
-    if (!rawObject) {
-      return { question: quiz.question };
-    }
-
-    const question =
-      typeof rawObject.question === 'string' && rawObject.question.trim().length > 0
-        ? rawObject.question
-        : quiz.question;
-
-    const options = this.normalizeOptions(rawObject.options);
-    const codeMetadata = await this.normalizeCodeMetadata(rawObject);
-    const matchingMetadata = this.normalizeMatchingMetadata(rawObject);
-
-    return {
-      question,
-      ...(options ? { options } : {}),
-      ...(codeMetadata ? { code_metadata: codeMetadata } : {}),
-      ...(matchingMetadata ? { matching_metadata: matchingMetadata } : {}),
-    };
-  }
-
-  /**
-   * options 값을 QuizOption[] 형태로 정규화한다.
-   * @param value 원본 options 값
-   * @returns 정규화된 options (없으면 undefined)
-   */
-  private normalizeOptions(value: unknown) {
-    if (!Array.isArray(value)) return undefined;
-
-    const options = value
-      .map(option => {
-        if (!this.isPlainObject(option)) return null;
-        const item = option as Record<string, unknown>;
-        const id = item.id;
-        const text = item.text;
-        if ((typeof id === 'string' || typeof id === 'number') && typeof text === 'string') {
-          return { id: String(id), text };
-        }
-        return null;
-      })
-      .filter((opt): opt is { id: string; text: string } => opt !== null);
-
-    return options.length > 0 ? options : undefined;
-  }
-
-  /**
-   * content raw 값을 객체로 변환한다(문자열 JSON도 허용).
-   * @param raw content 원본 값
-   * @returns content 객체 (없으면 null)
-   */
-  private toContentObject(raw: unknown): Record<string, unknown> | null {
-    if (this.isPlainObject(raw)) {
-      return raw;
-    }
-
-    if (typeof raw === 'string') {
-      try {
-        const parsed = JSON.parse(raw);
-        if (this.isPlainObject(parsed)) {
-          return parsed;
-        }
-      } catch {
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  /**
    * answer raw 값을 객체로 변환한다(문자열 JSON도 허용).
    * @param raw answer 원본 값
    * @returns answer 객체 (없으면 null)
@@ -475,75 +466,6 @@ export class RoadmapService {
     }
 
     return null;
-  }
-
-  /**
-   * CODE 타입 메타데이터를 content의 최상위 code/language로부터 정규화한다.
-   * @param value content 객체
-   * @returns 정규화된 code_metadata (없으면 undefined)
-   */
-  private async normalizeCodeMetadata(value: Record<string, unknown>) {
-    const code = value.code;
-    const language = value.language;
-    if (typeof code === 'string') {
-      const formattedCode = await this.codeFormatter.format(
-        code,
-        typeof language === 'string' ? language : 'javascript',
-      );
-      return {
-        ...(typeof language === 'string' ? { language } : {}),
-        snippet: formattedCode,
-      };
-    }
-    return undefined;
-  }
-
-  /**
-   * MATCHING 타입 메타데이터를 정규화한다.
-   * @param value matching_metadata 원본 값
-   * @returns 정규화된 matching_metadata (없으면 undefined)
-   */
-  private normalizeMatchingMetadata(value: unknown) {
-    if (!this.isPlainObject(value)) return undefined;
-
-    const item = value as Record<string, unknown>;
-    const left = this.normalizeMatchingItems(item.left);
-    const right = this.normalizeMatchingItems(item.right);
-
-    if (left.length > 0 && right.length > 0) {
-      return { left, right };
-    }
-    return undefined;
-  }
-
-  /**
-   * 매칭 항목을 id/text 형태로 정규화한다.
-   * - 문자열 배열은 id/text를 동일하게 채운다.
-   * - 객체 배열은 id/text를 추출한다.
-   */
-  private normalizeMatchingItems(value: unknown): Array<{ id: string; text: string }> {
-    if (!Array.isArray(value)) return [];
-
-    return value
-      .map(item => {
-        if (typeof item === 'string' || typeof item === 'number') {
-          const text = String(item).trim();
-          if (!text) return null;
-          return { id: text, text };
-        }
-
-        if (this.isPlainObject(item)) {
-          const record = item as Record<string, unknown>;
-          const text = this.toCleanString(record.text);
-          const rawId = this.toCleanString(record.id ?? record.value ?? record.key);
-          const id = rawId ?? text;
-          if (!id || !text) return null;
-          return { id, text };
-        }
-
-        return null;
-      })
-      .filter((entry): entry is { id: string; text: string } => entry !== null);
   }
 
   /**
@@ -665,10 +587,8 @@ export class RoadmapService {
   }
 
   /**
-   * TODO(임시): 유닛 스텝을 최소 5개로 채우고 중간/최종 점검 스텝을 삽입한다.
-   * - 실제 스텝: 실제 스텝 정보 + 퀴즈 개수
-   * - 플레이스홀더: 부족분을 "제작 중"으로 채운다.
-   * - 체크포인트: 중간/최종 점검 스텝은 퀴즈 수 없이 표시만 한다.
+   * 유닛의 스텝을 orderIndex 기준으로 정렬해 응답 형태로 변환한다.
+   * 체크포인트 스텝은 DB에 저장된 값을 그대로 사용한다.
    */
   private buildUnitStepsWithCheckpoints(
     steps: Step[],
@@ -676,67 +596,20 @@ export class RoadmapService {
     completedStepIdSet: Set<number> = new Set(),
   ): StepSummary[] {
     const sortedSteps = this.sortByOrderIndex(steps);
-    const baseStepSummaries: Array<StepSummary & { isPlaceholder?: boolean }> = sortedSteps.map(
-      step => ({
+    return sortedSteps.map(step => {
+      const isCompleted = completedStepIdSet.has(step.id);
+      const isLocked = step.isCheckpoint && !isCompleted;
+
+      return {
         id: step.id,
         title: step.title,
         orderIndex: step.orderIndex,
         quizCount: quizCountByStepId.get(step.id) ?? 0,
         isCheckpoint: step.isCheckpoint,
-        isCompleted: completedStepIdSet.has(step.id),
-        isLocked: false,
-      }),
-    );
-
-    // 부족분을 플레이스홀더로 채워 기본 5개를 맞춘다.
-    while (baseStepSummaries.length < 5) {
-      baseStepSummaries.push({
-        id: this.nextVirtualId(),
-        title: '제작 중',
-        orderIndex: baseStepSummaries.length + 1,
-        quizCount: 0,
-        isCheckpoint: false,
-        isCompleted: false,
-        isLocked: false,
-        isPlaceholder: true,
-      });
-    }
-
-    const newSteps: StepSummary[] = [];
-    let orderIndex = 1;
-
-    baseStepSummaries.forEach((step, idx) => {
-      newSteps.push({
-        ...step,
-        orderIndex: orderIndex++,
-      });
-
-      // 4번째 위치에 중간 점검 삽입 (3번째 스텝 뒤)
-      if (idx === 2) {
-        newSteps.push(this.createCheckpointStep('중간 점검', orderIndex++));
-      }
+        isCompleted,
+        isLocked,
+      };
     });
-
-    // 마지막 위치에 최종 점검 삽입
-    newSteps.push(this.createCheckpointStep('최종 점검', orderIndex++));
-
-    return newSteps;
-  }
-
-  private createCheckpointStep(title: string, orderIndex: number): StepSummary {
-    return {
-      id: this.nextVirtualId(),
-      title,
-      orderIndex,
-      quizCount: 0,
-      isCheckpoint: true,
-      isCompleted: false,
-      isLocked: true,
-    };
-  }
-
-  private nextVirtualId(): number {
-    return this.checkpointIdSeed--;
   }
 
   /**
@@ -790,27 +663,248 @@ export class RoadmapService {
       return;
     }
 
-    let stepAttempt: UserStepAttempt | null = null;
-    if (stepAttemptId) {
-      stepAttempt = await this.stepAttemptRepository.findOne({
-        where: { id: stepAttemptId, userId },
+    // 복습 기준과 일치시키기 위해 KST 기준 시각으로 저장한다.
+    const solvedAt = getKstNow();
+    const qualityScore = this.calculateQualityScore(isCorrect);
+
+    await this.dataSource.transaction(async manager => {
+      // 풀이 기록과 SRS 상태를 항상 같이 반영하기 위해 트랜잭션으로 묶는다.
+      const stepAttempt = await this.findStepAttemptForSolveLog({
+        manager,
+        userId,
+        quiz,
+        stepAttemptId,
       });
-    } else if (quiz.step?.id) {
-      stepAttempt = await this.stepAttemptRepository.findOne({
-        where: { userId, step: { id: quiz.step.id }, status: StepAttemptStatus.IN_PROGRESS },
-        order: { startedAt: 'DESC' },
+
+      const solveLogRepository = manager.getRepository(SolveLog);
+      const stepAttemptValue = stepAttempt ? stepAttempt : null;
+      const log = solveLogRepository.create({
+        userId,
+        quiz,
+        stepAttempt: stepAttemptValue,
+        isCorrect,
+        quality: qualityScore,
+        solvedAt,
+        duration: null,
+      });
+
+      await solveLogRepository.save(log);
+      await this.updateUserQuizStatusWithSm2({
+        manager,
+        userId,
+        quiz,
+        qualityScore,
+        solvedAt,
+      });
+      await this.rankingService.assignUserToGroupOnFirstSolveWithManager(manager, {
+        userId,
+        solvedAt,
+      });
+      await this.rankingService.addWeeklyXpOnSolveWithManager(manager, {
+        userId,
+        solvedAt,
+        isCorrect,
+      });
+    });
+  }
+
+  /**
+   * 풀이 로그가 속할 스텝 시도를 찾는다.
+   *
+   * @param params.manager 트랜잭션 매니저
+   * @param params.userId 사용자 ID
+   * @param params.quiz 대상 퀴즈
+   * @param params.stepAttemptId 요청에서 전달된 시도 ID
+   * @returns 스텝 시도 엔티티 또는 null
+   */
+  private async findStepAttemptForSolveLog(params: {
+    manager: EntityManager;
+    userId: number;
+    quiz: Quiz;
+    stepAttemptId?: number;
+  }): Promise<UserStepAttempt | null> {
+    const { manager, userId, quiz, stepAttemptId } = params;
+    const stepAttemptRepository = manager.getRepository(UserStepAttempt);
+
+    if (stepAttemptId) {
+      return stepAttemptRepository.findOne({
+        where: { id: stepAttemptId, userId },
       });
     }
 
-    const log = this.solveLogRepository.create({
-      userId,
-      quiz,
-      stepAttempt: stepAttempt ?? null,
-      isCorrect,
-      solvedAt: new Date(),
-      duration: null,
+    if (!quiz.step || !quiz.step.id) {
+      return null;
+    }
+
+    return stepAttemptRepository.findOne({
+      where: { userId, step: { id: quiz.step.id }, status: StepAttemptStatus.IN_PROGRESS },
+      order: { startedAt: 'DESC' },
+    });
+  }
+
+  /**
+   * SM-2 규칙에 따라 유저 퀴즈 상태를 갱신한다.
+   *
+   * @param params.manager 트랜잭션 매니저
+   * @param params.userId 사용자 ID
+   * @param params.quiz 대상 퀴즈
+   * @param params.qualityScore 풀이 품질 점수
+   * @param params.solvedAt 풀이 시각
+   */
+  private async updateUserQuizStatusWithSm2(params: {
+    manager: EntityManager;
+    userId: number;
+    quiz: Quiz;
+    qualityScore: number;
+    solvedAt: Date;
+  }): Promise<void> {
+    const { manager, userId, quiz, qualityScore, solvedAt } = params;
+    const userQuizStatusRepository = manager.getRepository(UserQuizStatus);
+
+    const existingStatus = await userQuizStatusRepository.findOne({
+      where: { userId, quiz: { id: quiz.id } },
     });
 
-    await this.solveLogRepository.save(log);
+    let baseStatus: UserQuizStatus;
+    if (existingStatus) {
+      baseStatus = existingStatus;
+    } else {
+      baseStatus = userQuizStatusRepository.create({
+        userId,
+        quiz,
+        status: QuizLearningStatus.LEARNING,
+        interval: 0,
+        easeFactor: 2.5,
+        repetition: 0,
+        lastQuality: null,
+        reviewCount: 0,
+        lapseCount: 0,
+        nextReviewAt: null,
+        lastSolvedAt: null,
+        isWrong: false,
+      });
+    }
+
+    let baseEaseFactor = baseStatus.easeFactor;
+    if (baseEaseFactor === null || baseEaseFactor === undefined) {
+      baseEaseFactor = 2.5;
+    }
+    const nextEaseFactor = this.calculateEaseFactor(baseEaseFactor, qualityScore);
+    const isSuccess = qualityScore >= 3;
+    let baseRepetition = baseStatus.repetition;
+    if (baseRepetition === null || baseRepetition === undefined) {
+      baseRepetition = 0;
+    }
+    let baseInterval = baseStatus.interval;
+    if (baseInterval === null || baseInterval === undefined) {
+      baseInterval = 0;
+    }
+    let baseReviewCount = baseStatus.reviewCount;
+    if (baseReviewCount === null || baseReviewCount === undefined) {
+      baseReviewCount = 0;
+    }
+    let baseLapseCount = baseStatus.lapseCount;
+    if (baseLapseCount === null || baseLapseCount === undefined) {
+      baseLapseCount = 0;
+    }
+
+    let nextRepetition = 0;
+    let nextInterval = 1;
+    let nextStatus = QuizLearningStatus.LEARNING;
+    let nextIsWrong = true;
+    let nextLapseCount = baseLapseCount;
+
+    if (isSuccess) {
+      nextRepetition = baseRepetition + 1;
+      nextInterval = this.calculateInterval(nextRepetition, baseInterval, nextEaseFactor);
+      nextStatus = QuizLearningStatus.REVIEW;
+      nextIsWrong = false;
+    } else {
+      nextRepetition = 0;
+      nextInterval = 1;
+      nextStatus = QuizLearningStatus.LEARNING;
+      nextIsWrong = true;
+      nextLapseCount = baseLapseCount + 1;
+    }
+
+    if (isSuccess && nextInterval >= 30) {
+      nextStatus = QuizLearningStatus.MASTERED;
+    }
+
+    baseStatus.easeFactor = nextEaseFactor;
+    baseStatus.repetition = nextRepetition;
+    baseStatus.interval = nextInterval;
+    baseStatus.status = nextStatus;
+    baseStatus.isWrong = nextIsWrong;
+    baseStatus.lastQuality = qualityScore;
+    baseStatus.reviewCount = baseReviewCount + 1;
+    baseStatus.lapseCount = nextLapseCount;
+    baseStatus.lastSolvedAt = solvedAt;
+    baseStatus.nextReviewAt = this.calculateNextReviewAt(solvedAt, nextInterval);
+
+    await userQuizStatusRepository.save(baseStatus);
+  }
+
+  /**
+   * 정답 여부로 기본 품질 점수를 계산한다.
+   *
+   * @param isCorrect 정답 여부
+   * @returns SM-2 품질 점수
+   */
+  private calculateQualityScore(isCorrect: boolean): number {
+    if (isCorrect) {
+      return 5;
+    }
+    return 2;
+  }
+
+  /**
+   * SM-2 공식을 적용해 난이도 계수를 갱신한다.
+   *
+   * @param currentEaseFactor 현재 난이도 계수
+   * @param qualityScore 품질 점수
+   * @returns 갱신된 난이도 계수
+   */
+  private calculateEaseFactor(currentEaseFactor: number, qualityScore: number): number {
+    const scoreGap = 5 - qualityScore;
+    const delta = 0.1 - scoreGap * (0.08 + scoreGap * 0.02);
+    const nextEaseFactor = currentEaseFactor + delta;
+
+    return Math.max(nextEaseFactor, 1.3);
+  }
+
+  /**
+   * SM-2 규칙으로 다음 복습 간격을 계산한다.
+   *
+   * @param repetition 업데이트된 연속 정답 횟수
+   * @param previousInterval 기존 복습 간격(일)
+   * @param easeFactor 갱신된 난이도 계수
+   * @returns 다음 복습 간격(일)
+   */
+  private calculateInterval(
+    repetition: number,
+    previousInterval: number,
+    easeFactor: number,
+  ): number {
+    if (repetition === 1) {
+      return 1;
+    }
+    if (repetition === 2) {
+      return 6;
+    }
+    return Math.round(previousInterval * easeFactor);
+  }
+
+  /**
+   * 복습 간격을 기준으로 다음 복습 일시를 계산한다.
+   *
+   * @param solvedAt 풀이 시각
+   * @param intervalDays 복습 간격(일)
+   * @returns 다음 복습 일시
+   */
+  private calculateNextReviewAt(solvedAt: Date, intervalDays: number): Date {
+    const dayMilliseconds = 24 * 60 * 60 * 1000;
+    const totalOffset = intervalDays * dayMilliseconds;
+    return new Date(solvedAt.getTime() + totalOffset);
   }
 }

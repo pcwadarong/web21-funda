@@ -19,6 +19,7 @@ export interface QuizSubmissionResponse {
     correct_option_id?: string;
     correct_pairs?: MatchingPair[];
   };
+  user_heart_count?: number;
 }
 
 export interface StepCompletionPayload {

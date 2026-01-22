@@ -1,0 +1,30 @@
+# ============================================================
+# Grafana Datasources Provisioning
+# Grafana 시작 시 자동으로 데이터소스를 등록하는 설정
+# ============================================================
+apiVersion: 1
+
+datasources:
+  # ------------------------------------------------------------
+  # Prometheus: 메트릭 데이터소스
+  # 시계열 메트릭 데이터를 쿼리하고 시각화
+  # ------------------------------------------------------------
+  - name: Prometheus
+    type: prometheus
+    access: proxy                    # Grafana가 프록시를 통해 접근
+    url: http://prometheus:9090       # Prometheus 서비스 내부 URL
+    isDefault: true                  # 기본 데이터소스로 설정
+    editable: true                   # UI에서 수정 가능
+
+  # ------------------------------------------------------------
+  # Loki: 로그 데이터소스
+  # 수집된 로그를 쿼리하고 시각화
+  # ------------------------------------------------------------
+  - name: Loki
+    type: loki
+    access: proxy                    # Grafana가 프록시를 통해 접근
+    url: http://loki:3100            # Loki 서비스 내부 URL
+    isDefault: false                 # 기본 데이터소스 아님
+    editable: true                   # UI에서 수정 가능
+    jsonData:
+      maxLines: 1000                 # 로그 쿼리 시 최대 라인 수

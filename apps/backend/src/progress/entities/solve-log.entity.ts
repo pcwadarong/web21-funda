@@ -40,6 +40,9 @@ export class SolveLog {
   @Column({ name: 'is_correct', type: 'boolean' })
   isCorrect!: boolean;
 
+  @Column({ type: 'int', nullable: true })
+  quality?: number | null;
+
   @Column({ name: 'solved_at', type: 'datetime' })
   solvedAt!: Date;
 

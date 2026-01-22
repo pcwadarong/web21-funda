@@ -53,6 +53,7 @@ export class AuthService {
    */
   async handleGithubLogin(profile: GithubProfile, meta: RequestMeta): Promise<TokenPairResult> {
     const user = await this.upsertGithubUser(profile);
+    await this.recoverHeart(user);
     const { accessToken, refreshToken } = await this.issueTokens(user, meta);
 
     return {
@@ -84,6 +85,7 @@ export class AuthService {
       throw new UnauthorizedException('유저 정보를 찾을 수 없습니다.');
     }
 
+    await this.recoverHeart(user);
     const { accessToken, refreshToken: newRefreshToken } = await this.issueTokens(user, meta);
 
     return {
@@ -319,6 +321,40 @@ export class AuthService {
    */
   async getUserById(userId: number): Promise<User | null> {
     return this.users.findOneBy({ id: userId });
+  }
+
+  /**
+   * Heart를 회복한다 (10분마다 1개씩, 최대 maxHeartCount까지).
+   * @param user 사용자
+   */
+  async recoverHeartPublic(user: User): Promise<void> {
+    return this.recoverHeart(user);
+  }
+
+  /**
+   * Heart를 회복한다 (10분마다 1개씩, 최대 maxHeartCount까지).
+   * @param user 사용자
+   */
+  private async recoverHeart(user: User): Promise<void> {
+    const now = new Date();
+    const lastSyncedTime = user.lastHeartSyncedAt.getTime();
+    const elapsedMilliseconds = now.getTime() - lastSyncedTime;
+    const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
+
+    // 10분(600초) 단위로 heart 회복 횟수 계산
+    const recoveryIntervalSeconds = 10 * 60; // 10분
+    const recoveryCount = Math.floor(elapsedSeconds / recoveryIntervalSeconds);
+
+    if (recoveryCount > 0) {
+      // 회복할 heart 수 계산
+      const newHeartCount = Math.min(user.heartCount + recoveryCount, user.maxHeartCount);
+
+      // heart 회복 및 lastHeartSyncedAt 업데이트
+      user.heartCount = newHeartCount;
+      user.lastHeartSyncedAt = now;
+
+      await this.users.save(user);
+    }
   }
 
   /**

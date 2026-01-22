@@ -1,4 +1,5 @@
 import { ThemeProvider } from '@emotion/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type * as ReactRouterDom from 'react-router-dom';
 import { MemoryRouter } from 'react-router-dom';
@@ -46,6 +47,7 @@ vi.mock('react-router-dom', async () => {
 
 // authStore 모킹
 const mockUseAuthStore = vi.fn(() => false);
+const mockUseIsAuthReady = vi.fn(() => true);
 const mockUseAuthUser = vi.fn<() => { heartCount: number; currentStreak: number } | null>(
   () => null,
 );
@@ -57,9 +59,25 @@ vi.mock('@/store/authStore', () => ({
   },
   useAuthUser: () => mockUseAuthUser(),
   useIsLoggedIn: () => mockUseAuthStore(),
+  useIsAuthReady: () => mockUseIsAuthReady(),
 }));
 
+const mockFields = [
+  {
+    slug: 'frontend',
+    name: '프론트엔드',
+    description: '프론트엔드',
+    icon: 'Frontend',
+  },
+  {
+    slug: 'backend',
+    name: '백엔드',
+    description: '백엔드',
+    icon: 'Backend',
+  },
+];
 const mockGetFields = vi.fn();
+const mockGetReviewQueue = vi.fn();
 
 vi.mock('@/services/fieldService', () => ({
   fieldService: {
@@ -67,38 +85,54 @@ vi.mock('@/services/fieldService', () => ({
   },
 }));
 
+vi.mock('@/hooks/queries/fieldQueries', () => ({
+  useFieldsQuery: () => ({ data: { fields: mockFields } }),
+}));
+
+vi.mock('@/services/progressService', () => ({
+  progressService: {
+    getReviewQueue: (params?: { fieldSlug?: string; limit?: number }) => mockGetReviewQueue(params),
+  },
+}));
+
 const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: (slug: string) => void }) => {
   const setFieldSlug = props?.setFieldSlug ?? (() => {});
-  const fieldSlug = props?.fieldSlug ?? 'FE';
+  const fieldSlug = props?.fieldSlug ?? 'frontend';
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   return {
     setFieldSlug,
     ...render(
-      <ThemeProvider theme={lightTheme}>
-        <ToastProvider>
-          <ModalProvider>
-            <MemoryRouter>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  backgroundColor: lightTheme.colors.surface.default,
-                  minHeight: '100vh',
-                  padding: '24px',
-                }}
-              >
-                <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
-              </div>
-            </MemoryRouter>
-          </ModalProvider>
-        </ToastProvider>
-      </ThemeProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={lightTheme}>
+          <ToastProvider>
+            <ModalProvider>
+              <MemoryRouter>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    backgroundColor: lightTheme.colors.surface.default,
+                    minHeight: '100vh',
+                    padding: '24px',
+                  }}
+                >
+                  <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
+                </div>
+              </MemoryRouter>
+            </ModalProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </QueryClientProvider>,
     ),
   };
 };
 
 describe('LearnRightSidebar 컴포넌트 테스트', () => {
   beforeEach(() => {
+    mockUseIsAuthReady.mockReturnValue(true);
     mockGetFields.mockResolvedValue({
       fields: [
         {
@@ -115,6 +149,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
         },
       ],
     });
+    mockGetReviewQueue.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -123,19 +158,20 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     updateUIStateMock.mockClear();
     mockNavigate.mockClear();
     mockUseAuthStore.mockReturnValue(false);
+    mockUseIsAuthReady.mockReturnValue(true);
   });
 
   it('기본 렌더링이 올바르게 동작한다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FE/i)).toBeInTheDocument();
+    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument(); // 하트 개수
   });
 
   it('필드 이름이 표시된다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FE/i)).toBeInTheDocument();
+    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
   });
 
   it('비로그인 상태에서 하트 개수가 표시된다', () => {
@@ -165,25 +201,38 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(heartNumbers.length).toBeGreaterThan(0);
   });
 
-  it('오답 노트 카드가 표시된다', () => {
+  it('복습 노트 카드가 표시된다', () => {
     renderSidebar();
 
-    expect(screen.getByText('오답 노트')).toBeInTheDocument();
+    expect(screen.getByText('복습 노트')).toBeInTheDocument();
   });
 
-  it('비로그인 상태에서 오답 노트에 로그인 링크가 표시된다', () => {
+  it('비로그인 상태에서 복습 노트에 로그인 링크가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(false);
     renderSidebar();
 
-    expect(screen.getByText(/로그인 후 문제를 복습해보세요/)).toBeInTheDocument();
+    expect(screen.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
   });
 
-  it('로그인 상태에서 오답 노트에 문제 개수가 표시된다', () => {
+  it('로그인 상태에서 복습 노트에 복습 시작 버튼이 표시된다', async () => {
     mockUseAuthStore.mockReturnValue(true);
     mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
+    mockGetReviewQueue.mockResolvedValue([
+      { id: 1, type: 'mcq', content: { question: '문제 1', options: [] } },
+      { id: 2, type: 'ox', content: { question: '문제 2', options: [] } },
+      {
+        id: 3,
+        type: 'code',
+        content: {
+          question: '문제 3',
+          options: [],
+          code_metadata: { language: 'javascript', snippet: 'const a = 1;' },
+        },
+      },
+    ]);
     renderSidebar();
 
-    expect(screen.getByText(/5개 문제 복습 필요/)).toBeInTheDocument();
+    expect(await screen.findByText('복습 시작')).toBeInTheDocument();
   });
 
   it('오늘의 목표 카드가 표시된다', () => {

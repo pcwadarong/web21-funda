@@ -20,6 +20,7 @@ export enum QuizLearningStatus {
 
 @Entity({ name: 'user_quiz_statuses' })
 @Index('IDX_user_quiz_status_user_quiz_unique', ['userId', 'quiz'], { unique: true })
+@Index('IDX_user_quiz_status_user_next_review', ['userId', 'nextReviewAt'])
 export class UserQuizStatus {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -45,6 +46,15 @@ export class UserQuizStatus {
 
   @Column({ type: 'int', default: 0 })
   repetition!: number;
+
+  @Column({ name: 'last_quality', type: 'int', nullable: true })
+  lastQuality?: number | null;
+
+  @Column({ name: 'review_count', type: 'int', default: 0 })
+  reviewCount!: number;
+
+  @Column({ name: 'lapse_count', type: 'int', default: 0 })
+  lapseCount!: number;
 
   @Column({ name: 'next_review_at', type: 'datetime', nullable: true })
   nextReviewAt?: Date | null;

@@ -10,21 +10,16 @@ import { lightTheme } from '@/styles/theme';
 
 // 하위 컴포넌트 모킹
 vi.mock('@/feat/quiz/components/QuizContentCard', () => ({
-  QuizContentCard: ({
-    question,
-    status,
-    isSubmitDisabled,
-    onAnswerChange,
-    onCheck,
-    onNext,
-  }: {
+  QuizContentCard: (props: {
     question: unknown;
     status: 'idle' | 'checking' | 'checked';
     isSubmitDisabled: boolean;
     onAnswerChange: (a: unknown) => void;
     onCheck: () => void;
     onNext: () => void;
+    isReviewMode: boolean;
   }) => {
+    const { question, status, isSubmitDisabled, onAnswerChange, onCheck, onNext } = props;
     type MatchingQuestion = {
       type?: string;
       content?: {
@@ -130,9 +125,11 @@ const renderContainer = (props: Partial<React.ComponentProps<typeof QuizContaine
     questionStatuses: ['idle' as const],
     isCheckDisabled: true,
     isLastQuestion: false,
+    isReviewMode: false,
     handleAnswerChange: vi.fn(),
     handleCheckAnswer: vi.fn().mockResolvedValue(undefined),
     handleNextQuestion: vi.fn(),
+    heartCount: 0,
     ...props,
   };
 
@@ -187,9 +184,9 @@ describe('QuizContainer 컴포넌트 테스트', () => {
     expect(handleNextQuestion).toHaveBeenCalled();
   });
 
-  it('퀴즈가 없을 때 로딩 메시지가 표시된다', () => {
-    renderContainer({ quizzes: [] });
+  it('퀴즈가 없을 때 렌더링되지 않는다', () => {
+    const { container } = renderContainer({ quizzes: [] });
 
-    expect(screen.getByText('데이터를 불러오는 중입니다...')).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });

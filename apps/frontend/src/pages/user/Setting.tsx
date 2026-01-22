@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { SettingContainer } from '@/features/user/components/SettingContainer';
-import { authService } from '@/services/authService';
+import { SettingContainer } from '@/feat/user/components/setting/SettingContainer';
+import { useLogoutMutation } from '@/hooks/queries/authQueries';
+import { useStorage } from '@/hooks/useStorage';
 import { useAuthActions } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
@@ -12,6 +13,9 @@ export const Setting = () => {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const { clearAuth } = useAuthActions();
+  const { soundVolume, setSoundVolume } = useStorage();
+
+  const logoutMutation = useLogoutMutation();
 
   /**
    * 다크 모드 토글 핸들러
@@ -22,6 +26,18 @@ export const Setting = () => {
   }, [toggleDarkMode]);
 
   /**
+   * 효과음 볼륨 변경 핸들러
+   *
+   * @param volume 0.0~1.0 범위의 볼륨 값
+   */
+  const handleSoundVolumeChange = useCallback(
+    (volume: number) => {
+      setSoundVolume(volume);
+    },
+    [setSoundVolume],
+  );
+
+  /**
    * 로그아웃 핸들러
    */
   const handleLogout = useCallback(async () => {
@@ -29,7 +45,7 @@ export const Setting = () => {
     if (!isConfirmed) return;
 
     try {
-      await authService.logout();
+      await logoutMutation.mutateAsync();
       clearAuth();
       navigate('/learn', { replace: true });
     } catch {
@@ -41,6 +57,8 @@ export const Setting = () => {
     <SettingContainer
       isDarkMode={isDarkMode}
       onDarkModeToggle={handleDarkModeToggle}
+      soundVolume={soundVolume}
+      onSoundVolumeChange={handleSoundVolumeChange}
       onLogout={handleLogout}
     />
   );

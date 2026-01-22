@@ -25,6 +25,9 @@ export const authService = {
     return apiFetch.post('/auth/logout');
   },
 
+  /**
+   * 현재 사용자 정보 조회
+   */
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
       const response = await apiFetch.get<MeResponse>('/auth/me');
@@ -35,6 +38,9 @@ export const authService = {
     }
   },
 
+  /**
+   * 리프레시 토큰 갱신
+   */
   async refreshToken(): Promise<RefreshResponse | null> {
     try {
       const response = await apiFetch.post<RefreshResponse>('/auth/refresh');

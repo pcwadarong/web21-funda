@@ -176,7 +176,6 @@ const currentStreakStyle = css`
   color: transparent;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 20px #ffa35d);
-  margin: 0;
   display: inline-block;
 `;
 

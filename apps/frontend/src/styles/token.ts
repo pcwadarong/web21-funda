@@ -9,11 +9,12 @@ export const palette = {
     500: '#A0A3BD',
     600: '#6E7191',
     700: '#4E4B66',
-    800: '#2A2A44',
+    800: '#252838',
     900: '#14142B',
   },
   primary: {
     surface: '#b4b5ff8e',
+    semilight: '#D1CEF9',
     light: '#A29AFF',
     main: '#6559EA',
     dark: '#4A3FB8',

@@ -13,51 +13,65 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
   const theme = useTheme();
 
   return (
-    <main css={mainStyle}>
-      <div css={titleWrapper}>
-        <span css={title(theme)}>학습 분야 선택</span>
-        <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
-      </div>
-      <div css={gridStyle}>
-        {fields.map(field => (
-          <label
-            key={field.slug}
-            onClick={() => onFieldClick(field.slug)}
-            css={fieldLabelStyle(theme)}
-          >
-            <div css={fieldNameWrapper}>
-              <span css={fieldNameStyle(theme)}>{field.name}</span>
-              <SVGIcon icon={field.icon} size="lg" />
-            </div>
-            <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
-            <div css={goLoadmap(theme)}>
-              <span>로드맵 보기</span>
-
-              <SVGIcon icon={'NextArrow'} size="sm" />
-            </div>
-          </label>
-        ))}
-      </div>
-    </main>
+    <div css={containerStyle}>
+      <main css={mainStyle}>
+        <header css={headerStyle}>
+          <h1 css={title(theme)}>학습 분야 선택</h1>
+          <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
+        </header>
+        <section css={gridStyle}>
+          {fields.map(field => (
+            <button
+              key={field.slug}
+              onClick={() => onFieldClick(field.slug)}
+              css={fieldLabelStyle(theme)}
+            >
+              <div css={fieldNameWrapper}>
+                <span css={fieldNameStyle(theme)}>{field.name}</span>
+                <SVGIcon icon={field.icon} size="lg" />
+              </div>
+              <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
+              <div css={goRoadmap(theme)}>
+                <span>로드맵 보기</span>
+                <SVGIcon icon={'NextArrow'} size="sm" />
+              </div>
+            </button>
+          ))}
+        </section>
+      </main>
+    </div>
   );
 };
 
-const mainStyle = css`
+const containerStyle = css`
   display: flex;
-  flex-direction: column;
-  margin: 0 auto;
-  padding: 24px;
-  gap: 24px;
-  max-width: 1200px;
-  width: 100%;
-  box-sizing: border-box;
-  flex: 1;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 `;
 
-const titleWrapper = css`
+const mainStyle = css`
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.5rem 0;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 32px 20px 80px;
+  }
+`;
+
+const headerStyle = css`
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 24px;
 `;
 
 const title = (theme: Theme) => css`
@@ -65,6 +79,7 @@ const title = (theme: Theme) => css`
   color: ${theme.colors.primary.main};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   line-height: ${theme.typography['16Medium'].lineHeight};
+  margin: 0;
 `;
 
 const subtitle = (theme: Theme) => css`
@@ -75,26 +90,27 @@ const subtitle = (theme: Theme) => css`
 `;
 
 const gridStyle = css`
+  position: relative;
+  z-index: 1;
   display: grid;
-  /* 기본 1열에서 시작하여 너비에 따라 열 개수를 유연하게 조절 */
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem;
-  width: 100%;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 10px 0 30px;
+  min-height: 0;
 
-  /* 태블릿 및 작은 모니터 */
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 
-  /* 일반 데스크탑 */
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
   }
 
-  /* 대화면 데스크탑 */
-  @media (min-width: 1440px) {
-    grid-template-columns: repeat(4, 1fr);
+  @media (max-width: 768px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 `;
 
@@ -102,7 +118,7 @@ const fieldLabelStyle = (theme: Theme) => css`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 180px; /* 카드 높이 균일화 */
+  min-height: 180px;
   gap: 16px;
   padding: 24px;
   background: ${theme.colors.surface.strong};
@@ -110,7 +126,7 @@ const fieldLabelStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.medium};
   transition: all 150ms ease-in-out;
   box-shadow: 0 4px 0 ${theme.colors.border.default};
-  cursor: pointer;
+  color: ${theme.colors.text.default};
 
   &:hover {
     transform: translateY(-4px);
@@ -122,8 +138,6 @@ const fieldLabelStyle = (theme: Theme) => css`
     transform: translateY(2px);
     box-shadow: 0 0px 0 ${theme.colors.border.default};
   }
-
-  color: ${theme.colors.text.default};
 `;
 
 const fieldNameWrapper = css`
@@ -136,18 +150,19 @@ const fieldNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   line-height: ${theme.typography['20Bold'].lineHeight};
-  color: ${theme.colors.grayscale[800]};
+  color: ${theme.colors.text.strong};
 `;
 
 const fieldDescriptionStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   line-height: ${theme.typography['16Medium'].lineHeight};
-  color: ${theme.colors.grayscale[600]};
-  flex-grow: 1; /* 설명이 짧아도 아래 '로드맵 보기' 위치를 고정 */
+  color: ${theme.colors.text.light};
+  flex-grow: 1;
+  text-align: left;
 `;
 
-const goLoadmap = (theme: Theme) => css`
+const goRoadmap = (theme: Theme) => css`
   display: flex;
   align-items: center;
   gap: 4px;

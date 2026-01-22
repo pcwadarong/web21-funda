@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
@@ -17,6 +18,9 @@ export const Sidebar = () => {
   const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
+  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
+
+  const tierName = rankingMe?.tier?.name ?? null;
 
   // 활성화된 네비게이션 아이템 찾기
   const activeItemId = NAV_ITEMS.find(item => {
@@ -70,7 +74,7 @@ export const Sidebar = () => {
           </div>
           <div css={userInfoStyle}>
             <div css={userNameStyle(theme)}>{user.displayName}</div>
-            <div css={userLevelStyle(theme)}>{user.experience} XP</div>
+            <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
           </div>
         </div>
       )}
@@ -304,3 +308,11 @@ const userLevelStyle = (theme: Theme) => css`
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${theme.colors.text.weak};
 `;
+
+const buildTierLabel = (tierName: string | null) => {
+  if (!tierName) {
+    return '티어 정보 없음';
+  }
+
+  return `${tierName} 티어`;
+};

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import correctSound from '@/assets/audio/correct.mp3';
 import wrongSound from '@/assets/audio/wrong.mp3';
+import { Modal } from '@/comp/Modal';
+import { Loading } from '@/components/Loading';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
-import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
 import type {
   AnswerType,
   CorrectAnswerType,
@@ -13,17 +15,35 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
+import {
+  useCompleteStepMutation,
+  useQuizzesByStepQuery,
+  useStartStepMutation,
+  useSubmitQuizMutation,
+} from '@/hooks/queries/quizQueries';
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
-import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
-import { authService } from '@/services/authService';
-import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
-import { useAuthStore, useIsAuthReady } from '@/store/authStore';
-import { shuffleArray } from '@/utils/shuffleArray';
+import type { QuizSubmissionRequest } from '@/services/quizService';
+import { useAuthActions, useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
+
+/**
+ * 비로그인 사용자 결과 데이터 타입
+ */
+type GuestStepResult = {
+  score: number;
+  experience: number;
+  correctCount: number;
+  totalQuizzes: number;
+  answeredQuizzes: number;
+  successRate: number;
+  durationSeconds: number;
+  firstSolve: boolean;
+};
+
 /**
  * 퀴즈 풀이 페이지 컴포넌트
  * 퀴즈 데이터 로딩, 답변 상태 관리, 정답 확인 및 페이지 이동 로직을 담당합니다.
- * * @returns {JSX.Element | null} 퀴즈 화면 레이아웃
  */
 export const Quiz = () => {
   const {
@@ -34,13 +54,31 @@ export const Quiz = () => {
     addGuestStepAnswer,
     finalizeGuestStepAttempt,
     getGuestStepAttempt,
+    progress,
+    updateProgress,
   } = useStorage();
-  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+
+  const isLoggedIn = useIsLoggedIn();
+  const user = useAuthUser();
   const isAuthReady = useIsAuthReady();
-  const [isLoading, setIsLoading] = useState(true);
+  const { setUser } = useAuthActions();
+
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
+  const [showHeartExhaustedModal, setShowHeartExhaustedModal] = useState(false);
+
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // -----------------------------------------------------------------------------
+  // 표시 값 / 파생 값
+  /** 하트 개수 */
+  const heartCount = user ? user.heartCount : progress.heart;
+
+  /** orderIndex가 4 또는 5일 때만 heart 표시 */
+  const showHeart =
+    uiState.current_step_order_index === 4 || uiState.current_step_order_index === 5;
 
   /** 불러온 문제 배열 */
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
@@ -57,7 +95,7 @@ export const Quiz = () => {
   const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>([]);
 
   /** 문제 하나라도 풀었을 때 */
-  const hasProgress = questionStatuses.some(status => status !== 'idle');
+  const hasProgress = questionStatuses.some((status: QuestionStatus) => status !== 'idle');
 
   /** 현재 풀이 중인 퀴즈의 인덱스 */
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
@@ -73,20 +111,71 @@ export const Quiz = () => {
 
   /** 현재 진행할 스텝 ID */
   const step_id = uiState.current_quiz_step_id;
+  const isReviewMode = searchParams.get('mode') === 'review';
+  const reviewBatchSize = 10;
+  const startedStepIdRef = useRef<number | null>(null);
 
+  /** 리뷰 모드에서 불러온 퀴즈 데이터 */
+  const reviewState = useMemo(
+    () => location.state as { reviewQuizzes?: QuizQuestion[]; reviewFieldSlug?: string } | null,
+    [location.state],
+  );
+
+  const reviewQuizzesFromState = useMemo(() => reviewState?.reviewQuizzes ?? null, [reviewState]);
+
+  const reviewFieldSlug = useMemo(
+    () => reviewState?.reviewFieldSlug ?? uiState.last_viewed.field_slug,
+    [reviewState, uiState.last_viewed.field_slug],
+  );
+
+  const queryClient = useQueryClient();
+
+  const completeStepMutation = useCompleteStepMutation();
+
+  const startStepMutation = useStartStepMutation();
+
+  const submitQuizMutation = useSubmitQuizMutation();
+
+  const reviewQuery = useReviewQueueQuery(
+    { fieldSlug: reviewFieldSlug, limit: reviewBatchSize },
+    {
+      enabled: isReviewMode && !reviewQuizzesFromState && isLoggedIn && isAuthReady,
+    },
+  );
+
+  const quizzesQuery = useQuizzesByStepQuery(step_id, {
+    enabled: !isReviewMode && Boolean(step_id) && isAuthReady,
+  });
+
+  const quizzesData = isReviewMode
+    ? (reviewQuizzesFromState ?? reviewQuery.data)
+    : quizzesQuery.data;
+
+  const isQueryLoading = isReviewMode
+    ? !reviewQuizzesFromState && reviewQuery.isLoading
+    : quizzesQuery.isLoading;
+
+  const isQueryError = isReviewMode
+    ? !reviewQuizzesFromState && reviewQuery.isError
+    : quizzesQuery.isError;
+
+  const handleRetry = () => {
+    setLoadError(false);
+    if (isReviewMode) {
+      if (!reviewQuizzesFromState) reviewQuery.refetch();
+      return;
+    }
+    quizzesQuery.refetch();
+  };
+
+  /** 효과음 재생 */
   const { playSound } = useSound();
+
+  /** 퀴즈 한 개당 기본 점수 */
   const baseScorePerQuiz = 3;
 
-  type GuestStepResult = {
-    score: number;
-    experience: number;
-    correctCount: number;
-    totalQuizzes: number;
-    answeredQuizzes: number;
-    successRate: number;
-    durationSeconds: number;
-    firstSolve: boolean;
-  };
+  // -----------------------------------------------------------------------------
+  // 유틸 함수
 
   /**
    * 비로그인 사용자 결과 데이터를 계산한다.
@@ -104,7 +193,9 @@ export const Quiz = () => {
 
       const totalQuizzes = quizzes.length;
       const answeredQuizzes = guestAttempt.answers.length;
-      const correctCount = guestAttempt.answers.filter(answer => answer.is_correct).length;
+      const correctCount = guestAttempt.answers.filter(
+        (answer: { is_correct: boolean }) => answer.is_correct,
+      ).length;
       const score = answeredQuizzes * baseScorePerQuiz;
       const successRate = totalQuizzes === 0 ? 0 : (correctCount / totalQuizzes) * 100;
       const finishedAt = guestAttempt.finished_at ?? Date.now();
@@ -130,74 +221,71 @@ export const Quiz = () => {
   /**
    * 퀴즈 데이터 가져오기
    */
-
-  const fetchQuizzes = async () => {
-    if (!step_id) {
+  const fetchQuizzes = useCallback(() => {
+    if (!step_id && !isReviewMode) {
       return;
     }
 
     if (!isAuthReady) {
       return;
     }
-    setIsLoading(true);
-    setLoadError(false);
-    setStepAttemptId(null);
 
-    /** 퀴즈 시작 정보 저장 */
-    if (isLoggedIn) {
-      try {
-        const startResult = await quizService.startStep(step_id);
-        setStepAttemptId(startResult.stepAttemptId);
-      } catch {
-        setLoadError(true);
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      startGuestStepAttempt(step_id);
+    if (isReviewMode && !isLoggedIn) {
+      navigate('/login');
+      return;
     }
 
-    try {
-      // 완전히 준비된 캐시 확인
-      const cachedProcessedData = sessionStorage.getItem(`processed_quizzes_${step_id}`);
+    if (!quizzesData) {
+      return;
+    }
 
-      if (cachedProcessedData) {
-        // 미리 가공된 데이터 직접 사용
-        const { quizzes, selectedAnswers, questionStatuses, quizSolutions } =
-          JSON.parse(cachedProcessedData);
-
-        setQuizzes(quizzes);
-        setSelectedAnswers(selectedAnswers);
-        setQuestionStatuses(questionStatuses);
-        setQuizSolutions(quizSolutions);
-
-        sessionStorage.removeItem(`processed_quizzes_${step_id}`);
-        setIsLoading(false);
-        return;
-      }
-
-      // 캐시 없으면 서버에서 가져오기
-      const quizzesData = await quizService.getQuizzesByStep(step_id);
-
-      // 데이터 처리 (호버할 때 안 했으면 여기서)
-      const shuffledQuizzes = await shuffleArray(quizzesData);
-      const finalQuizzes = await shuffleQuizOptions(shuffledQuizzes);
-
-      setQuizzes(finalQuizzes);
-      setSelectedAnswers(new Array(finalQuizzes.length).fill(null));
-      setQuestionStatuses(new Array(finalQuizzes.length).fill('idle'));
-      setQuizSolutions(new Array(finalQuizzes.length).fill(null));
-    } catch {
+    if (quizzesData.length === 0) {
       setLoadError(true);
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  };
 
+    setLoadError(false);
+    setQuizzes(quizzesData);
+    setSelectedAnswers(new Array(quizzesData.length).fill(null));
+    setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
+    setQuizSolutions(new Array(quizzesData.length).fill(null));
+  }, [step_id, isLoggedIn, isAuthReady, isReviewMode, navigate, quizzesData]);
+
+  // -----------------------------------------------------------------------------
+  // 네비게이션/이펙트
   /** 페이지 진입 시 초기 세팅 */
   useEffect(() => {
     fetchQuizzes();
-  }, [step_id, isLoggedIn, isAuthReady]);
+  }, [fetchQuizzes]);
+
+  useEffect(() => {
+    if (!isAuthReady || isReviewMode || !step_id) {
+      return;
+    }
+
+    if (step_id === startedStepIdRef.current) {
+      return;
+    }
+
+    startedStepIdRef.current = step_id;
+    setStepAttemptId(null);
+
+    if (!isLoggedIn) {
+      startGuestStepAttempt(step_id);
+      return;
+    }
+
+    const startStep = async () => {
+      try {
+        const startResult = await startStepMutation.mutateAsync(step_id);
+        setStepAttemptId(startResult.stepAttemptId);
+      } catch {
+        setLoadError(true);
+      }
+    };
+
+    startStep();
+  }, [isAuthReady, isLoggedIn, isReviewMode, startGuestStepAttempt, startStepMutation, step_id]);
 
   /** 새로고침 시, 한 문제라도 제출했다면 경고 */
   useEffect(() => {
@@ -214,6 +302,8 @@ export const Quiz = () => {
     };
   }, [hasProgress]);
 
+  // -----------------------------------------------------------------------------
+  // 액션 핸들러 / 파생 상태
   // 정답 확인 버튼 활성화 여부 계산
   const isCheckDisabled = useMemo(() => {
     if (!currentQuiz || currentQuestionStatus !== 'idle' || currentAnswer === null) return true;
@@ -236,7 +326,7 @@ export const Quiz = () => {
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {
       if (currentQuestionStatus !== 'idle') return;
-      setSelectedAnswers(prev => {
+      setSelectedAnswers((prev: AnswerType[]) => {
         const newAnswers = [...prev];
         newAnswers[currentQuizIndex] = answer;
         return newAnswers;
@@ -251,7 +341,7 @@ export const Quiz = () => {
    */
   const handleCheckAnswer = useCallback(async () => {
     if (!currentQuiz || !currentAnswer) return;
-    if (isLoggedIn && stepAttemptId === null) {
+    if (isLoggedIn && stepAttemptId === null && !isReviewMode) {
       setLoadError(true);
       return;
     }
@@ -275,7 +365,7 @@ export const Quiz = () => {
         payload.step_attempt_id = stepAttemptId;
       }
 
-      const result = await quizService.submitQuiz(currentQuiz.id, payload);
+      const result = await submitQuizMutation.mutateAsync({ quizId: currentQuiz.id, payload });
       const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
         ? { pairs: result.solution.correct_pairs }
         : (result.solution?.correct_option_id ?? null);
@@ -284,26 +374,55 @@ export const Quiz = () => {
       if (result.is_correct) playSound({ src: correctSound, currentTime: 0.05 });
       else playSound({ src: wrongSound, currentTime: 0.05 });
 
-      setQuizSolutions(prev => {
-        const newSolutions = [...prev];
-        newSolutions[currentQuizIndex] = {
-          correctAnswer,
-          explanation: result.solution?.explanation ?? '',
-        };
-        return newSolutions;
-      });
+      // heart 차감 처리
+      if (!result.is_correct && showHeart) {
+        if (isLoggedIn && result.user_heart_count !== undefined && user) {
+          // 로그인 사용자: 응답받은 heart count로 user 정보 업데이트
+          setUser({
+            ...user,
+            heartCount: result.user_heart_count,
+          });
+          // 하트가 모두 소진되었을 때 모달 띄우기
+          if (result.user_heart_count <= 0) {
+            setShowHeartExhaustedModal(true);
+          }
+        } else if (!isLoggedIn) {
+          // 미로그인 사용자: localStorage에서 heart 차감
+          const newHeartCount = Math.max(0, progress.heart - 1);
+          updateProgress({
+            heart: newHeartCount,
+          });
+          // 하트가 모두 소진되었을 때 모달 띄우기
+          if (newHeartCount <= 0) {
+            setShowHeartExhaustedModal(true);
+          }
+        }
+      }
+
+      setQuizSolutions(
+        (prev: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>) => {
+          const newSolutions = [...prev];
+          newSolutions[currentQuizIndex] = {
+            correctAnswer,
+            explanation: result.solution?.explanation ?? '',
+          };
+          return newSolutions;
+        },
+      );
       setCurrentQuestionStatus('checked');
-      setQuestionStatuses(prev => {
+      setQuestionStatuses((prev: QuestionStatus[]) => {
         const newStatuses = [...prev];
         newStatuses[currentQuizIndex] = 'checked';
         return newStatuses;
       });
 
       if (!isLoggedIn) {
-        addGuestStepAnswer(step_id, {
-          quiz_id: currentQuiz.id,
-          is_correct: result.is_correct,
-        });
+        if (!isReviewMode) {
+          addGuestStepAnswer(step_id, {
+            quiz_id: currentQuiz.id,
+            is_correct: result.is_correct,
+          });
+        }
       }
     } catch {
       // 에러 발생 시에도 다음 문제로 넘어갈 수 있도록 함
@@ -318,6 +437,7 @@ export const Quiz = () => {
     playSound,
     step_id,
     stepAttemptId,
+    isReviewMode,
   ]);
 
   /** 마지막 문제 여부 */
@@ -328,21 +448,26 @@ export const Quiz = () => {
    */
   const handleNextQuestion = useCallback(async () => {
     if (!currentQuiz) return;
+
     if (isLastQuestion) {
       try {
+        if (isReviewMode) {
+          navigate('/quiz/review-result');
+          return;
+        }
         if (isLoggedIn) {
           if (stepAttemptId === null) {
             navigate('/quiz/error');
             return;
           }
 
-          const result = await quizService.completeStep(step_id, {
-            stepAttemptId,
+          const result = await completeStepMutation.mutateAsync({
+            stepId: step_id,
+            payload: { stepAttemptId },
           });
-          const updatedUser = await authService.getCurrentUser();
-          if (updatedUser) {
-            useAuthStore.getState().actions.setUser(updatedUser);
-          }
+
+          await queryClient.invalidateQueries({ queryKey: ['current-user'] });
+
           navigate('/quiz/result', {
             state: result,
           });
@@ -388,25 +513,49 @@ export const Quiz = () => {
     finalizeGuestStepAttempt,
     buildGuestResult,
     stepAttemptId,
+    isReviewMode,
   ]);
 
+  // 하트 소진 모달 닫기 핸들러
+  const handleHeartExhaustedModalClose = useCallback(() => {
+    setShowHeartExhaustedModal(false);
+    navigate('/learn');
+  }, [navigate]);
+
+  // -----------------------------------------------------------------------------
+  // 렌더링
   // 조건부 렌더링은 모든 hooks 호출 후에 배치
-  if (isLoading) return <QuizLoadingView />;
-  if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
+  if (isQueryLoading) return <Loading text="퀴즈를 불러오는 중입니다" />;
+  if (isQueryError || loadError) return <QuizLoadErrorView onRetry={handleRetry} />;
 
   return (
-    <QuizContainer
-      quizzes={quizzes}
-      currentQuizIndex={currentQuizIndex}
-      currentQuestionStatus={currentQuestionStatus}
-      selectedAnswers={selectedAnswers}
-      quizSolutions={quizSolutions}
-      questionStatuses={questionStatuses}
-      isCheckDisabled={isCheckDisabled}
-      isLastQuestion={isLastQuestion}
-      handleAnswerChange={handleAnswerChange}
-      handleCheckAnswer={handleCheckAnswer}
-      handleNextQuestion={handleNextQuestion}
-    />
+    <>
+      {showHeartExhaustedModal && (
+        <Modal
+          title="알림"
+          content={
+            <div style={{ fontSize: '18px', fontWeight: '600' }}>
+              하트를 모두 소진하였습니다. 다시 도전해주세요!
+            </div>
+          }
+          onClose={handleHeartExhaustedModalClose}
+        />
+      )}
+      <QuizContainer
+        quizzes={quizzes}
+        currentQuizIndex={currentQuizIndex}
+        currentQuestionStatus={currentQuestionStatus}
+        selectedAnswers={selectedAnswers}
+        quizSolutions={quizSolutions}
+        questionStatuses={questionStatuses}
+        isCheckDisabled={isCheckDisabled}
+        isLastQuestion={isLastQuestion}
+        handleAnswerChange={handleAnswerChange}
+        handleCheckAnswer={handleCheckAnswer}
+        handleNextQuestion={handleNextQuestion}
+        heartCount={showHeart ? heartCount : 0}
+        isReviewMode={isReviewMode}
+      />
+    </>
   );
 };

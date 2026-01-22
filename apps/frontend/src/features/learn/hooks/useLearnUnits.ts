@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { UnitType } from '@/feat/learn/types';
 import { useStorage } from '@/hooks/useStorage';
-import { fieldService } from '@/services/fieldService';
-import { useAuthStore } from '@/store/authStore';
 import { storageUtil } from '@/utils/storage';
 
 /**
@@ -11,16 +9,15 @@ import { storageUtil } from '@/utils/storage';
  */
 export const useLearnUnits = () => {
   const { solvedStepHistory, updateUIState } = useStorage();
-  const [fieldName, setFieldName] = useState('');
   const [units, setUnits] = useState<UnitType[]>([]);
   const [activeUnitId, setActiveUnitId] = useState<number | null>(null);
+  const [fieldName, setFieldName] = useState('');
   const [fieldSlug, setFieldSlug] = useState(
     () => storageUtil.get().ui_state.last_viewed.field_slug,
   );
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const unitRefs = useRef(new Map<number, HTMLElement>());
-  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
 
   /**
    * 현재 활성화된 유닛을 반환합니다.
@@ -66,36 +63,6 @@ export const useLearnUnits = () => {
         }
       }),
     }));
-
-  /**
-   * field_slug를 기준으로 유닛/스텝 데이터를 요청하고 상태로 매핑합니다.
-   */
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchUnits = async () => {
-      try {
-        const data = await fieldService.getFieldUnits(fieldSlug);
-        if (!isMounted) return;
-
-        setFieldName(data.field.name);
-        setUnits(
-          isLoggedIn
-            ? unlockCheckpoints(data.units ?? [])
-            : unlockCheckpoints(markSolvedSteps(data.units ?? [])),
-        );
-        setActiveUnitId(data.units[0]?.id ?? null);
-      } catch (error) {
-        console.error('Failed to fetch units:', error);
-      }
-    };
-
-    fetchUnits();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [fieldSlug, isLoggedIn]);
 
   /**
    * 스크롤 위치를 기준으로 활성 유닛을 계산합니다.
@@ -189,12 +156,18 @@ export const useLearnUnits = () => {
 
   return {
     fieldName,
+    setFieldName,
     units,
+    setUnits,
     activeUnit,
+    activeUnitId,
+    setActiveUnitId,
     scrollContainerRef,
     headerRef,
     registerUnitRef,
     fieldSlug,
     setFieldSlug,
+    markSolvedSteps,
+    unlockCheckpoints,
   };
 };

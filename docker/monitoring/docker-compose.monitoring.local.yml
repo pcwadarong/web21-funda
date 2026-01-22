@@ -1,0 +1,149 @@
+version: '3.9'
+
+# ============================================================
+# Monitoring Stack - Local Development
+# 로컬 개발 환경용 모니터링 스택 설정
+# ============================================================
+
+services:
+  # ------------------------------------------------------------
+  # Loki: 로그 수집 및 저장 서버
+  # Docker 컨테이너 로그를 중앙 집중식으로 저장
+  # ------------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: funda-loki
+    ports:
+      - "3100:3100"  # 로컬 접근용 포트 노출 (프로덕션에서는 제거)
+    volumes:
+      - loki_data:/loki  # 로그 데이터 영구 저장
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - funda-network
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # Promtail: 로그 수집 에이전트
+  # Docker 컨테이너 로그를 읽어서 Loki로 전송
+  # ------------------------------------------------------------
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: funda-promtail
+    volumes:
+      # Docker 컨테이너 로그 디렉토리 (읽기 전용)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # Docker 소켓: 컨테이너 자동 감지 및 메타데이터 수집용
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Promtail 설정 파일
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yaml:ro
+      # 수집 위치 추적 파일: 컨테이너 재시작 시에도 수집 위치 유지
+      - promtail_positions:/tmp
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - funda-network
+    restart: unless-stopped
+    depends_on:
+      - loki
+
+  # ------------------------------------------------------------
+  # Node Exporter: 호스트 OS 메트릭 수집
+  # CPU, 메모리, 디스크, 네트워크 등 시스템 레벨 메트릭 제공
+  # ------------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: funda-node-exporter
+    command:
+      # 호스트의 /proc, /sys를 컨테이너 내부 경로로 매핑
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      # 불필요한 마운트 포인트 제외 (성능 최적화)
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro      # 프로세스 정보
+      - /sys:/host/sys:ro        # 시스템 정보
+      - /:/rootfs:ro             # 루트 파일시스템 (읽기 전용)
+    ports:
+      - '9100:9100'  # 로컬 접근용 포트 노출
+    networks:
+      - funda-network
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # Prometheus: 메트릭 수집 및 저장 서버
+  # 시계열 데이터베이스로 메트릭을 저장하고 쿼리 제공
+  # ------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: funda-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'           # 메트릭 저장 경로
+      - '--storage.tsdb.retention.time=30d'         # 로컬: 30일 보관
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'                    # 설정 리로드 API 활성화
+    ports:
+      - '9090:9090'  # 로컬 접근용 포트 노출
+    volumes:
+      - prometheus_data:/prometheus                 # 메트릭 데이터 영구 저장
+      - ./prometheus/prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - funda-network
+    restart: unless-stopped
+    depends_on:
+      - node-exporter
+      - loki
+      - promtail
+
+  # ------------------------------------------------------------
+  # Grafana: 메트릭 및 로그 시각화 대시보드
+  # Prometheus와 Loki를 데이터소스로 사용하여 대시보드 제공
+  # ------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: funda-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # 로컬 전용 (프로덕션에서는 환경 변수 사용)
+      - GF_USERS_ALLOW_SIGN_UP=false       # 사용자 자동 가입 비활성화
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+    ports:
+      - '3001:3000'  # 로컬 접근용 포트 노출 (프로덕션에서는 제거)
+    volumes:
+      - grafana_data:/var/lib/grafana      # 대시보드 및 설정 영구 저장
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro  # 자동 프로비저닝
+    networks:
+      - funda-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  # 외부 네트워크: 애플리케이션 서비스와 통신하기 위한 공유 네트워크
+  funda-network:
+    external: true
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  # Prometheus 메트릭 데이터: 시계열 데이터베이스 저장소
+  prometheus_data:
+    driver: local
+  
+  # Grafana 데이터: 대시보드, 사용자 설정, 데이터소스 설정
+  grafana_data:
+    driver: local
+  
+  # Loki 로그 데이터: 수집된 로그 저장소
+  loki_data:
+    driver: local
+  
+  # Promtail 위치 추적: 로그 수집 위치 정보 유지
+  promtail_positions:
+    driver: local

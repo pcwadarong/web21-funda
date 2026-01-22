@@ -50,6 +50,7 @@ const meta: Meta<typeof RoadmapContainer> = {
   component: RoadmapContainer,
   parameters: {
     layout: 'fullscreen',
+    authStatus: 'logged-out',
   },
   tags: ['autodocs'],
   decorators: [
@@ -66,7 +67,6 @@ const meta: Meta<typeof RoadmapContainer> = {
   args: {
     fieldName: '프론트엔드',
     units: mockUnits,
-    isLoggedIn: false,
     onUnitClick: () => {},
   },
 };
@@ -77,7 +77,7 @@ type Story = StoryObj<typeof RoadmapContainer>;
 export const Default: Story = {};
 
 export const LoggedIn: Story = {
-  args: {
-    isLoggedIn: true,
+  parameters: {
+    authStatus: 'logged-in',
   },
 };

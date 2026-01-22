@@ -1,0 +1,81 @@
+name: Funda CI (Build & Push)
+
+on:
+  push:
+    branches: ['main', 'develop']
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1. Node.js 환경 세팅
+      - name: set node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 1-1. pnpm 세팅 (corepack)
+      - name: enable corepack
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.28.0 --activate
+
+      # 1-2. pnpm store 캐시
+      - name: get pnpm store path
+        id: pnpm-store
+        run: echo "STORE_PATH=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      # 2. 의존성 설치
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 2-1. lint 체크
+      # - name: run lint
+      #  run: pnpm -r lint
+
+      # 2-2. 테스트 실행
+      # - name: run tests
+      # run: pnpm -r test
+
+      # FE 환경변수 (빌드 시점에 주입되어 static 파일에 포함됨)
+      - name: create FE env file
+        run: |
+          printf '%s' "${{ secrets.ENV_FE_PROD }}" > ./apps/frontend/.env.production
+
+      # 4. NCP NCR 로그인
+      - name: login to NCR
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.NCR_REGISTRY }}
+          username: ${{ secrets.NCP_ACCESS_KEY }}
+          password: ${{ secrets.NCP_SECRET_KEY }}
+
+      # 5. Docker 이미지 빌드 및 푸시
+      - name: build and push BE
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/production/Dockerfile.backend
+          # main 브랜치일 때만 NCR로 이미지를 push
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.NCR_REGISTRY }}/funda-backend:latest
+
+      - name: build and push FE
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/production/Dockerfile.frontend
+          # main 브랜치일 때만 NCR로 이미지를 push
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.NCR_REGISTRY }}/funda-frontend:latest

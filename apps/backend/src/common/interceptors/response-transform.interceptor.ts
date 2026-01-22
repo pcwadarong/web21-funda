@@ -19,6 +19,11 @@ export class ResponseTransformInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    const request = context.switchToHttp().getRequest();
+
+    // 메트릭 수집 경로는 Prometheus 형식 그대로 반환해야 하므로 변환하지 않음
+    if (request.path?.includes('/metrics')) return next.handle();
+
     return next.handle().pipe(
       map(data => {
         const response = context.switchToHttp().getResponse();

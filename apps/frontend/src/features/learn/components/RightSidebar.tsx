@@ -1,12 +1,14 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
+import { Loading } from '@/components/Loading';
+import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
+import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { type Field, fieldService } from '@/services/fieldService';
-import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
@@ -23,33 +25,29 @@ export const LearnRightSidebar = ({
   fieldSlug: string;
   setFieldSlug: (slug: string) => void;
 }) => {
+  const reviewBatchSize = 10;
   const theme = useTheme();
   const user = useAuthUser();
-  const isLoggedIn = useIsLoggedIn();
   const { progress, updateUIState } = useStorage();
+  const navigate = useNavigate();
+
+  const isLoggedIn = useIsLoggedIn();
+  const isAuthReady = useIsAuthReady();
 
   const heartCount = user ? user.heartCount : progress.heart;
 
-  const [fields, setFields] = useState<Field[]>([]);
+  const { data: fieldsData } = useFieldsQuery();
+  const fields = fieldsData.fields;
+
+  const { data: reviewQueueData = [], refetch: refetchReviewQueue } = useReviewQueueQuery(
+    { fieldSlug, limit: reviewBatchSize },
+    {
+      enabled: isLoggedIn && isAuthReady,
+    },
+  );
 
   const { showToast } = useToast();
-
-  const showInProgressToast = useCallback(() => {
-    showToast('제작 중입니다');
-  }, []);
-
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        const data = await fieldService.getFields();
-        setFields(data.fields);
-      } catch (error) {
-        console.error('Failed to fetch fields:', error);
-      }
-    };
-
-    fetchFields();
-  }, []);
+  const [isNavigatingReview, setIsNavigatingReview] = useState(false);
 
   const selectedField = useMemo(
     () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
@@ -79,6 +77,40 @@ export const LearnRightSidebar = ({
 
     setFieldSlug(option);
   };
+
+  const handleReviewClick = useCallback(async () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+
+    let quizzes = reviewQueueData;
+    if (quizzes.length === 0) {
+      const result = await refetchReviewQueue();
+
+      if (result.isError || !result.data) {
+        showToast('복습 문제를 불러오지 못했습니다.');
+        return;
+      }
+      quizzes = result.data;
+    }
+
+    if (quizzes.length === 0) {
+      showToast('복습할 문제가 없습니다.');
+      return;
+    }
+
+    setIsNavigatingReview(true);
+    navigate('/quiz?mode=review', {
+      state: {
+        reviewQuizzes: quizzes,
+        reviewFieldSlug: fieldSlug,
+      },
+    });
+  }, [fieldSlug, isLoggedIn, navigate, refetchReviewQueue, reviewQueueData, showToast]);
+
+  if (!isAuthReady) return null;
+  if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
 
   return (
     <aside css={rightSectionStyle}>
@@ -139,18 +171,15 @@ export const LearnRightSidebar = ({
           <span css={cardIconStyle}>
             <SVGIcon icon="Book" size="md" />
           </span>
-          <span css={cardTitleStyle(theme)}>오답 노트</span>
+          <span css={cardTitleStyle(theme)}>복습 노트</span>
         </div>
         {isLoggedIn && user ? (
-          //TODO: 복습 시스템 구현
-          // <button css={reviewBadgeStyle(theme)}>{user.wrongAnswers}개 문제 복습 필요</button>
-          // 임시 토스트 메시지 출력
-          <button css={reviewBadgeStyle(theme)} onClick={() => showInProgressToast()}>
-            5개 문제 복습 필요
+          <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
+            복습 시작
           </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 문제를 복습해보세요!</div>
+            <div css={reviewBadgeStyle(theme)}>로그인 후 복습 노트를 확인해보세요!</div>
           </Link>
         )}
       </div>
@@ -279,12 +308,47 @@ const cardTitleStyle = (theme: Theme) => css`
 `;
 
 const reviewBadgeStyle = (theme: Theme) => css`
-  padding: 12px 16px;
-  background: ${theme.colors.primary.surface};
-  border-radius: ${theme.borderRadius.small};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  text-align: center;
+  /* 레이아웃: 클릭 영역 확보를 위해 좌우 패딩을 넉넉히 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+
+  /* 배경 및 컬러: 시스템의 Primary Main과 Grayscale 50 활용 */
+  background: ${theme.colors.primary.main};
+  color: ${theme.colors.grayscale[50]};
+
+  /* 테두리: 둥근 모서리(16px)로 버튼다움 강조 */
+  border: none;
+  border-radius: ${theme.borderRadius.medium};
+
+  /* 타이포그래피: 가독성 높은 16Bold 적용 */
+  font-size: ${theme.typography['16Bold'].fontSize};
+  font-weight: ${theme.typography['16Bold'].fontWeight};
+  line-height: ${theme.typography['16Bold'].lineHeight};
+
+  /* 인터랙션 및 피드백 */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(101, 89, 234, 0.25);
+
+  &:hover {
+    background: ${theme.colors.primary.dark};
+    transform: translateY(-2px); /* 부드럽게 떠오르는 효과 */
+    box-shadow: 0 6px 16px rgba(101, 89, 234, 0.35);
+  }
+
+  &:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+  }
+
+  &:disabled {
+    background: ${theme.colors.grayscale[300]};
+    color: ${theme.colors.grayscale[500]};
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 `;
 
 const goalsContentStyle = css`

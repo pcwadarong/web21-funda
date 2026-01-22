@@ -61,7 +61,6 @@ const titleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${theme.colors.text.default};
-  margin: 0;
   text-align: center;
 `;
 
@@ -70,7 +69,6 @@ const descriptionStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.light};
-  margin: 0;
   text-align: center;
   max-width: 400px;
 `;

@@ -29,12 +29,14 @@ export const AuthCheck = () => {
 
   return (
     <div css={containerStyle()}>
-      <div css={contentStyle()}>
+      <div css={contentStyle(theme)}>
         <div css={placeholderStyle(theme)}>
           <span css={emojiStyle}></span>
         </div>
-        <h1 css={titleStyle(theme)}>프로필을 생성하세요!</h1>
-        <p css={descriptionStyle(theme)}>프로필을 만들어 학습 진도를 저장하고 계속 학습하세요!</p>
+        <div>
+          <h1 css={titleStyle(theme)}>프로필을 생성하세요!</h1>
+          <p css={descriptionStyle(theme)}>프로필을 만들어 학습 진도를 저장하고 계속 학습하세요!</p>
+        </div>
         <div css={buttonGroupStyle}>
           <Button variant="primary" onClick={handleLogin} fullWidth>
             로그인하기
@@ -54,15 +56,17 @@ const containerStyle = () => css`
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
+  text-align: center;
 `;
 
-const contentStyle = () => css`
+const contentStyle = (theme: Theme) => css`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 2rem;
   max-width: 500px;
   width: 100%;
+  color: ${theme.colors.text.light};
 `;
 
 const placeholderStyle = (theme: Theme) => css`
@@ -80,21 +84,16 @@ const emojiStyle = css`
 `;
 
 const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['36ExtraBold'].fontSize};
-  line-height: ${theme.typography['36ExtraBold'].lineHeight};
-  font-weight: ${theme.typography['36ExtraBold'].fontWeight};
-  color: ${theme.colors.text.default};
-  margin: 0;
-  text-align: center;
+  font-size: ${theme.typography['24Bold'].fontSize};
+  line-height: ${theme.typography['24Bold'].lineHeight};
+  font-weight: ${theme.typography['24Bold'].fontWeight};
+  margin-bottom: 0.5rem;
 `;
 
 const descriptionStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Medium'].fontSize};
   line-height: ${theme.typography['20Medium'].lineHeight};
   font-weight: ${theme.typography['20Medium'].fontWeight};
-  color: ${theme.colors.text.light};
-  margin: 0;
-  text-align: center;
 `;
 
 const buttonGroupStyle = css`

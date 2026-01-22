@@ -674,7 +674,7 @@ const extractLanguage = (className?: string | null): string | null => {
   }
 
   const match = className.match(/language-(\w+)/);
-  return match ? match[1] : null;
+  return match && match[1] ? match[1] : null;
 };
 
 const inputBarStyle = (theme: Theme) => css`

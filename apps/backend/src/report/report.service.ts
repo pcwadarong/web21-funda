@@ -12,4 +12,10 @@ export class ReportService {
     const entity = this.repo.create({ quizId, report_description });
     return await this.repo.save(entity);
   }
+
+  async findAll() {
+    return await this.repo.find({
+      order: { createdAt: 'ASC' },
+    });
+  }
 }

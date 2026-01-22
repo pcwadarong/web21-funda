@@ -13,6 +13,7 @@ import {
   UserStepAttempt,
   UserStepStatus,
 } from '../progress/entities';
+import { RankingService } from '../ranking/ranking.service';
 import { User } from '../users/entities/user.entity';
 
 import type { FieldListResponse } from './dto/field-list.dto';
@@ -49,6 +50,7 @@ export class RoadmapService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly rankingService: RankingService,
   ) {}
 
   /**
@@ -230,21 +232,42 @@ export class RoadmapService {
         .createQueryBuilder('pool')
         .innerJoinAndSelect('pool.quiz', 'quiz')
         .where('pool.checkpoint_step_id = :stepId', { stepId })
-        .orderBy('RAND()')
-        .limit(10)
         .getMany();
 
-      quizzes = pools.map(pool => pool.quiz).filter((quiz): quiz is Quiz => Boolean(quiz));
+      const poolQuizzes = pools
+        .map(pool => pool.quiz)
+        .filter((quiz): quiz is Quiz => Boolean(quiz));
+
+      quizzes = this.shuffleArray(poolQuizzes).slice(0, 10);
     } else {
-      quizzes = await this.quizRepository
+      const stepQuizzes = await this.quizRepository
         .createQueryBuilder('quiz')
         .where('quiz.step_id = :stepId', { stepId })
-        .orderBy('RAND()')
-        .limit(10)
         .getMany();
+
+      quizzes = this.shuffleArray(stepQuizzes).slice(0, 10);
     }
 
     return Promise.all(quizzes.map(quiz => this.quizContentService.toQuizResponse(quiz)));
+  }
+
+  /**
+   * Fisher-Yates 알고리즘을 사용하여 배열을 랜덤하게 섞는다.
+   *
+   * @param array 섞을 배열
+   * @returns 섞인 배열 (원본 보존)
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled: T[] = [...array];
+
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i]!;
+      shuffled[i] = shuffled[j]!;
+      shuffled[j] = temp;
+    }
+
+    return shuffled;
   }
 
   /**
@@ -669,6 +692,15 @@ export class RoadmapService {
         quiz,
         qualityScore,
         solvedAt,
+      });
+      await this.rankingService.assignUserToGroupOnFirstSolveWithManager(manager, {
+        userId,
+        solvedAt,
+      });
+      await this.rankingService.addWeeklyXpOnSolveWithManager(manager, {
+        userId,
+        solvedAt,
+        isCorrect,
       });
     });
   }

@@ -1,10 +1,11 @@
-import { Body, Controller, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
@@ -17,6 +18,32 @@ import { ReportService } from './report.service';
 @Controller('quizzes')
 export class ReportController {
   constructor(private readonly service: ReportService) {}
+
+  @Get('reports')
+  @ApiOperation({
+    summary: '모든 신고 목록 조회',
+    description: '제출된 모든 신고를 조회합니다.',
+  })
+  @ApiOkResponse({
+    description: '신고 목록을 성공적으로 조회함',
+    schema: {
+      type: 'array',
+      items: {
+        example: {
+          id: 1,
+          quizId: 10,
+          report_description: '문제/해설에 오타가 있어요',
+          createdAt: '2026-01-21T13:00:00Z',
+        },
+      },
+    },
+  })
+  @ApiInternalServerErrorResponse({
+    description: '서버 내부 오류',
+  })
+  async findAll() {
+    return await this.service.findAll();
+  }
 
   @Post(':quizId/reports')
   @ApiOperation({

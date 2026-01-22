@@ -9,6 +9,7 @@ import { createTypeOrmOptions } from './config/typeorm.config';
 import { MetricsModule } from './metrics/metrics.module';
 import { NotificationModule } from './notification/notification.module';
 import { ProgressModule } from './progress/progress.module';
+import { RankingModule } from './ranking/ranking.module';
 import { ReportModule } from './report/report.module';
 import { RoadmapModule } from './roadmap/roadmap.module';
 import { AppController } from './app.controller';
@@ -32,6 +33,7 @@ import { AppService } from './app.service';
     ReportModule,
     ScheduleModule.forRoot(),
     NotificationModule,
+    RankingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

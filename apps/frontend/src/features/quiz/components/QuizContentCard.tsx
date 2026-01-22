@@ -91,9 +91,6 @@ export const QuizContentCard = ({
       <div css={footerStyle(theme)}>
         {showResult ? (
           <>
-            <Button variant="primary" onClick={onNext} css={flexBtn}>
-              {nextButtonLabel}
-            </Button>
             <Button
               variant="secondary"
               onClick={() =>
@@ -109,6 +106,9 @@ export const QuizContentCard = ({
               css={flexBtn}
             >
               AI 질문
+            </Button>
+            <Button variant="primary" onClick={onNext} css={flexBtn}>
+              {nextButtonLabel}
             </Button>
           </>
         ) : (

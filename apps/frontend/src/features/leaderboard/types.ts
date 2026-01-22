@@ -33,6 +33,15 @@ export interface WeeklyRankingResult {
   members: RankingMember[];
 }
 
+export interface RankingMeResult {
+  tier: {
+    id: number;
+    name: string;
+    orderIndex: number;
+  } | null;
+  diamondCount: number;
+}
+
 /**
  * 랭킹 존
  */

@@ -72,14 +72,6 @@ describe('LeaderboardStateMessage 컴포넌트 테스트', () => {
 
       expect(screen.getByText('커스텀 미할당 메시지')).toBeInTheDocument();
     });
-
-    it('미할당 상태일 때 스켈레톤이 표시된다', () => {
-      renderLeaderboardStateMessage('unassigned');
-
-      // 스켈레톤은 5개가 표시되어야 함
-      const container = screen.getByText('레슨을 완료하여 리그에 참여하세요').parentElement;
-      expect(container).toBeInTheDocument();
-    });
   });
 
   describe('스켈레톤 UI', () => {

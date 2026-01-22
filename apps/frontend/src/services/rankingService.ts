@@ -1,15 +1,6 @@
-import type { WeeklyRankingResult } from '@/features/leaderboard/types';
+import type { RankingMeResult, WeeklyRankingResult } from '@/features/leaderboard/types';
 
 import { apiFetch } from './api';
-
-export interface RankingMeResult {
-  tier: {
-    id: number;
-    name: string;
-    orderIndex: number;
-  } | null;
-  diamondCount: number;
-}
 
 export const rankingService = {
   /**

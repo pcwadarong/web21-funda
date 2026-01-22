@@ -204,7 +204,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
         onRefresh: handleRefresh,
       });
 
-      const refreshButton = screen.getByRole('button');
+      const refreshButton = screen.getByRole('button', { name: '리더보드 새로고침' });
       expect(refreshButton).toBeInTheDocument();
       expect(screen.getByTestId('icon-Refresh')).toBeInTheDocument();
     });
@@ -223,7 +223,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
         onRefresh: handleRefresh,
       });
 
-      const refreshButton = screen.getByRole('button');
+      const refreshButton = screen.getByRole('button', { name: '리더보드 새로고침' });
       fireEvent.click(refreshButton);
 
       expect(handleRefresh).toHaveBeenCalledTimes(1);
@@ -237,7 +237,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
         isRefreshing: true,
       });
 
-      const refreshButton = screen.getByRole('button');
+      const refreshButton = screen.getByRole('button', { name: '리더보드 새로고침' });
       expect(refreshButton).toBeDisabled();
     });
 
@@ -249,7 +249,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
         isRefreshing: false,
       });
 
-      const refreshButton = screen.getByRole('button');
+      const refreshButton = screen.getByRole('button', { name: '리더보드 새로고침' });
       expect(refreshButton).not.toBeDisabled();
     });
   });

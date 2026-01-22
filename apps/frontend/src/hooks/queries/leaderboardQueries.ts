@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
-import type { WeeklyRankingResult } from '@/features/leaderboard/types';
-import { type RankingMeResult, rankingService } from '@/services/rankingService';
+import type { RankingMeResult, WeeklyRankingResult } from '@/features/leaderboard/types';
+import { rankingService } from '@/services/rankingService';
 
 export const leaderboardKeys = {
   weekly: () => ['leaderboard', 'weekly'] as const,
@@ -15,6 +15,7 @@ export const useWeeklyRanking = () =>
     staleTime: 0,
     refetchInterval: 1000 * 60,
     refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
 export const useRankingMe = (enabled: boolean = true) =>

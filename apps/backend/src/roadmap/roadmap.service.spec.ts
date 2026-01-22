@@ -10,6 +10,7 @@ import {
   UserStepAttempt,
   UserStepStatus,
 } from '../progress/entities';
+import { RankingService } from '../ranking/ranking.service';
 import { User } from '../users/entities/user.entity';
 
 import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
@@ -30,6 +31,7 @@ describe('RoadmapService', () => {
   let dataSource: Partial<DataSource>;
   let codeFormatter: Partial<CodeFormatter>;
   let quizContentService: QuizContentService;
+  let rankingService: Partial<RankingService>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -111,6 +113,10 @@ describe('RoadmapService', () => {
       format: formatMock,
     };
     quizContentService = new QuizContentService(codeFormatter as CodeFormatter);
+    rankingService = {
+      assignUserToGroupOnFirstSolveWithManager: jest.fn(),
+      addWeeklyXpOnSolveWithManager: jest.fn(),
+    };
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
@@ -124,6 +130,7 @@ describe('RoadmapService', () => {
       stepStatusRepository as Repository<UserStepStatus>,
       userRepository as Repository<User>,
       dataSource as DataSource,
+      rankingService as RankingService,
     );
   });
 

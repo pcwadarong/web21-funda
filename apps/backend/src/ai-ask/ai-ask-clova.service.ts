@@ -77,6 +77,46 @@ export class AiAskClovaService {
   }
 
   /**
+   * 퀴즈와 사용자 질문을 바탕으로 CLOVA Studio 스트리밍 응답을 받는다.
+   *
+   * @param quiz 퀴즈 엔티티
+   * @param userQuestion 사용자 질문
+   * @param onChunk 스트리밍 조각을 받을 콜백
+   * @returns 최종 AI 답변 텍스트
+   */
+  async requestAnswerStream(
+    quiz: Quiz,
+    userQuestion: string,
+    onChunk: (chunk: string) => void,
+  ): Promise<string> {
+    this.validateApiKey();
+
+    const promptContext = this.buildPromptContext(quiz);
+    const userPrompt = this.buildUserPrompt(promptContext, userQuestion);
+    const apiRequest = this.buildApiRequest(userPrompt);
+
+    const response = await fetch(this.apiUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify(apiRequest),
+    });
+
+    if (!response.ok || !response.body) {
+      const errorText = await response.text().catch(() => '');
+      throw new BadRequestException(
+        `CLOVA Studio 스트리밍 호출 실패: ${response.status} ${errorText}`,
+      );
+    }
+
+    const fullContent = await this.parseSseStream(response, onChunk);
+    return fullContent;
+  }
+
+  /**
    * CLOVA Studio 응답에서 실제 텍스트를 추출한다.
    *
    * @param raw 응답 JSON
@@ -113,6 +153,99 @@ export class AiAskClovaService {
     }
 
     return '';
+  }
+
+  /**
+   * CLOVA Studio SSE 스트림을 읽어 조각을 누적하고 콜백으로 전달한다.
+   *
+   * @param response 스트리밍 응답
+   * @param onChunk 조각 수신 콜백
+   * @returns 전체 합산 텍스트
+   */
+  private async parseSseStream(
+    response: Response,
+    onChunk: (chunk: string) => void,
+  ): Promise<string> {
+    if (!response.body) {
+      throw new BadRequestException('스트리밍 응답을 읽을 수 없습니다.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      // 네트워크 청크를 합쳐 줄 단위로 안전하게 분리하기 위해 버퍼를 사용한다.
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine.startsWith('data:')) {
+          continue;
+        }
+
+        const data = trimmedLine.substring(5).trim();
+        if (data === '[DONE]' || data.includes('[DONE]')) {
+          continue;
+        }
+
+        const chunk = this.extractStreamChunk(data);
+        if (chunk.length === 0) {
+          continue;
+        }
+
+        fullContent += chunk;
+        onChunk(chunk);
+      }
+    }
+
+    return fullContent;
+  }
+
+  /**
+   * 스트리밍 응답 JSON에서 실제 텍스트 조각을 추출한다.
+   *
+   * @param jsonData data: 이후의 JSON 문자열
+   * @returns 추출된 텍스트 조각
+   */
+  private extractStreamChunk(jsonData: string): string {
+    try {
+      const parsed = JSON.parse(jsonData) as Record<string, unknown>;
+      const stopReason = parsed?.stopReason;
+      const hasStopReason = stopReason !== null && stopReason !== undefined;
+
+      const choices = parsed?.choices as Array<Record<string, unknown>> | undefined;
+      const delta = choices?.[0]?.delta as Record<string, unknown> | undefined;
+      const message = choices?.[0]?.message as Record<string, unknown> | undefined;
+      const directMessage = parsed?.message as Record<string, unknown> | undefined;
+
+      const deltaContent = delta?.content;
+      if (typeof deltaContent === 'string' && deltaContent.length > 0) {
+        return deltaContent;
+      }
+
+      const messageContent = message?.content;
+      if (typeof messageContent === 'string' && messageContent.length > 0 && !hasStopReason) {
+        return messageContent;
+      }
+
+      const directContent = directMessage?.content;
+      if (typeof directContent === 'string' && directContent.length > 0 && !hasStopReason) {
+        return directContent;
+      }
+
+      return '';
+    } catch {
+      return '';
+    }
   }
 
   /**

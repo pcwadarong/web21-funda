@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { type FindManyOptions, Repository } from 'typeorm';
 
 import { Quiz } from '../roadmap/entities/quiz.entity';
 
@@ -17,6 +17,11 @@ export interface AiQuestionAnswerView {
   status: AiAnswerStatus;
   createdAt: Date;
   isMine: boolean;
+}
+
+export interface AiQuestionStreamContext {
+  initial: AiQuestionAnswerView;
+  streamPromise: Promise<AiQuestionAnswerView>;
 }
 
 @Injectable()
@@ -44,15 +49,19 @@ export class AiAskService {
   ): Promise<AiQuestionAnswerView[]> {
     await this.ensureQuizExists(quizId);
 
-    const defaultLimit = 20;
-    const requestedLimit = query.limit;
-    const limit = requestedLimit ?? defaultLimit;
+    const limit = query.limit;
 
-    const entities = await this.aiQuestionAnswerRepository.find({
+    const findOptions: FindManyOptions<AiQuestionAnswer> = {
       where: { quiz: { id: quizId } },
       order: { createdAt: 'DESC' },
-      take: limit,
-    });
+      relations: ['quiz'],
+    };
+
+    if (limit) {
+      findOptions.take = limit;
+    }
+
+    const entities = await this.aiQuestionAnswerRepository.find(findOptions);
 
     return entities.map(entity => this.toView(entity, userId));
   }
@@ -99,6 +108,43 @@ export class AiAskService {
     return this.toView(updated, userId);
   }
 
+  /**
+   * AI 질문을 생성하고 스트리밍 응답을 이어서 저장한다.
+   *
+   * @param quizId - 질문을 남길 퀴즈 ID
+   * @param userId - 질문 작성자 ID
+   * @param dto - 질문 내용 DTO
+   * @param onChunk - 스트리밍 조각 콜백
+   * @returns 초기 질문 정보와 스트리밍 완료 Promise
+   */
+  async createAiQuestionStream(
+    quizId: number,
+    userId: number,
+    dto: CreateAiQuestionDto,
+    onChunk: (chunk: string) => void,
+  ): Promise<AiQuestionStreamContext> {
+    const quiz = await this.ensureQuizExists(quizId);
+
+    const trimmedQuestion = dto.question.trim();
+    if (trimmedQuestion.length === 0) {
+      throw new BadRequestException('질문 내용이 비어 있습니다.');
+    }
+
+    const entity = this.aiQuestionAnswerRepository.create({
+      quiz,
+      userId,
+      userQuestion: trimmedQuestion,
+      aiAnswer: null,
+      status: AiAnswerStatus.PENDING,
+    });
+
+    const saved = await this.aiQuestionAnswerRepository.save(entity);
+    const initial = this.toView(saved, userId);
+
+    const streamPromise = this.consumeAiStream(saved, quiz, trimmedQuestion, onChunk, userId);
+    return { initial, streamPromise };
+  }
+
   private toView(entity: AiQuestionAnswer, userId: number | null): AiQuestionAnswerView {
     const isMine = userId !== null && entity.userId === userId;
     const quizId = entity.quizId ?? entity.quiz?.id;
@@ -124,5 +170,28 @@ export class AiAskService {
     }
 
     return quiz;
+  }
+
+  private async consumeAiStream(
+    entity: AiQuestionAnswer,
+    quiz: Quiz,
+    userQuestion: string,
+    onChunk: (chunk: string) => void,
+    userId: number,
+  ): Promise<AiQuestionAnswerView> {
+    try {
+      const aiAnswer = await this.aiAskClovaService.requestAnswerStream(
+        quiz,
+        userQuestion,
+        onChunk,
+      );
+      entity.aiAnswer = aiAnswer;
+      entity.status = AiAnswerStatus.COMPLETED;
+    } catch {
+      entity.status = AiAnswerStatus.FAILED;
+    }
+
+    const updated = await this.aiQuestionAnswerRepository.save(entity);
+    return this.toView(updated, userId);
   }
 }

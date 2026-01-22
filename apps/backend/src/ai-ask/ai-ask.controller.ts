@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -19,7 +20,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { JwtOptionalGuard } from '../auth/guards/jwt-optional.guard';
@@ -103,5 +104,65 @@ export class AiAskController {
     }
 
     return this.aiAskService.createAiQuestion(quizId, userId, dto);
+  }
+
+  @Post(':quizId/ai-questions/stream')
+  @UseGuards(JwtAccessGuard)
+  @ApiOperation({
+    summary: 'AI 질문 스트리밍 응답',
+    description: 'AI 질문을 생성하고 SSE로 응답을 스트리밍한다.',
+  })
+  @ApiParam({ name: 'quizId', description: '퀴즈 ID', example: 101 })
+  @ApiBody({ type: CreateAiQuestionDto })
+  @ApiOkResponse({
+    description: '스트리밍 응답 성공',
+    schema: {
+      example: {
+        event: 'chunk',
+        data: { chunk: '응답 일부' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({ description: '질문 내용이 비어 있습니다.' })
+  @ApiNotFoundResponse({ description: '퀴즈 정보를 찾을 수 없습니다.' })
+  async streamAiQuestion(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Body() dto: CreateAiQuestionDto,
+    @Req() req: Request & { user?: JwtPayload },
+    @Res() res: Response,
+  ): Promise<void> {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    res.status(200);
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const { initial, streamPromise } = await this.aiAskService.createAiQuestionStream(
+      quizId,
+      userId,
+      dto,
+      chunk => {
+        const payload = JSON.stringify({ chunk });
+        res.write(`event: chunk\ndata: ${payload}\n\n`);
+      },
+    );
+
+    res.write(`event: meta\ndata: ${JSON.stringify(initial)}\n\n`);
+
+    try {
+      const completed = await streamPromise;
+      res.write(`event: done\ndata: ${JSON.stringify(completed)}\n\n`);
+    } catch {
+      res.write(
+        `event: error\ndata: ${JSON.stringify({ message: '스트리밍 처리 중 오류가 발생했습니다.' })}\n\n`,
+      );
+    } finally {
+      res.end();
+    }
   }
 }

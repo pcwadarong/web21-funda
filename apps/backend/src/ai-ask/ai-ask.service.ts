@@ -7,6 +7,7 @@ import { Quiz } from '../roadmap/entities/quiz.entity';
 import { AiQuestionListQueryDto } from './dto/ai-question-list-query.dto';
 import { CreateAiQuestionDto } from './dto/create-ai-question.dto';
 import { AiAnswerStatus, AiQuestionAnswer } from './entities/ai-question-answer.entity';
+import { AiAskClovaService } from './ai-ask-clova.service';
 
 export interface AiQuestionAnswerView {
   id: number;
@@ -25,6 +26,7 @@ export class AiAskService {
     private readonly aiQuestionAnswerRepository: Repository<AiQuestionAnswer>,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
+    private readonly aiAskClovaService: AiAskClovaService,
   ) {}
 
   /**
@@ -84,7 +86,17 @@ export class AiAskService {
     });
 
     const saved = await this.aiQuestionAnswerRepository.save(entity);
-    return this.toView(saved, userId);
+
+    try {
+      const aiAnswer = await this.aiAskClovaService.requestAnswer(quiz, trimmedQuestion);
+      saved.aiAnswer = aiAnswer;
+      saved.status = AiAnswerStatus.COMPLETED;
+    } catch {
+      saved.status = AiAnswerStatus.FAILED;
+    }
+
+    const updated = await this.aiQuestionAnswerRepository.save(saved);
+    return this.toView(updated, userId);
   }
 
   private toView(entity: AiQuestionAnswer, userId: number | null): AiQuestionAnswerView {

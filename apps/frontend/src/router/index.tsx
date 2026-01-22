@@ -20,6 +20,7 @@ const AdminQuizUpload = lazy(() =>
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
+const Reports = lazy(() => import('@/pages/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
 );
@@ -71,6 +72,10 @@ export const router = createBrowserRouter([
           {
             element: <SidebarSuspenseLayout />,
             children: [
+              {
+                path: '/reports',
+                element: <Reports />,
+              },
               { path: 'learn', element: <Learn /> },
               { path: 'learn/select-field', element: <SelectField /> },
               { path: 'learn/roadmap', element: <Roadmap /> },

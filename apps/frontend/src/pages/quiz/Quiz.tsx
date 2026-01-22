@@ -112,13 +112,21 @@ export const Quiz = () => {
   /** 현재 진행할 스텝 ID */
   const step_id = uiState.current_quiz_step_id;
   const isReviewMode = searchParams.get('mode') === 'review';
+  const reviewBatchSize = 10;
   const startedStepIdRef = useRef<number | null>(null);
 
   /** 리뷰 모드에서 불러온 퀴즈 데이터 */
-  const reviewQuizzesFromState = useMemo(() => {
-    const state = location.state as { reviewQuizzes?: QuizQuestion[] } | null;
-    return state?.reviewQuizzes ?? null;
-  }, [location.state]);
+  const reviewState = useMemo(
+    () => location.state as { reviewQuizzes?: QuizQuestion[]; reviewFieldSlug?: string } | null,
+    [location.state],
+  );
+
+  const reviewQuizzesFromState = useMemo(() => reviewState?.reviewQuizzes ?? null, [reviewState]);
+
+  const reviewFieldSlug = useMemo(
+    () => reviewState?.reviewFieldSlug ?? uiState.last_viewed.field_slug,
+    [reviewState, uiState.last_viewed.field_slug],
+  );
 
   const queryClient = useQueryClient();
 
@@ -128,9 +136,12 @@ export const Quiz = () => {
 
   const submitQuizMutation = useSubmitQuizMutation();
 
-  const reviewQuery = useReviewQueueQuery({
-    enabled: isReviewMode && !reviewQuizzesFromState && isLoggedIn && isAuthReady,
-  });
+  const reviewQuery = useReviewQueueQuery(
+    { fieldSlug: reviewFieldSlug, limit: reviewBatchSize },
+    {
+      enabled: isReviewMode && !reviewQuizzesFromState && isLoggedIn && isAuthReady,
+    },
+  );
 
   const quizzesQuery = useQuizzesByStepQuery(step_id, {
     enabled: !isReviewMode && Boolean(step_id) && isAuthReady,

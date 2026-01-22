@@ -6,6 +6,11 @@ interface SyncStepHistoryResponse {
   syncedCount: number;
 }
 
+type ReviewQueueParams = {
+  fieldSlug?: string;
+  limit?: number;
+};
+
 export const progressService = {
   /**
    * 비로그인 상태에서 푼 step 기록을 서버에 동기화
@@ -18,7 +23,18 @@ export const progressService = {
   /**
    * 복습 노트 대상 퀴즈 목록 조회
    */
-  async getReviewQueue(): Promise<QuizQuestion[]> {
-    return apiFetch.get<QuizQuestion[]>('/progress/reviews');
+  async getReviewQueue(params?: ReviewQueueParams): Promise<QuizQuestion[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.fieldSlug) {
+      searchParams.set('fieldSlug', params.fieldSlug);
+    }
+    if (params?.limit !== undefined) {
+      searchParams.set('limit', String(params.limit));
+    }
+
+    const query = searchParams.toString();
+    const endpoint = query.length > 0 ? `/progress/reviews?${query}` : '/progress/reviews';
+
+    return apiFetch.get<QuizQuestion[]>(endpoint);
   },
 };

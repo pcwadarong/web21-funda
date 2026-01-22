@@ -12,14 +12,20 @@ export const useSyncStepHistoryMutation = () =>
     mutationFn: stepIds => progressService.syncStepHistory(stepIds),
   });
 
+type ReviewQueueParams = {
+  fieldSlug?: string;
+  limit?: number;
+};
+
 export const useReviewQueueQuery = (
+  params?: ReviewQueueParams,
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof progressService.getReviewQueue>>, Error>,
     'queryKey' | 'queryFn'
   >,
 ) =>
   useQuery({
-    queryKey: ['review-queue'],
-    queryFn: () => progressService.getReviewQueue(),
+    queryKey: ['review-queue', params?.fieldSlug ?? 'all', params?.limit ?? null],
+    queryFn: () => progressService.getReviewQueue(params),
     ...options,
   });

@@ -124,7 +124,8 @@ type Story = StoryObj<typeof ChatHistorySection>;
 
 // ✅ 상태 변화가 필요한 대화형 래퍼
 const InteractiveWrapper = ({ items }: { items: AiQuestionAnswer[] }) => {
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([items[0]?.id]));
+  const initialIds = items[0]?.id !== undefined ? [items[0].id] : [];
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set(initialIds));
 
   const handleToggle = (id: number) => {
     // Action 패널에 로그 기록

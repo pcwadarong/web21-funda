@@ -274,7 +274,6 @@ const containerStyle = css`
 const titleStyle = (theme: Theme) => css`
   ${theme.typography['32Bold']};
   color: ${theme.colors.primary.main};
-  margin: 0;
   text-align: center;
 `;
 

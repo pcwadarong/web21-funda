@@ -94,7 +94,6 @@ const titleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${theme.colors.primary.main};
-  margin: 0;
 `;
 
 const taglineStyle = (theme: Theme) => css`
@@ -102,7 +101,6 @@ const taglineStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.light};
-  margin: 0;
 `;
 
 const buttonGroupStyle = css`

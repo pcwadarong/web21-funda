@@ -168,7 +168,7 @@ export const ReviewCompletionEffect = () => {
             다음에도 잊지 않게 도와드릴게요.
           </motion.p>
           <motion.p css={captionStyle} variants={messageVariants}>
-            xp가 적립되었어요 🎉
+            XP가 적립되었어요 🎉
           </motion.p>
         </div>
       </motion.div>
@@ -289,7 +289,6 @@ const mainTitleStyle = css`
   font-size: 6rem;
   font-weight: 900;
   line-height: 1;
-  margin: 0;
   letter-spacing: -0.04em;
   background: linear-gradient(to bottom, #ffffff 40%, #93c5fd 70%, #3b82f6 100%);
   -webkit-background-clip: text;
@@ -307,5 +306,4 @@ const descriptionStyle = (theme: Theme) => css`
 
 const captionStyle = css`
   color: ${palette.grayscale[400]};
-  margin-top: -2rem;
 `;

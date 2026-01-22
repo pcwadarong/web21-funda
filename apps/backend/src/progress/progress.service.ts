@@ -14,6 +14,8 @@ import { UserQuizStatus } from './entities/user-quiz-status.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
 import { UserStepStatus } from './entities/user-step-status.entity';
 
+const DEFAULT_REVIEW_QUEUE_LIMIT = 10;
+
 @Injectable()
 export class ProgressService {
   constructor(
@@ -156,18 +158,37 @@ export class ProgressService {
    * @param userId 사용자 ID
    * @returns 복습 큐 응답
    */
-  async getReviewQueue(userId: number): Promise<QuizResponse[]> {
+  async getReviewQueue(
+    userId: number,
+    options?: {
+      fieldSlug?: string;
+      limit?: number;
+    },
+  ): Promise<QuizResponse[]> {
     const now = getKstNow();
     const reviewCutoff = getKstNextDayStart(now);
 
-    const reviewStatuses = await this.userQuizStatusRepository
+    const queryBuilder = this.userQuizStatusRepository
       .createQueryBuilder('status')
       .innerJoinAndSelect('status.quiz', 'quiz')
+      .innerJoin('quiz.step', 'step')
+      .innerJoin('step.unit', 'unit')
+      .innerJoin('unit.field', 'field')
       .where('status.userId = :userId', { userId })
       .andWhere('status.nextReviewAt IS NOT NULL')
       .andWhere('status.nextReviewAt < :reviewCutoff', { reviewCutoff })
-      .orderBy('status.nextReviewAt', 'ASC')
-      .getMany();
+      .orderBy('status.nextReviewAt', 'ASC');
+
+    if (options?.fieldSlug) {
+      queryBuilder.andWhere('LOWER(field.slug) = LOWER(:fieldSlug)', {
+        fieldSlug: options.fieldSlug,
+      });
+    }
+
+    const reviewLimit = options?.limit ?? DEFAULT_REVIEW_QUEUE_LIMIT;
+    queryBuilder.take(reviewLimit);
+
+    const reviewStatuses = await queryBuilder.getMany();
 
     const reviews: QuizResponse[] = [];
 

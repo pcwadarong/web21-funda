@@ -59,7 +59,7 @@ export const Default: Story = {
     const isLoggedIn = globals.authStatus === 'logged-in';
 
     if (isLoggedIn) {
-      await expect(await canvas.findByText(/5개 문제 복습 필요/)).toBeInTheDocument();
+      await expect(await canvas.findByText('복습 시작')).toBeInTheDocument();
     } else {
       await expect(canvas.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
     }
@@ -146,7 +146,7 @@ const FetchMockProvider = ({ children }: { children: React.ReactNode }) => {
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
       }
-      if (url.endsWith('/api/progress/reviews')) {
+      if (url.includes('/api/progress/reviews')) {
         return new Response(
           JSON.stringify({
             success: true,

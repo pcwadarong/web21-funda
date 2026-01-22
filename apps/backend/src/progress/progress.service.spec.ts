@@ -34,9 +34,11 @@ describe('ProgressService', () => {
   let userIncrementMock: jest.Mock;
   let userQuizStatusQueryBuilderMock: {
     innerJoinAndSelect: jest.Mock;
+    innerJoin: jest.Mock;
     where: jest.Mock;
     andWhere: jest.Mock;
     orderBy: jest.Mock;
+    take: jest.Mock;
     getMany: jest.Mock;
   };
   let quizResponseMock: jest.Mock;
@@ -55,9 +57,11 @@ describe('ProgressService', () => {
     quizResponseMock = jest.fn();
     userQuizStatusQueryBuilderMock = {
       innerJoinAndSelect: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
       getMany: jest.fn(),
     };
 
@@ -349,5 +353,17 @@ describe('ProgressService', () => {
 
     expect(quizResponseMock).toHaveBeenCalledWith(quiz);
     expect(result).toEqual([expectedResponse]);
+  });
+
+  it('복습 큐 조회 시 필드와 제한 개수를 반영한다', async () => {
+    userQuizStatusQueryBuilderMock.getMany.mockResolvedValue([]);
+
+    await service.getReviewQueue(3, { fieldSlug: 'frontend', limit: 10 });
+
+    const andWhereCalls = userQuizStatusQueryBuilderMock.andWhere.mock.calls;
+    const fieldFilterCall = andWhereCalls.find(call => String(call[0]).includes('field.slug'));
+
+    expect(fieldFilterCall).toBeDefined();
+    expect(userQuizStatusQueryBuilderMock.take).toHaveBeenCalledWith(10);
   });
 });

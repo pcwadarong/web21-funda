@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import correctSound from '@/assets/audio/correct.mp3';
 import wrongSound from '@/assets/audio/wrong.mp3';
+import { Modal } from '@/comp/Modal';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
 import { QuizLoadingView } from '@/feat/quiz/components/QuizLoadingView';
@@ -61,6 +62,8 @@ export const Quiz = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
+  const [showReviewCompletion, setShowReviewCompletion] = useState(false);
+  const [showHeartExhaustedModal, setShowHeartExhaustedModal] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -400,11 +403,20 @@ export const Quiz = () => {
             ...user,
             heartCount: result.user_heart_count,
           });
+          // 하트가 모두 소진되었을 때 모달 띄우기
+          if (result.user_heart_count <= 0) {
+            setShowHeartExhaustedModal(true);
+          }
         } else if (!isLoggedIn) {
           // 미로그인 사용자: localStorage에서 heart 차감
+          const newHeartCount = Math.max(0, progress.heart - 1);
           updateProgress({
-            heart: Math.max(0, progress.heart - 1),
+            heart: newHeartCount,
           });
+          // 하트가 모두 소진되었을 때 모달 띄우기
+          if (newHeartCount <= 0) {
+            setShowHeartExhaustedModal(true);
+          }
         }
       }
 
@@ -524,6 +536,12 @@ export const Quiz = () => {
     isReviewMode,
   ]);
 
+  // 하트 소진 모달 닫기 핸들러
+  const handleHeartExhaustedModalClose = useCallback(() => {
+    setShowHeartExhaustedModal(false);
+    navigate('/learn');
+  }, [navigate]);
+
   // -----------------------------------------------------------------------------
   // 렌더링
   // 조건부 렌더링은 모든 hooks 호출 후에 배치
@@ -531,20 +549,33 @@ export const Quiz = () => {
   if (loadError) return <QuizLoadErrorView onRetry={fetchQuizzes} />;
 
   return (
-    <QuizContainer
-      quizzes={quizzes}
-      currentQuizIndex={currentQuizIndex}
-      currentQuestionStatus={currentQuestionStatus}
-      selectedAnswers={selectedAnswers}
-      quizSolutions={quizSolutions}
-      questionStatuses={questionStatuses}
-      isCheckDisabled={isCheckDisabled}
-      isLastQuestion={isLastQuestion}
-      handleAnswerChange={handleAnswerChange}
-      handleCheckAnswer={handleCheckAnswer}
-      handleNextQuestion={handleNextQuestion}
-      heartCount={showHeart ? heartCount : 0}
-      isReviewMode={isReviewMode}
-    />
+    <>
+      {showHeartExhaustedModal && (
+        <Modal
+          title="알림"
+          content={
+            <div style={{ fontSize: '18px', fontWeight: '600' }}>
+              하트를 모두 소진하였습니다. 다시 도전해주세요!
+            </div>
+          }
+          onClose={handleHeartExhaustedModalClose}
+        />
+      )}
+      <QuizContainer
+        quizzes={quizzes}
+        currentQuizIndex={currentQuizIndex}
+        currentQuestionStatus={currentQuestionStatus}
+        selectedAnswers={selectedAnswers}
+        quizSolutions={quizSolutions}
+        questionStatuses={questionStatuses}
+        isCheckDisabled={isCheckDisabled}
+        isLastQuestion={isLastQuestion}
+        handleAnswerChange={handleAnswerChange}
+        handleCheckAnswer={handleCheckAnswer}
+        handleNextQuestion={handleNextQuestion}
+        heartCount={showHeart ? heartCount : 0}
+        isReviewMode={isReviewMode}
+      />
+    </>
   );
 };

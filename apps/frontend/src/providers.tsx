@@ -22,17 +22,25 @@ const APP_ERROR_FALLBACK = {
 function GlobalStyles() {
   const { isDarkMode } = useThemeStore();
   return (
+    <Global
+      styles={css`
+        body {
+          background: ${isDarkMode
+            ? '#1c1d2bff'
+            : 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)'};
+          transition: background 0.3s ease;
+        }
+      `}
+    />
+  );
+}
+
+function ThemeWrapper({ children }: { children: ReactNode }) {
+  const { isDarkMode } = useThemeStore();
+  return (
     <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
-      <Global
-        styles={css`
-          body {
-            background: ${isDarkMode
-              ? '#1c1d2bff'
-              : 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)'};
-            transition: background 0.3s ease;
-          }
-        `}
-      />
+      <GlobalStyles />
+      {children}
     </ThemeProvider>
   );
 }
@@ -41,16 +49,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeStoreProvider>
-        <GlobalStyles />
-        <ErrorBoundary fallback={<ErrorView {...APP_ERROR_FALLBACK} />}>
-          <Suspense fallback={<Loading />}>
-            <AuthProvider>
-              <ToastProvider>
-                <ModalProvider>{children}</ModalProvider>
-              </ToastProvider>
-            </AuthProvider>
-          </Suspense>
-        </ErrorBoundary>
+        <ThemeWrapper>
+          <ErrorBoundary fallback={<ErrorView {...APP_ERROR_FALLBACK} />}>
+            <Suspense fallback={<Loading />}>
+              <AuthProvider>
+                <ToastProvider>
+                  <ModalProvider>{children}</ModalProvider>
+                </ToastProvider>
+              </AuthProvider>
+            </Suspense>
+          </ErrorBoundary>
+        </ThemeWrapper>
       </ThemeStoreProvider>
     </QueryClientProvider>
   );

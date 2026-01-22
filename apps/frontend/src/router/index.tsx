@@ -32,6 +32,9 @@ const Quiz = lazy(() => import('@/pages/quiz/Quiz').then(m => ({ default: m.Quiz
 const QuizResult = lazy(() =>
   import('@/pages/quiz/QuizResult').then(m => ({ default: m.QuizResult })),
 );
+const QuizReviewResult = lazy(() =>
+  import('@/pages/quiz/QuizReviewResult').then(m => ({ default: m.QuizReviewResult })),
+);
 const QuizResultError = lazy(() =>
   import('@/pages/quiz/QuizResultError').then(m => ({ default: m.QuizResultError })),
 );
@@ -86,6 +89,7 @@ export const router = createBrowserRouter([
                   { index: true, element: <Quiz /> },
                   { path: 'result', element: <QuizResult /> },
                   { path: 'error', element: <QuizResultError /> },
+                  { path: 'review-result', element: <QuizReviewResult /> },
                 ],
               },
 

@@ -24,7 +24,8 @@ const meta: Meta<typeof RankingRow> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: '개별 랭킹 행을 표시하는 컴포넌트입니다. 사용자 본인일 경우 하이라이트됩니다.',
+        component:
+          '개별 랭킹 행을 표시하는 컴포넌트입니다. 사용자 본인일 경우 하이라이트됩니다. (라이트 모드 - 보라색, 다크모드 - 흰색) 실제 화면에서는 제대로 적용됩니다.',
       },
     },
   },

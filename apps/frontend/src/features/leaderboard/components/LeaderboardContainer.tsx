@@ -8,6 +8,7 @@ import { MemberList } from '@/feat/leaderboard/components/MemberList';
 import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
+import { colors } from '@/styles/token';
 
 interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
@@ -173,7 +174,7 @@ const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
   border: none;
   background: transparent;
   cursor: pointer;
-  color: black;
+  color: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.medium};
   transition: background-color 150ms ease;
 
@@ -196,7 +197,7 @@ const summaryCardStyle = (theme: Theme) => css`
   border: 1px solid ${theme.colors.border.default};
   background: linear-gradient(180deg, #6559ea 0%, #8b82ff 100%);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-  color: ${theme.colors.surface.default};
+  color: ${colors.light.grayscale[50]};
   display: flex;
   align-items: center;
   justify-content: space-between;

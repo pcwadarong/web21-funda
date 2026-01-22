@@ -10,6 +10,8 @@ import type { QuizQuestion } from '@/feat/quiz/types';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import { getAiQuestions } from '@/services/aiAskService';
 import { BASE_URL } from '@/services/api';
+import { useIsLoggedIn } from '@/store/authStore';
+import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 type SseEvent = {
@@ -28,6 +30,8 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const currentItemIdRef = useRef<number | null>(null);
+  const isLoggedIn = useIsLoggedIn();
+  const { showToast } = useToast();
 
   const preview = useMemo(() => buildQuizPreview(quiz), [quiz]);
 
@@ -60,6 +64,11 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
     }
 
     if (isStreaming) {
+      return;
+    }
+
+    if (!isLoggedIn) {
+      showToast('AI 질문을 하시려면 로그인이 필요합니다.');
       return;
     }
 

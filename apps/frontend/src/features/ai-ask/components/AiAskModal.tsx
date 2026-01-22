@@ -247,7 +247,11 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
                   {item.status === 'pending' && (!item.answer || item.answer.length === 0) ? (
                     <TypingDots />
                   ) : (
-                    <div css={answerTextStyle(theme)}>{item.answer ?? '답변이 없습니다.'}</div>
+                    <div css={answerTextStyle(theme)}>
+                      {item.status === 'failed'
+                        ? 'AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
+                        : (item.answer ?? '')}
+                    </div>
                   )}
                 </div>
               )}

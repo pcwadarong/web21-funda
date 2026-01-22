@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { type FindManyOptions, Repository } from 'typeorm';
 
@@ -30,6 +30,8 @@ export interface AiQuestionStreamContext {
 
 @Injectable()
 export class AiAskService {
+  private readonly logger = new Logger(AiAskService.name);
+
   constructor(
     @InjectRepository(AiQuestionAnswer)
     private readonly aiQuestionAnswerRepository: Repository<AiQuestionAnswer>,
@@ -106,7 +108,8 @@ export class AiAskService {
       const aiAnswer = await this.aiAskProviderService.requestAnswer(quiz, trimmedQuestion);
       saved.aiAnswer = aiAnswer;
       saved.status = AiAnswerStatus.COMPLETED;
-    } catch {
+    } catch (error) {
+      this.logger.error('AI 응답 생성 실패', error instanceof Error ? error.stack : undefined);
       saved.status = AiAnswerStatus.FAILED;
     }
 
@@ -195,7 +198,11 @@ export class AiAskService {
       );
       entity.aiAnswer = aiAnswer;
       entity.status = AiAnswerStatus.COMPLETED;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        'AI 스트리밍 응답 생성 실패',
+        error instanceof Error ? error.stack : undefined,
+      );
       entity.status = AiAnswerStatus.FAILED;
     }
 

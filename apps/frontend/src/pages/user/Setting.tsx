@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { SettingContainer } from '@/feat/user/components/setting/SettingContainer';
+import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { authService } from '@/services/authService';
 import { useAuthActions } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
@@ -14,6 +14,8 @@ export const Setting = () => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const { clearAuth } = useAuthActions();
   const { soundVolume, setSoundVolume } = useStorage();
+
+  const logoutMutation = useLogoutMutation();
 
   /**
    * 다크 모드 토글 핸들러
@@ -43,7 +45,7 @@ export const Setting = () => {
     if (!isConfirmed) return;
 
     try {
-      await authService.logout();
+      await logoutMutation.mutateAsync();
       clearAuth();
       navigate('/learn', { replace: true });
     } catch {

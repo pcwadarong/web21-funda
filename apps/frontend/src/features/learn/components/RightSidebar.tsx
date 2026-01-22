@@ -1,13 +1,13 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
-import type { QuizQuestion } from '@/feat/quiz/types';
+import { Loading } from '@/components/Loading';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
+import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { progressService } from '@/services/progressService';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
@@ -35,39 +35,16 @@ export const LearnRightSidebar = ({
 
   const heartCount = user ? user.heartCount : progress.heart;
 
-  const { data } = useFieldsQuery();
+  const { data: fieldsData } = useFieldsQuery();
+  const fields = fieldsData.fields;
 
-  const fields = data.fields;
-  const [reviewQuizzes, setReviewQuizzes] = useState<QuizQuestion[]>([]);
-  const [reviewCount, setReviewCount] = useState(0);
-  const [isReviewLoading, setIsReviewLoading] = useState(false);
+  const { data: reviewQueueData = [], refetch: refetchReviewQueue } = useReviewQueueQuery({
+    enabled: isLoggedIn && isAuthReady,
+  });
+  const reviewCount = reviewQueueData.length;
 
   const { showToast } = useToast();
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setReviewQuizzes([]);
-      setReviewCount(0);
-      return;
-    }
-
-    const fetchReviewQueue = async () => {
-      setIsReviewLoading(true);
-      try {
-        const quizzes = await progressService.getReviewQueue();
-        setReviewQuizzes(quizzes);
-        setReviewCount(quizzes.length);
-      } catch (error) {
-        console.error('Failed to fetch review queue:', error);
-        setReviewQuizzes([]);
-        setReviewCount(0);
-      } finally {
-        setIsReviewLoading(false);
-      }
-    };
-
-    fetchReviewQueue();
-  }, [isLoggedIn]);
+  const [isNavigatingReview, setIsNavigatingReview] = useState(false);
 
   const selectedField = useMemo(
     () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
@@ -99,28 +76,20 @@ export const LearnRightSidebar = ({
   };
 
   const handleReviewClick = useCallback(async () => {
-    if (isReviewLoading) {
-      return;
-    }
     if (!isLoggedIn) {
       navigate('/login');
       return;
     }
 
-    let quizzes = reviewQuizzes;
+    let quizzes = reviewQueueData;
     if (quizzes.length === 0) {
-      setIsReviewLoading(true);
-      try {
-        quizzes = await progressService.getReviewQueue();
-        setReviewQuizzes(quizzes);
-        setReviewCount(quizzes.length);
-      } catch (error) {
-        console.error('Failed to fetch review queue:', error);
+      const result = await refetchReviewQueue();
+
+      if (result.isError || !result.data) {
         showToast('복습 문제를 불러오지 못했습니다.');
-        setIsReviewLoading(false);
         return;
       }
-      setIsReviewLoading(false);
+      quizzes = result.data;
     }
 
     if (quizzes.length === 0) {
@@ -128,14 +97,16 @@ export const LearnRightSidebar = ({
       return;
     }
 
+    setIsNavigatingReview(true);
     navigate('/quiz?mode=review', {
       state: {
         reviewQuizzes: quizzes,
       },
     });
-  }, [isLoggedIn, isReviewLoading, navigate, reviewQuizzes, showToast]);
+  }, [isLoggedIn, navigate, showToast, reviewQueueData, refetchReviewQueue]);
 
   if (!isAuthReady) return null;
+  if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
 
   return (
     <aside css={rightSectionStyle}>
@@ -200,7 +171,7 @@ export const LearnRightSidebar = ({
         </div>
         {isLoggedIn && user ? (
           <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
-            {reviewCount}개 문제 복습 필요
+            {`${reviewCount}개 문제 복습 필요`}
           </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>

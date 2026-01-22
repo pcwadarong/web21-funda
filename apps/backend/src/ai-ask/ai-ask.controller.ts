@@ -20,6 +20,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
@@ -33,6 +34,7 @@ import { AiAskService } from './ai-ask.service';
 @ApiTags('Quizzes')
 @ApiBearerAuth()
 @Controller('quizzes')
+@UseGuards(ThrottlerGuard)
 export class AiAskController {
   constructor(private readonly aiAskService: AiAskService) {}
 
@@ -71,6 +73,7 @@ export class AiAskController {
 
   @Post(':quizId/ai-questions')
   @UseGuards(JwtAccessGuard)
+  @Throttle({ default: { limit: 10, ttl: 3600000 } })
   @ApiOperation({
     summary: 'AI 질문 생성',
     description: 'AI에게 전달할 질문을 저장하고 처리 상태를 반환한다.',
@@ -108,6 +111,7 @@ export class AiAskController {
 
   @Post(':quizId/ai-questions/stream')
   @UseGuards(JwtAccessGuard)
+  @Throttle({ default: { limit: 10, ttl: 3600000 } })
   @ApiOperation({
     summary: 'AI 질문 스트리밍 응답',
     description: 'AI 질문을 생성하고 SSE로 응답을 스트리밍한다.',

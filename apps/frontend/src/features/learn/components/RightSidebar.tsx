@@ -25,6 +25,7 @@ export const LearnRightSidebar = ({
   fieldSlug: string;
   setFieldSlug: (slug: string) => void;
 }) => {
+  const reviewBatchSize = 10;
   const theme = useTheme();
   const user = useAuthUser();
   const { progress, updateUIState } = useStorage();
@@ -38,10 +39,12 @@ export const LearnRightSidebar = ({
   const { data: fieldsData } = useFieldsQuery();
   const fields = fieldsData.fields;
 
-  const { data: reviewQueueData = [], refetch: refetchReviewQueue } = useReviewQueueQuery({
-    enabled: isLoggedIn && isAuthReady,
-  });
-  const reviewCount = reviewQueueData.length;
+  const { data: reviewQueueData = [], refetch: refetchReviewQueue } = useReviewQueueQuery(
+    { fieldSlug, limit: reviewBatchSize },
+    {
+      enabled: isLoggedIn && isAuthReady,
+    },
+  );
 
   const { showToast } = useToast();
   const [isNavigatingReview, setIsNavigatingReview] = useState(false);
@@ -101,9 +104,10 @@ export const LearnRightSidebar = ({
     navigate('/quiz?mode=review', {
       state: {
         reviewQuizzes: quizzes,
+        reviewFieldSlug: fieldSlug,
       },
     });
-  }, [isLoggedIn, navigate, showToast, reviewQueueData, refetchReviewQueue]);
+  }, [fieldSlug, isLoggedIn, navigate, refetchReviewQueue, reviewQueueData, showToast]);
 
   if (!isAuthReady) return null;
   if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
@@ -171,7 +175,7 @@ export const LearnRightSidebar = ({
         </div>
         {isLoggedIn && user ? (
           <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
-            {`${reviewCount}개 문제 복습 필요`}
+            복습 시작
           </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>
@@ -304,12 +308,47 @@ const cardTitleStyle = (theme: Theme) => css`
 `;
 
 const reviewBadgeStyle = (theme: Theme) => css`
-  padding: 12px 16px;
-  background: ${theme.colors.primary.surface};
-  border-radius: ${theme.borderRadius.small};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  text-align: center;
+  /* 레이아웃: 클릭 영역 확보를 위해 좌우 패딩을 넉넉히 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+
+  /* 배경 및 컬러: 시스템의 Primary Main과 Grayscale 50 활용 */
+  background: ${theme.colors.primary.main};
+  color: ${theme.colors.grayscale[50]};
+
+  /* 테두리: 둥근 모서리(16px)로 버튼다움 강조 */
+  border: none;
+  border-radius: ${theme.borderRadius.medium};
+
+  /* 타이포그래피: 가독성 높은 16Bold 적용 */
+  font-size: ${theme.typography['16Bold'].fontSize};
+  font-weight: ${theme.typography['16Bold'].fontWeight};
+  line-height: ${theme.typography['16Bold'].lineHeight};
+
+  /* 인터랙션 및 피드백 */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(101, 89, 234, 0.25);
+
+  &:hover {
+    background: ${theme.colors.primary.dark};
+    transform: translateY(-2px); /* 부드럽게 떠오르는 효과 */
+    box-shadow: 0 6px 16px rgba(101, 89, 234, 0.35);
+  }
+
+  &:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+  }
+
+  &:disabled {
+    background: ${theme.colors.grayscale[300]};
+    color: ${theme.colors.grayscale[500]};
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 `;
 
 const goalsContentStyle = css`

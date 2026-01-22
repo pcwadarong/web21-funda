@@ -91,13 +91,13 @@ vi.mock('@/hooks/queries/fieldQueries', () => ({
 
 vi.mock('@/services/progressService', () => ({
   progressService: {
-    getReviewQueue: () => mockGetReviewQueue(),
+    getReviewQueue: (params?: { fieldSlug?: string; limit?: number }) => mockGetReviewQueue(params),
   },
 }));
 
 const renderSidebar = (props?: { fieldSlug?: string; setFieldSlug?: (slug: string) => void }) => {
   const setFieldSlug = props?.setFieldSlug ?? (() => {});
-  const fieldSlug = props?.fieldSlug ?? 'FE';
+  const fieldSlug = props?.fieldSlug ?? 'frontend';
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -164,14 +164,14 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
   it('기본 렌더링이 올바르게 동작한다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FE/i)).toBeInTheDocument();
+    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument(); // 하트 개수
   });
 
   it('필드 이름이 표시된다', () => {
     renderSidebar();
 
-    expect(screen.getByText(/FE/i)).toBeInTheDocument();
+    expect(screen.getByText(/FRONTEND/i)).toBeInTheDocument();
   });
 
   it('비로그인 상태에서 하트 개수가 표시된다', () => {
@@ -214,7 +214,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(screen.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
   });
 
-  it('로그인 상태에서 복습 노트에 문제 개수가 표시된다', async () => {
+  it('로그인 상태에서 복습 노트에 복습 시작 버튼이 표시된다', async () => {
     mockUseAuthStore.mockReturnValue(true);
     mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     mockGetReviewQueue.mockResolvedValue([
@@ -232,7 +232,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     ]);
     renderSidebar();
 
-    expect(await screen.findByText(/3개 문제 복습 필요/)).toBeInTheDocument();
+    expect(await screen.findByText('복습 시작')).toBeInTheDocument();
   });
 
   it('오늘의 목표 카드가 표시된다', () => {

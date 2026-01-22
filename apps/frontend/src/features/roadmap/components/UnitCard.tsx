@@ -43,7 +43,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
 
   return (
     <article
-      css={cardStyle(theme, effectiveStatus, isInteractive)}
+      css={cardStyle(theme, effectiveStatus, isInteractive, effectiveVariant)}
       onClick={onClick}
       role={isInteractive ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
@@ -97,7 +97,13 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
   );
 };
 
-const cardStyle = (theme: Theme, status: UnitStatus, isInteractive: boolean) => css`
+const cardStyle = (
+  theme: Theme,
+  status: UnitStatus,
+  isInteractive: boolean,
+  variant: UnitVariant,
+) => css`
+  min-height: ${variant === 'compact' ? '8.5rem' : '13.75rem'};
   background: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.medium};
   border: 2px solid ${getStatusBorderColor(theme, status)};
@@ -105,10 +111,15 @@ const cardStyle = (theme: Theme, status: UnitStatus, isInteractive: boolean) => 
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 12px;
   transition: all 150ms ease-in-out;
   box-shadow: 0 4px 0 ${theme.colors.border.default};
+  overflow-y: auto;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   ${isInteractive &&
   css`
@@ -133,11 +144,18 @@ const cardStyle = (theme: Theme, status: UnitStatus, isInteractive: boolean) => 
 `;
 
 const cardHeaderStyle = (variant: UnitVariant) => css`
+  height: ${variant === 'compact' ? 'unset' : '5rem'};
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   flex-direction: ${variant === 'compact' ? 'column' : 'row'};
+  overflow-y: auto;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const cardTitleStyle = (theme: Theme) => css`

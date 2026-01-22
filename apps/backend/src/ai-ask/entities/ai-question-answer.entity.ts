@@ -18,6 +18,11 @@ export enum AiAnswerStatus {
   FAILED = 'failed',
 }
 
+export enum AiProviderType {
+  CLOVA = 'clova',
+  GEMINI = 'gemini',
+}
+
 @Entity({ name: 'ai_question_answers' })
 @Index('IDX_ai_question_answers_quiz', ['quiz'])
 @Index('IDX_ai_question_answers_quiz_created', ['quiz', 'createdAt'])
@@ -41,6 +46,9 @@ export class AiQuestionAnswer {
 
   @Column({ name: 'ai_answer', type: 'text', nullable: true })
   aiAnswer?: string | null;
+
+  @Column({ type: 'enum', enum: AiProviderType, default: AiProviderType.CLOVA })
+  provider!: AiProviderType;
 
   @Column({ type: 'enum', enum: AiAnswerStatus, default: AiAnswerStatus.COMPLETED })
   status!: AiAnswerStatus;

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, QueryFailedError, Repository } from 'typeorm';
 
 import { getKstWeekInfo } from '../common/utils/kst-date';
 import { calculateScorePerSolve } from '../common/utils/score-weights';
@@ -163,7 +163,21 @@ export class RankingService {
       evaluatedAt: null,
     });
 
-    return repository.save(created);
+    try {
+      return await repository.save(created);
+    } catch (error) {
+      if (!(error instanceof QueryFailedError)) {
+        throw error;
+      }
+
+      // 동시 생성 경쟁으로 유니크 제약 오류가 발생했을 수 있다.
+      const existingAfterRace = await repository.findOne({ where: { weekKey } });
+      if (existingAfterRace) {
+        return existingAfterRace;
+      }
+
+      throw error;
+    }
   }
 
   private async findUserOrThrow(manager: EntityManager, userId: number): Promise<User> {

@@ -41,7 +41,6 @@ const meta: Meta<typeof RankingRow> = {
             style={{
               listStyle: 'none',
               padding: 0,
-              margin: 0,
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',

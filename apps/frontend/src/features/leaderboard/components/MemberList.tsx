@@ -31,7 +31,6 @@ const listStyle = css`
   gap: 10px;
   list-style: none;
   padding: 0;
-  margin: 0;
 `;
 
 const emptyTextStyle = (theme: Theme) => css`

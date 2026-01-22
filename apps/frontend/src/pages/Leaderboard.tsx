@@ -1,45 +1,15 @@
-import { useEffect, useState } from 'react';
-
 import { LeaderboardContainer } from '@/features/leaderboard/components/LeaderboardContainer';
-import type { WeeklyRankingResult } from '@/features/leaderboard/types';
-import { apiFetch } from '@/services/api';
+import { useWeeklyRanking } from '@/hooks/queries/leaderboardQueries';
 
 export const Leaderboard = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [weeklyRanking, setWeeklyRanking] = useState<WeeklyRankingResult | null>(null);
+  const { data: weeklyRanking, isLoading, error } = useWeeklyRanking();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchRankingData = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-
-      try {
-        const weeklyResult = await apiFetch.get<WeeklyRankingResult>('/ranking/weekly');
-
-        if (!isMounted) return;
-        setWeeklyRanking(weeklyResult);
-      } catch (error) {
-        if (!isMounted) return;
-        const message = error instanceof Error ? error.message : '랭킹 정보를 불러오지 못했습니다.';
-        setErrorMessage(message);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    fetchRankingData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const errorMessage =
+    error instanceof Error ? error.message : error ? '랭킹 정보를 불러오지 못했습니다.' : null;
 
   return (
     <LeaderboardContainer
-      weeklyRanking={weeklyRanking}
+      weeklyRanking={weeklyRanking ?? null}
       isLoading={isLoading}
       errorMessage={errorMessage}
     />

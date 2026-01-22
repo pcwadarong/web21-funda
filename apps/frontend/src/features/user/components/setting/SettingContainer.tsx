@@ -3,6 +3,7 @@ import { memo } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 
 import { AppearanceSection } from './AppearanceSection';
 import { SoundSection } from './SoundSection';
@@ -16,16 +17,23 @@ interface SettingProps {
 }
 
 export const SettingContainer = memo(
-  ({ isDarkMode, onDarkModeToggle, onLogout, soundVolume, onSoundVolumeChange }: SettingProps) => (
-    <div css={containerStyle}>
-      <AppearanceSection isDarkMode={isDarkMode} onDarkModeToggle={onDarkModeToggle} />
-      <SoundSection soundVolume={soundVolume} onSoundVolumeChange={onSoundVolumeChange} />
-      <Button variant="primary" fullWidth onClick={onLogout} css={logoutButtonStyle}>
-        <SVGIcon icon="Logout" size="md" />
-        <span>로그아웃</span>
-      </Button>
-    </div>
-  ),
+  ({ isDarkMode, onDarkModeToggle, onLogout, soundVolume, onSoundVolumeChange }: SettingProps) => {
+    const isLoggedIn = useIsLoggedIn();
+    const isAuthReady = useIsAuthReady();
+    return (
+      <div css={containerStyle}>
+        <AppearanceSection isDarkMode={isDarkMode} onDarkModeToggle={onDarkModeToggle} />
+        <SoundSection soundVolume={soundVolume} onSoundVolumeChange={onSoundVolumeChange} />
+
+        {isAuthReady && isLoggedIn && (
+          <Button variant="primary" fullWidth onClick={onLogout} css={logoutButtonStyle}>
+            <SVGIcon icon="Logout" size="md" />
+            <span>로그아웃</span>
+          </Button>
+        )}
+      </div>
+    );
+  },
 );
 
 const containerStyle = css`

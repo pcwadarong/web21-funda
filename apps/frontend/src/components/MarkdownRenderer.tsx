@@ -55,11 +55,18 @@ export const MarkdownRenderer = ({ text, className }: MarkdownRendererProps) => 
           tr: ({ children }) => <tr css={tableRowStyle(theme)}>{children}</tr>,
           th: ({ children }) => <th css={tableCellStyle(theme, true)}>{children}</th>,
           td: ({ children }) => <td css={tableCellStyle(theme, false)}>{children}</td>,
-          code: ({ className, children }) => {
+          code: props => {
+            const { children, className, ...rest } = props;
             const language = extractLanguage(className);
+
             if (!className) {
-              return <code css={inlineCodeStyle(theme)}>{children}</code>;
+              return (
+                <code css={inlineCodeStyle(theme)} {...rest}>
+                  {children}
+                </code>
+              );
             }
+
             return (
               <CodeBlock language={language ?? undefined}>
                 {String(children).replace(/\n$/, '')}
@@ -136,9 +143,12 @@ const tableCellStyle = (theme: Theme, isHeader: boolean) => css`
 
 const inlineCodeStyle = (theme: Theme) => css`
   font-family: 'D2Coding', monospace;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: ${theme.colors.surface.strong};
-  font-size: 0.9em;
-  color: ${theme.colors.text.default};
+  padding: 2px 5px;
+  margin: 0 2px;
+  border-radius: 4px;
+  background: ${theme.colors.grayscale[200]};
+  border: 1px solid ${theme.colors.border.default};
+  font-size: 0.85em;
+  color: ${theme.colors.primary.main}; /* 텍스트 색상에 포인트를 줌 */
+  vertical-align: middle;
 `;

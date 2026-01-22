@@ -45,7 +45,7 @@ async function seedRankingRulesets(): Promise<void> {
       UNION ALL SELECT id, 300, 90, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'GOLD'
       UNION ALL SELECT id, 450, 100, 0.2, 0.2, false FROM ranking_tiers WHERE name = 'SAPPHIRE'
       UNION ALL SELECT id, 550, 110, 0.2, 0.3, false FROM ranking_tiers WHERE name = 'RUBY'
-      UNION ALL SELECT id, 0, 300, 0.0, 0.3, true FROM ranking_tiers WHERE name = 'MASTER'
+      UNION ALL SELECT id, 99999999, 300, 0.0, 0.3, true FROM ranking_tiers WHERE name = 'MASTER'
       ON DUPLICATE KEY UPDATE
         promote_min_xp = VALUES(promote_min_xp),
         demote_min_xp = VALUES(demote_min_xp),

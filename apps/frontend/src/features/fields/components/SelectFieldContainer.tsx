@@ -15,11 +15,11 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
   return (
     <div css={containerStyle}>
       <main css={mainStyle}>
-        <div css={titleWrapper}>
-          <span css={title(theme)}>학습 분야 선택</span>
+        <header css={headerStyle}>
+          <h1 css={title(theme)}>학습 분야 선택</h1>
           <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
-        </div>
-        <div css={gridStyle}>
+        </header>
+        <section css={gridStyle}>
           {fields.map(field => (
             <button
               key={field.slug}
@@ -37,7 +37,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
               </div>
             </button>
           ))}
-        </div>
+        </section>
       </main>
     </div>
   );
@@ -65,7 +65,7 @@ const mainStyle = css`
   }
 `;
 
-const titleWrapper = css`
+const headerStyle = css`
   position: relative;
   z-index: 1;
   display: flex;
@@ -79,6 +79,7 @@ const title = (theme: Theme) => css`
   color: ${theme.colors.primary.main};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   line-height: ${theme.typography['16Medium'].lineHeight};
+  margin: 0;
 `;
 
 const subtitle = (theme: Theme) => css`
@@ -158,6 +159,7 @@ const fieldDescriptionStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   color: ${theme.colors.text.light};
   flex-grow: 1;
+  text-align: left;
 `;
 
 const goRoadmap = (theme: Theme) => css`

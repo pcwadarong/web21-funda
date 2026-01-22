@@ -8,28 +8,49 @@ import { TextWithCodeStyle } from '@/utils/textParser';
 import type { QuizPreview } from './types';
 import { extractCorrectOptionId, extractCorrectPairs } from './utils';
 
+/**
+ * 퀴즈 정보 섹션 컴포넌트 Props
+ */
 interface QuizInfoSectionProps {
+  /** 퀴즈 미리보기 데이터 (문제, 선지, 코드, 매칭 정보 등) */
   preview: QuizPreview;
+  /** 정답 데이터 (퀴즈 타입에 따라 구조가 다름) */
   correctAnswer: CorrectAnswerType | null;
 }
 
+/**
+ * 퀴즈 문제 정보를 표시하는 섹션 컴포넌트
+ *
+ * @description
+ * - 문제 제목과 내용 표시
+ * - 코드가 있는 경우 코드 블록 표시
+ * - 정답 정보를 퀴즈 타입에 맞게 표시:
+ *   - MCQ/Code: 모든 선지 표시, 정답 강조
+ *   - OX: 정답만 표시 (O 또는 X)
+ *   - Matching: 정답 쌍 표시 또는 양쪽 항목 분리 표시
+ *
+ * @param props - 컴포넌트 props
+ * @returns 퀴즈 정보 섹션 JSX 요소
+ */
 export const QuizInfoSection = ({ preview, correctAnswer }: QuizInfoSectionProps) => {
   const theme = useTheme();
 
   return (
-    <section css={summaryStyle(theme)}>
-      <div css={summaryTitleStyle(theme)}>문제 정보</div>
-      <div css={summaryQuestionStyle(theme)}>
+    <section css={summaryStyle(theme)} aria-labelledby="quiz-info-title">
+      <h2 id="quiz-info-title" css={summaryTitleStyle(theme)}>
+        문제 정보
+      </h2>
+      <div css={summaryQuestionStyle(theme)} role="heading" aria-level={3}>
         <TextWithCodeStyle text={`Q. ${preview.question}`} />
       </div>
       {preview.code && (
-        <div css={sectionBlockStyle}>
-          <div css={sectionLabelStyle(theme)}>코드</div>
+        <div css={sectionBlockStyle} aria-label="코드 예시">
+          <h3 css={sectionLabelStyle(theme)}>코드</h3>
           <CodeBlock language={preview.code.language}>{preview.code.snippet}</CodeBlock>
         </div>
       )}
-      <div css={sectionBlockStyle}>
-        <div css={sectionLabelStyle(theme)}>정답</div>
+      <div css={sectionBlockStyle} aria-label="정답">
+        <h3 css={sectionLabelStyle(theme)}>정답</h3>
         {preview.matching
           ? renderMatching(theme, preview, correctAnswer)
           : renderOptions(theme, preview, correctAnswer)}

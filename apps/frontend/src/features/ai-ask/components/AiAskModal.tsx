@@ -14,11 +14,27 @@ import { QuizInfoSection } from './QuizInfoSection';
 import type { SseEvent } from './types';
 import { buildQuizPreview, parseJson } from './utils';
 
+/**
+ * AI 질문 모달 컴포넌트 Props
+ */
 interface AiAskModalProps {
+  /** 퀴즈 문제 데이터 */
   quiz: QuizQuestion;
+  /** 정답 데이터 (퀴즈 타입에 따라 구조가 다름) */
   correctAnswer: CorrectAnswerType | null;
 }
 
+/**
+ * AI에게 질문하고 답변을 받는 모달 컴포넌트
+ *
+ * @description
+ * - 퀴즈 문제 정보와 정답을 표시
+ * - 사용자가 질문을 입력하고 AI 응답을 스트리밍으로 받음
+ * - 질문/답변 히스토리를 관리하고 표시
+ *
+ * @param props - 컴포넌트 props
+ * @returns AI 질문 모달 JSX 요소
+ */
 export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
   const [items, setItems] = useState<AiQuestionAnswer[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
@@ -94,7 +110,22 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
     }
   };
 
+  /**
+   * SSE 스트림 이벤트를 처리하는 핸들러
+   *
+   * @description
+   * 서버에서 전송되는 다양한 이벤트 타입을 처리:
+   * - 'meta': 초기 메타데이터 (실제 ID 할당)
+   * - 'chunk': 스트리밍 중인 답변 텍스트 조각
+   * - 'done': 스트리밍 완료 및 최종 데이터
+   * - 'error': 에러 발생 시 상태 업데이트
+   *
+   * @param eventPayload - SSE 이벤트 페이로드
+   * @param tempId - 임시로 생성된 질문 ID (음수)
+   */
   const handleStreamEvent = (eventPayload: SseEvent, tempId: number) => {
+    // 'meta' 이벤트: 서버에서 실제 질문 ID를 할당할 때 전송
+    // 임시 ID를 실제 ID로 교체하고 expanded 상태도 업데이트
     if (eventPayload.event === 'meta') {
       const meta = parseJson<AiQuestionAnswer>(eventPayload.data);
       if (!meta) {
@@ -106,6 +137,8 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
       return;
     }
 
+    // 'chunk' 이벤트: 스트리밍 중인 답변의 일부 텍스트
+    // 기존 답변에 새 조각을 추가하여 점진적으로 답변을 표시
     if (eventPayload.event === 'chunk') {
       const chunkPayload = parseJson<{ chunk: string }>(eventPayload.data);
       if (!chunkPayload) {
@@ -115,6 +148,8 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
       return;
     }
 
+    // 'done' 이벤트: 스트리밍이 완료되었을 때 전송
+    // 최종 답변 데이터로 아이템을 업데이트하고 상태를 'completed'로 변경
     if (eventPayload.event === 'done') {
       const donePayload = parseJson<AiQuestionAnswer>(eventPayload.data);
       if (!donePayload) {
@@ -124,6 +159,7 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
       return;
     }
 
+    // 'error' 이벤트: 에러 발생 시 상태를 'failed'로 변경
     if (eventPayload.event === 'error') {
       markFailed(currentItemIdRef.current);
     }
@@ -190,10 +226,12 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
   };
 
   return (
-    <div css={modalWrapperStyle}>
+    <div css={modalWrapperStyle} role="dialog" aria-label="AI 질문하기">
       <div css={containerStyle}>
         <QuizInfoSection preview={preview} correctAnswer={correctAnswer} />
-        <ChatHistorySection items={items} expandedIds={expandedIds} onToggle={handleToggle} />
+        <div aria-live="polite" aria-atomic="false">
+          <ChatHistorySection items={items} expandedIds={expandedIds} onToggle={handleToggle} />
+        </div>
       </div>
       <ChatInputFooter
         input={input}
@@ -202,17 +240,39 @@ export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
         isStreaming={isStreaming}
         maxQuestionLength={maxQuestionLength}
       />
-      <div style={{ height: '120px' }}></div>
+      <div style={{ height: '120px' }} aria-hidden="true"></div>
     </div>
   );
 };
 
 /**
- * SSE 스트림을 받아 이벤트 단위로 분리해 전달한다.
+ * SSE(Server-Sent Events) 스트림을 받아 이벤트 단위로 분리해 전달한다.
  *
- * @param quizId 퀴즈 ID
- * @param question 사용자 질문
- * @param handlers 이벤트 핸들러
+ * @description
+ * SSE 프로토콜을 사용하여 서버로부터 실시간으로 AI 답변을 스트리밍으로 받는다.
+ * SSE 형식은 다음과 같다:
+ * ```
+ * event: meta
+ * data: {"id": 123, "question": "..."}
+ *
+ * event: chunk
+ * data: {"chunk": "답변의 일부"}
+ *
+ * event: done
+ * data: {"id": 123, "answer": "전체 답변", "status": "completed"}
+ * ```
+ *
+ * 파싱 로직:
+ * 1. 스트림을 줄 단위로 분리
+ * 2. 'event:'로 시작하는 줄에서 이벤트 타입 추출
+ * 3. 'data:'로 시작하는 줄들을 모아서 하나의 데이터로 결합
+ * 4. 빈 줄이 나오면 하나의 이벤트가 완성된 것으로 간주하고 핸들러 호출
+ *
+ * @param quizId - 퀴즈 ID
+ * @param question - 사용자가 입력한 질문
+ * @param handlers - 이벤트 핸들러 객체
+ * @param handlers.onEvent - 각 이벤트가 파싱될 때마다 호출되는 콜백
+ * @throws {Error} 스트리밍 요청이 실패하거나 응답 본문이 없을 때
  */
 const streamAiAnswer = async (
   quizId: number,
@@ -221,6 +281,7 @@ const streamAiAnswer = async (
     onEvent: (event: SseEvent) => void;
   },
 ) => {
+  // SSE 엔드포인트 URL 구성
   const url = `${BASE_URL.replace(/\/$/, '')}/quizzes/${quizId}/ai-questions/stream`;
   const response = await fetch(url, {
     method: 'POST',
@@ -235,41 +296,56 @@ const streamAiAnswer = async (
     throw new Error('스트리밍 요청에 실패했습니다.');
   }
 
+  // ReadableStream을 읽기 위한 Reader와 디코더 준비
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = ''; // 완전하지 않은 줄을 저장하는 버퍼
 
-  let currentEvent = 'message';
-  let dataLines: string[] = [];
+  let currentEvent = 'message'; // 현재 파싱 중인 이벤트 타입
+  let dataLines: string[] = []; // 현재 이벤트의 데이터 줄들을 모으는 배열
 
+  // 스트림을 끝까지 읽기
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
+    // 받은 바이트를 텍스트로 디코딩하고 버퍼에 추가
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
+    // 마지막 줄은 완전하지 않을 수 있으므로 버퍼에 보관
     buffer = lines.pop() ?? '';
 
+    // 완전한 줄들만 처리
     for (const line of lines) {
       const trimmed = line.trimEnd();
+
+      // 빈 줄: 하나의 이벤트가 완성된 신호
       if (trimmed.length === 0) {
+        // 수집된 데이터가 있으면 이벤트로 전달
         if (dataLines.length > 0)
           handlers.onEvent({ event: currentEvent, data: dataLines.join('\n') });
 
+        // 다음 이벤트를 위해 상태 초기화
         currentEvent = 'message';
         dataLines = [];
         continue;
       }
 
+      // 'event:' 줄: 이벤트 타입 정의 (예: "event: chunk")
       if (trimmed.startsWith('event:')) {
         currentEvent = trimmed.replace('event:', '').trim() || 'message';
         continue;
       }
 
-      if (trimmed.startsWith('data:')) dataLines.push(trimmed.replace('data:', '').trim());
+      // 'data:' 줄: 이벤트 데이터 (여러 줄일 수 있음)
+      if (trimmed.startsWith('data:')) {
+        // 'data:' 접두사를 제거하고 공백 제거 후 배열에 추가
+        dataLines.push(trimmed.replace('data:', '').trim());
+      }
     }
   }
 
+  // 스트림이 끝났을 때 남은 데이터가 있으면 마지막 이벤트로 전달
   if (dataLines.length > 0) handlers.onEvent({ event: currentEvent, data: dataLines.join('\n') });
 };
 

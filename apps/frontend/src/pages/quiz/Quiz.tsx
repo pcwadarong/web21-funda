@@ -24,6 +24,7 @@ import {
 } from '@/hooks/queries/quizQueries';
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
+import { progressService } from '@/services/progressService';
 import type { QuizSubmissionRequest } from '@/services/quizService';
 import { useAuthActions, useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 

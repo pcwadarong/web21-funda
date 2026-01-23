@@ -21,6 +21,14 @@ export const progressService = {
   },
 
   /**
+   * 비로그인 사용자가 스텝을 완료했을 때 Redis에 저장
+   * @param stepId 완료한 스텝 ID
+   */
+  async completeGuestStep(stepId: number): Promise<{ success: boolean }> {
+    return apiFetch.post<{ success: boolean }>(`/progress/steps/${stepId}/complete-guest`, {});
+  },
+
+  /**
    * 복습 노트 대상 퀴즈 목록 조회
    */
   async getReviewQueue(params?: ReviewQueueParams): Promise<QuizQuestion[]> {

@@ -7,7 +7,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+
+import { RedisService } from '../common/redis/redis.service';
 
 import { GithubAuthGuard } from './guards/github.guard';
 import { JwtAccessGuard } from './guards/jwt-access.guard';
@@ -22,6 +25,7 @@ type GithubRequest = {
   user?: GithubProfile;
   headers?: Record<string, unknown>;
   ip?: string;
+  cookies?: Record<string, string>;
 };
 
 type RefreshRequest = {
@@ -52,6 +56,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {
     const origin = this.configService.get<string>('CLIENT_ORIGIN');
     if (!origin) {
@@ -63,6 +68,64 @@ export class AuthController {
       'CLIENT_LOGIN_REDIRECT_PATH',
       '/learn',
     );
+  }
+
+  @Get('guest-id')
+  @ApiOperation({
+    summary: '비로그인 사용자 ID 발급',
+    description: '비로그인 사용자에게 고유한 client_id를 발급한다.',
+  })
+  @ApiOkResponse({
+    description: 'client_id 발급 성공',
+    schema: {
+      example: {
+        clientId: 'uuid-string-here',
+      },
+    },
+  })
+  getGuestId(@Res({ passthrough: true }) res: Response): { clientId: string } {
+    const clientId = uuidv4();
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+
+    console.log('getGuestId called - generating clientId:', clientId);
+
+    res.cookie('client_id', clientId, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30일
+      path: '/',
+    });
+
+    console.log('getGuestId - returning clientId:', clientId);
+    return { clientId };
+  }
+
+  @Get('guest-heart')
+  @ApiOperation({
+    summary: '비로그인 사용자 하트 조회',
+    description: 'Redis에서 비로그인 사용자의 하트 값을 조회한다.',
+  })
+  @ApiOkResponse({
+    description: '하트 조회 성공',
+    schema: {
+      example: {
+        heartCount: 5,
+      },
+    },
+  })
+  async getGuestHeart(
+    @Req() req: Request & { cookies?: Record<string, string> },
+  ): Promise<{ heartCount: number }> {
+    const clientId = req.cookies?.client_id;
+    if (!clientId) {
+      return { heartCount: 5 }; // 기본값
+    }
+
+    const heartFromRedis = await this.redisService.get(`heart:${clientId}`);
+    const heartCount = (heartFromRedis as number) ?? 5;
+
+    return { heartCount };
   }
 
   @Get('github')
@@ -91,7 +154,12 @@ export class AuthController {
     }
 
     const meta = this.toRequestMeta(req);
-    const { accessToken, refreshToken } = await this.authService.handleGithubLogin(req.user, meta);
+    const clientId = req.cookies?.client_id;
+    const { accessToken, refreshToken } = await this.authService.handleGithubLogin(
+      req.user,
+      meta,
+      clientId,
+    );
 
     this.authService.attachRefreshTokenCookie(res, refreshToken);
     this.authService.attachAccessTokenCookie(res, accessToken);

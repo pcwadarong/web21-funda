@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
 import type { RankingMember } from '@/feat/leaderboard/types';
+import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
 
 const mockMembers: RankingMember[] = [
@@ -68,16 +69,18 @@ const meta: Meta<typeof MemberList> = {
   tags: ['autodocs'],
   decorators: [
     Story => (
-      <ThemeProvider theme={lightTheme}>
-        <div
-          style={{
-            backgroundColor: lightTheme.colors.surface.strong,
-            padding: '24px',
-          }}
-        >
-          <Story />
-        </div>
-      </ThemeProvider>
+      <ThemeStoreProvider>
+        <ThemeProvider theme={lightTheme}>
+          <div
+            style={{
+              backgroundColor: lightTheme.colors.surface.strong,
+              padding: '24px',
+            }}
+          >
+            <Story />
+          </div>
+        </ThemeProvider>
+      </ThemeStoreProvider>
     ),
   ],
   args: {

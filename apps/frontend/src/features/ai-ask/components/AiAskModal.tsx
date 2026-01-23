@@ -1,30 +1,41 @@
-import { css, keyframes, useTheme } from '@emotion/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { css } from '@emotion/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Button } from '@/comp/Button';
-import { CodeBlock } from '@/comp/CodeBlock';
-import SVGIcon from '@/comp/SVGIcon';
-import type { QuizQuestion } from '@/feat/quiz/types';
+import type { CorrectAnswerType, QuizQuestion } from '@/feat/quiz/types';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import { getAiQuestions } from '@/services/aiAskService';
 import { BASE_URL } from '@/services/api';
 import { useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
-import type { Theme } from '@/styles/theme';
 
-type SseEvent = {
-  event: string;
-  data: string;
-};
+import { ChatHistorySection } from './ChatHistorySection';
+import { ChatInputFooter } from './ChatInputFooter';
+import { QuizInfoSection } from './QuizInfoSection';
+import type { SseEvent } from './types';
+import { buildQuizPreview, parseJson } from './utils';
 
+/**
+ * AI 질문 모달 컴포넌트 Props
+ */
 interface AiAskModalProps {
+  /** 퀴즈 문제 데이터 */
   quiz: QuizQuestion;
+  /** 정답 데이터 (퀴즈 타입에 따라 구조가 다름) */
+  correctAnswer: CorrectAnswerType | null;
 }
 
-export const AiAskModal = ({ quiz }: AiAskModalProps) => {
-  const theme = useTheme();
+/**
+ * AI에게 질문하고 답변을 받는 모달 컴포넌트
+ *
+ * @description
+ * - 퀴즈 문제 정보와 정답을 표시
+ * - 사용자가 질문을 입력하고 AI 응답을 스트리밍으로 받음
+ * - 질문/답변 히스토리를 관리하고 표시
+ *
+ * @param props - 컴포넌트 props
+ * @returns AI 질문 모달 JSX 요소
+ */
+export const AiAskModal = ({ quiz, correctAnswer }: AiAskModalProps) => {
   const [items, setItems] = useState<AiQuestionAnswer[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [input, setInput] = useState('');
@@ -48,25 +59,18 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
   const handleToggle = (id: number) => {
     setExpandedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmed = input.trim();
-    if (trimmed.length === 0) {
-      return;
-    }
 
-    if (isStreaming) {
-      return;
-    }
+    const trimmed = input.trim();
+    if (trimmed.length === 0) return;
+    if (isStreaming) return;
 
     if (!isLoggedIn) {
       showToast('AI 질문을 하시려면 로그인이 필요합니다.');
@@ -106,7 +110,22 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
     }
   };
 
+  /**
+   * SSE 스트림 이벤트를 처리하는 핸들러
+   *
+   * @description
+   * 서버에서 전송되는 다양한 이벤트 타입을 처리:
+   * - 'meta': 초기 메타데이터 (실제 ID 할당)
+   * - 'chunk': 스트리밍 중인 답변 텍스트 조각
+   * - 'done': 스트리밍 완료 및 최종 데이터
+   * - 'error': 에러 발생 시 상태 업데이트
+   *
+   * @param eventPayload - SSE 이벤트 페이로드
+   * @param tempId - 임시로 생성된 질문 ID (음수)
+   */
   const handleStreamEvent = (eventPayload: SseEvent, tempId: number) => {
+    // 'meta' 이벤트: 서버에서 실제 질문 ID를 할당할 때 전송
+    // 임시 ID를 실제 ID로 교체하고 expanded 상태도 업데이트
     if (eventPayload.event === 'meta') {
       const meta = parseJson<AiQuestionAnswer>(eventPayload.data);
       if (!meta) {
@@ -118,6 +137,8 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
       return;
     }
 
+    // 'chunk' 이벤트: 스트리밍 중인 답변의 일부 텍스트
+    // 기존 답변에 새 조각을 추가하여 점진적으로 답변을 표시
     if (eventPayload.event === 'chunk') {
       const chunkPayload = parseJson<{ chunk: string }>(eventPayload.data);
       if (!chunkPayload) {
@@ -127,6 +148,8 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
       return;
     }
 
+    // 'done' 이벤트: 스트리밍이 완료되었을 때 전송
+    // 최종 답변 데이터로 아이템을 업데이트하고 상태를 'completed'로 변경
     if (eventPayload.event === 'done') {
       const donePayload = parseJson<AiQuestionAnswer>(eventPayload.data);
       if (!donePayload) {
@@ -136,6 +159,7 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
       return;
     }
 
+    // 'error' 이벤트: 에러 발생 시 상태를 'failed'로 변경
     if (eventPayload.event === 'error') {
       markFailed(currentItemIdRef.current);
     }
@@ -202,112 +226,53 @@ export const AiAskModal = ({ quiz }: AiAskModalProps) => {
   };
 
   return (
-    <div css={containerStyle}>
-      <section css={summaryStyle(theme)}>
-        <div css={summaryTitleStyle(theme)}>문제 정보</div>
-        <div css={summaryQuestionStyle(theme)}>{`Q. ${preview.question}`}</div>
-        {preview.options.length > 0 && (
-          <div css={sectionBlockStyle}>
-            <div css={sectionLabelStyle(theme)}>보기</div>
-            <ul css={summaryListStyle(theme)}>
-              {preview.options.map(option => (
-                <li key={option}>{option}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {preview.matching && (
-          <div css={sectionBlockStyle}>
-            <div css={sectionLabelStyle(theme)}>매칭 항목</div>
-            <div css={matchingGridStyle}>
-              <div>
-                <div css={matchingLabelStyle(theme)}>왼쪽</div>
-                <ul css={summaryListStyle(theme)}>
-                  {preview.matching.left.map(item => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <div css={matchingLabelStyle(theme)}>오른쪽</div>
-                <ul css={summaryListStyle(theme)}>
-                  {preview.matching.right.map(item => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-        {preview.code && (
-          <div css={sectionBlockStyle}>
-            <div css={sectionLabelStyle(theme)}>코드</div>
-            <CodeBlock language={preview.code.language}>{preview.code.snippet}</CodeBlock>
-          </div>
-        )}
-      </section>
-
-      <section css={listSectionStyle}>
-        {items.length === 0 && <div css={emptyStyle(theme)}>아직 등록된 질문이 없습니다.</div>}
-        {items.map(item => {
-          const isExpanded = expandedIds.has(item.id);
-          const statusLabel = getStatusLabel(item);
-          return (
-            <article key={item.id} css={qaItemStyle(theme)}>
-              <button css={qaQuestionStyle(theme)} onClick={() => handleToggle(item.id)}>
-                {item.isMine && <span css={badgeStyle(theme)}>나의 질문</span>}
-                <span css={questionTextStyle(theme)}>{item.question}</span>
-                <span css={statusStyle(theme)}>{statusLabel}</span>
-              </button>
-              {isExpanded && (
-                <div css={qaAnswerStyle(theme)}>
-                  {item.status === 'pending' && (!item.answer || item.answer.length === 0) ? (
-                    <TypingDots />
-                  ) : (
-                    <div css={answerTextStyle(theme)}>
-                      {item.status === 'failed' ? (
-                        'AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
-                      ) : (
-                        <MarkdownAnswer text={item.answer ?? ''} />
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </article>
-          );
-        })}
-      </section>
-
-      <form css={inputBarStyle(theme)} onSubmit={handleSubmit}>
-        <input
-          css={inputStyle(theme)}
-          value={input}
-          onChange={event => setInput(event.target.value)}
-          placeholder="궁금한 것을 질문해보세요."
-          maxLength={maxQuestionLength}
-          disabled={isStreaming}
-        />
-        <Button
-          type="submit"
-          variant="primary"
-          css={sendButtonStyle(theme)}
-          aria-label="질문 전송"
-          disabled={isStreaming || input.trim().length === 0}
-        >
-          <SVGIcon icon="NextArrow" size="sm" />
-        </Button>
-      </form>
+    <div css={modalWrapperStyle} role="dialog" aria-label="AI 질문하기">
+      <div css={containerStyle}>
+        <QuizInfoSection preview={preview} correctAnswer={correctAnswer} />
+        <div aria-live="polite" aria-atomic="false">
+          <ChatHistorySection items={items} expandedIds={expandedIds} onToggle={handleToggle} />
+        </div>
+      </div>
+      <ChatInputFooter
+        input={input}
+        onInputChange={setInput}
+        onSubmit={handleSubmit}
+        isStreaming={isStreaming}
+        maxQuestionLength={maxQuestionLength}
+      />
+      <div style={{ height: '150px' }} aria-hidden="true"></div>
     </div>
   );
 };
 
 /**
- * SSE 스트림을 받아 이벤트 단위로 분리해 전달한다.
+ * SSE(Server-Sent Events) 스트림을 받아 이벤트 단위로 분리해 전달한다.
  *
- * @param quizId 퀴즈 ID
- * @param question 사용자 질문
- * @param handlers 이벤트 핸들러
+ * @description
+ * SSE 프로토콜을 사용하여 서버로부터 실시간으로 AI 답변을 스트리밍으로 받는다.
+ * SSE 형식은 다음과 같다:
+ * ```
+ * event: meta
+ * data: {"id": 123, "question": "..."}
+ *
+ * event: chunk
+ * data: {"chunk": "답변의 일부"}
+ *
+ * event: done
+ * data: {"id": 123, "answer": "전체 답변", "status": "completed"}
+ * ```
+ *
+ * 파싱 로직:
+ * 1. 스트림을 줄 단위로 분리
+ * 2. 'event:'로 시작하는 줄에서 이벤트 타입 추출
+ * 3. 'data:'로 시작하는 줄들을 모아서 하나의 데이터로 결합
+ * 4. 빈 줄이 나오면 하나의 이벤트가 완성된 것으로 간주하고 핸들러 호출
+ *
+ * @param quizId - 퀴즈 ID
+ * @param question - 사용자가 입력한 질문
+ * @param handlers - 이벤트 핸들러 객체
+ * @param handlers.onEvent - 각 이벤트가 파싱될 때마다 호출되는 콜백
+ * @throws {Error} 스트리밍 요청이 실패하거나 응답 본문이 없을 때
  */
 const streamAiAnswer = async (
   quizId: number,
@@ -316,6 +281,7 @@ const streamAiAnswer = async (
     onEvent: (event: SseEvent) => void;
   },
 ) => {
+  // SSE 엔드포인트 URL 구성
   const url = `${BASE_URL.replace(/\/$/, '')}/quizzes/${quizId}/ai-questions/stream`;
   const response = await fetch(url, {
     method: 'POST',
@@ -330,431 +296,70 @@ const streamAiAnswer = async (
     throw new Error('스트리밍 요청에 실패했습니다.');
   }
 
+  // ReadableStream을 읽기 위한 Reader와 디코더 준비
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = ''; // 완전하지 않은 줄을 저장하는 버퍼
 
-  let currentEvent = 'message';
-  let dataLines: string[] = [];
+  let currentEvent = 'message'; // 현재 파싱 중인 이벤트 타입
+  let dataLines: string[] = []; // 현재 이벤트의 데이터 줄들을 모으는 배열
 
+  // 스트림을 끝까지 읽기
   while (true) {
     const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
+    if (done) break;
 
+    // 받은 바이트를 텍스트로 디코딩하고 버퍼에 추가
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
+    // 마지막 줄은 완전하지 않을 수 있으므로 버퍼에 보관
     buffer = lines.pop() ?? '';
 
+    // 완전한 줄들만 처리
     for (const line of lines) {
       const trimmed = line.trimEnd();
+
+      // 빈 줄: 하나의 이벤트가 완성된 신호
       if (trimmed.length === 0) {
-        if (dataLines.length > 0) {
+        // 수집된 데이터가 있으면 이벤트로 전달
+        if (dataLines.length > 0)
           handlers.onEvent({ event: currentEvent, data: dataLines.join('\n') });
-        }
+
+        // 다음 이벤트를 위해 상태 초기화
         currentEvent = 'message';
         dataLines = [];
         continue;
       }
 
+      // 'event:' 줄: 이벤트 타입 정의 (예: "event: chunk")
       if (trimmed.startsWith('event:')) {
         currentEvent = trimmed.replace('event:', '').trim() || 'message';
         continue;
       }
 
+      // 'data:' 줄: 이벤트 데이터 (여러 줄일 수 있음)
       if (trimmed.startsWith('data:')) {
+        // 'data:' 접두사를 제거하고 공백 제거 후 배열에 추가
         dataLines.push(trimmed.replace('data:', '').trim());
       }
     }
   }
 
-  if (dataLines.length > 0) {
-    handlers.onEvent({ event: currentEvent, data: dataLines.join('\n') });
-  }
+  // 스트림이 끝났을 때 남은 데이터가 있으면 마지막 이벤트로 전달
+  if (dataLines.length > 0) handlers.onEvent({ event: currentEvent, data: dataLines.join('\n') });
 };
 
-/**
- * JSON 파싱 실패를 안전하게 처리하기 위한 유틸.
- *
- * @param value JSON 문자열
- * @returns 파싱 결과 또는 null
- */
-const parseJson = <T,>(value: string): T | null => {
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * 모달에 표시할 문제 정보를 간략하게 정리한다.
- * 보기/매칭/코드 정보를 텍스트 중심으로 전달하기 위해 분리한다.
- *
- * @param quiz 퀴즈 데이터
- * @returns 표시용 데이터
- */
-const buildQuizPreview = (quiz: QuizQuestion) => {
-  const baseQuestion = quiz.content.question;
-  const options: string[] = [];
-
-  if ('options' in quiz.content && quiz.content.options) {
-    for (const option of quiz.content.options) {
-      options.push(option.text);
-    }
-  }
-
-  const matching =
-    quiz.type === 'matching' && 'matching_metadata' in quiz.content
-      ? {
-          left: quiz.content.matching_metadata.left.map(item => item.text),
-          right: quiz.content.matching_metadata.right.map(item => item.text),
-        }
-      : null;
-
-  const code =
-    quiz.type === 'code' && 'code_metadata' in quiz.content
-      ? {
-          language: quiz.content.code_metadata.language,
-          snippet: quiz.content.code_metadata.snippet,
-        }
-      : null;
-
-  return { question: baseQuestion, options, matching, code };
-};
-
-/**
- * 답변 상태에 맞는 라벨을 반환한다.
- *
- * @param item 질문/답변 아이템
- * @returns 상태 텍스트
- */
-const getStatusLabel = (item: AiQuestionAnswer) => {
-  if (item.status === 'pending') {
-    return '답변 생성 중';
-  }
-  if (item.status === 'failed') {
-    return '답변 실패';
-  }
-  return '답변 완료';
-};
-
-const TypingDots = () => {
-  const theme = useTheme();
-  return (
-    <div css={dotContainerStyle(theme)}>
-      <span css={dotStyle(theme)}></span>
-      <span css={dotStyle(theme)}></span>
-      <span css={dotStyle(theme)}></span>
-    </div>
-  );
-};
-
-/**
- * 답변 텍스트를 마크다운 렌더러로 출력한다.
- *
- * @param text 응답 텍스트
- */
-const MarkdownAnswer = ({ text }: { text: string }) => (
-  <div css={markdownContainerStyle}>
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        p: ({ children }) => <p css={markdownParagraphStyle}>{children}</p>,
-        ul: ({ children }) => <ul css={markdownListStyle}>{children}</ul>,
-        ol: ({ children }) => <ol css={markdownListStyle}>{children}</ol>,
-        li: ({ children }) => <li css={markdownListItemStyle}>{children}</li>,
-        h1: ({ children }) => <h1 css={markdownHeadingStyle(1)}>{children}</h1>,
-        h2: ({ children }) => <h2 css={markdownHeadingStyle(2)}>{children}</h2>,
-        h3: ({ children }) => <h3 css={markdownHeadingStyle(3)}>{children}</h3>,
-        code: ({ className, children }) => {
-          const language = extractLanguage(className);
-          if (!className) {
-            return <code css={inlineCodeStyle}>{children}</code>;
-          }
-          return (
-            <CodeBlock language={language ?? undefined}>
-              {String(children).replace(/\n$/, '')}
-            </CodeBlock>
-          );
-        },
-      }}
-    >
-      {text}
-    </ReactMarkdown>
-  </div>
-);
+const modalWrapperStyle = css`
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+`;
 
 const containerStyle = css`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 70vh;
-`;
-
-const summaryStyle = (theme: Theme) => css`
-  background: ${theme.colors.surface.default};
-  border-radius: 12px;
-  padding: 16px;
-`;
-
-const summaryTitleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Bold'].fontSize};
-  font-weight: ${theme.typography['12Bold'].fontWeight};
-  line-height: ${theme.typography['12Bold'].lineHeight};
-  color: ${theme.colors.text.weak};
-  margin-bottom: 8px;
-`;
-
-const summaryQuestionStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  line-height: ${theme.typography['16Bold'].lineHeight};
-  color: ${theme.colors.text.strong};
-  margin-bottom: 8px;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-`;
-
-const summaryListStyle = (theme: Theme) => css`
-  margin: 0;
-  padding-left: 18px;
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-`;
-
-const sectionBlockStyle = css`
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const sectionLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Bold'].fontSize};
-  font-weight: ${theme.typography['12Bold'].fontWeight};
-  color: ${theme.colors.text.light};
-`;
-
-const matchingGridStyle = css`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const matchingLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.weak};
-  margin-bottom: 4px;
-`;
-
-const listSectionStyle = css`
   flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-right: 4px;
-`;
-
-const emptyStyle = (theme: Theme) => css`
-  color: ${theme.colors.text.weak};
-  text-align: center;
-  padding: 24px 0;
-`;
-
-const qaItemStyle = (theme: Theme) => css`
-  border: 1px solid ${theme.colors.border.default};
-  border-radius: 12px;
-  padding: 12px;
-  background: ${theme.colors.surface.strong};
-`;
-
-const qaQuestionStyle = (theme: Theme) => css`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  text-align: left;
-  cursor: pointer;
-  flex-wrap: wrap;
-`;
-
-const questionTextStyle = (theme: Theme) => css`
-  flex: 1;
-  color: ${theme.colors.text.default};
-  overflow-wrap: anywhere;
-  word-break: break-word;
-`;
-
-const badgeStyle = (theme: Theme) => css`
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: ${theme.colors.primary.surface};
-  color: ${theme.colors.text.strong};
-  font-size: ${theme.typography['12Bold'].fontSize};
-  font-weight: ${theme.typography['12Bold'].fontWeight};
-`;
-
-const statusStyle = (theme: Theme) => css`
-  margin-left: auto;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.weak};
-`;
-
-const qaAnswerStyle = (theme: Theme) => css`
-  margin-top: 12px;
-  border-top: 1px solid ${theme.colors.border.default};
-  padding-top: 12px;
-`;
-
-const answerTextStyle = (theme: Theme) => css`
-  white-space: pre-wrap;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  color: ${theme.colors.text.default};
-`;
-
-const markdownContainerStyle = css`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const markdownParagraphStyle = css`
-  margin: 0;
-`;
-
-const markdownListStyle = css`
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-`;
-
-const markdownListItemStyle = css`
-  margin: 0;
-`;
-
-const markdownHeadingStyle = (level: 1 | 2 | 3) => css`
-  font-size: ${level === 1 ? '18px' : level === 2 ? '16px' : '14px'};
-  font-weight: 700;
-  margin: 0;
-`;
-
-const inlineCodeStyle = css`
-  font-family: 'D2Coding', monospace;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.08);
-  font-size: 0.9em;
-`;
-
-/**
- * 코드 블록 className에서 언어 정보를 추출한다.
- *
- * @param className 코드 블록 className
- * @returns 언어 문자열 또는 null
- */
-const extractLanguage = (className?: string | null): string | null => {
-  if (!className) {
-    return null;
-  }
-
-  const match = className.match(/language-(\w+)/);
-  return match && match[1] ? match[1] : null;
-};
-
-const inputBarStyle = (theme: Theme) => css`
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  position: sticky;
-  bottom: 0;
-  background: ${theme.colors.surface.strong};
-  padding-top: 8px;
-`;
-
-const inputStyle = (theme: Theme) => css`
-  flex: 1;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid ${theme.colors.border.default};
-  padding: 0 16px;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.default};
-  background: ${theme.colors.surface.default};
-`;
-
-const sendButtonStyle = (theme: Theme) => css`
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border-radius: 999px;
-  box-shadow: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: ${theme.colors.primary.main};
-
-  &:hover {
-    transform: none;
-    filter: brightness(1.03);
-    box-shadow: none;
-  }
-
-  &:active {
-    transform: scale(0.98);
-    box-shadow: none;
-  }
-`;
-
-const dotPulse = keyframes`
-  0% {
-    opacity: 0.3;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-2px);
-  }
-  100% {
-    opacity: 0.3;
-    transform: translateY(0);
-  }
-`;
-
-const dotContainerStyle = (theme: Theme) => css`
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  color: ${theme.colors.text.weak};
-
-  span:nth-of-type(2) {
-    animation-delay: 0.15s;
-  }
-
-  span:nth-of-type(3) {
-    animation-delay: 0.3s;
-  }
-`;
-
-const dotStyle = (theme: Theme) => css`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${theme.colors.text.weak};
-  animation: ${dotPulse} 1s infinite ease-in-out;
+  padding-bottom: 20px;
 `;

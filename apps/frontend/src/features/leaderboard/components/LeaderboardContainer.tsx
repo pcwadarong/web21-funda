@@ -2,10 +2,13 @@ import { css, keyframes, type Theme, useTheme } from '@emotion/react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
+import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
 import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
+import { useModal } from '@/store/modalStore';
+import { colors } from '@/styles/token';
 
 interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
@@ -23,6 +26,7 @@ export const LeaderboardContainer = ({
   isRefreshing = false,
 }: LeaderboardContainerProps) => {
   const theme = useTheme();
+  const { openModal } = useModal();
 
   // 상태 결정
   let stateType: 'error' | 'empty' | 'unassigned' | 'normal' = 'normal';
@@ -69,8 +73,22 @@ export const LeaderboardContainer = ({
         ) : (
           <>
             <section css={summaryCardStyle(theme)} data-section="summary">
-              <div css={summaryLeftStyle}>
-                <p css={summaryTitleStyle(theme)}>{leagueTitle}</p>
+              <div>
+                <div css={summaryMainStyle}>
+                  <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
+                  <button
+                    type="button"
+                    aria-label="리더보드 안내 열기"
+                    css={infoButtonStyle(theme)}
+                    onClick={() =>
+                      openModal('리더보드란?', <InfoLeaderBoardModal />, {
+                        maxWidth: 880,
+                      })
+                    }
+                  >
+                    <span>?</span>
+                  </button>
+                </div>
                 <p css={summarySubTextStyle(theme)}>
                   {weeklyRanking!.weekKey}주차 · 그룹 {weeklyRanking!.groupIndex} · 총{' '}
                   {weeklyRanking!.totalMembers}명
@@ -80,31 +98,36 @@ export const LeaderboardContainer = ({
             </section>
 
             <section css={leaderboardCardStyle(theme)} data-section="ranking">
-              <div css={zoneSectionStyle}>
-                <MemberList members={groupedMembers!.promotion} />
-              </div>
-              <div css={zoneSectionStyle}>
-                <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
-                  <SVGIcon
-                    icon="ArrowLeft"
-                    style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
-                    size="sm"
-                  />
-                  <span>승급권</span>
+              {weeklyRanking!.tier.name !== 'MASTER' && (
+                <div css={zoneSectionStyle}>
+                  <MemberList members={groupedMembers!.promotion} />
+                  <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                    <SVGIcon
+                      style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
+                      icon="ArrowLeft"
+                      size="sm"
+                    />
+                    <span>승급권</span>
+                  </div>
                 </div>
+              )}
+              <div css={zoneSectionStyle}>
                 <MemberList members={groupedMembers!.maintain} />
               </div>
-              <div css={zoneSectionStyle}>
-                <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
-                  <SVGIcon
-                    icon="ArrowLeft"
-                    style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
-                    size="sm"
-                  />
-                  <span>강등권</span>
+              {/* BRONZE가 아닐 때만 강등권 표시 */}
+              {weeklyRanking!.tier.name !== 'BRONZE' && (
+                <div css={zoneSectionStyle}>
+                  <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                    <SVGIcon
+                      icon="ArrowLeft"
+                      style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
+                      size="sm"
+                    />
+                    <span>강등권</span>
+                  </div>
+                  <MemberList members={groupedMembers!.demotion} />
                 </div>
-                <MemberList members={groupedMembers!.demotion} />
-              </div>
+              )}
             </section>
           </>
         )}
@@ -153,7 +176,7 @@ const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
   border: none;
   background: transparent;
   cursor: pointer;
-  color: black;
+  color: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.medium};
   transition: background-color 150ms ease;
 
@@ -176,7 +199,7 @@ const summaryCardStyle = (theme: Theme) => css`
   border: 1px solid ${theme.colors.border.default};
   background: linear-gradient(180deg, #6559ea 0%, #8b82ff 100%);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-  color: ${theme.colors.surface.default};
+  color: ${colors.light.grayscale[50]};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -184,9 +207,10 @@ const summaryCardStyle = (theme: Theme) => css`
   flex-wrap: wrap;
 `;
 
-const summaryLeftStyle = css`
+const summaryMainStyle = css`
   display: flex;
-  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
 `;
 
 const summaryTitleStyle = (theme: Theme) => css`
@@ -194,6 +218,22 @@ const summaryTitleStyle = (theme: Theme) => css`
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   margin-bottom: 0.5rem;
+`;
+
+const infoButtonStyle = (theme: Theme) => css`
+  color: ${theme.colors.primary.main};
+  padding: 0.5rem;
+  margin: -0.5rem;
+
+  span {
+    display: inline-block;
+    background: ${theme.colors.grayscale[200]};
+    width: 24px;
+    border-radius: 100px;
+    margin-bottom: 6px;
+    font-weight: bold;
+    padding-bottom: 2px;
+  }
 `;
 
 const summarySubTextStyle = (theme: Theme) => css`

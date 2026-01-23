@@ -22,6 +22,7 @@ import NextArrow from '@/assets/next-arrow.svg?react';
 import Refresh from '@/assets/refresh.svg?react';
 import Report from '@/assets/report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
+import Send from '@/assets/send.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
 import Fire from '@/assets/sidebar-icons/fire.svg?react';
@@ -57,6 +58,7 @@ export const IconMap = {
   Refresh,
   Report,
   RoundStar,
+  Send,
   Book,
   Diamond,
   Fire,

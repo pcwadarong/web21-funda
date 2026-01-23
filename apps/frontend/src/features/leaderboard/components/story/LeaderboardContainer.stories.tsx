@@ -1,15 +1,18 @@
 import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { action } from 'storybook/actions';
 
 import { LeaderboardContainer } from '@/feat/leaderboard/components/LeaderboardContainer';
 import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
+import { ModalProvider } from '@/store/modalStore';
+import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
 
 const mockWeeklyRanking: WeeklyRankingResult = {
   weekKey: '2025-01',
   tier: {
     id: 1,
-    name: '브론즈',
+    name: 'BRONZE',
     orderIndex: 1,
   },
   groupIndex: 1,
@@ -125,13 +128,19 @@ const meta: Meta<typeof LeaderboardContainer> = {
   tags: ['autodocs'],
   decorators: [
     Story => (
-      <ThemeProvider theme={lightTheme}>
-        <div
-          style={{ background: 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)' }}
-        >
-          <Story />
-        </div>
-      </ThemeProvider>
+      <ThemeStoreProvider>
+        <ThemeProvider theme={lightTheme}>
+          <ModalProvider>
+            <div
+              style={{
+                background: 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)',
+              }}
+            >
+              <Story />
+            </div>
+          </ModalProvider>
+        </ThemeProvider>
+      </ThemeStoreProvider>
     ),
   ],
   args: {
@@ -198,5 +207,110 @@ export const WithManyMembers: Story = {
     },
     isLoading: false,
     errorMessage: null,
+  },
+};
+
+// 다양한 티어 레벨 스토리
+export const SilverTier: Story = {
+  args: {
+    weeklyRanking: {
+      ...mockWeeklyRanking,
+      tier: {
+        id: 2,
+        name: 'SILVER',
+        orderIndex: 2,
+      },
+      myWeeklyXp: 200,
+    },
+    isLoading: false,
+    errorMessage: null,
+  },
+};
+
+export const GoldTier: Story = {
+  args: {
+    weeklyRanking: {
+      ...mockWeeklyRanking,
+      tier: {
+        id: 3,
+        name: 'GOLD',
+        orderIndex: 3,
+      },
+      myWeeklyXp: 350,
+    },
+    isLoading: false,
+    errorMessage: null,
+  },
+};
+
+export const SapphireTier: Story = {
+  args: {
+    weeklyRanking: {
+      ...mockWeeklyRanking,
+      tier: {
+        id: 4,
+        name: 'SAPPHIRE',
+        orderIndex: 4,
+      },
+      myWeeklyXp: 500,
+    },
+    isLoading: false,
+    errorMessage: null,
+  },
+};
+
+export const RubyTier: Story = {
+  args: {
+    weeklyRanking: {
+      ...mockWeeklyRanking,
+      tier: {
+        id: 5,
+        name: 'RUBY',
+        orderIndex: 5,
+      },
+      myWeeklyXp: 600,
+    },
+    isLoading: false,
+    errorMessage: null,
+  },
+};
+
+export const MasterTier: Story = {
+  args: {
+    weeklyRanking: {
+      ...mockWeeklyRanking,
+      tier: {
+        id: 6,
+        name: 'MASTER',
+        orderIndex: 6,
+      },
+      myWeeklyXp: 800,
+      members: mockWeeklyRanking.members.map((member, index) => ({
+        ...member,
+        rankZone: index < 2 ? 'MAINTAIN' : 'DEMOTION',
+      })),
+    },
+    isLoading: false,
+    errorMessage: null,
+  },
+};
+
+export const WithRefresh: Story = {
+  args: {
+    weeklyRanking: mockWeeklyRanking,
+    isLoading: false,
+    errorMessage: null,
+    onRefresh: action('리더보드 새로고침'),
+    isRefreshing: false,
+  },
+};
+
+export const Refreshing: Story = {
+  args: {
+    weeklyRanking: mockWeeklyRanking,
+    isLoading: false,
+    errorMessage: null,
+    onRefresh: action('리더보드 새로고침'),
+    isRefreshing: true,
   },
 };

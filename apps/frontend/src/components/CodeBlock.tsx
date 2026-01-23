@@ -144,7 +144,7 @@ const badgeContainerStyle = (theme: Theme) => css`
 
 const badgeStyle = (theme: Theme) => css`
   background: #fff9c4;
-  padding: 4px 12px;
+  padding: 0px 12px;
   border-radius: 20px;
   color: #704508;
   font-size: ${theme.typography['12Medium'].fontSize};

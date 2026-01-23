@@ -7,10 +7,15 @@ interface ModalState {
   content: ReactNode;
   isOpen: boolean;
   maxWidth: number;
+  padding: boolean;
 }
 
 interface ModalContextType {
-  openModal: (title: string, content: ReactNode, options?: { maxWidth?: number }) => void;
+  openModal: (
+    title: string,
+    content: ReactNode,
+    options?: { maxWidth?: number; padding?: boolean },
+  ) => void;
   closeModal: () => void;
 }
 
@@ -34,11 +39,21 @@ export const ModalProvider = ({ children }: ModalProviderProps) => {
     content: null,
     isOpen: false,
     maxWidth: 500,
+    padding: true,
   });
 
-  const openModal = (title: string, content: ReactNode, options?: { maxWidth?: number }) => {
-    const maxWidth = options?.maxWidth ?? 500;
-    setModalState({ title, content, isOpen: true, maxWidth });
+  const openModal = (
+    title: string,
+    content: ReactNode,
+    options?: { maxWidth?: number; padding?: boolean },
+  ) => {
+    setModalState({
+      title,
+      content,
+      isOpen: true,
+      maxWidth: options?.maxWidth ?? 500,
+      padding: options?.padding ?? true,
+    });
   };
 
   const closeModal = () => {
@@ -54,6 +69,7 @@ export const ModalProvider = ({ children }: ModalProviderProps) => {
           content={modalState.content}
           onClose={closeModal}
           maxWidth={modalState.maxWidth}
+          padding={modalState.padding}
         />
       )}
     </ModalContext.Provider>

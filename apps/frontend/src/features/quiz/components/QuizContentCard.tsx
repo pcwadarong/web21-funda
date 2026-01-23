@@ -14,6 +14,7 @@ import ReportModal from '@/features/report/ReportForm';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
+import { TextWithCodeStyle } from '@/utils/textParser';
 
 interface QuizContentCardProps {
   question: QuizQuestion;
@@ -59,7 +60,9 @@ export const QuizContentCard = ({
   return (
     <div css={cardStyle(theme)}>
       <div css={headerStyle}>
-        <h2 css={titleStyle(theme)}>{`Q. ${question.content.question}`}</h2>
+        <h2 css={titleStyle(theme)}>
+          Q. <TextWithCodeStyle text={question.content.question} />
+        </h2>
         <button
           css={reportButtonStyle(theme, isDarkMode)}
           onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
@@ -81,7 +84,7 @@ export const QuizContentCard = ({
       {showResult && explanation && (
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
-          <span css={explanationTextStyle(theme)}>{explanation}</span>
+          <span css={explanationTextStyle(theme)}>{<TextWithCodeStyle text={explanation} />}</span>
         </div>
       )}
 
@@ -90,24 +93,22 @@ export const QuizContentCard = ({
           <>
             <Button
               variant="secondary"
-              onClick={() => openModal('해설', <div>상세 해설</div>)}
-              css={flexBtn}
-            >
-              해설 보기
-            </Button>
-            <Button variant="primary" onClick={onNext} css={flexBtn}>
-              {nextButtonLabel}
-            </Button>
-            <Button
-              variant="secondary"
               onClick={() =>
-                openModal('AI에게 질문하기', <AiAskModal quiz={question} />, {
-                  maxWidth: 880,
-                })
+                openModal(
+                  'AI에게 질문하기',
+                  <AiAskModal quiz={question} correctAnswer={correctAnswer ?? null} />,
+                  {
+                    maxWidth: 880,
+                    padding: false,
+                  },
+                )
               }
               css={flexBtn}
             >
               AI 질문
+            </Button>
+            <Button variant="primary" onClick={onNext} css={flexBtn}>
+              {nextButtonLabel}
             </Button>
           </>
         ) : (

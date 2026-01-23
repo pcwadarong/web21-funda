@@ -20,7 +20,7 @@ const AdminQuizUpload = lazy(() =>
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
-const Reports = lazy(() => import('@/pages/Reports').then(m => ({ default: m.Reports })));
+const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
 );
@@ -107,13 +107,16 @@ export const router = createBrowserRouter([
           },
           // 사이드바가 없는 페이지 그룹
           {
-            element: <PageSuspenseLayout />,
+            element: <SidebarSuspenseLayout />,
             children: [
               // 관리자 전용 (이중 보호)
               {
                 path: 'admin',
                 element: <AdminGuard />,
-                children: [{ path: 'quizzes/upload', element: <AdminQuizUpload /> }],
+                children: [
+                  { path: 'quizzes/upload', element: <AdminQuizUpload /> },
+                  { path: 'quizzes/reports', element: <Reports /> },
+                ],
               },
             ],
           },

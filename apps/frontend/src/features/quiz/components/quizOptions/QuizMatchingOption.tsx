@@ -4,6 +4,7 @@ import { forwardRef } from 'react';
 import * as S from '@/feat/quiz/components/quizOptions/QuizOption.styles';
 import type { QuizOptionProps } from '@/features/quiz/types';
 import type { Theme } from '@/styles/theme';
+import { TextWithCodeStyle } from '@/utils/textParser';
 
 export const QuizMatchingOption = forwardRef<HTMLButtonElement, QuizOptionProps>(
   ({ option, isSelected, isMatched, isCorrect, isWrong, onClick, disabled }, ref) => {
@@ -25,7 +26,9 @@ export const QuizMatchingOption = forwardRef<HTMLButtonElement, QuizOptionProps>
           disabled && S.disabledOptionStyle,
         ]}
       >
-        <span css={matchingTextStyle(theme)}>{option}</span>
+        <span css={matchingTextStyle(theme)}>
+          <TextWithCodeStyle text={option} />
+        </span>
       </button>
     );
   },

@@ -6,6 +6,7 @@ import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
@@ -45,6 +46,9 @@ export const LearnRightSidebar = ({
       enabled: isLoggedIn && isAuthReady,
     },
   );
+
+  const { data: rankingMe } = useRankingMe(isLoggedIn && isAuthReady && !!user);
+  const diamondCount = rankingMe?.diamondCount ?? 0;
 
   const { showToast } = useToast();
   const [isNavigatingReview, setIsNavigatingReview] = useState(false);
@@ -146,8 +150,7 @@ export const LearnRightSidebar = ({
               <span css={statIconStyle}>
                 <SVGIcon icon="Diamond" size="md" />
               </span>
-              {/* //TODO: 다이아 추가 */}
-              {/* <span css={statValueStyle(theme)}>{user.diamond}</span> */}
+              <span css={statValueStyle(theme)}>{diamondCount}</span>
             </div>
             <div css={statContainerStyle(theme)}>
               <span css={statIconStyle}>

@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 
 import { RankingRow } from '@/feat/leaderboard/components/RankingRow';
 import type { RankingMember } from '@/feat/leaderboard/types';
+import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
 
 const mockMember: RankingMember = {
@@ -23,33 +24,36 @@ const meta: Meta<typeof RankingRow> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: '개별 랭킹 행을 표시하는 컴포넌트입니다. 사용자 본인일 경우 하이라이트됩니다.',
+        component:
+          '개별 랭킹 행을 표시하는 컴포넌트입니다. 사용자 본인일 경우 하이라이트됩니다. (라이트 모드 - 보라색, 다크모드 - 흰색) 실제 화면에서는 제대로 적용됩니다.',
       },
     },
   },
   tags: ['autodocs'],
   decorators: [
     (Story): ReactElement => (
-      <ThemeProvider theme={lightTheme}>
-        <div
-          style={{
-            backgroundColor: lightTheme.colors.surface.strong,
-            padding: '24px',
-          }}
-        >
-          <ol
+      <ThemeStoreProvider>
+        <ThemeProvider theme={lightTheme}>
+          <div
             style={{
-              listStyle: 'none',
-              padding: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
+              backgroundColor: lightTheme.colors.surface.strong,
+              padding: '24px',
             }}
           >
-            <Story />
-          </ol>
-        </div>
-      </ThemeProvider>
+            <ol
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
+              <Story />
+            </ol>
+          </div>
+        </ThemeProvider>
+      </ThemeStoreProvider>
     ),
   ],
   args: {

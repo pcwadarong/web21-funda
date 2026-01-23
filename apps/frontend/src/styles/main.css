@@ -46,7 +46,7 @@ button {
 }
 
 li,
-ui,
+ul,
 ol {
   list-style: none;
   margin: 0;

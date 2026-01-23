@@ -13,14 +13,26 @@ const NAV_ITEMS = [
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
+const ADMIN_NAV_ITEMS = [
+  { id: 'reports', label: '퀴즈 리포트', icon: 'Report', path: '/admin/quizzes/reports' }, // 아이콘은 적절한 것으로 변경 가능
+  { id: 'upload', label: '퀴즈 업로드', icon: 'Star', path: '/admin/quizzes/upload' },
+] as const;
+
 export const Sidebar = () => {
   const theme = useTheme();
   const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
-  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
 
+  // 사용자 티어 조회
+  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
+
+  // 관리자 여부 확인
+  const isAdmin = user?.role === 'admin';
+
+  // 전체 메뉴 구성 (관리자일 경우 관리자 메뉴 추가)
+  const allNavItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
 
   // 활성화된 네비게이션 아이템 찾기
   const activeItemId = NAV_ITEMS.find(item => {
@@ -46,7 +58,7 @@ export const Sidebar = () => {
       </Link>
 
       <nav css={navStyle}>
-        {NAV_ITEMS.map(item => {
+        {allNavItems.map(item => {
           const targetPath = item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
 
           return (

@@ -62,7 +62,7 @@ const meta: Meta<typeof SelectFieldContainer> = {
   title: 'Features/Fields/SelectFieldContainer',
   component: SelectFieldContainer,
   parameters: {
-    layout: 'fullscreen',
+    layout: 'centered',
     docs: {
       description: {
         component: '학습 분야를 선택하는 컴포넌트입니다.',
@@ -74,7 +74,12 @@ const meta: Meta<typeof SelectFieldContainer> = {
     Story => (
       <ThemeProvider theme={lightTheme}>
         <MemoryRouter>
-          <div style={{ backgroundColor: lightTheme.colors.surface.default, minHeight: '100vh' }}>
+          <div
+            style={{
+              backgroundColor: lightTheme.colors.surface.default,
+              minHeight: '100vh',
+            }}
+          >
             <Story />
           </div>
         </MemoryRouter>

@@ -99,7 +99,6 @@ const gridStyle = css`
   min-height: 0;
 
   overflow-y: auto;
-  flex: 1;
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;

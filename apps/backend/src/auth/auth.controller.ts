@@ -87,8 +87,6 @@ export class AuthController {
     const clientId = uuidv4();
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    console.log('getGuestId called - generating clientId:', clientId);
-
     res.cookie('client_id', clientId, {
       httpOnly: true,
       secure: isProduction,
@@ -97,7 +95,6 @@ export class AuthController {
       path: '/',
     });
 
-    console.log('getGuestId - returning clientId:', clientId);
     return { clientId };
   }
 

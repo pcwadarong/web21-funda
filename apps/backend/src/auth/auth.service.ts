@@ -70,13 +70,10 @@ export class AuthService {
 
     // Redis에서 비로그인 사용자의 데이터 동기화
     if (clientId) {
-      console.log('handleGithubLogin - syncing from Redis for clientId:', clientId);
-
       // 1. step_ids 동기화
       const stepIdsData = await this.redisService.get(`step_ids:${clientId}`);
       if (stepIdsData) {
         const stepIds = stepIdsData as number[];
-        console.log('handleGithubLogin - syncing stepIds:', stepIds);
 
         for (const stepId of stepIds) {
           const existingStatus = await this.stepStatusRepository.findOne({
@@ -100,31 +97,21 @@ export class AuthService {
 
         // Redis step_ids 삭제
         await this.redisService.del(`step_ids:${clientId}`);
-        console.log('handleGithubLogin - deleted step_ids from Redis');
       }
 
       // 2. heart 동기화
-      console.log('handleGithubLogin - checking heart from Redis for clientId:', clientId);
       const heartFromRedis = await this.redisService.get(`heart:${clientId}`);
-      console.log('handleGithubLogin - heartFromRedis value:', heartFromRedis);
-      console.log('handleGithubLogin - heartFromRedis type:', typeof heartFromRedis);
 
       if (heartFromRedis !== null && heartFromRedis !== undefined) {
         const heartValue =
           typeof heartFromRedis === 'number'
             ? heartFromRedis
             : parseInt(heartFromRedis as string, 10);
-        console.log('handleGithubLogin - parsed heartValue:', heartValue);
-        console.log('handleGithubLogin - current user.heartCount:', user.heartCount);
         user.heartCount = heartValue;
         await this.users.save(user);
-        console.log('handleGithubLogin - user.heartCount after save:', user.heartCount);
 
         // Redis heart 삭제
         await this.redisService.del(`heart:${clientId}`);
-        console.log('handleGithubLogin - deleted heart from Redis');
-      } else {
-        console.log('handleGithubLogin - no heart data in Redis');
       }
     }
 

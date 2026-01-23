@@ -22,18 +22,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (hasRequestedGuestId.current) return;
 
     hasRequestedGuestId.current = true;
-    try {
-      console.log('initGuestId - fetching /api/auth/guest-id');
-      const response = await fetch('/api/auth/guest-id', { method: 'GET' });
-      console.log('initGuestId - response status:', response.status);
-      console.log('initGuestId - response ok:', response.ok);
-      const data = await response.json();
-      console.log('initGuestId - response data:', data);
-      const { clientId } = data.result;
-      console.log('Guest clientId issued:', clientId);
-    } catch (error) {
-      console.error('Failed to get guest ID:', error);
-    }
+
+    await fetch('/api/auth/guest-id', { method: 'GET' });
   }, []);
 
   // 로컬 기록 서버와 동기화

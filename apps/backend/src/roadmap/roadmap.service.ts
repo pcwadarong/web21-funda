@@ -299,23 +299,11 @@ export class RoadmapService {
       throw new NotFoundException('Quiz not found.');
     }
 
-    console.log('submitQuiz - quiz:', quiz);
-    console.log('submitQuiz - quiz.step:', quiz.step);
-    console.log('submitQuiz - quiz.step?.orderIndex:', quiz.step?.orderIndex);
-    console.log('submitQuiz - clientId:', clientId);
-    console.log('submitQuiz - userId:', userId);
-
     const quizType = quiz.type?.toUpperCase();
 
     if (quizType === 'MATCHING') {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
-
-      console.log('MATCHING - isCorrect:', isCorrect);
-      console.log(
-        'MATCHING - orderIndex check:',
-        quiz.step?.orderIndex === 4 || quiz.step?.orderIndex === 7,
-      );
 
       // 오답이고 orderIndex가 4 또는 7인 경우 heart 차감
       let userHeartCount: number | undefined;
@@ -323,7 +311,6 @@ export class RoadmapService {
         !isCorrect &&
         (payload.current_step_order_index === 4 || payload.current_step_order_index === 7)
       ) {
-        console.log('MATCHING - heart deduction condition met');
         if (userId) {
           // 로그인 사용자: DB에 저장
           const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -334,13 +321,9 @@ export class RoadmapService {
           }
         } else if (clientId) {
           // 비로그인 사용자: Redis에 저장
-          console.log('MATCHING - saving to Redis for clientId:', clientId);
           const currentHeart = await this.redisService.get(`heart:${clientId}`);
-          console.log('MATCHING - currentHeart from Redis:', currentHeart);
           const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
-          console.log('MATCHING - newHeart to save:', newHeart);
           await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
-          console.log('MATCHING - saved to Redis');
         }
       }
 
@@ -367,19 +350,12 @@ export class RoadmapService {
     const correctOptionId = this.getOptionAnswer(quiz.answer);
     const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
-    console.log('non-MATCHING - isCorrect:', isCorrect);
-    console.log(
-      'non-MATCHING - orderIndex check:',
-      quiz.step?.orderIndex === 4 || quiz.step?.orderIndex === 7,
-    );
-
     // 오답이고 orderIndex가 4 또는 7인 경우 heart 차감
     let userHeartCount: number | undefined;
     if (
       !isCorrect &&
       (payload.current_step_order_index === 4 || payload.current_step_order_index === 7)
     ) {
-      console.log('non-MATCHING - heart deduction condition met');
       if (userId) {
         // 로그인 사용자: DB에 저장
         const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -390,13 +366,9 @@ export class RoadmapService {
         }
       } else if (clientId) {
         // 비로그인 사용자: Redis에 저장
-        console.log('non-MATCHING - saving to Redis for clientId:', clientId);
         const currentHeart = await this.redisService.get(`heart:${clientId}`);
-        console.log('non-MATCHING - currentHeart from Redis:', currentHeart);
         const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
-        console.log('non-MATCHING - newHeart to save:', newHeart);
         await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
-        console.log('non-MATCHING - saved to Redis');
       }
     }
 
@@ -409,8 +381,6 @@ export class RoadmapService {
       },
       ...(userHeartCount !== undefined ? { user_heart_count: userHeartCount } : {}),
     };
-
-    console.log('submitQuiz - result:', result);
 
     await this.saveSolveLog({
       userId,

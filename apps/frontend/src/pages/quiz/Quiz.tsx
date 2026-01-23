@@ -388,7 +388,7 @@ export const Quiz = () => {
           }
         } else if (!isLoggedIn) {
           // 미로그인 사용자: localStorage에서 heart 차감
-          const newHeartCount = Math.max(0, progress.heart - 1);
+          const newHeartCount = Math.max(0, (progress.heart ?? 5) - 1);
           updateProgress({
             heart: newHeartCount,
           });
@@ -553,7 +553,7 @@ export const Quiz = () => {
         handleAnswerChange={handleAnswerChange}
         handleCheckAnswer={handleCheckAnswer}
         handleNextQuestion={handleNextQuestion}
-        heartCount={showHeart ? heartCount : 0}
+        heartCount={showHeart ? (heartCount ?? 5) : 0}
         isReviewMode={isReviewMode}
       />
     </>

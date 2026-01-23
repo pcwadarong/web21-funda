@@ -14,9 +14,10 @@ import { storageUtil } from '@/utils/storage';
 
 export const Learn = () => {
   const { showToast } = useToast();
-  const { updateUIState } = useStorage();
+  const { updateUIState, progress, updateProgress } = useStorage();
   const navigate = useNavigate();
   const user = useAuthUser();
+  const isLoggedIn = useIsLoggedIn();
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [heartModalMessage, setHeartModalMessage] = useState('');
   const {
@@ -39,8 +40,6 @@ export const Learn = () => {
     showToast('제작 중입니다');
   }, []);
 
-  const isLoggedIn = useIsLoggedIn();
-
   const { data } = useFieldUnitsQuery(fieldSlug);
 
   /**
@@ -57,6 +56,30 @@ export const Learn = () => {
   }, [data, isLoggedIn]);
 
   const prefetchQuizzesByStep = usePrefetchQuizzesByStep();
+
+  /**
+   * 비로그인 사용자: Redis에서 하트 값을 동기화합니다.
+   */
+  useEffect(() => {
+    if (!isLoggedIn) {
+      const syncGuestHeart = async () => {
+        try {
+          const response = await fetch('/api/auth/guest-heart');
+          const data = await response.json();
+          const { heartCount } = data.result;
+
+          // progress state에 Redis 하트값 업데이트 (localStorage에는 저장 안 함)
+          updateProgress({
+            heart: heartCount,
+          });
+        } catch (error) {
+          console.error('Learn - failed to sync guest heart:', error);
+        }
+      };
+
+      syncGuestHeart();
+    }
+  }, [isLoggedIn, updateProgress]);
 
   const handleStepHover = async (stepId: number) => {
     // 데이터 프리페치
@@ -79,9 +102,10 @@ export const Learn = () => {
         return;
       }
 
-      // 하트 필요 스텝 (orderIndex 4, 5)인 경우 하트 체크
-      if ((step.orderIndex === 4 || step.orderIndex === 5) && isLoggedIn && user) {
-        if (user.heartCount <= 0) {
+      // 하트 필요 스텝 (orderIndex 4, 7)인 경우 하트 체크
+      if (step.orderIndex === 4 || step.orderIndex === 7) {
+        const heartCount = isLoggedIn && user ? user.heartCount : progress.heart;
+        if ((heartCount ?? 5) <= 0) {
           setHeartModalMessage('하트가 채워지면 다시 도전해주세요!');
           setShowHeartModal(true);
           return;
@@ -99,7 +123,7 @@ export const Learn = () => {
 
       navigate('/quiz');
     },
-    [navigate, showInProgressToast, updateUIState, units, isLoggedIn, user],
+    [navigate, showInProgressToast, updateUIState, units, isLoggedIn, user, progress],
   );
 
   return (

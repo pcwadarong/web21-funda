@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { RedisService } from 'src/common/redis/redis.service';
 import { type DataSource, type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
@@ -32,6 +33,7 @@ describe('RoadmapService', () => {
   let codeFormatter: Partial<CodeFormatter>;
   let quizContentService: QuizContentService;
   let rankingService: Partial<RankingService>;
+  let redisService: Partial<RedisService>;
   let roadmapQueryBuilderMock: {
     leftJoinAndSelect: jest.Mock;
     where: jest.Mock;
@@ -117,6 +119,11 @@ describe('RoadmapService', () => {
       assignUserToGroupOnFirstSolveWithManager: jest.fn(),
       addWeeklyXpOnSolveWithManager: jest.fn(),
     };
+    redisService = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+    };
 
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
@@ -131,6 +138,7 @@ describe('RoadmapService', () => {
       userRepository as Repository<User>,
       dataSource as DataSource,
       rankingService as RankingService,
+      redisService as RedisService,
     );
   });
 

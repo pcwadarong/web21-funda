@@ -25,6 +25,7 @@ import type { Request } from 'express';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
+import { RedisService } from '../common/redis/redis.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 
 import { ProgressService } from './progress.service';
@@ -54,7 +55,10 @@ class ReviewQueueQueryDto {
 @ApiBearerAuth()
 @Controller('progress')
 export class ProgressController {
-  constructor(private readonly progressService: ProgressService) {}
+  constructor(
+    private readonly progressService: ProgressService,
+    private readonly redisService: RedisService,
+  ) {}
 
   @Post('steps/:stepId/start')
   @ApiOperation({
@@ -212,6 +216,43 @@ export class ProgressController {
       result,
       message: '풀이 기록을 동기화했습니다.',
     };
+  }
+
+  @Post('steps/:stepId/complete-guest')
+  @ApiOperation({
+    summary: '비로그인 사용자 스텝 완료',
+    description: '비로그인 사용자가 스텝을 완료하면 step_id를 Redis에 저장한다.',
+  })
+  @ApiOkResponse({
+    description: '스텝 완료 저장',
+    schema: {
+      example: {
+        success: true,
+      },
+    },
+  })
+  async completeGuestStep(
+    @Param('stepId', ParseIntPipe) stepId: number,
+    @Req() req: Request & { cookies?: Record<string, string> },
+  ) {
+    const clientId = req.cookies?.client_id;
+    if (!clientId) {
+      return { success: false };
+    }
+
+    // Redis에서 기존 step_ids 조회
+    const currentStepsData = await this.redisService.get(`step_ids:${clientId}`);
+    const stepIds = currentStepsData ? (currentStepsData as number[]) : [];
+
+    // 중복 확인 후 추가
+    if (!stepIds.includes(stepId)) {
+      stepIds.push(stepId);
+    }
+
+    // Redis에 저장 (30일 TTL)
+    await this.redisService.set(`step_ids:${clientId}`, stepIds, 30 * 24 * 60 * 60);
+
+    return { success: true };
   }
 
   @Get('reviews')

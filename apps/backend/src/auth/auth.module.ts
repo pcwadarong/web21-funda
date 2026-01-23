@@ -4,6 +4,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
+import { UserStepStatus } from '../progress/entities';
+import { Step } from '../roadmap/entities';
 import { User, UserRefreshToken } from '../users/entities';
 
 import { AuthController } from './auth.controller';
@@ -25,10 +28,10 @@ import { JwtRefreshStrategy } from './jwt-refresh.strategy';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, UserRefreshToken]),
+    TypeOrmModule.forFeature([User, UserRefreshToken, UserStepStatus, Step]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, GithubStrategy, JwtAccessStrategy, JwtRefreshStrategy],
+  providers: [AuthService, GithubStrategy, JwtAccessStrategy, JwtRefreshStrategy, RedisService],
   exports: [PassportModule, JwtModule],
 })
 export class AuthModule {}

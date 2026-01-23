@@ -6,7 +6,7 @@ export interface LastSolvedUnit {
 
 // 학습 진행 데이터
 export interface Progress {
-  heart: number;
+  heart?: number; // Redis에서 동기화된 값 (localStorage에는 저장 안 함)
   last_solved_unit_id: LastSolvedUnit[];
 }
 export interface StepHistory {
@@ -54,7 +54,7 @@ const STORAGE_KEY = 'QUIZ_V1';
 
 // 스토리지 기본 값 데이터 설정
 const DEFAULT_STATE: QuizStorageData = {
-  progress: { heart: 5, last_solved_unit_id: [] },
+  progress: { last_solved_unit_id: [] },
   solved_step_history: [],
   ui_state: {
     last_viewed: { field_slug: 'FE', unit_id: 1 },

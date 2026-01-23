@@ -21,6 +21,21 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+  redis:
+    image: redis:alpine
+    container_name: funda-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - default
+      - funda-network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   backend:
     image: ${NCR_REGISTRY}/funda-backend:latest
@@ -34,6 +49,8 @@ services:
       - '3000:3000'
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -62,3 +79,4 @@ networks:
 
 volumes:
   mysql_data:
+  redis_data:

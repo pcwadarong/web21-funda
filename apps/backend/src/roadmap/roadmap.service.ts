@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { getKstNow } from '../common/utils/kst-date';
 import { QuizContentService } from '../common/utils/quiz-content.service';
@@ -51,6 +52,7 @@ export class RoadmapService {
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly rankingService: RankingService,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
@@ -278,12 +280,14 @@ export class RoadmapService {
    * @param quizId 퀴즈 ID
    * @param payload 사용자가 제출한 답안
    * @param userId 사용자 ID
+   * @param clientId 비로그인 사용자의 클라이언트 ID
    * @returns 채점 결과와 정답 정보
    */
   async submitQuiz(
     quizId: number,
     payload: QuizSubmissionRequest,
     userId: number | null,
+    clientId?: string,
   ): Promise<QuizSubmissionResponse> {
     const quiz = await this.quizRepository.findOne({
       where: { id: quizId },
@@ -301,14 +305,25 @@ export class RoadmapService {
       const correctPairs = this.getMatchingAnswer(quiz.answer);
       const isCorrect = this.isCorrectMatching(payload.selection?.pairs, correctPairs);
 
-      // 오답이고 로그인 사용자면 heart 차감
+      // 오답이고 orderIndex가 4 또는 7인 경우 heart 차감
       let userHeartCount: number | undefined;
-      if (!isCorrect && userId) {
-        const user = await this.userRepository.findOne({ where: { id: userId } });
-        if (user) {
-          user.heartCount = Math.max(0, user.heartCount - 1);
-          await this.userRepository.save(user);
-          userHeartCount = user.heartCount;
+      if (
+        !isCorrect &&
+        (payload.current_step_order_index === 4 || payload.current_step_order_index === 7)
+      ) {
+        if (userId) {
+          // 로그인 사용자: DB에 저장
+          const user = await this.userRepository.findOne({ where: { id: userId } });
+          if (user) {
+            user.heartCount = Math.max(0, user.heartCount - 1);
+            await this.userRepository.save(user);
+            userHeartCount = user.heartCount;
+          }
+        } else if (clientId) {
+          // 비로그인 사용자: Redis에 저장
+          const currentHeart = await this.redisService.get(`heart:${clientId}`);
+          const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
+          await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
         }
       }
 
@@ -335,14 +350,25 @@ export class RoadmapService {
     const correctOptionId = this.getOptionAnswer(quiz.answer);
     const isCorrect = this.isCorrectOption(payload.selection?.option_id, correctOptionId);
 
-    // 오답이고 로그인 사용자면 heart 차감
+    // 오답이고 orderIndex가 4 또는 7인 경우 heart 차감
     let userHeartCount: number | undefined;
-    if (!isCorrect && userId) {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-      if (user) {
-        user.heartCount = Math.max(0, user.heartCount - 1);
-        await this.userRepository.save(user);
-        userHeartCount = user.heartCount;
+    if (
+      !isCorrect &&
+      (payload.current_step_order_index === 4 || payload.current_step_order_index === 7)
+    ) {
+      if (userId) {
+        // 로그인 사용자: DB에 저장
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (user) {
+          user.heartCount = Math.max(0, user.heartCount - 1);
+          await this.userRepository.save(user);
+          userHeartCount = user.heartCount;
+        }
+      } else if (clientId) {
+        // 비로그인 사용자: Redis에 저장
+        const currentHeart = await this.redisService.get(`heart:${clientId}`);
+        const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
+        await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
       }
     }
 

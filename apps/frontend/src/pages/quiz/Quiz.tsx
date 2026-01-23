@@ -24,6 +24,7 @@ import {
 } from '@/hooks/queries/quizQueries';
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
+import { progressService } from '@/services/progressService';
 import type { QuizSubmissionRequest } from '@/services/quizService';
 import { useAuthActions, useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 
@@ -74,11 +75,11 @@ export const Quiz = () => {
   // -----------------------------------------------------------------------------
   // 표시 값 / 파생 값
   /** 하트 개수 */
-  const heartCount = user ? user.heartCount : progress.heart;
+  const heartCount = user ? user.heartCount : (progress.heart ?? 5);
 
-  /** orderIndex가 4 또는 5일 때만 heart 표시 */
+  /** orderIndex가 4 또는 7일 때만 heart 표시 */
   const showHeart =
-    uiState.current_step_order_index === 4 || uiState.current_step_order_index === 5;
+    uiState.current_step_order_index === 4 || uiState.current_step_order_index === 7;
 
   /** 불러온 문제 배열 */
   const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
@@ -354,11 +355,13 @@ export const Quiz = () => {
               quiz_id: currentQuiz.id,
               type: 'MATCHING' as const,
               selection: { pairs: (currentAnswer as { pairs: MatchingPair[] }).pairs },
+              current_step_order_index: uiState.current_step_order_index,
             }
           : {
               quiz_id: currentQuiz.id,
               type: currentQuiz.type.toUpperCase() as 'MCQ' | 'OX' | 'CODE',
               selection: { option_id: currentAnswer as string },
+              current_step_order_index: uiState.current_step_order_index,
             };
 
       if (isLoggedIn && stepAttemptId !== null) {
@@ -388,7 +391,7 @@ export const Quiz = () => {
           }
         } else if (!isLoggedIn) {
           // 미로그인 사용자: localStorage에서 heart 차감
-          const newHeartCount = Math.max(0, progress.heart - 1);
+          const newHeartCount = Math.max(0, (progress.heart ?? 5) - 1);
           updateProgress({
             heart: newHeartCount,
           });
@@ -480,6 +483,13 @@ export const Quiz = () => {
             return;
           }
 
+          // Redis에 step_id 저장
+          try {
+            await progressService.completeGuestStep(step_id);
+          } catch (error) {
+            console.error('Failed to save guest step to Redis:', error);
+          }
+
           navigate('/quiz/result', {
             state: {
               ...result,
@@ -553,7 +563,7 @@ export const Quiz = () => {
         handleAnswerChange={handleAnswerChange}
         handleCheckAnswer={handleCheckAnswer}
         handleNextQuestion={handleNextQuestion}
-        heartCount={showHeart ? heartCount : 0}
+        heartCount={showHeart ? (heartCount ?? 5) : 0}
         isReviewMode={isReviewMode}
       />
     </>

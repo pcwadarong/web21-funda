@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { Quiz, Step } from '../roadmap/entities';
@@ -23,7 +24,7 @@ import { ProgressService } from './progress.service';
     ]),
   ],
   controllers: [ProgressController],
-  providers: [ProgressService, CodeFormatter, QuizContentService],
+  providers: [ProgressService, CodeFormatter, QuizContentService, RedisService],
   exports: [TypeOrmModule],
 })
 export class ProgressModule {}

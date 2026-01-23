@@ -12,9 +12,19 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { setUser, clearAuth, setAuthReady } = useAuthActions();
   const hasSynced = useRef(false);
+  const hasRequestedGuestId = useRef(false);
 
   const { data } = useCurrentUserQuery();
   const syncStepHistoryMutation = useSyncStepHistoryMutation();
+
+  // 비로그인 사용자에게 client_id 발급
+  const initGuestId = useCallback(async () => {
+    if (hasRequestedGuestId.current) return;
+
+    hasRequestedGuestId.current = true;
+
+    await fetch('/api/auth/guest-id', { method: 'GET' });
+  }, []);
 
   // 로컬 기록 서버와 동기화
   const syncLocalProgress = useCallback(async () => {
@@ -39,6 +49,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await syncLocalProgress();
         setUser(data);
       } else {
+        await initGuestId();
         clearAuth();
       }
       setAuthReady(true);
@@ -48,7 +59,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       clearAuth();
       setAuthReady(true);
     });
-  }, [clearAuth, data, setAuthReady, setUser, syncLocalProgress]);
+  }, [clearAuth, data, setAuthReady, setUser, syncLocalProgress, initGuestId]);
 
   return <>{children}</>;
 };

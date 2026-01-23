@@ -262,11 +262,10 @@ export class ProgressService {
     const totalQuizzes = logs.length;
     const correctCount = logs.filter(log => log.isCorrect).length;
 
-    // 기본 3점 + 보너스(확장 시)
+    // 기본 3점 + 정답 보너스(기본 1점) + 기타 보너스(확장 시)
     const score = logs.reduce((accumulator, log) => {
       const baseScore = weights.baseScorePerQuiz;
-      // TODO: 추후 난이도/시간/정답 가중치 반영 시 아래 보너스 값을 채운다.
-      // correctBonus가 현재는 0점
+      // TODO: 추후 난이도/시간 가중치 반영 시 아래 보너스 값을 채운다.
       const correctnessBonus = log.isCorrect ? weights.correctBonus : weights.wrongBonus;
       const difficultyBonus = 0; // weights.difficultyMultiplier * (log.quiz?.difficulty ?? 0);
       const speedBonus = 0; // 시간 기반 보너스/페널티

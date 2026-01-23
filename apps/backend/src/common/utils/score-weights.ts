@@ -8,7 +8,7 @@ export interface ScoreWeights {
 
 export const DEFAULT_SCORE_WEIGHTS: ScoreWeights = {
   baseScorePerQuiz: 3,
-  correctBonus: 0,
+  correctBonus: 1,
   wrongBonus: 0,
   difficultyMultiplier: 0,
   speedBonus: 0,

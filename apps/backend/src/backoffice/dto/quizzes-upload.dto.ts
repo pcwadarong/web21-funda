@@ -43,7 +43,8 @@ export class QuizzesUploadDto {
   @ApiProperty({
     type: 'string',
     format: 'binary',
+    isArray: true,
     description: '업로드할 JSONL 데이터 파일',
   })
-  file!: UploadedQuizFile;
+  file!: UploadedQuizFile[];
 }

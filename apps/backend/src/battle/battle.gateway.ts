@@ -12,9 +12,12 @@ import { BattleService } from './battle.service';
 import {
   applyJoin,
   applyLeave,
+  applyUpdateRoom,
   BattleParticipant,
   BattleRoomState,
+  BattleTimeLimitType,
   validateJoin,
+  validateUpdateRoom,
 } from './battle-state';
 
 @Injectable()
@@ -97,10 +100,42 @@ export class BattleGateway {
       roomId: string;
       fieldId: number;
       maxPlayers: number;
-      timeLimitType: string;
+      timeLimitType: BattleTimeLimitType;
     },
+    @ConnectedSocket() client: Socket,
   ): void {
-    void payload;
+    const room = this.battleService.getRoom(payload.roomId);
+    if (!room) {
+      client.emit('battle:error', {
+        code: 'ROOM_NOT_FOUND',
+        message: '방을 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const validation = validateUpdateRoom(room, client.id);
+    if (!validation.ok) {
+      client.emit('battle:error', validation);
+      return;
+    }
+
+    const timeLimitSeconds = this.getTimeLimitSeconds(payload.timeLimitType);
+    const nextRoom = applyUpdateRoom(room, {
+      roomId: room.roomId,
+      requesterParticipantId: client.id,
+      fieldId: payload.fieldId,
+      maxPlayers: payload.maxPlayers,
+      timeLimitType: payload.timeLimitType,
+      timeLimitSeconds,
+    });
+
+    this.battleService.saveRoom(nextRoom);
+    this.server.to(nextRoom.roomId).emit('battle:roomUpdated', {
+      roomId: nextRoom.roomId,
+      fieldId: nextRoom.settings.fieldId,
+      maxPlayers: nextRoom.settings.maxPlayers,
+      timeLimitType: nextRoom.settings.timeLimitType,
+    });
   }
 
   @SubscribeMessage('battle:start')
@@ -186,5 +221,17 @@ export class BattleGateway {
     }
 
     return `${baseName}${index}`;
+  }
+
+  private getTimeLimitSeconds(timeLimitType: string): number {
+    if (timeLimitType === 'relaxed') {
+      return 25;
+    }
+
+    if (timeLimitType === 'fast') {
+      return 10;
+    }
+
+    return 15;
   }
 }

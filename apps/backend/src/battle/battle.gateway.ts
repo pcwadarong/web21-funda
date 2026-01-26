@@ -12,11 +12,13 @@ import { BattleService } from './battle.service';
 import {
   applyJoin,
   applyLeave,
+  applyStart,
   applyUpdateRoom,
   BattleParticipant,
   BattleRoomState,
   BattleTimeLimitType,
   validateJoin,
+  validateStart,
   validateUpdateRoom,
 } from './battle-state';
 
@@ -166,8 +168,35 @@ export class BattleGateway {
    * @param payload 방 ID
    * @returns 없음
    */
-  handleStart(@MessageBody() payload: { roomId: string }): void {
-    void payload;
+  handleStart(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
+    const room = this.battleService.getRoom(payload.roomId);
+    if (!room) {
+      client.emit('battle:error', {
+        code: 'ROOM_NOT_FOUND',
+        message: '방을 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const validation = validateStart(room, client.id);
+    if (!validation.ok) {
+      client.emit('battle:error', validation);
+      return;
+    }
+
+    const nextRoom = applyStart(room, {
+      roomId: room.roomId,
+      requesterParticipantId: client.id,
+      now: Date.now(),
+    });
+
+    this.battleService.saveRoom(nextRoom);
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
+      remainingSeconds: nextRoom.settings.timeLimitSeconds,
+      rankings: this.buildRankings(nextRoom),
+    });
   }
 
   @SubscribeMessage('battle:restart')
@@ -292,5 +321,21 @@ export class BattleGateway {
     }
 
     return 15;
+  }
+
+  private buildRankings(room: BattleRoomState): Array<{
+    participantId: string;
+    displayName: string;
+    score: number;
+  }> {
+    const sorted = [...room.participants].sort(
+      (a: BattleParticipant, b: BattleParticipant) => b.score - a.score,
+    );
+
+    return sorted.map((participant: BattleParticipant) => ({
+      participantId: participant.participantId,
+      displayName: participant.displayName,
+      score: participant.score,
+    }));
   }
 }

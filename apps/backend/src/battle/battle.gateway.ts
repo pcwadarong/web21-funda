@@ -370,6 +370,7 @@ export class BattleGateway {
    * @returns 없음
    */
   finishRoom(roomId: string): void {
+    // TODO: 타이머 종료 시점에 이 메서드를 호출하도록 연결 필요. 재광님 작업
     const room = this.battleService.getRoom(roomId);
     if (!room) {
       return;

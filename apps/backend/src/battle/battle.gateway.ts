@@ -10,6 +10,7 @@ import type { Server, Socket } from 'socket.io';
 
 import { BattleService } from './battle.service';
 import {
+  applyFinish,
   applyJoin,
   applyLeave,
   applyRestart,
@@ -352,6 +353,31 @@ export class BattleGateway {
     }
 
     return 15;
+  }
+
+  /**
+   * 게임 종료 처리를 수행한다.
+   *
+   * @param roomId 방 ID
+   * @returns 없음
+   */
+  finishRoom(roomId: string): void {
+    const room = this.battleService.getRoom(roomId);
+    if (!room) {
+      return;
+    }
+
+    const nextRoom = applyFinish(room, {
+      roomId: room.roomId,
+      now: Date.now(),
+    });
+
+    this.battleService.saveRoom(nextRoom);
+    this.server.to(nextRoom.roomId).emit('battle:finish', {
+      roomId: nextRoom.roomId,
+      rankings: this.buildRankings(nextRoom),
+      rewards: [],
+    });
   }
 
   private buildRankings(room: BattleRoomState): Array<{

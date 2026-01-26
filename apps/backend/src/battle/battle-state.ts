@@ -347,7 +347,10 @@ export const applyFinish = (
  * @param params 재시작 정보
  * @returns 변경된 방 상태
  */
-export const applyRestart = (state: BattleRoomState): BattleRoomState => ({
+export const applyRestart = (
+  state: BattleRoomState,
+  _params: RestartBattleRoomParams,
+): BattleRoomState => ({
   ...state,
   status: 'waiting',
   startedAt: null,

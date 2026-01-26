@@ -12,12 +12,14 @@ import { BattleService } from './battle.service';
 import {
   applyJoin,
   applyLeave,
+  applyRestart,
   applyStart,
   applyUpdateRoom,
   BattleParticipant,
   BattleRoomState,
   BattleTimeLimitType,
   validateJoin,
+  validateRestart,
   validateStart,
   validateUpdateRoom,
 } from './battle-state';
@@ -206,8 +208,37 @@ export class BattleGateway {
    * @param payload 방 ID
    * @returns 없음
    */
-  handleRestart(@MessageBody() payload: { roomId: string }): void {
-    void payload;
+  handleRestart(
+    @MessageBody() payload: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ): void {
+    const room = this.battleService.getRoom(payload.roomId);
+    if (!room) {
+      client.emit('battle:error', {
+        code: 'ROOM_NOT_FOUND',
+        message: '방을 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const validation = validateRestart(room);
+    if (!validation.ok) {
+      client.emit('battle:error', validation);
+      return;
+    }
+
+    const nextRoom = applyRestart(room, {
+      roomId: room.roomId,
+      requesterParticipantId: client.id,
+    });
+
+    this.battleService.saveRoom(nextRoom);
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
+      remainingSeconds: nextRoom.settings.timeLimitSeconds,
+      rankings: this.buildRankings(nextRoom),
+    });
   }
 
   @SubscribeMessage('battle:submitAnswer')

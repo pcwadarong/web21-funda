@@ -33,7 +33,6 @@ export class BattleGateway {
 
   constructor(private readonly battleService: BattleService) {}
 
-  @SubscribeMessage('battle:join')
   /**
    * 배틀 방 참가 요청을 처리한다.
    *
@@ -41,6 +40,7 @@ export class BattleGateway {
    * @param client 소켓 연결 정보
    * @returns 없음
    */
+  @SubscribeMessage('battle:join')
   handleJoin(
     @MessageBody()
     payload: { roomId: string; userId?: number | null; displayName?: string },
@@ -63,16 +63,21 @@ export class BattleGateway {
 
     const participant = this.buildParticipant(room, payload, client.id);
     const nextRoom = applyJoin(room, { roomId: room.roomId, participant });
+    const updatedRoom: BattleRoomState = room.hostParticipantId
+      ? nextRoom
+      : {
+          ...nextRoom,
+          hostParticipantId: participant.participantId,
+        };
 
-    this.battleService.saveRoom(nextRoom);
-    client.join(nextRoom.roomId);
-    this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
-      roomId: nextRoom.roomId,
-      participants: nextRoom.participants,
+    this.battleService.saveRoom(updatedRoom);
+    client.join(updatedRoom.roomId);
+    this.server.to(updatedRoom.roomId).emit('battle:participantsUpdated', {
+      roomId: updatedRoom.roomId,
+      participants: updatedRoom.participants,
     });
   }
 
-  @SubscribeMessage('battle:leave')
   /**
    * 배틀 방 퇴장 요청을 처리한다.
    *
@@ -80,6 +85,7 @@ export class BattleGateway {
    * @param client 소켓 연결 정보
    * @returns 없음
    */
+  @SubscribeMessage('battle:leave')
   handleLeave(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
     const room = this.battleService.getRoom(payload.roomId);
     if (!room) {
@@ -112,7 +118,6 @@ export class BattleGateway {
     }
   }
 
-  @SubscribeMessage('battle:updateRoom')
   /**
    * 방 설정 변경 요청을 처리한다.
    *
@@ -120,11 +125,12 @@ export class BattleGateway {
    * @param client 소켓 연결 정보
    * @returns 없음
    */
+  @SubscribeMessage('battle:updateRoom')
   handleUpdateRoom(
     @MessageBody()
     payload: {
       roomId: string;
-      fieldId: number;
+      fieldSlug: string;
       maxPlayers: number;
       timeLimitType: BattleTimeLimitType;
     },
@@ -149,7 +155,7 @@ export class BattleGateway {
     const nextRoom = applyUpdateRoom(room, {
       roomId: room.roomId,
       requesterParticipantId: client.id,
-      fieldId: payload.fieldId,
+      fieldSlug: payload.fieldSlug,
       maxPlayers: payload.maxPlayers,
       timeLimitType: payload.timeLimitType,
       timeLimitSeconds,
@@ -158,19 +164,20 @@ export class BattleGateway {
     this.battleService.saveRoom(nextRoom);
     this.server.to(nextRoom.roomId).emit('battle:roomUpdated', {
       roomId: nextRoom.roomId,
-      fieldId: nextRoom.settings.fieldId,
+      fieldSlug: nextRoom.settings.fieldSlug,
       maxPlayers: nextRoom.settings.maxPlayers,
       timeLimitType: nextRoom.settings.timeLimitType,
     });
   }
 
-  @SubscribeMessage('battle:start')
   /**
    * 게임 시작 요청을 처리한다.
    *
    * @param payload 방 ID
+   * @param client 소켓 연결 정보
    * @returns 없음
    */
+  @SubscribeMessage('battle:start')
   handleStart(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
     const room = this.battleService.getRoom(payload.roomId);
     if (!room) {
@@ -202,13 +209,14 @@ export class BattleGateway {
     });
   }
 
-  @SubscribeMessage('battle:restart')
   /**
    * 게임 재시작 요청을 처리한다.
    *
    * @param payload 방 ID
+   * @param client 소켓 연결 정보
    * @returns 없음
    */
+  @SubscribeMessage('battle:restart')
   handleRestart(
     @MessageBody() payload: { roomId: string },
     @ConnectedSocket() client: Socket,
@@ -242,13 +250,13 @@ export class BattleGateway {
     });
   }
 
-  @SubscribeMessage('battle:submitAnswer')
   /**
    * 정답 제출 요청을 처리한다.
    *
    * @param payload 방 ID, 퀴즈 ID, 제출 답안
    * @returns 없음
    */
+  @SubscribeMessage('battle:submitAnswer')
   handleSubmitAnswer(
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
   ): void {
@@ -343,7 +351,7 @@ export class BattleGateway {
    * @param timeLimitType 제한 시간 타입
    * @returns 제한 시간(초)
    */
-  private getTimeLimitSeconds(timeLimitType: string): number {
+  private getTimeLimitSeconds(timeLimitType: BattleTimeLimitType): number {
     if (timeLimitType === 'relaxed') {
       return 25;
     }

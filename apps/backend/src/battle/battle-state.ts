@@ -16,7 +16,7 @@ export type BattleValidationResult =
   | { ok: false; code: BattleErrorCode; message: string };
 
 export type BattleRoomSettings = {
-  fieldId: number;
+  fieldSlug: string;
   maxPlayers: number;
   timeLimitType: BattleTimeLimitType;
   timeLimitSeconds: number;
@@ -56,7 +56,7 @@ export type CreateBattleRoomParams = {
 export type UpdateBattleRoomParams = {
   roomId: string;
   requesterParticipantId: string;
-  fieldId: number;
+  fieldSlug: string;
   maxPlayers: number;
   timeLimitType: BattleTimeLimitType;
   timeLimitSeconds: number;
@@ -252,7 +252,7 @@ export const applyUpdateRoom = (
 ): BattleRoomState => ({
   ...state,
   settings: {
-    fieldId: params.fieldId,
+    fieldSlug: params.fieldSlug,
     maxPlayers: params.maxPlayers,
     timeLimitType: params.timeLimitType,
     timeLimitSeconds: params.timeLimitSeconds,

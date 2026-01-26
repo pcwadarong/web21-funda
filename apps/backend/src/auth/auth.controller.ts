@@ -83,8 +83,14 @@ export class AuthController {
       },
     },
   })
-  getGuestId(@Res({ passthrough: true }) res: Response): { clientId: string } {
-    const clientId = uuidv4();
+  getGuestId(
+    @Req() req: Request & { cookies?: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ): { clientId: string } {
+    // 기존 client_id가 있으면 재사용
+    const existingClientId = req.cookies?.client_id;
+    const clientId = existingClientId || uuidv4();
+
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
     res.cookie('client_id', clientId, {

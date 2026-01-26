@@ -29,6 +29,13 @@ export class BattleGateway {
   constructor(private readonly battleService: BattleService) {}
 
   @SubscribeMessage('battle:join')
+  /**
+   * 배틀 방 참가 요청을 처리한다.
+   *
+   * @param payload 방 ID 및 참가자 정보
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
   handleJoin(
     @MessageBody()
     payload: { roomId: string; userId?: number | null; displayName?: string },
@@ -61,6 +68,13 @@ export class BattleGateway {
   }
 
   @SubscribeMessage('battle:leave')
+  /**
+   * 배틀 방 퇴장 요청을 처리한다.
+   *
+   * @param payload 방 ID
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
   handleLeave(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
     const room = this.battleService.getRoom(payload.roomId);
     if (!room) {
@@ -94,6 +108,13 @@ export class BattleGateway {
   }
 
   @SubscribeMessage('battle:updateRoom')
+  /**
+   * 방 설정 변경 요청을 처리한다.
+   *
+   * @param payload 방 ID 및 변경할 설정 값
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
   handleUpdateRoom(
     @MessageBody()
     payload: {
@@ -139,22 +160,48 @@ export class BattleGateway {
   }
 
   @SubscribeMessage('battle:start')
+  /**
+   * 게임 시작 요청을 처리한다.
+   *
+   * @param payload 방 ID
+   * @returns 없음
+   */
   handleStart(@MessageBody() payload: { roomId: string }): void {
     void payload;
   }
 
   @SubscribeMessage('battle:restart')
+  /**
+   * 게임 재시작 요청을 처리한다.
+   *
+   * @param payload 방 ID
+   * @returns 없음
+   */
   handleRestart(@MessageBody() payload: { roomId: string }): void {
     void payload;
   }
 
   @SubscribeMessage('battle:submitAnswer')
+  /**
+   * 정답 제출 요청을 처리한다.
+   *
+   * @param payload 방 ID, 퀴즈 ID, 제출 답안
+   * @returns 없음
+   */
   handleSubmitAnswer(
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
   ): void {
     void payload;
   }
 
+  /**
+   * 참가자 기본 정보를 생성한다.
+   *
+   * @param room 방 상태
+   * @param payload 참가자 식별 정보
+   * @param participantId 소켓 연결 ID
+   * @returns 참가자 정보
+   */
   private buildParticipant(
     room: { participants: BattleParticipant[] },
     payload: { userId?: number | null; displayName?: string },
@@ -173,6 +220,12 @@ export class BattleGateway {
     };
   }
 
+  /**
+   * 비로그인 참가자 닉네임을 생성한다.
+   *
+   * @param participants 현재 참가자 목록
+   * @returns 생성된 닉네임
+   */
   private createGuestName(participants: BattleParticipant[]): string {
     const adjectives = [
       '반짝이는',
@@ -223,6 +276,12 @@ export class BattleGateway {
     return `${baseName}${index}`;
   }
 
+  /**
+   * 제한 시간 타입을 초 단위로 변환한다.
+   *
+   * @param timeLimitType 제한 시간 타입
+   * @returns 제한 시간(초)
+   */
   private getTimeLimitSeconds(timeLimitType: string): number {
     if (timeLimitType === 'relaxed') {
       return 25;

@@ -14,7 +14,7 @@ export function useBattleSocket() {
   const { socket } = socketContext;
 
   // Zustand 스토어에서 상태와 액션 가져오기
-  const { status: battleStatus, settings: currentSettings } = useBattleStore(state => state);
+  const battleStatus = useBattleStore(state => state.status);
   const { setBattleState, setParticipants, reset } = useBattleStore(state => state.actions);
 
   useEffect(() => {
@@ -39,6 +39,8 @@ export function useBattleSocket() {
 
     // 3. 방 설정 변경 브로드캐스트
     const handleRoomUpdated = (data: Partial<BattleRoomSettings>) => {
+      // 호출 시점의 최신 상태 로딩
+      const currentSettings = useBattleStore.getState().settings;
       if (!currentSettings) return;
 
       setBattleState({

@@ -19,10 +19,11 @@ import {
   applyJoin,
   applyLeave,
   applyRestart,
-  applyScore,
   applyStart,
+  applySubmission,
   applyUpdateRoom,
   BattleParticipant,
+  BattleQuizSubmission,
   BattleRoomState,
   BattleTimeLimitType,
   validateJoin,
@@ -336,16 +337,10 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
-    //const participantId = client.id;
-
     // 정답 검증 로직
     const quiz = await this.battleService.getBattleQuizById(payload.quizId);
 
     if (!quiz) {
-      client.emit('battle:error', {
-        code: 'INVALID_STATE',
-        message: '퀴즈를 찾을 수 없습니다.',
-      });
       return;
     }
 
@@ -357,43 +352,32 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       selection,
     });
 
-    const isCorrect = payload.answer === undefined ? false : quizResult?.is_correct;
+    if (!quizResult) {
+      return;
+    }
+
+    const isCorrect = payload.answer === undefined ? false : quizResult.is_correct;
 
     // 점수 계산 로직
     const scoreDelta = isCorrect ? 10 : -10;
     const room = this.battleService.getRoom(payload.roomId);
 
     if (!room) {
-      client.emit('battle:error', {
-        code: 'ROOM_NOT_FOUND',
-        message: '방을 찾을 수 없습니다.',
-      });
       return;
     }
 
-    const updatedRoom = applyScore(room, {
+    const totalScore = this.getParticipantScore(room, client.id) + scoreDelta;
+
+    const updatedRoom = applySubmission(room, {
       participantId: client.id,
-      scoreDelta,
-    });
-    this.battleService.saveRoom(updatedRoom);
-
-    const totalScore = this.getParticipantScore(updatedRoom, client.id);
-
-    // 문제 종료 시점에 문제 결과 및 state 전송
-    client.emit('battle:result', {
-      roomId: payload.roomId,
+      quizId: payload.quizId,
       isCorrect,
       scoreDelta,
       totalScore,
       quizResult,
+      submittedAt: Date.now(),
     });
-
-    this.server.to(updatedRoom.roomId).emit('battle:state', {
-      roomId: updatedRoom.roomId,
-      status: updatedRoom.status,
-      remainingSeconds: updatedRoom.settings.timeLimitSeconds,
-      rankings: this.buildRankings(updatedRoom),
-    });
+    this.battleService.saveRoom(updatedRoom);
   }
 
   private getParticipantScore(room: BattleRoomState, participantId: string): number {
@@ -425,6 +409,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       userId: payload.userId ?? null,
       displayName,
       score: 0,
+      submissions: [],
       isConnected: true,
       joinedAt: Date.now(),
       leftAt: null,
@@ -612,8 +597,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         return;
       }
 
-      // TODO: 이 시점에 정답 검증/점수 계산을 실행해야 합니다.
-
       const nextIndex = latestRoom.currentQuizIndex + 1;
       if (nextIndex >= latestRoom.totalQuizzes) {
         // TODO: 최종 점수 기준 우승자 산정 및 보상 계산 연결 필요합니다.
@@ -627,8 +610,61 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       };
 
       this.battleService.saveRoom(advancedRoom);
+
+      this.revealQuizResult(latestRoom, advancedRoom);
+    }, delayMs);
+  }
+
+  private async revealQuizResult(
+    latestRoom: BattleRoomState,
+    advancedRoom: BattleRoomState,
+    delay = 3,
+  ): Promise<void> {
+    const resultEndsAt = Date.now() + delay * 1000;
+    const delayMs = Math.max(0, (resultEndsAt ?? Date.now()) - Date.now());
+
+    const sockets = await this.server.to(latestRoom.roomId).fetchSockets();
+
+    //문제 종료 시점에 문제 결과 및 state 전송
+    sockets.forEach(socket => {
+      const participantId = socket.id;
+      const submission = this.getSubmission(latestRoom, participantId); // 저장해둔 제출
+
+      socket.emit('battle:result', {
+        roomId: latestRoom.roomId,
+        isCorrect: submission?.isCorrect,
+        scoreDelta: submission?.scoreDelta,
+        totalScore: submission?.totalScore,
+        quizResult: submission?.quizResult,
+      });
+    });
+
+    this.server.to(latestRoom.roomId).emit('battle:state', {
+      roomId: latestRoom.roomId,
+      status: latestRoom.status,
+      remainingSeconds: delay,
+      rankings: this.buildRankings(latestRoom),
+    });
+
+    setTimeout(async () => {
       await this.sendCurrentQuiz(advancedRoom);
     }, delayMs);
+  }
+
+  private getSubmission(room: BattleRoomState, participantId: string): BattleQuizSubmission | null {
+    const participant = room.participants.find(
+      participant => participant.participantId === participantId,
+    );
+
+    const quizId = room.quizIds[room.currentQuizIndex];
+
+    const submission = participant?.submissions.find(submission => submission.quizId === quizId);
+
+    if (!submission) {
+      return null;
+    }
+
+    return submission;
   }
 
   private buildRankings(room: BattleRoomState): Array<{

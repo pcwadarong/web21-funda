@@ -271,6 +271,8 @@ export class BattleGateway {
   handleSubmitAnswer(
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
   ): void {
+    // TODO: 정답 검증 및 점수 계산 로직 연결이 필요합니다.
+    // TODO: 결과 브로드캐스트 타이밍(문제 종료 시점)과 협의가 필요합니다.
     void payload;
   }
 
@@ -432,7 +434,51 @@ export class BattleGateway {
       endsAt,
     });
 
-    // TODO: 타이머 동기화 및 다음 문제 전송 스케줄링 연결 필요. 재광님 작업
+    const nextRoom: BattleRoomState = {
+      ...room,
+      quizEndsAt: endsAt,
+    };
+    this.battleService.saveRoom(nextRoom);
+
+    this.scheduleNextQuiz(nextRoom);
+  }
+
+  /**
+   * 다음 문제 전송을 예약한다.
+   *
+   * @param room 방 상태
+   * @returns 없음
+   */
+  private scheduleNextQuiz(room: BattleRoomState): void {
+    const delayMs = Math.max(0, (room.quizEndsAt ?? Date.now()) - Date.now());
+
+    setTimeout(async () => {
+      const latestRoom = this.battleService.getRoom(room.roomId);
+      if (!latestRoom) {
+        return;
+      }
+
+      if (latestRoom.status !== 'in_progress') {
+        return;
+      }
+
+      // TODO: 이 시점에 정답 검증/점수 계산을 실행해야 합니다.
+
+      const nextIndex = latestRoom.currentQuizIndex + 1;
+      if (nextIndex >= latestRoom.totalQuizzes) {
+        // TODO: 최종 점수 기준 우승자 산정 및 보상 계산 연결 필요합니다.
+        this.finishRoom(latestRoom.roomId);
+        return;
+      }
+
+      const advancedRoom: BattleRoomState = {
+        ...latestRoom,
+        currentQuizIndex: nextIndex,
+      };
+
+      this.battleService.saveRoom(advancedRoom);
+      await this.sendCurrentQuiz(advancedRoom);
+    }, delayMs);
   }
 
   private buildRankings(room: BattleRoomState): Array<{

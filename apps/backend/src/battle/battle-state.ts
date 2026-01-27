@@ -44,6 +44,7 @@ export type BattleRoomState = {
   currentQuizIndex: number;
   totalQuizzes: number;
   quizIds: number[];
+  quizEndsAt: number | null;
 };
 
 export type CreateBattleRoomParams = {
@@ -109,6 +110,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   currentQuizIndex: 0,
   totalQuizzes: params.totalQuizzes,
   quizIds: [],
+  quizEndsAt: null,
 });
 
 /**
@@ -326,6 +328,7 @@ export const applyStart = (
   endedAt: null,
   currentQuizIndex: 0,
   quizIds: params.quizIds,
+  quizEndsAt: null,
 });
 
 /**

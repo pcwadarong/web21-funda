@@ -3,7 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { QuizContentService } from '../common/utils/quiz-content.service';
+import { QuizResultService } from '../common/utils/quiz-result.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
+import type {
+  QuizSubmissionRequest,
+  QuizSubmissionResponse,
+} from '../roadmap/dto/quiz-submission.dto';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 
 import { BattleStore } from './battle.store';
@@ -16,6 +21,7 @@ export class BattleService {
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
     private readonly quizContentService: QuizContentService,
+    private readonly quizResultService: QuizResultService,
   ) {}
 
   /**
@@ -91,6 +97,59 @@ export class BattleService {
     }
 
     return this.quizContentService.toQuizResponse(quiz);
+  }
+
+  async getBattleQuizResultById(
+    quizId: number,
+    payload: QuizSubmissionRequest,
+  ): Promise<QuizSubmissionResponse | null> {
+    const quiz = await this.quizRepository.findOne({
+      where: { id: quizId },
+      select: { id: true, type: true, answer: true, explanation: true },
+      relations: { step: true },
+    });
+
+    if (!quiz) {
+      return null;
+    }
+
+    const quizType = quiz.type?.toUpperCase();
+
+    if (quizType === 'MATCHING') {
+      const correctPairs = this.quizResultService.getMatchingAnswer(quiz.answer);
+      const isCorrect = this.quizResultService.isCorrectMatching(
+        payload.selection?.pairs,
+        correctPairs,
+      );
+
+      const result: QuizSubmissionResponse = {
+        quiz_id: quiz.id,
+        is_correct: isCorrect,
+        solution: {
+          ...(correctPairs.length > 0 ? { correct_pairs: correctPairs } : {}),
+          explanation: quiz.explanation ?? null,
+        },
+      };
+
+      return result;
+    }
+
+    const correctOptionId = this.quizResultService.getOptionAnswer(quiz.answer);
+    const isCorrect = this.quizResultService.isCorrectOption(
+      payload.selection?.option_id,
+      correctOptionId,
+    );
+
+    const result: QuizSubmissionResponse = {
+      quiz_id: quiz.id,
+      is_correct: isCorrect,
+      solution: {
+        ...(correctOptionId ? { correct_option_id: correctOptionId } : {}),
+        explanation: quiz.explanation ?? null,
+      },
+    };
+
+    return result;
   }
 
   /**

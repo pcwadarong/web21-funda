@@ -1,3 +1,5 @@
+import { QuizSubmissionResponse } from '../roadmap/dto/quiz-submission.dto';
+
 export type BattleRoomStatus = 'waiting' | 'in_progress' | 'finished' | 'invalid';
 
 export type BattleTimeLimitType = 'recommended' | 'relaxed' | 'fast';
@@ -22,11 +24,25 @@ export type BattleRoomSettings = {
   timeLimitSeconds: number;
 };
 
+export type BattleQuizSubmission = {
+  quizId: number;
+  isCorrect: boolean;
+  scoreDelta: number;
+  totalScore: number;
+  quizResult: QuizSubmissionResponse;
+  submittedAt: number;
+};
+
+export type ParticipantSubmission = BattleQuizSubmission & {
+  participantId: string;
+};
+
 export type BattleParticipant = {
   participantId: string;
   userId: number | null;
   displayName: string;
   score: number;
+  submissions: BattleQuizSubmission[];
   isConnected: boolean;
   joinedAt: number;
   leftAt: number | null;
@@ -46,6 +62,7 @@ export type BattleRoomState = {
   totalQuizzes: number;
   quizIds: number[];
   quizEndsAt: number | null;
+  resultEndsAt: number | null;
 };
 
 export type CreateBattleRoomParams = {
@@ -94,11 +111,6 @@ export type RestartBattleRoomParams = {
   requesterParticipantId: string;
 };
 
-export type ParticipantScoreParams = {
-  participantId: string;
-  scoreDelta: number;
-};
-
 /**
  * 방의 초기 상태를 생성한다.
  *
@@ -119,6 +131,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   totalQuizzes: params.totalQuizzes,
   quizIds: [],
   quizEndsAt: null,
+  resultEndsAt: null,
 });
 
 /**
@@ -383,15 +396,16 @@ export const applyRestart = (
   currentQuizIndex: 0,
 });
 
-export const applyScore = (
+export const applySubmission = (
   state: BattleRoomState,
-  params: ParticipantScoreParams,
+  params: ParticipantSubmission,
 ): BattleRoomState => {
   const updatedParticipants = state.participants.map(participant => {
     if (participant.participantId === params.participantId) {
       return {
         ...participant,
-        score: participant.score + params.scoreDelta,
+        score: params.totalScore,
+        submissions: [...participant.submissions, params],
       };
     }
     return participant;

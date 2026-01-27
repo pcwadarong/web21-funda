@@ -380,6 +380,13 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.battleService.saveRoom(updatedRoom);
   }
 
+  /**
+   * 참가자 점수를 조회한다.
+   *
+   * @param room 방 상태
+   * @param participantId 참가자 ID
+   * @returns 참가자 점수 (없으면 0)
+   */
   private getParticipantScore(room: BattleRoomState, participantId: string): number {
     const participant = room.participants.find(p => p.participantId === participantId);
     if (!participant) {
@@ -615,23 +622,34 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }, delayMs);
   }
 
+  /**
+   * 문제 종료 후 결과를 공개하고 다음 문제 전송을 예약한다.
+   *
+   * @param latestRoom 현재 방 상태
+   * @param advancedRoom 다음 문제로 인덱스가 증가된 방 상태
+   * @param delay 결과 표시 시간(초)
+   * @returns 없음
+   */
   private async revealQuizResult(
     latestRoom: BattleRoomState,
     advancedRoom: BattleRoomState,
-    delay = 3,
+    delay = 5,
   ): Promise<void> {
     const resultEndsAt = Date.now() + delay * 1000;
     const delayMs = Math.max(0, (resultEndsAt ?? Date.now()) - Date.now());
 
-    const sockets = await this.server.to(latestRoom.roomId).fetchSockets();
+    const normalizedRoom = this.normalizeRoom(latestRoom);
+    this.battleService.saveRoom(normalizedRoom);
+
+    const sockets = await this.server.to(normalizedRoom.roomId).fetchSockets();
 
     //문제 종료 시점에 문제 결과 및 state 전송
     sockets.forEach(socket => {
       const participantId = socket.id;
-      const submission = this.getSubmission(latestRoom, participantId); // 저장해둔 제출
+      const submission = this.getSubmission(normalizedRoom, participantId); // 저장해둔 제출
 
       socket.emit('battle:result', {
-        roomId: latestRoom.roomId,
+        roomId: normalizedRoom.roomId,
         isCorrect: submission?.isCorrect,
         scoreDelta: submission?.scoreDelta,
         totalScore: submission?.totalScore,
@@ -639,11 +657,12 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       });
     });
 
-    this.server.to(latestRoom.roomId).emit('battle:state', {
-      roomId: latestRoom.roomId,
-      status: latestRoom.status,
+    this.server.to(normalizedRoom.roomId).emit('battle:state', {
+      roomId: normalizedRoom.roomId,
+      status: normalizedRoom.status,
       remainingSeconds: delay,
-      rankings: this.buildRankings(latestRoom),
+      rankings: this.buildRankings(normalizedRoom),
+      resultEndsAt,
     });
 
     setTimeout(async () => {
@@ -651,6 +670,50 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }, delayMs);
   }
 
+  /**
+   * 미제출 참가자를 자동 오답 처리하여 방 상태를 정규화한다.
+   *
+   * @param latestRoom 현재 방 상태
+   * @returns 정규화된 방 상태
+   */
+  private normalizeRoom(latestRoom: BattleRoomState): BattleRoomState {
+    const quizId = latestRoom.quizIds[latestRoom.currentQuizIndex];
+    let normalizedRoom = latestRoom;
+
+    if (quizId) {
+      for (const participant of latestRoom.participants) {
+        const alreadySubmitted = participant.submissions.some(s => s.quizId === quizId);
+        if (alreadySubmitted) continue;
+
+        const scoreDelta = -10;
+        const totalScore = participant.score + scoreDelta;
+
+        normalizedRoom = applySubmission(normalizedRoom, {
+          participantId: participant.participantId,
+          quizId,
+          isCorrect: false,
+          scoreDelta,
+          totalScore,
+          quizResult: {
+            quiz_id: quizId,
+            is_correct: false,
+            solution: { explanation: null },
+          },
+          submittedAt: Date.now(),
+        });
+      }
+    }
+
+    return normalizedRoom;
+  }
+
+  /**
+   * 특정 참가자의 현재 문제 제출 정보를 조회한다.
+   *
+   * @param room 방 상태
+   * @param participantId 참가자 ID
+   * @returns 제출 정보 또는 null
+   */
   private getSubmission(room: BattleRoomState, participantId: string): BattleQuizSubmission | null {
     const participant = room.participants.find(
       participant => participant.participantId === participantId,
@@ -667,6 +730,12 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     return submission;
   }
 
+  /**
+   * 참가자 랭킹 정보를 생성한다.
+   *
+   * @param room 방 상태
+   * @returns 랭킹 배열
+   */
   private buildRankings(room: BattleRoomState): Array<{
     participantId: string;
     displayName: string;

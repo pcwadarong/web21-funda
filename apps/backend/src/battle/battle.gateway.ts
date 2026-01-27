@@ -178,7 +178,10 @@ export class BattleGateway {
    * @returns 없음
    */
   @SubscribeMessage('battle:start')
-  handleStart(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
+  async handleStart(
+    @MessageBody() payload: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
     const room = this.battleService.getRoom(payload.roomId);
     if (!room) {
       client.emit('battle:error', {
@@ -194,10 +197,16 @@ export class BattleGateway {
       return;
     }
 
+    const quizIds = await this.battleService.createBattleQuizSet(
+      room.settings.fieldSlug,
+      room.totalQuizzes,
+    );
+
     const nextRoom = applyStart(room, {
       roomId: room.roomId,
       requesterParticipantId: client.id,
       now: Date.now(),
+      quizIds,
     });
 
     this.battleService.saveRoom(nextRoom);

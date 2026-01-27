@@ -43,6 +43,7 @@ export type BattleRoomState = {
   endedAt: number | null;
   currentQuizIndex: number;
   totalQuizzes: number;
+  quizIds: number[];
 };
 
 export type CreateBattleRoomParams = {
@@ -77,6 +78,7 @@ export type StartBattleRoomParams = {
   roomId: string;
   requesterParticipantId: string;
   now: number;
+  quizIds: number[];
 };
 
 export type FinishBattleRoomParams = {
@@ -106,6 +108,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   endedAt: null,
   currentQuizIndex: 0,
   totalQuizzes: params.totalQuizzes,
+  quizIds: [],
 });
 
 /**
@@ -322,6 +325,7 @@ export const applyStart = (
   startedAt: params.now,
   endedAt: null,
   currentQuizIndex: 0,
+  quizIds: params.quizIds,
 });
 
 /**

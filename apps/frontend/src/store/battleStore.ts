@@ -28,8 +28,8 @@ interface BattleState {
   remainingSeconds: number;
 
   actions: {
-    // 서버 이벤트를 통째로 동기화하는 액션
-    setBattleState: (data: Partial<BattleState>) => void;
+    // actions를 제외한 필드만 업데이트할 수 있도록 타입 제한
+    setBattleState: (data: Partial<Omit<BattleState, 'actions'>>) => void;
     setParticipants: (participants: BattleParticipant[]) => void;
     setRankings: (rankings: Ranking[]) => void;
     reset: () => void;

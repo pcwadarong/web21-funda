@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiAskModule } from './ai-ask/ai-ask.module';
 import { AuthModule } from './auth/auth.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
+import { BattleModule } from './battle/battle.module';
 import { RedisService } from './common/redis/redis.service';
 import { createTypeOrmOptions } from './config/typeorm.config';
 import { MetricsModule } from './metrics/metrics.module';
@@ -37,6 +38,7 @@ import { AppService } from './app.service';
     NotificationModule,
     RankingModule,
     AiAskModule,
+    BattleModule,
   ],
   controllers: [AppController],
   providers: [AppService, RedisService],

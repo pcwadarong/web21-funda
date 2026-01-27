@@ -2,11 +2,11 @@ import {
   BadRequestException,
   Controller,
   Post,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -30,7 +30,7 @@ export class BackofficeController {
   constructor(private readonly backofficeService: BackofficeService) {}
 
   @Post('quizzes/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FilesInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: '퀴즈 대량 업로드 (JSONL)',
@@ -41,8 +41,11 @@ export class BackofficeController {
       type: 'object',
       properties: {
         file: {
-          type: 'string',
-          format: 'binary',
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
         },
       },
       required: ['file'],
@@ -64,11 +67,36 @@ export class BackofficeController {
       },
     },
   })
-  async uploadQuizzes(@UploadedFile() file: UploadedQuizFile) {
-    if (!file) {
+  async uploadQuizzes(@UploadedFiles() files: UploadedQuizFile[]) {
+    if (!files || files.length === 0) {
       throw new BadRequestException('업로드된 파일이 없습니다.');
     }
 
-    return this.backofficeService.uploadQuizzesFromJsonl(file.buffer);
+    const summary = {
+      processed: 0,
+      fieldsCreated: 0,
+      fieldsUpdated: 0,
+      unitsCreated: 0,
+      unitsUpdated: 0,
+      stepsCreated: 0,
+      stepsUpdated: 0,
+      quizzesCreated: 0,
+      quizzesUpdated: 0,
+    };
+
+    for (const file of files) {
+      const fileSummary = await this.backofficeService.uploadQuizzesFromJsonl(file.buffer);
+      summary.processed += fileSummary.processed;
+      summary.fieldsCreated += fileSummary.fieldsCreated;
+      summary.fieldsUpdated += fileSummary.fieldsUpdated;
+      summary.unitsCreated += fileSummary.unitsCreated;
+      summary.unitsUpdated += fileSummary.unitsUpdated;
+      summary.stepsCreated += fileSummary.stepsCreated;
+      summary.stepsUpdated += fileSummary.stepsUpdated;
+      summary.quizzesCreated += fileSummary.quizzesCreated;
+      summary.quizzesUpdated += fileSummary.quizzesUpdated;
+    }
+
+    return summary;
   }
 }

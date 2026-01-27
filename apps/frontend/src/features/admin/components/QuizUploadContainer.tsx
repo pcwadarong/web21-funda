@@ -11,7 +11,7 @@ interface AdminQuizUploadContainerProps {
   busy: boolean;
   hasFile: boolean;
   onFileChange: (hasFile: boolean) => void;
-  onSubmit: (file: File) => void;
+  onSubmit: (files: File[]) => void;
 }
 
 export const AdminQuizUploadContainer = memo(
@@ -30,8 +30,8 @@ export const AdminQuizUploadContainer = memo(
     const handleFormSubmit: FormEventHandler<HTMLFormElement> = event => {
       event.preventDefault();
       const fileInput = event.currentTarget.querySelector<HTMLInputElement>('input[type="file"]');
-      const file = fileInput?.files?.item(0);
-      if (file) onSubmit(file);
+      const files = fileInput?.files ? Array.from(fileInput.files) : [];
+      if (files.length > 0) onSubmit(files);
     };
 
     return (
@@ -54,6 +54,7 @@ export const AdminQuizUploadContainer = memo(
               accept=".jsonl,.txt,.json"
               onChange={handleFileChange}
               css={fileInputStyle(theme)}
+              multiple
             />
             <div css={footerStyle}>
               <Button variant="primary" type="submit" disabled={busy || !hasFile} fullWidth>

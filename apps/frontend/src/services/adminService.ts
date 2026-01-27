@@ -20,12 +20,14 @@ export type UploadResponse =
 export const adminService = {
   /**
    * JSONL 파일을 업로드하여 퀴즈 데이터를 일괄 업로드합니다.
-   * @param file 업로드할 JSONL 파일
+   * @param files 업로드할 JSONL 파일 목록
    * @returns 업로드 결과 요약 또는 에러 메시지
    */
-  async uploadQuizzes(file: File): Promise<UploadResponse> {
+  async uploadQuizzes(files: File[]): Promise<UploadResponse> {
     const formData = new FormData();
-    formData.append('file', file);
+    files.forEach(file => {
+      formData.append('file', file);
+    });
     return apiFetch.post<UploadResponse>('/admin/quizzes/upload', formData);
   },
 };

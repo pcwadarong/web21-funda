@@ -1,3 +1,5 @@
+import type { WeeklyRankingResult } from '@/features/leaderboard/types';
+
 import { apiFetch } from './api';
 
 export interface UploadSummary {
@@ -17,6 +19,12 @@ export type UploadResponse =
   | { message: string; frontendPath?: string; error?: string }
   | { error: string };
 
+export interface AdminWeeklyRankingParams {
+  tierName: string;
+  groupIndex: number;
+  weekKey?: string | null;
+}
+
 export const adminService = {
   /**
    * JSONL 파일을 업로드하여 퀴즈 데이터를 일괄 업로드합니다.
@@ -29,5 +37,19 @@ export const adminService = {
       formData.append('file', file);
     });
     return apiFetch.post<UploadResponse>('/admin/quizzes/upload', formData);
+  },
+
+  /**
+   * 관리자용 주간 랭킹 정보를 가져옵니다.
+   */
+  async getWeeklyRankingByGroup(params: AdminWeeklyRankingParams): Promise<WeeklyRankingResult> {
+    const query = new URLSearchParams();
+    query.set('tierName', params.tierName);
+    query.set('groupIndex', String(params.groupIndex));
+    if (params.weekKey) {
+      query.set('weekKey', params.weekKey);
+    }
+
+    return apiFetch.get<WeeklyRankingResult>(`/admin/ranking/weekly?${query.toString()}`);
   },
 };

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -27,11 +28,21 @@ import {
 
 @Injectable()
 @WebSocketGateway({ namespace: '/battle' })
-export class BattleGateway {
+export class BattleGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server!: Server;
 
   constructor(private readonly battleService: BattleService) {}
+
+  /**
+   * 소켓 연결 해제 시 이탈 처리를 수행한다.
+   *
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
+  handleDisconnect(client: Socket): void {
+    this.handleLeave({ roomId: '' }, client);
+  }
 
   /**
    * 배틀 방 참가 요청을 처리한다.
@@ -87,7 +98,12 @@ export class BattleGateway {
    */
   @SubscribeMessage('battle:leave')
   handleLeave(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
-    const room = this.battleService.getRoom(payload.roomId);
+    const roomId = payload.roomId || this.findRoomIdByParticipant(client.id);
+    if (!roomId) {
+      return;
+    }
+
+    const room = this.battleService.getRoom(roomId);
     if (!room) {
       client.emit('battle:error', {
         code: 'ROOM_NOT_FOUND',
@@ -97,9 +113,10 @@ export class BattleGateway {
     }
 
     const nextRoom: BattleRoomState = applyLeave(room, {
-      roomId: room.roomId,
+      roomId,
       participantId: client.id,
       now: Date.now(),
+      penaltyScore: room.status === 'in_progress' ? -999 : 0,
     });
 
     this.battleService.saveRoom(nextRoom);
@@ -178,7 +195,10 @@ export class BattleGateway {
    * @returns 없음
    */
   @SubscribeMessage('battle:start')
-  handleStart(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
+  async handleStart(
+    @MessageBody() payload: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
     const room = this.battleService.getRoom(payload.roomId);
     if (!room) {
       client.emit('battle:error', {
@@ -194,10 +214,16 @@ export class BattleGateway {
       return;
     }
 
+    const quizIds = await this.battleService.createBattleQuizSet(
+      room.settings.fieldSlug,
+      room.totalQuizzes,
+    );
+
     const nextRoom = applyStart(room, {
       roomId: room.roomId,
       requesterParticipantId: client.id,
       now: Date.now(),
+      quizIds,
     });
 
     this.battleService.saveRoom(nextRoom);
@@ -207,6 +233,8 @@ export class BattleGateway {
       remainingSeconds: nextRoom.settings.timeLimitSeconds,
       rankings: this.buildRankings(nextRoom),
     });
+
+    await this.sendCurrentQuiz(nextRoom);
   }
 
   /**
@@ -260,6 +288,8 @@ export class BattleGateway {
   handleSubmitAnswer(
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
   ): void {
+    // TODO: 정답 검증 및 점수 계산 로직 연결이 필요합니다.
+    // TODO: 결과 브로드캐스트 타이밍(문제 종료 시점)과 협의가 필요합니다.
     void payload;
   }
 
@@ -346,6 +376,27 @@ export class BattleGateway {
   }
 
   /**
+   * 참가자 ID로 방 ID를 찾는다.
+   *
+   * @param participantId 참가자 ID
+   * @returns 방 ID
+   */
+  private findRoomIdByParticipant(participantId: string): string | null {
+    const rooms = this.battleService.getAllRooms();
+
+    for (const room of rooms) {
+      const participant = room.participants.find(
+        currentParticipant => currentParticipant.participantId === participantId,
+      );
+      if (participant) {
+        return room.roomId;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * 제한 시간 타입을 초 단위로 변환한다.
    *
    * @param timeLimitType 제한 시간 타입
@@ -387,6 +438,85 @@ export class BattleGateway {
       rankings: this.buildRankings(nextRoom),
       rewards: [],
     });
+  }
+
+  /**
+   * 현재 문제를 참가자에게 전송한다.
+   *
+   * @param room 방 상태
+   * @returns 없음
+   */
+  private async sendCurrentQuiz(room: BattleRoomState): Promise<void> {
+    const quizId = room.quizIds[room.currentQuizIndex];
+    if (!quizId) {
+      return;
+    }
+
+    const quiz = await this.battleService.getBattleQuizById(quizId);
+    if (!quiz) {
+      this.server.to(room.roomId).emit('battle:error', {
+        code: 'INVALID_STATE',
+        message: '퀴즈를 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const endsAt = Date.now() + room.settings.timeLimitSeconds * 1000;
+
+    this.server.to(room.roomId).emit('battle:quiz', {
+      roomId: room.roomId,
+      quizId,
+      question: quiz,
+      index: room.currentQuizIndex,
+      total: room.totalQuizzes,
+      endsAt,
+    });
+
+    const nextRoom: BattleRoomState = {
+      ...room,
+      quizEndsAt: endsAt,
+    };
+    this.battleService.saveRoom(nextRoom);
+
+    this.scheduleNextQuiz(nextRoom);
+  }
+
+  /**
+   * 다음 문제 전송을 예약한다.
+   *
+   * @param room 방 상태
+   * @returns 없음
+   */
+  private scheduleNextQuiz(room: BattleRoomState): void {
+    const delayMs = Math.max(0, (room.quizEndsAt ?? Date.now()) - Date.now());
+
+    setTimeout(async () => {
+      const latestRoom = this.battleService.getRoom(room.roomId);
+      if (!latestRoom) {
+        return;
+      }
+
+      if (latestRoom.status !== 'in_progress') {
+        return;
+      }
+
+      // TODO: 이 시점에 정답 검증/점수 계산을 실행해야 합니다.
+
+      const nextIndex = latestRoom.currentQuizIndex + 1;
+      if (nextIndex >= latestRoom.totalQuizzes) {
+        // TODO: 최종 점수 기준 우승자 산정 및 보상 계산 연결 필요합니다.
+        this.finishRoom(latestRoom.roomId);
+        return;
+      }
+
+      const advancedRoom: BattleRoomState = {
+        ...latestRoom,
+        currentQuizIndex: nextIndex,
+      };
+
+      this.battleService.saveRoom(advancedRoom);
+      await this.sendCurrentQuiz(advancedRoom);
+    }, delayMs);
   }
 
   private buildRankings(room: BattleRoomState): Array<{

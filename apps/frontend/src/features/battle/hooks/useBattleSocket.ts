@@ -14,16 +14,15 @@ export function useBattleSocket() {
   const { socket } = socketContext;
 
   // Zustand 스토어에서 상태와 액션 가져오기
-  const battleStatus = useBattleStore(state => state.status);
+  const { status: battleStatus, settings: currentSettings } = useBattleStore(state => state);
   const { setBattleState, setParticipants, reset } = useBattleStore(state => state.actions);
 
   useEffect(() => {
     if (!socket) return;
 
     // 1. 참가자 명단 업데이트 (입장/퇴장 시)
-    const handleParticipantsUpdated = (data: { participants: BattleParticipant[] }) => {
+    const handleParticipantsUpdated = (data: { participants: BattleParticipant[] }) =>
       setParticipants(data.participants);
-    };
 
     // 2. 게임 전체 상태 업데이트 (배틀 상태, 남은 시간, 순위)
     const handleBattleState = (data: {
@@ -39,8 +38,15 @@ export function useBattleSocket() {
     };
 
     // 3. 방 설정 변경 브로드캐스트
-    const handleRoomUpdated = (data: BattleRoomSettings) => {
-      setBattleState({ settings: data });
+    const handleRoomUpdated = (data: Partial<BattleRoomSettings>) => {
+      if (!currentSettings) return;
+
+      setBattleState({
+        settings: {
+          ...currentSettings,
+          ...data,
+        },
+      });
     };
 
     // 4. 게임 종료 및 무효 처리

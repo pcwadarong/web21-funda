@@ -39,6 +39,7 @@ export type BattleRoomState = {
   settings: BattleRoomSettings;
   participants: BattleParticipant[];
   inviteToken: string;
+  inviteExpired: boolean;
   startedAt: number | null;
   endedAt: number | null;
   currentQuizIndex: number;
@@ -105,6 +106,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   settings: params.settings,
   participants: [],
   inviteToken: params.inviteToken,
+  inviteExpired: false,
   startedAt: null,
   endedAt: null,
   currentQuizIndex: 0,
@@ -120,6 +122,14 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
  * @returns 검증 결과
  */
 export const validateJoin = (state: BattleRoomState): BattleValidationResult => {
+  if (state.inviteExpired) {
+    return {
+      ok: false,
+      code: 'ROOM_NOT_JOINABLE',
+      message: '초대 링크가 만료되어 참가할 수 없습니다.',
+    };
+  }
+
   if (state.status !== 'waiting') {
     return {
       ok: false,
@@ -324,6 +334,7 @@ export const applyStart = (
 ): BattleRoomState => ({
   ...state,
   status: 'in_progress',
+  inviteExpired: true,
   startedAt: params.now,
   endedAt: null,
   currentQuizIndex: 0,

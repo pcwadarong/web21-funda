@@ -71,6 +71,13 @@ export class BattleController {
       };
     }
 
+    if (room.inviteExpired) {
+      return {
+        roomId: room.roomId,
+        canJoin: false,
+      };
+    }
+
     return {
       roomId: room.roomId,
       canJoin: true,

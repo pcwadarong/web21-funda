@@ -75,6 +75,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
+          { path: 'battle', element: <Battle /> },
         ],
       },
 
@@ -103,7 +104,6 @@ export const router = createBrowserRouter([
                 element: <Reports />,
               },
               { path: 'leaderboard', element: <Leaderboard /> },
-              { path: 'battle', element: <Battle /> },
               { path: 'profile/:userId?', element: <Profile /> },
             ],
           },

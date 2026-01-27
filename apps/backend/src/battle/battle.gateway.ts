@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -26,12 +29,62 @@ import {
 } from './battle-state';
 
 @Injectable()
-@WebSocketGateway({ namespace: '/battle' })
-export class BattleGateway {
+@WebSocketGateway({
+  namespace: '/battle',
+  cors: {
+    origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  },
+})
+export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server!: Server;
+  private readonly logger = new Logger('BattleGateway');
 
   constructor(private readonly battleService: BattleService) {}
+
+  /**
+   * Gateway 초기화 시 호출된다.
+   *
+   * @param _server Socket.IO 서버 인스턴스
+   */
+  afterInit(_server: Server): void {
+    const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+    this.logger.log(`Battle Gateway initialized with CORS origin: ${clientOrigin}`);
+  }
+
+  /**
+   * 클라이언트 연결 시 호출된다.
+   *
+   * @param client 소켓 연결 정보
+   */
+  handleConnection(client: Socket): void {
+    this.logger.log(`Client connected: ${client.id}`);
+  }
+
+  /**
+   * 클라이언트 연결 해제 시 호출된다.
+   *
+   * @param client 소켓 연결 정보
+   */
+  handleDisconnect(client: Socket): void {
+    this.logger.log(`Client disconnected: ${client.id}`);
+  }
+
+  /**
+   * Ping 이벤트를 처리하고 Pong 응답을 반환한다.
+   *
+   * @param client 소켓 연결 정보
+   * @returns 타임스탬프가 포함된 Pong 응답
+   */
+  @SubscribeMessage('ping')
+  handlePing(@ConnectedSocket() client: Socket): { event: string; timestamp: number } {
+    this.logger.debug(`Ping received from client: ${client.id}`);
+    return {
+      event: 'pong',
+      timestamp: Date.now(),
+    };
+  }
 
   /**
    * 배틀 방 참가 요청을 처리한다.

@@ -74,6 +74,7 @@ export type LeaveBattleRoomParams = {
   roomId: string;
   participantId: string;
   now: number;
+  penaltyScore: number;
 };
 
 export type StartBattleRoomParams = {
@@ -293,6 +294,7 @@ export const applyLeave = (
 
       return {
         ...participant,
+        score: params.penaltyScore,
         isConnected: false,
         leftAt: params.now,
       };

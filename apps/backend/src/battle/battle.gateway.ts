@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -27,11 +28,21 @@ import {
 
 @Injectable()
 @WebSocketGateway({ namespace: '/battle' })
-export class BattleGateway {
+export class BattleGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server!: Server;
 
   constructor(private readonly battleService: BattleService) {}
+
+  /**
+   * 소켓 연결 해제 시 이탈 처리를 수행한다.
+   *
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
+  handleDisconnect(client: Socket): void {
+    this.handleLeave({ roomId: '' }, client);
+  }
 
   /**
    * 배틀 방 참가 요청을 처리한다.
@@ -87,7 +98,12 @@ export class BattleGateway {
    */
   @SubscribeMessage('battle:leave')
   handleLeave(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
-    const room = this.battleService.getRoom(payload.roomId);
+    const roomId = payload.roomId || this.findRoomIdByParticipant(client.id);
+    if (!roomId) {
+      return;
+    }
+
+    const room = this.battleService.getRoom(roomId);
     if (!room) {
       client.emit('battle:error', {
         code: 'ROOM_NOT_FOUND',
@@ -97,9 +113,10 @@ export class BattleGateway {
     }
 
     const nextRoom: BattleRoomState = applyLeave(room, {
-      roomId: room.roomId,
+      roomId,
       participantId: client.id,
       now: Date.now(),
+      penaltyScore: room.status === 'in_progress' ? -999 : 0,
     });
 
     this.battleService.saveRoom(nextRoom);
@@ -356,6 +373,27 @@ export class BattleGateway {
     }
 
     return `${baseName}${index}`;
+  }
+
+  /**
+   * 참가자 ID로 방 ID를 찾는다.
+   *
+   * @param participantId 참가자 ID
+   * @returns 방 ID
+   */
+  private findRoomIdByParticipant(participantId: string): string | null {
+    const rooms = this.battleService.getAllRooms();
+
+    for (const room of rooms) {
+      const participant = room.participants.find(
+        currentParticipant => currentParticipant.participantId === participantId,
+      );
+      if (participant) {
+        return room.roomId;
+      }
+    }
+
+    return null;
   }
 
   /**

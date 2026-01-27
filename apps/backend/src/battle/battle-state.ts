@@ -94,6 +94,11 @@ export type RestartBattleRoomParams = {
   requesterParticipantId: string;
 };
 
+export type ParticipantScoreParams = {
+  participantId: string;
+  scoreDelta: number;
+};
+
 /**
  * 방의 초기 상태를 생성한다.
  *
@@ -377,3 +382,23 @@ export const applyRestart = (
   endedAt: null,
   currentQuizIndex: 0,
 });
+
+export const applyScore = (
+  state: BattleRoomState,
+  params: ParticipantScoreParams,
+): BattleRoomState => {
+  const updatedParticipants = state.participants.map(participant => {
+    if (participant.participantId === params.participantId) {
+      return {
+        ...participant,
+        score: participant.score + params.scoreDelta,
+      };
+    }
+    return participant;
+  });
+
+  return {
+    ...state,
+    participants: updatedParticipants,
+  };
+};

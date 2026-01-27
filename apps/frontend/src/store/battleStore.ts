@@ -67,6 +67,7 @@ export const useBattleStore = create<BattleState>(set => ({
         participants: [],
         rankings: [],
         currentQuizIndex: 0,
+        totalQuizzes: 10,
         remainingSeconds: 0,
       }),
   },

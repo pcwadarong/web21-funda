@@ -216,6 +216,8 @@ export class BattleGateway {
       remainingSeconds: nextRoom.settings.timeLimitSeconds,
       rankings: this.buildRankings(nextRoom),
     });
+
+    await this.sendCurrentQuiz(nextRoom);
   }
 
   /**
@@ -396,6 +398,41 @@ export class BattleGateway {
       rankings: this.buildRankings(nextRoom),
       rewards: [],
     });
+  }
+
+  /**
+   * 현재 문제를 참가자에게 전송한다.
+   *
+   * @param room 방 상태
+   * @returns 없음
+   */
+  private async sendCurrentQuiz(room: BattleRoomState): Promise<void> {
+    const quizId = room.quizIds[room.currentQuizIndex];
+    if (!quizId) {
+      return;
+    }
+
+    const quiz = await this.battleService.getBattleQuizById(quizId);
+    if (!quiz) {
+      this.server.to(room.roomId).emit('battle:error', {
+        code: 'INVALID_STATE',
+        message: '퀴즈를 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const endsAt = Date.now() + room.settings.timeLimitSeconds * 1000;
+
+    this.server.to(room.roomId).emit('battle:quiz', {
+      roomId: room.roomId,
+      quizId,
+      question: quiz,
+      index: room.currentQuizIndex,
+      total: room.totalQuizzes,
+      endsAt,
+    });
+
+    // TODO: 타이머 동기화 및 다음 문제 전송 스케줄링 연결 필요. 재광님 작업
   }
 
   private buildRankings(room: BattleRoomState): Array<{

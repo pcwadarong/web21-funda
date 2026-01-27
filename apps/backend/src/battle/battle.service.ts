@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { QuizContentService } from '../common/utils/quiz-content.service';
+import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 
 import { BattleStore } from './battle.store';
@@ -13,6 +15,7 @@ export class BattleService {
     private readonly battleStore: BattleStore,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
+    private readonly quizContentService: QuizContentService,
   ) {}
 
   /**
@@ -73,6 +76,21 @@ export class BattleService {
 
     const shuffled = this.shuffleArray(quizRows.map(quiz => quiz.id));
     return shuffled.slice(0, limit);
+  }
+
+  /**
+   * 퀴즈 ID로 퀴즈 응답 데이터를 조회한다.
+   *
+   * @param quizId 퀴즈 ID
+   * @returns 퀴즈 응답 데이터
+   */
+  async getBattleQuizById(quizId: number): Promise<QuizResponse | null> {
+    const quiz = await this.quizRepository.findOne({ where: { id: quizId } });
+    if (!quiz) {
+      return null;
+    }
+
+    return this.quizContentService.toQuizResponse(quiz);
   }
 
   /**

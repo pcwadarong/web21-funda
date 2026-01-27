@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CodeFormatter } from '../common/utils/code-formatter';
+import { QuizContentService } from '../common/utils/quiz-content.service';
 import { Field } from '../roadmap/entities/field.entity';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 import { Step } from '../roadmap/entities/step.entity';
@@ -14,6 +16,6 @@ import { BattleStore } from './battle.store';
 @Module({
   imports: [TypeOrmModule.forFeature([Quiz, Step, Unit, Field])],
   controllers: [BattleController],
-  providers: [BattleStore, BattleService, BattleGateway],
+  providers: [BattleStore, BattleService, BattleGateway, CodeFormatter, QuizContentService],
 })
 export class BattleModule {}

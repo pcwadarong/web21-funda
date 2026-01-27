@@ -8,6 +8,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsResponse,
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 
@@ -78,11 +79,13 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @returns 타임스탬프가 포함된 Pong 응답
    */
   @SubscribeMessage('ping')
-  handlePing(@ConnectedSocket() client: Socket): { event: string; timestamp: number } {
+  handlePing(@ConnectedSocket() client: Socket): WsResponse<{ timestamp: number }> {
     this.logger.debug(`Ping received from client: ${client.id}`);
     return {
       event: 'pong',
-      timestamp: Date.now(),
+      data: {
+        timestamp: Date.now(),
+      },
     };
   }
 

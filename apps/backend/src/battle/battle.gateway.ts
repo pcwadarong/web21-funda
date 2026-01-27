@@ -11,6 +11,7 @@ import {
   WsResponse,
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
+import { MatchingPair } from 'src/roadmap/dto/quiz-submission.dto';
 
 import { BattleService } from './battle.service';
 import {
@@ -18,6 +19,7 @@ import {
   applyJoin,
   applyLeave,
   applyRestart,
+  applyScore,
   applyStart,
   applyUpdateRoom,
   BattleParticipant,
@@ -330,12 +332,77 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @returns 없음
    */
   @SubscribeMessage('battle:submitAnswer')
-  handleSubmitAnswer(
+  async handleSubmitAnswer(
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
-  ): void {
-    // TODO: 정답 검증 및 점수 계산 로직 연결이 필요합니다.
-    // TODO: 결과 브로드캐스트 타이밍(문제 종료 시점)과 협의가 필요합니다.
-    void payload;
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    //const participantId = client.id;
+
+    // 정답 검증 로직
+    const quiz = await this.battleService.getBattleQuizById(payload.quizId);
+
+    if (!quiz) {
+      client.emit('battle:error', {
+        code: 'INVALID_STATE',
+        message: '퀴즈를 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const selection = payload as { option_id?: string; pairs?: MatchingPair[] };
+
+    const quizResult = await this.battleService.getBattleQuizResultById(payload.quizId, {
+      quiz_id: payload.quizId,
+      type: quiz.type,
+      selection,
+    });
+
+    const isCorrect = payload.answer === undefined ? false : quizResult?.is_correct;
+
+    // 점수 계산 로직
+    const scoreDelta = isCorrect ? 10 : -10;
+    const room = this.battleService.getRoom(payload.roomId);
+
+    if (!room) {
+      client.emit('battle:error', {
+        code: 'ROOM_NOT_FOUND',
+        message: '방을 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    const updatedRoom = applyScore(room, {
+      participantId: client.id,
+      scoreDelta,
+    });
+    this.battleService.saveRoom(updatedRoom);
+
+    const totalScore = this.getParticipantScore(updatedRoom, client.id);
+
+    // 문제 종료 시점에 문제 결과 및 state 전송
+    client.emit('battle:result', {
+      roomId: payload.roomId,
+      isCorrect,
+      scoreDelta,
+      totalScore,
+      quizResult,
+    });
+
+    this.server.to(updatedRoom.roomId).emit('battle:state', {
+      roomId: updatedRoom.roomId,
+      status: updatedRoom.status,
+      remainingSeconds: updatedRoom.settings.timeLimitSeconds,
+      rankings: this.buildRankings(updatedRoom),
+    });
+  }
+
+  private getParticipantScore(room: BattleRoomState, participantId: string): number {
+    const participant = room.participants.find(p => p.participantId === participantId);
+    if (!participant) {
+      return 0;
+    }
+
+    return participant.score;
   }
 
   /**

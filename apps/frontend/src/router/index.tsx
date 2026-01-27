@@ -20,6 +20,7 @@ const AdminQuizUpload = lazy(() =>
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
+const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
+          { path: 'battle', element: <Battle /> },
         ],
       },
 

@@ -9,6 +9,7 @@ import type { Theme } from '@/styles/theme';
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
+  { id: 'battle', label: '실시간 배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
@@ -43,6 +44,9 @@ export const Sidebar = () => {
 
     // 학습하기의 경우 하위 경로도 포함
     if (item.id === 'learn') return currentPath.startsWith('/learn');
+
+    // 실시간 배틀의 경우 하위 경로도 포함
+    if (item.id === 'battle') return currentPath.startsWith('/battle');
 
     // 나머지는 정확히 일치하는지 확인
     return currentPath === item.path;

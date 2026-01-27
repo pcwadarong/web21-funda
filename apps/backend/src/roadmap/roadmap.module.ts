@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { QuizContentService } from '../common/utils/quiz-content.service';
+import { QuizResultService } from '../common/utils/quiz-result.service';
 import { SolveLog, UserStepAttempt, UserStepStatus } from '../progress/entities';
 import { RankingModule } from '../ranking/ranking.module';
 import { User } from '../users/entities/user.entity';
@@ -31,7 +32,7 @@ import { StepsController } from './steps.controller';
     RankingModule,
   ],
   controllers: [RoadmapController, FieldsController, StepsController, QuizzesController],
-  providers: [RoadmapService, CodeFormatter, QuizContentService, RedisService],
+  providers: [RoadmapService, CodeFormatter, QuizContentService, QuizResultService, RedisService],
   exports: [TypeOrmModule],
 })
 export class RoadmapModule {}

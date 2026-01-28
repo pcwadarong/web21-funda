@@ -58,6 +58,10 @@ export function useBattleSocket() {
 
     const handleBattleQuiz = (data: BattleQuizData) => {
       setQuiz(data);
+
+      setBattleState({
+        resultEndsAt: null,
+      });
     };
 
     const handleBattleResult = (data: {

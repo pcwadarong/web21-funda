@@ -400,12 +400,14 @@ export const applySubmission = (
   state: BattleRoomState,
   params: ParticipantSubmission,
 ): BattleRoomState => {
+  const { participantId, ...newSubmission } = params;
+
   const updatedParticipants = state.participants.map(participant => {
-    if (participant.participantId === params.participantId) {
+    if (participant.participantId === participantId) {
       return {
         ...participant,
         score: params.totalScore,
-        submissions: [...participant.submissions, params],
+        submissions: [...participant.submissions, newSubmission],
       };
     }
     return participant;

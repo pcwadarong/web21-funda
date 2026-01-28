@@ -1,6 +1,8 @@
 import { css, useTheme } from '@emotion/react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 
 import type { Ranking } from '@/feat/battle/types';
+import { useAnimatedNumber } from '@/hooks/useAnimatedNumbers';
 import type { Theme } from '@/styles/theme';
 
 interface BattleRankBarProps {
@@ -10,6 +12,8 @@ interface BattleRankBarProps {
   maxVisible?: number;
 }
 
+type RankingWithPlace = Ranking & { place: number };
+
 export const BattleRankBar = ({
   rankings,
   currentParticipantId,
@@ -17,8 +21,74 @@ export const BattleRankBar = ({
   maxVisible = 4,
 }: BattleRankBarProps) => {
   const theme = useTheme();
-  const visibleRankings = rankings.slice(0, maxVisible);
-  const participantCount = totalParticipants ?? rankings.length;
+  const { visibleRankings, participantCount } = useMemo(() => {
+    const baseRankings = rankings.map((ranking, index) => ({
+      ...ranking,
+      place: index + 1,
+    }));
+
+    const rankingsWithPlace: RankingWithPlace[] = baseRankings.map((ranking, index) => {
+      if (index === 0) return ranking;
+
+      const prev = baseRankings[index - 1];
+      if (!prev) return ranking;
+
+      return prev.score === ranking.score ? { ...ranking, place: prev.place } : ranking;
+    });
+
+    const myRankingIndex = rankingsWithPlace.findIndex(
+      ranking => ranking.participantId === currentParticipantId,
+    );
+
+    if (myRankingIndex > -1) {
+      const myRanking = rankingsWithPlace.splice(myRankingIndex, 1)[0];
+      if (myRanking) {
+        rankingsWithPlace.unshift(myRanking);
+      }
+    }
+
+    return {
+      visibleRankings: rankingsWithPlace.slice(0, maxVisible),
+      participantCount: totalParticipants ?? rankings.length,
+    };
+  }, [rankings, currentParticipantId, maxVisible, totalParticipants]);
+
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevPositionsRef = useRef<Map<string, DOMRect>>(new Map());
+
+  useLayoutEffect(() => {
+    const nextPositions = new Map<string, DOMRect>();
+
+    visibleRankings.forEach((ranking, index) => {
+      if (index === 0) return;
+      const node = cardRefs.current[ranking.participantId];
+      if (!node) return;
+      nextPositions.set(ranking.participantId, node.getBoundingClientRect());
+    });
+
+    if (prevPositionsRef.current.size === 0) {
+      prevPositionsRef.current = nextPositions;
+      return;
+    }
+
+    nextPositions.forEach((nextRect, participantId) => {
+      const prevRect = prevPositionsRef.current.get(participantId);
+      const node = cardRefs.current[participantId];
+      if (!prevRect || !node) return;
+
+      const deltaX = prevRect.left - nextRect.left;
+      if (deltaX === 0) return;
+
+      node.style.transition = 'none';
+      node.style.transform = `translate(${deltaX}px, -6px)`;
+      window.requestAnimationFrame(() => {
+        node.style.transition = 'transform 360ms ease';
+        node.style.transform = '';
+      });
+    });
+
+    prevPositionsRef.current = nextPositions;
+  }, [visibleRankings]);
 
   return (
     <div css={containerStyle}>
@@ -27,19 +97,31 @@ export const BattleRankBar = ({
         <div css={listStyle}>
           {visibleRankings.map((ranking, index) => {
             const isMine = ranking.participantId === currentParticipantId;
-            const scoreText = ranking.score >= 0 ? `+${ranking.score}` : `${ranking.score}`;
             const scoreColor =
               ranking.score >= 0 ? theme.colors.success.main : theme.colors.error.main;
 
             return (
-              <div key={ranking.participantId} css={cardStyle(theme, isMine)}>
-                <div css={rankBadgeStyle(theme)}>{index + 1}</div>
-                <div css={avatarStyle(theme)}>{getAvatarText(ranking.displayName)}</div>
-                <div css={infoStyle}>
-                  <div css={nameStyle(theme)}>{ranking.displayName}</div>
-                  <div css={scoreStyle(scoreColor)}>{scoreText}</div>
+              <>
+                <div
+                  key={ranking.participantId}
+                  ref={node => {
+                    cardRefs.current[ranking.participantId] = node;
+                  }}
+                  css={cardWrapperStyle}
+                >
+                  <div css={cardStyle(theme, isMine)}>
+                    <div css={rankBadgeStyle(theme, isMine)}>{ranking.place}</div>
+                    <div css={avatarStyle(theme)}>
+                      {getAvatarText(isMine ? '나' : ranking.displayName)}
+                    </div>
+                    <div css={infoStyle}>
+                      <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
+                      <ScoreText value={ranking.score} color={scoreColor} />
+                    </div>
+                  </div>
                 </div>
-              </div>
+                {index === 0 && <div css={verticalDividerStyle(theme)}></div>}
+              </>
             );
           })}
         </div>
@@ -51,17 +133,25 @@ export const BattleRankBar = ({
 const getAvatarText = (name: string): string => name.trim().charAt(0) || '?';
 
 const containerStyle = css`
+  position: sticky;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   max-width: 48rem;
   min-height: fit-content;
   overflow: visible;
 `;
 
+const verticalDividerStyle = (theme: Theme) => css`
+  width: 1px;
+  height: 80%;
+  border-left: 1px solid ${theme.colors.border.default};
+`;
+
 const listStyle = css`
+  height: 114px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -70,10 +160,18 @@ const listStyle = css`
   padding: 12px;
 `;
 
+const cardWrapperStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 0 0 calc((100% - 65px) / 4);
+  min-width: 0;
+`;
+
 const cardStyle = (theme: Theme, isMine: boolean) => css`
   position: relative;
   height: 90px;
-  flex: 0 0 calc((100% - 48px) / 4);
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -85,20 +183,21 @@ const cardStyle = (theme: Theme, isMine: boolean) => css`
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
 `;
 
-const rankBadgeStyle = (theme: Theme) => css`
+const rankBadgeStyle = (theme: Theme, isMine: boolean) => css`
   position: absolute;
   top: -12px;
   left: -12px;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: ${theme.colors.primary.semilight};
-  color: ${theme.colors.primary.main};
+  background: ${isMine ? theme.colors.primary.light : theme.colors.grayscale['400']};
+  color: white;
   font-weight: ${theme.typography['16Bold'].fontWeight};
   font-size: ${theme.typography['16Bold'].fontSize};
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 `;
 
 const avatarStyle = (theme: Theme) => css`
@@ -118,7 +217,7 @@ const avatarStyle = (theme: Theme) => css`
 const infoStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 `;
 
@@ -137,9 +236,19 @@ const scoreStyle = (color: string) => css`
   color: ${color};
 `;
 
+const scoreCountStyle = css`
+  font-variant-numeric: tabular-nums;
+`;
+
 const countStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
   white-space: nowrap;
   text-align: right;
 `;
+
+const ScoreText = ({ value, color }: { value: number; color: string }) => {
+  const displayValue = useAnimatedNumber(value, 360);
+  const text = displayValue >= 0 ? `+${displayValue}` : `${displayValue}`;
+  return <div css={[scoreStyle(color), scoreCountStyle]}>{text}</div>;
+};

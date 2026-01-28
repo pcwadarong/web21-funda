@@ -46,6 +46,7 @@ export const BattleQuizContainer = ({
       completedSteps={quizInfo.index}
       remainingSeconds={remainingSeconds}
       endsAt={resultEndsAt ?? quizInfo.endsAt}
+      isBattleMode
     />
     <main css={mainStyle}>
       <BattleRankBar

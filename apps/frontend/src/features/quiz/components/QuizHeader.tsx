@@ -14,6 +14,7 @@ interface QuizHeaderProps {
   heartCount?: number;
   remainingSeconds?: number;
   endsAt?: number;
+  isBattleMode?: boolean;
 }
 
 export const QuizHeader = ({
@@ -23,6 +24,7 @@ export const QuizHeader = ({
   heartCount,
   remainingSeconds,
   endsAt,
+  isBattleMode = false,
 }: QuizHeaderProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -66,7 +68,10 @@ export const QuizHeader = ({
           </div>
         )}
         {displaySeconds !== null && (
-          <div css={timerStyle(theme, displaySeconds)}>{formatTimer(displaySeconds)}</div>
+          <>
+            <div css={verticalDividerStyle(theme)}></div>
+            <div css={timerStyle(theme, displaySeconds)}>{formatTimer(displaySeconds)}</div>
+          </>
         )}
       </header>
 
@@ -74,18 +79,20 @@ export const QuizHeader = ({
         <div css={modalOverlayStyle} onClick={handleContinue}>
           <div css={modalContentStyle(theme)} onClick={e => e.stopPropagation()}>
             <div css={modalHeaderStyle}>
-              <h2 css={modalTitleStyle(theme)}>학습 종료</h2>
+              <h2 css={modalTitleStyle(theme)}>{isBattleMode ? '배틀' : '학습'} 종료</h2>
               <button css={modalCloseButtonStyle} onClick={handleContinue}>
                 ✕
               </button>
             </div>
-            <div css={modalBodyStyle(theme)}>진행 중인 학습을 종료하시겠습니까?</div>
+            <div css={modalBodyStyle(theme)}>
+              진행 중인 {isBattleMode ? '배틀' : '학습'}을 종료하시겠습니까?
+            </div>
             <div css={modalFooterStyle}>
               <Button variant="secondary" css={modalButtonStyle} onClick={handleContinue}>
-                계속 학습하기
+                {isBattleMode ? '배틀 계속하기' : '계속 학습하기'}
               </Button>
               <Button variant="primary" css={modalButtonStyle} onClick={handleExit}>
-                학습 종료하기
+                {isBattleMode ? '배틀' : '학습'} 종료하기
               </Button>
             </div>
           </div>
@@ -109,9 +116,15 @@ const headerContentStyle = (heartCount?: number) => css`
   display: flex;
   align-items: center;
   gap: 16px;
-  max-width: 45rem;
+  max-width: 42.5rem;
   width: 100%;
   ${heartCount === undefined || heartCount === 0 ? '' : 'margin-left: 80px;'}
+`;
+
+const verticalDividerStyle = (theme: Theme) => css`
+  width: 1px;
+  height: 100%;
+  border-left: 1px solid ${theme.colors.border.default};
 `;
 
 const closeButtonStyle = (theme: Theme) => css`
@@ -141,7 +154,7 @@ const progressTextStyle = (theme: Theme) => css`
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.default};
   min-width: 48px;
-  text-align: right;
+  text-align: center;
 `;
 
 const formatTimer = (totalSeconds: number): string => {
@@ -222,7 +235,33 @@ const heartValueStyle = (theme: Theme) => css`
 `;
 
 const timerStyle = (theme: Theme, seconds: number) => css`
-  font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
+  min-width: 55px;
+  font-size: ${theme.typography['24Bold'].fontSize};
+  font-weight: ${theme.typography['24Bold'].fontWeight};
   color: ${seconds <= 3 ? theme.colors.error.main : theme.colors.primary.main};
+  ${timerJiggleKeyframes};
+  ${seconds > 0 && seconds <= 3 ? 'animation: timer-jiggle 0.6s ease-in-out infinite;' : ''}
+`;
+
+const timerJiggleKeyframes = css`
+  @keyframes timer-jiggle {
+    0% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-2px);
+    }
+    40% {
+      transform: translateX(2px);
+    }
+    60% {
+      transform: translateX(-2px);
+    }
+    80% {
+      transform: translateX(2px);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
 `;

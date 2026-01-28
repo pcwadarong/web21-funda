@@ -23,8 +23,13 @@ import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
 import type { FirstUnitResponse, UnitSummary } from './dto/first-unit.dto';
 import type { QuizResponse } from './dto/quiz-list.dto';
-import type { QuizSubmissionRequest, QuizSubmissionResponse } from './dto/quiz-submission.dto';
-import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
+import type {
+  MatchingPair,
+  QuizSubmissionRequest,
+  QuizSubmissionResponse,
+} from './dto/quiz-submission.dto';
+import type { UnitOverviewResponse } from './dto/unit-overview.dto';
+import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
 
 @Injectable()
 export class RoadmapService {
@@ -37,6 +42,8 @@ export class RoadmapService {
     private readonly stepRepository: Repository<Step>,
     @InjectRepository(CheckpointQuizPool)
     private readonly checkpointQuizPoolRepository: Repository<CheckpointQuizPool>,
+    @InjectRepository(Unit)
+    private readonly unitRepository: Repository<Unit>,
     private readonly codeFormatter: CodeFormatter,
     @InjectRepository(SolveLog)
     private readonly solveLogRepository: Repository<SolveLog>,
@@ -210,6 +217,59 @@ export class RoadmapService {
         slug: field.slug,
       },
       unit: unitSummary,
+    };
+  }
+
+  /**
+   * 유닛 개요(overview)를 조회한다.
+   * @param unitId 유닛 ID
+   * @returns 유닛 개요 정보
+   */
+  async getUnitOverview(unitId: number): Promise<UnitOverviewResponse> {
+    const unit = await this.unitRepository.findOne({
+      where: { id: unitId },
+      select: { id: true, title: true, overview: true },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unit not found.');
+    }
+
+    return {
+      unit: {
+        id: unit.id,
+        title: unit.title,
+        overview: unit.overview ?? null,
+      },
+    };
+  }
+
+  /**
+   * 유닛 개요(overview)를 수정한다.
+   * @param unitId 유닛 ID
+   * @param overview 유닛 개요(없으면 null)
+   * @returns 유닛 개요 정보
+   */
+  async updateUnitOverview(unitId: number, overview: string | null): Promise<UnitOverviewResponse> {
+    const unit = await this.unitRepository.findOne({
+      where: { id: unitId },
+      select: { id: true, title: true, overview: true },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unit not found.');
+    }
+
+    unit.overview = overview;
+
+    const saved = await this.unitRepository.save(unit);
+
+    return {
+      unit: {
+        id: saved.id,
+        title: saved.title,
+        overview: saved.overview ?? null,
+      },
     };
   }
 

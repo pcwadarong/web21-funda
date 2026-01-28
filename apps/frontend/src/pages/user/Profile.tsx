@@ -1,6 +1,12 @@
 import { css, useTheme } from '@emotion/react';
+import { useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
+import {
+  useProfileFollowers,
+  useProfileFollowing,
+  useProfileSummary,
+} from '@/hooks/queries/profileQueries';
 import { useAuthUser } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
@@ -8,9 +14,32 @@ export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
   const theme = useTheme();
+  const [activeTab, setActiveTab] = useState<'following' | 'followers'>('following');
+  const numericUserId = userId ? Number(userId) : null;
+  const shouldFetch = Number.isFinite(numericUserId ?? NaN) ? numericUserId : null;
+
+  const { data: profileSummary } = useProfileSummary(shouldFetch);
+  const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
+  const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
 
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
   if (!userId && !user) return <Navigate to="/login" replace />;
+
+  const selectedList = activeTab === 'following' ? following : followers;
+  const isListLoading = activeTab === 'following' ? isFollowingLoading : isFollowersLoading;
+
+  const displayName = profileSummary?.displayName ?? '사용자';
+  const tierName = profileSummary?.tier?.name ?? 'BRONZE';
+  const experience = profileSummary?.experience ?? 0;
+  const diamondCount = 0;
+  const totalStudyTimeText = profileSummary ? `${profileSummary.totalStudyTimeMinutes} min` : '-';
+  const solvedQuizzesText = profileSummary ? `${profileSummary.solvedQuizzesCount}` : '-';
+  const streakText = profileSummary ? `${profileSummary.currentStreak} days` : '-';
+  const followerCount = profileSummary?.followerCount ?? 0;
+  const followingCount = profileSummary?.followingCount ?? 0;
+  const profileImageUrl = profileSummary?.profileImageUrl ?? null;
+
+  const listItems = useMemo(() => selectedList ?? [], [selectedList]);
 
   return (
     <main css={pageStyle}>
@@ -20,15 +49,19 @@ export const Profile = () => {
         </header>
         <section css={headerCardStyle(theme)}>
           <div css={headerLeftStyle}>
-            <div css={avatarStyle(theme)} />
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt={`${displayName} 프로필`} css={avatarStyle(theme)} />
+            ) : (
+              <div css={avatarStyle(theme)} />
+            )}
             <div css={headerInfoStyle}>
               <div css={nameRowStyle}>
-                <h1 css={nameStyle(theme)}>펀다</h1>
-                <span css={tierBadgeStyle(theme)}>BRONZE</span>
+                <h1 css={nameStyle(theme)}>{displayName}</h1>
+                <span css={tierBadgeStyle(theme)}>{tierName}</span>
               </div>
               <div css={metaRowStyle(theme)}>
-                <span>⚡ 1265 XP</span>
-                <span>💎 15</span>
+                <span>⚡ {experience} XP</span>
+                <span>💎 {diamondCount}</span>
               </div>
             </div>
           </div>
@@ -40,28 +73,53 @@ export const Profile = () => {
         <div css={twoColumnGridStyle}>
           <section css={cardStyle(theme)}>
             <div css={tabRowStyle(theme)}>
-              <button type="button" css={tabStyle(theme, true)}>
-                팔로잉
+              <button
+                type="button"
+                css={tabStyle(theme, activeTab === 'following')}
+                onClick={() => setActiveTab('following')}
+              >
+                팔로잉 {followingCount}
               </button>
-              <button type="button" css={tabStyle(theme, false)}>
-                팔로워
+              <button
+                type="button"
+                css={tabStyle(theme, activeTab === 'followers')}
+                onClick={() => setActiveTab('followers')}
+              >
+                팔로워 {followerCount}
               </button>
             </div>
-            <div css={listStyle}>
-              {['Alex Chen', 'Sarah Kim', 'Mike Jones'].map(name => (
-                <div key={name} css={listItemStyle(theme)}>
-                  <div css={listAvatarStyle(theme)} />
-                  <div css={listTextStyle}>
-                    <strong css={listNameStyle(theme)}>{name}</strong>
-                    <span css={listSubStyle(theme)}>1580 XP · GOLD</span>
-                  </div>
-                  <span css={listRankStyle(theme)}>#1</span>
-                </div>
-              ))}
+            <div css={followListBodyStyle}>
+              <div css={listStyle}>
+                {isListLoading && <span css={emptyTextStyle(theme)}>로딩 중...</span>}
+                {!isListLoading && listItems.length === 0 && (
+                  <span css={emptyTextStyle(theme)}>표시할 사용자가 없습니다.</span>
+                )}
+                {!isListLoading &&
+                  listItems.map(member => (
+                    <div key={member.userId} css={listItemStyle(theme)}>
+                      {member.profileImageUrl ? (
+                        <img
+                          src={member.profileImageUrl}
+                          alt={`${member.displayName} 프로필`}
+                          css={listAvatarStyle(theme)}
+                        />
+                      ) : (
+                        <div css={listAvatarStyle(theme)} />
+                      )}
+                      <div css={listTextStyle}>
+                        <strong css={listNameStyle(theme)}>{member.displayName}</strong>
+                        <span css={listSubStyle(theme)}>
+                          {member.experience} XP · {member.tier?.name ?? '-'}
+                        </span>
+                      </div>
+                      <span css={listRankStyle(theme)} />
+                    </div>
+                  ))}
+              </div>
+              <button type="button" css={moreButtonStyle(theme)}>
+                더보기
+              </button>
             </div>
-            <button type="button" css={moreButtonStyle(theme)}>
-              더보기
-            </button>
           </section>
 
           <section css={cardStyle(theme)}>
@@ -69,15 +127,15 @@ export const Profile = () => {
             <div css={statListStyle}>
               <div css={statItemStyle(theme)}>
                 <span css={statLabelStyle(theme)}>Total Study Time</span>
-                <strong css={statValueStyle(theme)}>840 min</strong>
+                <strong css={statValueStyle(theme)}>{totalStudyTimeText}</strong>
               </div>
               <div css={statItemStyle(theme)}>
                 <span css={statLabelStyle(theme)}>Questions Solved</span>
-                <strong css={statValueStyle(theme)}>159</strong>
+                <strong css={statValueStyle(theme)}>{solvedQuizzesText}</strong>
               </div>
               <div css={statItemStyle(theme)}>
                 <span css={statLabelStyle(theme)}>Current Streak</span>
-                <strong css={statValueStyle(theme)}>7 days</strong>
+                <strong css={statValueStyle(theme)}>{streakText}</strong>
               </div>
             </div>
           </section>
@@ -166,6 +224,8 @@ const avatarStyle = (theme: Theme) => css`
   height: 72px;
   border-radius: 50%;
   background: ${theme.colors.primary.light};
+  object-fit: cover;
+  overflow: hidden;
 `;
 
 const headerInfoStyle = css`
@@ -257,6 +317,13 @@ const listStyle = css`
   gap: 12px;
 `;
 
+const followListBodyStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+`;
+
 const listItemStyle = (theme: Theme) => css`
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -272,6 +339,8 @@ const listAvatarStyle = (theme: Theme) => css`
   height: 40px;
   border-radius: 50%;
   background: ${theme.colors.primary.surface};
+  object-fit: cover;
+  overflow: hidden;
 `;
 
 const listTextStyle = css`
@@ -296,8 +365,15 @@ const listRankStyle = (theme: Theme) => css`
   color: ${theme.colors.text.weak};
 `;
 
+const emptyTextStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Medium'].fontSize};
+  color: ${theme.colors.text.light};
+  padding: 8px 4px;
+`;
+
 const moreButtonStyle = (theme: Theme) => css`
   align-self: flex-end;
+  margin-top: auto;
   border: none;
   background: transparent;
   color: ${theme.colors.primary.main};

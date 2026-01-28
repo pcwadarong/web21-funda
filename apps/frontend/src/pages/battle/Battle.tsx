@@ -1,6 +1,17 @@
-// TODO: 배틀 페이지 디자인(설명 + 방 생성 버튼) 추가
-export const Battle = () => (
-  <div style={{ textAlign: 'center', width: '100%', padding: '20px' }}>
-    <h1>Battle Page</h1>
-  </div>
-);
+import { useNavigate } from 'react-router-dom';
+
+import { BattleContainer } from '@/features/battle/components/BattleContainer';
+import { useCreateBattleRoomMutation } from '@/hooks/queries/battleQueries';
+
+export const Battle = () => {
+  const navigate = useNavigate();
+
+  const createBattleRoom = useCreateBattleRoomMutation();
+
+  const onCreateRoom = async () => {
+    const data = await createBattleRoom.mutateAsync();
+    navigate(`/battle/${data.inviteToken}`);
+  };
+
+  return <BattleContainer onClick={onCreateRoom} />;
+};

@@ -11,7 +11,8 @@ import {
   WsResponse,
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
-import { MatchingPair } from 'src/roadmap/dto/quiz-submission.dto';
+
+import type { MatchingPair } from '../roadmap/dto/quiz-submission.dto';
 
 import { BattleService } from './battle.service';
 import {
@@ -335,7 +336,8 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   @SubscribeMessage('battle:submitAnswer')
   async handleSubmitAnswer(
-    @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
+    @MessageBody()
+    payload: { roomId: string; quizId: number; answer: string | { pairs: MatchingPair[] } | null },
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     // 정답 검증 로직
@@ -345,7 +347,10 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const selection = payload as { option_id?: string; pairs?: MatchingPair[] };
+    const selection =
+      quiz.type.toUpperCase() === 'MATCHING'
+        ? { pairs: typeof payload.answer === 'string' ? [] : payload.answer?.pairs }
+        : { option_id: typeof payload.answer === 'string' ? payload.answer : undefined };
 
     const quizResult = await this.battleService.getBattleQuizResultById(payload.quizId, {
       quiz_id: payload.quizId,
@@ -357,7 +362,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const isCorrect = payload.answer === undefined ? false : quizResult.is_correct;
+    const isCorrect = quizResult.is_correct;
 
     // 점수 계산 로직
     const scoreDelta = isCorrect ? 10 : -10;
@@ -379,6 +384,13 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       submittedAt: Date.now(),
     });
     this.battleService.saveRoom(updatedRoom);
+
+    console.log('submit quizId', payload.quizId);
+    console.log('current quizId', updatedRoom.quizIds[updatedRoom.currentQuizIndex]);
+    console.log(
+      'submissions',
+      updatedRoom.participants.find(p => p.participantId === client.id)?.submissions,
+    );
   }
 
   /**
@@ -617,8 +629,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         currentQuizIndex: nextIndex,
       };
 
-      this.battleService.saveRoom(advancedRoom);
-
       this.revealQuizResult(latestRoom, advancedRoom);
     }, delayMs);
   }
@@ -632,15 +642,22 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @returns 없음
    */
   private async revealQuizResult(
-    latestRoom: BattleRoomState,
+    room: BattleRoomState,
     advancedRoom: BattleRoomState,
     delay = 5,
   ): Promise<void> {
     const resultEndsAt = Date.now() + delay * 1000;
     const delayMs = Math.max(0, (resultEndsAt ?? Date.now()) - Date.now());
 
+    const latestRoom = this.battleService.getRoom(room.roomId);
+    if (!latestRoom) {
+      return;
+    }
+
     const normalizedRoom = this.normalizeRoom(latestRoom);
-    this.battleService.saveRoom(normalizedRoom);
+    if (!normalizedRoom) {
+      return;
+    }
 
     const sockets = await this.server.to(normalizedRoom.roomId).fetchSockets();
 
@@ -666,31 +683,37 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       resultEndsAt,
     });
 
+    const nextRoom = { ...normalizedRoom, currentQuizIndex: advancedRoom.currentQuizIndex };
+    this.battleService.saveRoom(nextRoom);
+
     setTimeout(async () => {
-      await this.sendCurrentQuiz(advancedRoom);
+      await this.sendCurrentQuiz(nextRoom);
     }, delayMs);
   }
 
   /**
    * 미제출 참가자를 자동 오답 처리하여 방 상태를 정규화한다.
    *
-   * @param latestRoom 현재 방 상태
+   * @param room 현재 방 상태
    * @returns 정규화된 방 상태
    */
-  private normalizeRoom(latestRoom: BattleRoomState): BattleRoomState {
-    const quizId = latestRoom.quizIds[latestRoom.currentQuizIndex];
-    let normalizedRoom = latestRoom;
+  private normalizeRoom(room: BattleRoomState): BattleRoomState {
+    const quizId = room.quizIds[room.currentQuizIndex];
+    let normalizedRoom = room;
 
     if (quizId) {
-      for (const participant of latestRoom.participants) {
-        const alreadySubmitted = participant.submissions.some(s => s.quizId === quizId);
-        if (alreadySubmitted) continue;
+      for (const participantId of room.participants.map(p => p.participantId)) {
+        const participant = normalizedRoom.participants.find(
+          p => p.participantId === participantId,
+        );
+        if (!participant) continue;
+        if (participant.submissions.some(s => s.quizId === quizId)) continue;
 
         const scoreDelta = -10;
         const totalScore = participant.score + scoreDelta;
 
         normalizedRoom = applySubmission(normalizedRoom, {
-          participantId: participant.participantId,
+          participantId,
           quizId,
           isCorrect: false,
           scoreDelta,
@@ -705,6 +728,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       }
     }
 
+    this.battleService.saveRoom(normalizedRoom);
     return normalizedRoom;
   }
 

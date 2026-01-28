@@ -5,10 +5,7 @@ import { Repository } from 'typeorm';
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { QuizResultService } from '../common/utils/quiz-result.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
-import type {
-  QuizSubmissionRequest,
-  QuizSubmissionResponse,
-} from '../roadmap/dto/quiz-submission.dto';
+import type { MatchingPair, QuizSubmissionResponse } from '../roadmap/dto/quiz-submission.dto';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 
 import { BattleStore } from './battle.store';
@@ -101,7 +98,11 @@ export class BattleService {
 
   async getBattleQuizResultById(
     quizId: number,
-    payload: QuizSubmissionRequest,
+    payload: {
+      quiz_id: number;
+      type: string;
+      selection: { option_id?: string; pairs?: MatchingPair[] };
+    },
   ): Promise<QuizSubmissionResponse | null> {
     const quiz = await this.quizRepository.findOne({
       where: { id: quizId },

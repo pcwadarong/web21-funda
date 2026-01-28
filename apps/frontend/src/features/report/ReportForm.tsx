@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import { useCreateReportMutation } from '@/hooks/queries/reportQueries';
+import { useAuthUser } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
@@ -22,6 +23,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
   const theme = useTheme();
   const { closeModal } = useModal();
   const { showToast } = useToast();
+  const user = useAuthUser();
   const [selectedOption, setSelectedOption] = useState<string[]>([]);
   const [otherText, setOtherText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,6 +65,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
       const response = await createReportMutation.mutateAsync({
         quizId,
         data: {
+          userId: user?.id,
           report_description,
         },
       });

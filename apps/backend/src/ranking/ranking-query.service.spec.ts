@@ -15,6 +15,7 @@ import { RankingQueryService } from './ranking-query.service';
 describe('RankingQueryService', () => {
   let service: RankingQueryService;
   let weekRepository: Partial<Repository<RankingWeek>>;
+  let groupRepository: Partial<Repository<RankingGroup>>;
   let memberRepository: Partial<Repository<RankingGroupMember>>;
   let weeklyXpRepository: Partial<Repository<RankingWeeklyXp>>;
   let tierRepository: Partial<Repository<RankingTier>>;
@@ -23,6 +24,7 @@ describe('RankingQueryService', () => {
 
   beforeEach(() => {
     weekRepository = { findOne: jest.fn() };
+    groupRepository = { findOne: jest.fn() };
     memberRepository = { findOne: jest.fn(), find: jest.fn() };
     weeklyXpRepository = { find: jest.fn() };
     tierRepository = { findOne: jest.fn() };
@@ -31,6 +33,7 @@ describe('RankingQueryService', () => {
 
     service = new RankingQueryService(
       weekRepository as Repository<RankingWeek>,
+      groupRepository as Repository<RankingGroup>,
       memberRepository as Repository<RankingGroupMember>,
       weeklyXpRepository as Repository<RankingWeeklyXp>,
       tierRepository as Repository<RankingTier>,
@@ -92,5 +95,28 @@ describe('RankingQueryService', () => {
     expect(result.members[0]?.rankZone).toBe('PROMOTION');
     expect(result.myRank).toBe(1);
     expect(result.tier?.id).toBe(3);
+  });
+
+  it('관리자 조회에서 티어가 없으면 예외를 발생시킨다', async () => {
+    (tierRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.getWeeklyRankingByGroup(99, 1, '2025-01')).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('관리자 조회에서 그룹이 없으면 빈 결과를 반환한다', async () => {
+    const tier = { id: 3, name: RankingTierName.GOLD, orderIndex: 3 } as RankingTier;
+    const week = { id: 1, weekKey: '2025-01' } as RankingWeek;
+
+    (tierRepository.findOne as jest.Mock).mockResolvedValue(tier);
+    (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
+    (groupRepository.findOne as jest.Mock).mockResolvedValue(null);
+
+    const result = await service.getWeeklyRankingByGroup(3, 2, '2025-01');
+
+    expect(result.tier?.id).toBe(3);
+    expect(result.groupIndex).toBe(2);
+    expect(result.members).toHaveLength(0);
   });
 });

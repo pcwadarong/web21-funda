@@ -73,6 +73,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected: ${client.id}`);
+    this.handleLeave({ roomId: '' }, client);
   }
 
   /**

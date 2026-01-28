@@ -15,6 +15,7 @@ const NAV_ITEMS = [
 ] as const;
 
 const ADMIN_NAV_ITEMS = [
+  { id: 'admin-leaderboard', label: '랭킹 관리', icon: 'Ranking', path: '/admin/leaderboard' },
   { id: 'reports', label: '퀴즈 리포트', icon: 'Report', path: '/admin/quizzes/reports' }, // 아이콘은 적절한 것으로 변경 가능
   { id: 'upload', label: '퀴즈 업로드', icon: 'Star', path: '/admin/quizzes/upload' },
 ] as const;

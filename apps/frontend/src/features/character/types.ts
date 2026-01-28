@@ -2,14 +2,14 @@ import type * as THREE from 'three';
 import type { GLTF } from 'three-stdlib';
 
 type ActionName =
-  | 'rig.005'
+  | 'rig_body'
   | 'eyebrow'
   | 'eyelash'
   | 'head'
   | 'teeth'
   | 'tongue'
-  | 'Armature'
-  | 'Armature.001';
+  | 'rig_tail'
+  | 'rig_muffler';
 
 interface GLTFAction extends THREE.AnimationClip {
   name: ActionName;
@@ -49,9 +49,9 @@ export type GLTFResult = GLTF & {
     ['MCH-lip_armTR001']: THREE.Bone;
     [key: string]: any;
     tail: THREE.Bone;
-    Bone: THREE.Bone;
-    Armature: THREE.Object3D; // 꼬리 Armature 그룹
-    Armature001: THREE.Object3D; // 머플러 꼬리 Armature 그룹
+    muffler_tail: THREE.Bone;
+    rig_tail: THREE.Object3D; // 꼬리 Armature 그룹
+    rig_muffler: THREE.Object3D; // 머플러 꼬리 Armature 그룹
   };
   materials: {
     teeth: THREE.MeshStandardMaterial;
@@ -78,14 +78,69 @@ export type FoxNodes = GLTFResult['nodes'];
  * Bone 기반 애니메이션 + Shape Key 조합
  */
 export interface FoxAnimationConfig {
-  /** 손 흔들기 활성화 */
+  /** 손 흔들기 */
   waveHand?: boolean;
-  /** 눈 깜빡임 활성화 */
+  /** 눈 깜빡임 */
   blink?: boolean;
-  /** 시선 추적 활성화 (마우스/카메라) */
+  /** 웃기 */
+  smile?: boolean;
+  /** 입 벌리며 웃기 */
+  bigSmile?: boolean;
+  /** 윙크 */
+  wink?: boolean;
+  /** 엉덩이 흔들기 (무게 중심 이동) */
+  wiggleHips?: boolean;
+  /** 꼬리 흔들기 */
+  wagTail?: boolean;
+  /** 귀 움직이기 */
+  wiggleEars?: boolean;
+  /** 입 벌리기 (a, o 발음) */
+  openMouth?: 'a' | 'o' | false;
+  /** 시선 추적 (마우스) */
   lookAt?: boolean;
-  /** 자동 회전 활성화 */
+  /** 자동 회전 */
   autoRotate?: boolean;
   /** 애니메이션 속도 배율 */
   speedMultiplier?: number;
+}
+
+/**
+ * 여우 모델의 Shape Key가 있는 메시들
+ */
+export interface FoxMorphMeshes {
+  /** 이빨 (teeth) - Shape Keys: a, smile, o */
+  teeth: THREE.Mesh & {
+    morphTargetDictionary?: { a?: number; smile?: number; o?: number };
+    morphTargetInfluences?: number[];
+  };
+
+  /** 혀 (tongue) - Shape Keys: a */
+  tongue: THREE.Mesh & {
+    morphTargetDictionary?: { a?: number };
+    morphTargetInfluences?: number[];
+  };
+
+  /** 눈썹 (eyebrow) - Shape Keys: Key 1 (올리기) */
+  eyebrow: THREE.SkinnedMesh & {
+    morphTargetDictionary?: { a?: number };
+    morphTargetInfluences?: number[];
+  };
+
+  /** 속눈썹 (eyelash) - Shape Keys: closed, smile, wink */
+  eyelash: THREE.SkinnedMesh & {
+    morphTargetDictionary?: { closed?: number; smile?: number; wink?: number };
+    morphTargetInfluences?: number[];
+  };
+
+  /** 머리 (head) - Shape Keys: a, mouth_smile, eyes_closed, o, wink */
+  head: THREE.SkinnedMesh & {
+    morphTargetDictionary?: {
+      a?: number;
+      mouth_smile?: number;
+      eyes_closed?: number;
+      o?: number;
+      wink?: number;
+    };
+    morphTargetInfluences?: number[];
+  };
 }

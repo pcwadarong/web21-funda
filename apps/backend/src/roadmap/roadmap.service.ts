@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QuizResultService } from 'src/common/utils/quiz-result.service';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { getKstNow } from '../common/utils/kst-date';
 import { QuizContentService } from '../common/utils/quiz-content.service';
+import { QuizResultService } from '../common/utils/quiz-result.service';
 import {
   QuizLearningStatus,
   SolveLog,

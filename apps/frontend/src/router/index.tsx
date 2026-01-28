@@ -7,11 +7,12 @@ import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
+// import { ServicePreparation } from '@/pages/common/ServicePreparation';
+import TempPage from '@/pages/Temp';
 import { AdminGuard } from '@/router/guards/AdminGuard';
 import { GuestGuard } from '@/router/guards/GuestGuard';
 import { LoginGuard } from '@/router/guards/LoginGuard';
 import { guestLoader, protectedLoader } from '@/router/loaders/authLoaders';
-// import { ServicePreparation } from '@/pages/common/ServicePreparation';
 
 // Lazy loading 컴포넌트들
 const AdminQuizUpload = lazy(() =>
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
+          { path: 'temp', element: <TempPage /> },
         ],
       },
 

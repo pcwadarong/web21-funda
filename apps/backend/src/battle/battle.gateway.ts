@@ -271,6 +271,11 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       fieldSlug: nextRoom.settings.fieldSlug,
       maxPlayers: nextRoom.settings.maxPlayers,
       timeLimitType: nextRoom.settings.timeLimitType,
+      participants: nextRoom.participants,
+    });
+    this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
+      roomId: nextRoom.roomId,
+      participants: nextRoom.participants,
     });
   }
 

@@ -5,6 +5,7 @@ import SVGIcon from '@/comp/SVGIcon';
 import type { BattleRoomSettings, BattleTimeLimitType } from '@/feat/battle/types';
 import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
+import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 // UI 문자열과 백엔드 데이터 타입 매핑 상수
@@ -30,6 +31,7 @@ const MAX_PLAYER_OPTIONS = [2, 5, 10, 25, 30];
 export const GameSettingsPanel = () => {
   const theme = useTheme();
   const { socket } = useSocketContext();
+  const { showToast } = useToast();
 
   // Zustand Store 데이터 추출
   const roomId = useBattleStore(state => state.roomId);
@@ -54,7 +56,20 @@ export const GameSettingsPanel = () => {
       timeLimitType: updates.timeLimitType ?? settings?.timeLimitType ?? 'recommended',
     });
   };
+  const handleCopyInviteLink = async () => {
+    try {
+      // 1. 현재 브라우저에 표시된 전체 URL을 가져옵니다.
+      const currentUrl = window.location.href;
 
+      // 2. 클립보드에 복사합니다.
+      await navigator.clipboard.writeText(currentUrl);
+
+      // 3. 사용자 피드백
+      showToast('초대 링크가 복사되었습니다. 친구에게 공유해보세요! 🚀');
+    } catch {
+      showToast('링크 복사에 실패했습니다. 주소창의 링크를 직접 복사해주세요.');
+    }
+  };
   const handleStartGame = () => {
     if (!isHost) {
       alert('호스트만 게임을 시작할 수 있습니다.');
@@ -127,7 +142,7 @@ export const GameSettingsPanel = () => {
       </div>
 
       <div css={actionButtonsStyle}>
-        <Button variant="secondary" css={flexBtn}>
+        <Button variant="secondary" css={flexBtn} onClick={handleCopyInviteLink}>
           <SVGIcon icon={'Copy'} size="md" />
           초대 링크 복사
         </Button>

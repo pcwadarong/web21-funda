@@ -7,6 +7,10 @@ import { Step } from '../roadmap/entities/step.entity';
 import { Unit } from '../roadmap/entities/unit.entity';
 
 import type { QuizJsonlRow, UploadSummary } from './dto/quizzes-upload.dto';
+import type {
+  UnitOverviewJsonlRow,
+  UnitOverviewUploadSummary,
+} from './dto/unit-overview-upload.dto';
 
 interface UpsertResult<T> {
   entity: T;
@@ -70,6 +74,58 @@ export class BackofficeService {
   }
 
   /**
+   * JSONL 파일로 유닛 개요를 업로드한다.
+   * @param fileBuffer 업로드된 JSONL 파일 버퍼
+   * @returns 유닛 개요 업로드 요약
+   */
+  async uploadUnitOverviewsFromJsonl(fileBuffer: Buffer): Promise<UnitOverviewUploadSummary> {
+    if (!fileBuffer || fileBuffer.length === 0) {
+      throw new BadRequestException('파일을 업로드해주세요.');
+    }
+
+    const rows = this.parseUnitOverviewJsonl(fileBuffer.toString('utf8'));
+    if (rows.length === 0) {
+      throw new BadRequestException('유효한 JSONL 데이터가 없습니다.');
+    }
+
+    const summary: UnitOverviewUploadSummary = {
+      processed: rows.length,
+      unitsUpdated: 0,
+      unitsNotFound: 0,
+    };
+
+    await this.dataSource.transaction(async manager => {
+      const repository = manager.getRepository(Unit);
+
+      for (const [index, row] of rows.entries()) {
+        const lineNumber = index + 1;
+        this.validateUnitOverviewRow(row, lineNumber);
+
+        const title = row.unit_title.trim();
+        const overview = row.overview.trim();
+        const units = await repository.find({ where: { title } });
+
+        if (units.length === 0) {
+          summary.unitsNotFound += 1;
+          continue;
+        }
+
+        for (const unit of units) {
+          if (unit.overview === overview) {
+            continue;
+          }
+
+          unit.overview = overview;
+          await repository.save(unit);
+          summary.unitsUpdated += 1;
+        }
+      }
+    });
+
+    return summary;
+  }
+
+  /**
    * JSONL 문자열을 파싱해 각 라인을 객체로 변환한다.
    * 파싱 실패 시 라인 번호와 함께 예외를 던진다.
    */
@@ -86,6 +142,36 @@ export class BackofficeService {
 
       try {
         const parsed = JSON.parse(trimmed) as QuizJsonlRow;
+        rows.push(parsed);
+      } catch (error) {
+        errors.push(`Line ${index + 1}: ${(error as Error).message}`);
+      }
+    });
+
+    if (errors.length > 0) {
+      throw new BadRequestException(['JSONL 파싱 오류가 있습니다.', ...errors].join('\n'));
+    }
+
+    return rows;
+  }
+
+  /**
+   * 유닛 개요 JSONL을 파싱해 각 라인을 객체로 변환한다.
+   * 파싱 실패 시 라인 번호와 함께 예외를 던진다.
+   */
+  private parseUnitOverviewJsonl(fileText: string): UnitOverviewJsonlRow[] {
+    const lines = fileText.split(/\r?\n/);
+    const rows: UnitOverviewJsonlRow[] = [];
+    const errors: string[] = [];
+
+    lines.forEach((line, index) => {
+      const trimmed = this.normalizeLine(line);
+      if (!trimmed) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(trimmed) as UnitOverviewJsonlRow;
         rows.push(parsed);
       } catch (error) {
         errors.push(`Line ${index + 1}: ${(error as Error).message}`);
@@ -121,6 +207,25 @@ export class BackofficeService {
       ['question', row.question],
       ['content', row.content],
       ['answer', row.answer],
+    ] as const;
+
+    const missing = required.filter(([, value]) => !value || `${value}`.trim().length === 0);
+    const missingKeys: string[] = missing.map(([key]) => key);
+
+    if (missingKeys.length > 0) {
+      throw new BadRequestException(
+        `Line ${lineNumber}: 필수 필드 누락 - ${missingKeys.join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * 유닛 개요 업로드 필수 필드를 검증한다.
+   */
+  private validateUnitOverviewRow(row: UnitOverviewJsonlRow, lineNumber: number): void {
+    const required = [
+      ['unit_title', row.unit_title],
+      ['overview', row.overview],
     ] as const;
 
     const missing = required.filter(([, value]) => !value || `${value}`.trim().length === 0);

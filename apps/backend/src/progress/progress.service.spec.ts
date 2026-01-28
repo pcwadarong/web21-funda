@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 
 import type { QuizContentService } from '../common/utils/quiz-content.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
-import { Quiz, Step } from '../roadmap/entities';
+import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
@@ -18,6 +18,7 @@ describe('ProgressService', () => {
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
   let stepRepository: Partial<Repository<Step>>;
+  let checkpointQuizPoolRepository: Partial<Repository<CheckpointQuizPool>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let userRepository: Partial<Repository<User>>;
   let userQuizStatusRepository: Partial<Repository<UserQuizStatus>>;
@@ -31,6 +32,7 @@ describe('ProgressService', () => {
   let stepStatusCreateMock: jest.Mock;
   let stepFindOneMock: jest.Mock;
   let quizCountMock: jest.Mock;
+  let checkpointPoolCountMock: jest.Mock;
   let userIncrementMock: jest.Mock;
   let userQuizStatusQueryBuilderMock: {
     innerJoinAndSelect: jest.Mock;
@@ -53,6 +55,7 @@ describe('ProgressService', () => {
     stepStatusCreateMock = jest.fn(entity => entity);
     stepFindOneMock = jest.fn().mockResolvedValue({ id: 1 } as Step);
     quizCountMock = jest.fn().mockResolvedValue(0);
+    checkpointPoolCountMock = jest.fn().mockResolvedValue(0);
     userIncrementMock = jest.fn().mockResolvedValue({});
     quizResponseMock = jest.fn();
     userQuizStatusQueryBuilderMock = {
@@ -81,6 +84,9 @@ describe('ProgressService', () => {
     stepRepository = {
       findOne: stepFindOneMock,
     };
+    checkpointQuizPoolRepository = {
+      count: checkpointPoolCountMock,
+    };
     quizRepository = {
       count: quizCountMock,
     };
@@ -99,6 +105,7 @@ describe('ProgressService', () => {
       stepAttemptRepository as Repository<UserStepAttempt>,
       stepStatusRepository as Repository<UserStepStatus>,
       stepRepository as Repository<Step>,
+      checkpointQuizPoolRepository as Repository<CheckpointQuizPool>,
       quizRepository as Repository<Quiz>,
       userRepository as Repository<User>,
       userQuizStatusRepository as Repository<UserQuizStatus>,
@@ -111,7 +118,7 @@ describe('ProgressService', () => {
 
     const result = await service.calculateStepAttemptScore(1);
 
-    expect(solveLogFindMock).toHaveBeenCalledWith({ where: { stepAttemptId: 1 } });
+    expect(solveLogFindMock).toHaveBeenCalledWith({ where: { stepAttempt: { id: 1 } } });
     expect(result).toEqual({
       score: 0,
       correctCount: 0,

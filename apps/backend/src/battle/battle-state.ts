@@ -1,3 +1,5 @@
+import { QuizSubmissionResponse } from '../roadmap/dto/quiz-submission.dto';
+
 export type BattleRoomStatus = 'waiting' | 'in_progress' | 'finished' | 'invalid';
 
 export type BattleTimeLimitType = 'recommended' | 'relaxed' | 'fast';
@@ -22,6 +24,19 @@ export type BattleRoomSettings = {
   timeLimitSeconds: number;
 };
 
+export type BattleQuizSubmission = {
+  quizId: number;
+  isCorrect: boolean;
+  scoreDelta: number;
+  totalScore: number;
+  quizResult: QuizSubmissionResponse;
+  submittedAt: number;
+};
+
+export type ParticipantSubmission = BattleQuizSubmission & {
+  participantId: string;
+};
+
 export type BattleParticipant = {
   participantId: string;
   userId: number | null;
@@ -29,6 +44,7 @@ export type BattleParticipant = {
   displayName: string;
   avatar?: string; // 프로필 이미지 URL
   score: number;
+  submissions: BattleQuizSubmission[];
   isConnected: boolean;
   isHost: boolean; // 방장 여부
   joinedAt: number;
@@ -42,10 +58,14 @@ export type BattleRoomState = {
   settings: BattleRoomSettings;
   participants: BattleParticipant[];
   inviteToken: string;
+  inviteExpired: boolean;
   startedAt: number | null;
   endedAt: number | null;
   currentQuizIndex: number;
   totalQuizzes: number;
+  quizIds: number[];
+  quizEndsAt: number | null;
+  resultEndsAt: number | null;
 };
 
 export type CreateBattleRoomParams = {
@@ -74,12 +94,14 @@ export type LeaveBattleRoomParams = {
   roomId: string;
   participantId: string;
   now: number;
+  penaltyScore: number;
 };
 
 export type StartBattleRoomParams = {
   roomId: string;
   requesterParticipantId: string;
   now: number;
+  quizIds: number[];
 };
 
 export type FinishBattleRoomParams = {
@@ -105,10 +127,14 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   settings: params.settings,
   participants: [],
   inviteToken: params.inviteToken,
+  inviteExpired: false,
   startedAt: null,
   endedAt: null,
   currentQuizIndex: 0,
   totalQuizzes: params.totalQuizzes,
+  quizIds: [],
+  quizEndsAt: null,
+  resultEndsAt: null,
 });
 
 /**
@@ -118,6 +144,14 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
  * @returns 검증 결과
  */
 export const validateJoin = (state: BattleRoomState): BattleValidationResult => {
+  if (state.inviteExpired) {
+    return {
+      ok: false,
+      code: 'ROOM_NOT_JOINABLE',
+      message: '초대 링크가 만료되어 참가할 수 없습니다.',
+    };
+  }
+
   if (state.status !== 'waiting') {
     return {
       ok: false,
@@ -289,6 +323,7 @@ export const applyLeave = (
 
       return {
         ...participant,
+        score: params.penaltyScore,
         isConnected: false,
         leftAt: params.now,
       };
@@ -330,9 +365,12 @@ export const applyStart = (
 ): BattleRoomState => ({
   ...state,
   status: 'in_progress',
+  inviteExpired: true,
   startedAt: params.now,
   endedAt: null,
   currentQuizIndex: 0,
+  quizIds: params.quizIds,
+  quizEndsAt: null,
 });
 
 /**
@@ -368,3 +406,26 @@ export const applyRestart = (
   endedAt: null,
   currentQuizIndex: 0,
 });
+
+export const applySubmission = (
+  state: BattleRoomState,
+  params: ParticipantSubmission,
+): BattleRoomState => {
+  const { participantId, ...newSubmission } = params;
+
+  const updatedParticipants = state.participants.map(participant => {
+    if (participant.participantId === participantId) {
+      return {
+        ...participant,
+        score: params.totalScore,
+        submissions: [...participant.submissions, newSubmission],
+      };
+    }
+    return participant;
+  });
+
+  return {
+    ...state,
+    participants: updatedParticipants,
+  };
+};

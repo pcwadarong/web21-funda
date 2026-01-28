@@ -1,3 +1,5 @@
+import type { QuizQuestion } from '@/feat/quiz/types';
+
 /**
  * 배틀 방의 현재 상태
  * waiting: 대기실 (설정 변경 가능)
@@ -78,7 +80,7 @@ export interface BattleRoomState {
  */
 export interface BattleQuizData {
   quizId: number;
-  question: string; // 퀴즈 지문 및 보기 포함 (JSON string 또는 객체)
+  question: QuizQuestion; // 퀴즈 지문 및 보기 포함
   index: number; // 현재 문제 번호 (0부터 시작)
   total: number; // 총 문제 수
   endsAt: number; // 문제 종료 서버 시각 (타임스탬프)
@@ -99,4 +101,12 @@ export interface BattleResultData {
 export interface JoinBattleRoomResponse {
   roomId: string;
   canJoin: boolean;
+}
+/**
+ * 배틀 보상 정보
+ */
+export interface BattleReward {
+  participantId: string;
+  rewardType: 'diamond';
+  amount: number;
 }

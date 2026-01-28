@@ -26,7 +26,7 @@ export class BattleController {
     const roomId = this.createRoomId();
     const inviteToken = this.createInviteToken();
 
-    const fieldSlug = body.fieldSlug ?? 'cs';
+    const fieldSlug = body.fieldSlug ?? 'fe';
     const maxPlayers = body.maxPlayers ?? 5;
     const timeLimitType = body.timeLimitType ?? 'recommended';
 
@@ -65,6 +65,14 @@ export class BattleController {
     }
 
     if (room.status !== 'waiting') {
+      return {
+        roomId: room.roomId,
+        canJoin: false,
+        settings: room.settings,
+      };
+    }
+
+    if (room.inviteExpired) {
       return {
         roomId: room.roomId,
         canJoin: false,

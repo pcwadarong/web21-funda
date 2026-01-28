@@ -11,6 +11,7 @@ import type {
   WeeklyRankingEntry,
   WeeklyRankingResult,
 } from './dto/ranking.dto';
+import { RankingGroup } from './entities/ranking-group.entity';
 import { RankingGroupMember } from './entities/ranking-group-member.entity';
 import { RankingSnapshotStatus } from './entities/ranking-snapshot-status.enum';
 import { RankingTier } from './entities/ranking-tier.entity';
@@ -25,6 +26,8 @@ export class RankingQueryService {
   constructor(
     @InjectRepository(RankingWeek)
     private readonly weekRepository: Repository<RankingWeek>,
+    @InjectRepository(RankingGroup)
+    private readonly groupRepository: Repository<RankingGroup>,
     @InjectRepository(RankingGroupMember)
     private readonly memberRepository: Repository<RankingGroupMember>,
     @InjectRepository(RankingWeeklyXp)
@@ -180,6 +183,153 @@ export class RankingQueryService {
       myWeeklyXp,
       members,
     };
+  }
+
+  /**
+   * 관리자용으로 특정 티어/그룹 기준 주간 랭킹을 조회한다.
+   *
+   * @param tierId 조회할 티어 ID
+   * @param groupIndex 조회할 그룹 번호
+   * @param weekKey 조회할 주차 키(없으면 현재 주차)
+   * @returns {Promise<WeeklyRankingResult>} 주간 랭킹 정보
+   */
+  async getWeeklyRankingByGroup(
+    tierId: number,
+    groupIndex: number,
+    weekKey: string | null,
+  ): Promise<WeeklyRankingResult> {
+    const targetWeekKey = weekKey ?? getKstWeekInfo(getKstNow()).weekKey;
+    const tier = await this.tierRepository.findOne({ where: { id: tierId } });
+
+    if (!tier) {
+      throw new NotFoundException('티어 정보를 찾을 수 없습니다.');
+    }
+
+    const tierSummary = {
+      id: tier.id,
+      name: tier.name,
+      orderIndex: tier.orderIndex,
+    };
+
+    const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
+    if (!week) {
+      return {
+        weekKey: targetWeekKey,
+        tier: tierSummary,
+        groupIndex,
+        totalMembers: 0,
+        myRank: null,
+        myWeeklyXp: 0,
+        members: [],
+      };
+    }
+
+    const group = await this.groupRepository.findOne({
+      where: { weekId: week.id, tierId, groupIndex },
+    });
+    if (!group) {
+      return {
+        weekKey: targetWeekKey,
+        tier: tierSummary,
+        groupIndex,
+        totalMembers: 0,
+        myRank: null,
+        myWeeklyXp: 0,
+        members: [],
+      };
+    }
+
+    const groupMembers = await this.memberRepository.find({
+      where: { groupId: group.id },
+      relations: { user: true },
+    });
+
+    if (groupMembers.length === 0) {
+      return {
+        weekKey: targetWeekKey,
+        tier: tierSummary,
+        groupIndex,
+        totalMembers: 0,
+        myRank: null,
+        myWeeklyXp: 0,
+        members: [],
+      };
+    }
+
+    const memberIds = groupMembers.map(groupMember => groupMember.userId);
+    const weeklyXpList = await this.weeklyXpRepository.find({
+      where: { weekId: week.id, userId: In(memberIds) },
+    });
+    const weeklyXpMap = new Map(weeklyXpList.map(item => [item.userId, item]));
+
+    const rankingSeeds = groupMembers.map(groupMember => {
+      const weeklyXp = weeklyXpMap.get(groupMember.userId);
+      const lastSolvedAt =
+        weeklyXp?.lastSolvedAt ?? weeklyXp?.firstSolvedAt ?? groupMember.joinedAt;
+
+      return {
+        userId: groupMember.userId,
+        displayName: groupMember.user?.displayName ?? '알 수 없음',
+        profileImageUrl: groupMember.user?.profileImageUrl ?? null,
+        xp: weeklyXp?.xp ?? 0,
+        lastSolvedAt,
+      };
+    });
+
+    const rankZoneMap = await this.buildRankZoneMap(tierId, rankingSeeds);
+    const sorted = [...rankingSeeds].sort((left, right) => {
+      if (left.xp !== right.xp) {
+        return right.xp - left.xp;
+      }
+      const leftTime = left.lastSolvedAt.getTime();
+      const rightTime = right.lastSolvedAt.getTime();
+      if (leftTime !== rightTime) {
+        return leftTime - rightTime;
+      }
+      return left.userId - right.userId;
+    });
+
+    const members: WeeklyRankingEntry[] = sorted.map((entry, index) => ({
+      userId: entry.userId,
+      displayName: entry.displayName,
+      profileImageUrl: entry.profileImageUrl,
+      xp: entry.xp,
+      rank: index + 1,
+      isMe: false,
+      rankZone: rankZoneMap.get(entry.userId) ?? 'MAINTAIN',
+    }));
+
+    return {
+      weekKey: targetWeekKey,
+      tier: tierSummary,
+      groupIndex,
+      totalMembers: members.length,
+      myRank: null,
+      myWeeklyXp: 0,
+      members,
+    };
+  }
+
+  /**
+   * 관리자용으로 특정 티어명/그룹 기준 주간 랭킹을 조회한다.
+   *
+   * @param tierName 조회할 티어명
+   * @param groupIndex 조회할 그룹 번호
+   * @param weekKey 조회할 주차 키(없으면 현재 주차)
+   * @returns {Promise<WeeklyRankingResult>} 주간 랭킹 정보
+   */
+  async getWeeklyRankingByTierName(
+    tierName: RankingTierName,
+    groupIndex: number,
+    weekKey: string | null,
+  ): Promise<WeeklyRankingResult> {
+    const tier = await this.tierRepository.findOne({ where: { name: tierName } });
+
+    if (!tier) {
+      throw new NotFoundException('티어 정보를 찾을 수 없습니다.');
+    }
+
+    return this.getWeeklyRankingByGroup(tier.id, groupIndex, weekKey);
   }
 
   private async findDefaultTier(): Promise<RankingTier | null> {

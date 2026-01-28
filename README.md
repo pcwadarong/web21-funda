@@ -20,6 +20,9 @@
 
 </div>
 
+<br/>
+<br/>
+
 ## 🎯 프로젝트 소개
 
 **Funda**는 세 가지 핵심 가치를 바탕으로 개발자의 성장을 돕습니다.
@@ -239,6 +242,11 @@ docker compose -f docker/local/docker-compose.local.yml up -d --build
     <img src="https://img.shields.io/badge/TypeScript-D1CEF9?style=flat&logo=typescript&logoColor=black">
     <img src="https://img.shields.io/badge/Husky-D1CEF9?style=flat&logo=git&logoColor=black">
     <img src="https://img.shields.io/badge/lint--staged-D1CEF9?style=flat&logo=lintstaged&logoColor=black">
+    <img src="https://img.shields.io/badge/n8n-D1CEF9?style=flat&logo=n8n&logoColor=black">
+    <img src="https://img.shields.io/badge/Prometheus-D1CEF9?style=flat&logo=prometheus&logoColor=black">
+    <img src="https://img.shields.io/badge/Grafana-D1CEF9?style=flat&logo=grafana&logoColor=black">
+    <img src="https://img.shields.io/badge/Loki-D1CEF9?style=flat&logo=grafana&logoColor=black">
+    <img src="https://img.shields.io/badge/Promtail-D1CEF9?style=flat&logo=grafana&logoColor=black">
 </div>
 
 ### 💻 Frontend
@@ -249,6 +257,9 @@ docker compose -f docker/local/docker-compose.local.yml up -d --build
     <img src="https://img.shields.io/badge/Zustand-A29AFF?style=flat&logo=react&logoColor=black">
     <img src="https://img.shields.io/badge/Emotion-A29AFF?style=flat&logo=emotion&logoColor=black">
     <img src="https://img.shields.io/badge/Framer_Motion-A29AFF?style=flat&logo=framer&logoColor=black">
+    <img src="https://img.shields.io/badge/TanStack_Query-A29AFF?style=flat&logo=reactquery&logoColor=black">
+    <img src="https://img.shields.io/badge/Socket.io-A29AFF?style=flat&logo=socketdotio&logoColor=black">
+    <img src="https://img.shields.io/badge/Three.js-A29AFF?style=flat&logo=three.js&logoColor=black">
     <img src="https://img.shields.io/badge/React_Syntax_Highlighter-A29AFF?style=flat&logo=react&logoColor=black">
     <img src="https://img.shields.io/badge/Prism.js-A29AFF?style=flat&logo=prism&logoColor=black">
     <img src="https://img.shields.io/badge/SVGR-A29AFF?style=flat&logo=svg&logoColor=black">
@@ -260,6 +271,7 @@ docker compose -f docker/local/docker-compose.local.yml up -d --build
     <img src="https://img.shields.io/badge/NestJS-6559EA?style=flat&logo=nestjs&logoColor=white">
     <img src="https://img.shields.io/badge/MySQL-6559EA?style=flat&logo=mysql&logoColor=white">
     <img src="https://img.shields.io/badge/TypeORM-6559EA?style=flat&logo=typeorm&logoColor=white">
+    <img src="https://img.shields.io/badge/Redis-6559EA?style=flat&logo=redis&logoColor=white">
 </div>
 
 ### 🧪 Quality & Testing

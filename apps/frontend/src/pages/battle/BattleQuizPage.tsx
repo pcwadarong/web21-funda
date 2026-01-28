@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useMemo } from 'react';
 
+import { Loading } from '@/comp/Loading';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
 import { BattleQuizContainer } from '@/features/battle/components/BattleQuizContainer';
-import { battleService } from '@/services/battleService';
 import { useBattleStore } from '@/store/battleStore';
 
 export const BattleQuizPage = () => {
-  const { inviteToken } = useParams<{ inviteToken: string }>();
-  const { socket, joinRoom, leaveRoom } = useBattleSocket();
+  const { socket } = useBattleSocket();
   const {
     roomId,
     currentQuiz,
@@ -18,7 +16,6 @@ export const BattleQuizPage = () => {
     totalQuizzes,
     quizEndsAt,
     remainingSeconds,
-    hostParticipantId,
     status,
     actions,
     selectedAnswers,
@@ -27,48 +24,7 @@ export const BattleQuizPage = () => {
     resultEndsAt,
     rankings,
   } = useBattleStore();
-  const { setBattleState, setSelectedAnswer, setQuestionStatus } = actions;
-
-  // 임시: 테스트용
-  const hasJoinedRef = useRef(false);
-  const hasStartedRef = useRef(false);
-
-  useEffect(() => {
-    if (roomId || !inviteToken) return;
-
-    battleService
-      .joinBattleRoom(inviteToken)
-      .then(result => {
-        if (!result.canJoin) {
-          return;
-        }
-
-        setBattleState({ roomId: result.roomId, inviteToken });
-      })
-      .catch(error => {
-        console.error('Failed to join battle room:', error);
-      });
-  }, [inviteToken, roomId, setBattleState]);
-
-  useEffect(() => {
-    if (!roomId || hasJoinedRef.current) return;
-    hasJoinedRef.current = true;
-    joinRoom(roomId);
-    return () => leaveRoom(roomId);
-  }, [roomId, joinRoom, leaveRoom]);
-
-  useEffect(() => {
-    if (!roomId || !socket?.connected || hasStartedRef.current) return;
-
-    const timerId = window.setTimeout(() => {
-      if (socket.id === hostParticipantId && status === 'waiting') {
-        hasStartedRef.current = true;
-        socket.emit('battle:start', { roomId });
-      }
-    }, 1000);
-
-    return () => window.clearTimeout(timerId);
-  }, [roomId, socket?.connected, socket, hostParticipantId, status]);
+  const { setSelectedAnswer, setQuestionStatus } = actions;
 
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {
@@ -100,28 +56,8 @@ export const BattleQuizPage = () => {
     return statusForCurrent !== 'idle' || selected == null;
   }, [questionStatuses, selectedAnswers, currentQuizIndex]);
 
-  if (!currentQuiz) {
-    return (
-      <button
-        type="button"
-        onClick={() => socket?.emit('battle:start', { roomId })}
-        style={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          zIndex: 9999,
-          padding: '8px 12px',
-          background: '#111827',
-          color: '#fff',
-          borderRadius: '8px',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        battle:start 테스트
-      </button>
-    );
-  }
+  if (status !== 'in_progress' || !currentQuiz) return <Loading />;
+
   const quizInfo = {
     quizId: currentQuizId,
     question: currentQuiz,
@@ -148,24 +84,6 @@ export const BattleQuizPage = () => {
         rankings={rankings}
         currentParticipantId={socket?.id ?? null}
       />
-      <button
-        type="button"
-        onClick={() => socket?.emit('battle:start', { roomId })}
-        style={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          zIndex: 9999,
-          padding: '8px 12px',
-          background: '#111827',
-          color: '#fff',
-          borderRadius: '8px',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        battle:start 테스트
-      </button>
     </>
   );
 };

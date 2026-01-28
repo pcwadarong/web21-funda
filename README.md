@@ -1,10 +1,6 @@
 <div align="center">
 
-  <img src="https://github.com/user-attachments/assets/c898e848-ba45-4c89-a517-14091975d9d9" alt="Funda 아이콘" width="96" height="96" />
-
-  <h1>${{\color{#6559EA}\textsf{Funda}}}$</h1>
-
-**"개발자의 CS 기본기를 게임처럼, 꾸준히"**
+  <img src="https://github.com/user-attachments/assets/ee0fae84-04b7-4da2-93b9-362c03969d55" alt="Funda 히어로 UI" width="720" />
 
   <p>
     <a href="https://funda.website"><strong>🌐 배포 사이트</strong></a> • 

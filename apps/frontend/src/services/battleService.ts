@@ -1,3 +1,4 @@
+import type { BattleRoomSettings } from '@/feat/battle/types';
 import { apiFetch } from './api';
 
 interface CreateBattleRoomResponse {
@@ -8,6 +9,7 @@ interface CreateBattleRoomResponse {
 interface JoinBattleRoomResponse {
   roomId: string;
   canJoin: boolean;
+  settings: BattleRoomSettings;
 }
 
 export const battleService = {

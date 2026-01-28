@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 
+import { AdminSuspenseLayout } from '@/layouts/AdminSuspenseLayout';
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
@@ -24,6 +25,8 @@ const AdminUnitOverviewUpload = lazy(() =>
 const AdminLeaderboard = lazy(() =>
   import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
 );
+const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
+
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
@@ -37,7 +40,6 @@ const BattleQuizPage = lazy(() =>
 const BattleResultPage = lazy(() =>
   import('@/pages/battle/BattleResultPage').then(m => ({ default: m.BattleResultPage })),
 );
-const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
 );
@@ -129,11 +131,10 @@ export const router = createBrowserRouter([
               { path: 'profile/:userId?', element: <Profile /> },
             ],
           },
-          // 사이드바가 없는 페이지 그룹
+          // 관리자 전용 (이중 보호)
           {
-            element: <SidebarSuspenseLayout />,
+            element: <AdminSuspenseLayout />,
             children: [
-              // 관리자 전용 (이중 보호)
               {
                 path: 'admin',
                 element: <AdminGuard />,

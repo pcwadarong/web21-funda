@@ -52,6 +52,9 @@ const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: 
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
 );
+const BattleQuizPage = lazy(() =>
+  import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -71,6 +74,7 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
+          { path: 'battle/:inviteToken', element: <BattleQuizPage /> }, //임시 적용 (state로 변경 예정)
         ],
       },
       {

@@ -4,13 +4,16 @@ import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {
   currentStep: number;
   totalSteps: number;
   completedSteps: number;
-  heartCount: number;
+  heartCount?: number;
+  remainingSeconds?: number;
+  endsAt?: number;
 }
 
 export const QuizHeader = ({
@@ -18,6 +21,8 @@ export const QuizHeader = ({
   totalSteps,
   completedSteps,
   heartCount,
+  remainingSeconds,
+  endsAt,
 }: QuizHeaderProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -38,6 +43,8 @@ export const QuizHeader = ({
 
   const progress = (completedSteps / totalSteps) * 100;
 
+  const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
+
   return (
     <>
       <header css={headerStyle(theme)}>
@@ -52,11 +59,14 @@ export const QuizHeader = ({
             {currentStep}/{totalSteps}
           </div>
         </div>
-        {heartCount > 0 && (
+        {typeof heartCount === 'number' && heartCount > 0 && (
           <div css={heartContainerStyle(theme)}>
             <SVGIcon icon="Heart" size="lg" />
             <span css={heartValueStyle(theme)}>{heartCount}</span>
           </div>
+        )}
+        {displaySeconds !== null && (
+          <div css={timerStyle(theme, displaySeconds)}>{formatTimer(displaySeconds)}</div>
         )}
       </header>
 
@@ -95,13 +105,13 @@ const headerStyle = (theme: Theme) => css`
   border-bottom: 1px solid ${theme.colors.border.default};
 `;
 
-const headerContentStyle = (heartCount: number) => css`
+const headerContentStyle = (heartCount?: number) => css`
   display: flex;
   align-items: center;
   gap: 16px;
   max-width: 45rem;
   width: 100%;
-  ${heartCount === 0 ? '' : 'margin-left: 80px;'}
+  ${heartCount === undefined || heartCount === 0 ? '' : 'margin-left: 80px;'}
 `;
 
 const closeButtonStyle = (theme: Theme) => css`
@@ -133,6 +143,12 @@ const progressTextStyle = (theme: Theme) => css`
   min-width: 48px;
   text-align: right;
 `;
+
+const formatTimer = (totalSeconds: number): string => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.max(0, totalSeconds % 60);
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
 
 const modalOverlayStyle = css`
   position: fixed;
@@ -203,4 +219,10 @@ const heartValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Bold'].fontSize};
   font-weight: ${theme.typography['16Bold'].fontWeight};
   color: ${theme.colors.text.default};
+`;
+
+const timerStyle = (theme: Theme, seconds: number) => css`
+  font-size: ${theme.typography['16Bold'].fontSize};
+  font-weight: ${theme.typography['16Bold'].fontWeight};
+  color: ${seconds <= 3 ? theme.colors.error.main : theme.colors.primary.main};
 `;

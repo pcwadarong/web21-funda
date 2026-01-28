@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
@@ -21,6 +21,9 @@ const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
 const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
+const BattleRoom = lazy(() =>
+  import('@/pages/battle/BattleRoom').then(m => ({ default: m.BattleRoom })),
+);
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
@@ -76,6 +79,11 @@ export const router = createBrowserRouter([
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'battle', element: <Battle /> },
+          {
+            path: 'battle/:inviteToken',
+            element: <BattleRoom />,
+            errorElement: <Navigate to="/battle" replace />,
+          },
         ],
       },
 

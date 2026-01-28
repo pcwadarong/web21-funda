@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
-  OnGatewayDisconnect,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
@@ -31,8 +30,6 @@ import {
 } from './battle-state';
 
 @Injectable()
-@WebSocketGateway({ namespace: '/battle' })
-export class BattleGateway implements OnGatewayDisconnect {
 @WebSocketGateway({
   namespace: '/battle',
   cors: {
@@ -48,13 +45,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   constructor(private readonly battleService: BattleService) {}
 
   /**
-   * 소켓 연결 해제 시 이탈 처리를 수행한다.
-   *
-   * @param client 소켓 연결 정보
-   * @returns 없음
-   */
-  handleDisconnect(client: Socket): void {
-    this.handleLeave({ roomId: '' }, client);
    * Gateway 초기화 시 호출된다.
    *
    * @param _server Socket.IO 서버 인스턴스
@@ -80,6 +70,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected: ${client.id}`);
+    this.handleLeave({ roomId: '' }, client);
   }
 
   /**

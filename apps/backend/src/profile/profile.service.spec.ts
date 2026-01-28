@@ -116,7 +116,7 @@ describe('ProfileService', () => {
     expect(result.followingCount).toBe(5);
     expect(result.totalStudyTimeSeconds).toBe(3600);
     expect(result.totalStudyTimeMinutes).toBe(60);
-    expect(result.solvedQuestionCount).toBe(12);
+    expect(result.solvedQuizzesCount).toBe(12);
     expect(result.tier?.name).toBe('BRONZE');
     expect(stepAttemptQueryBuilderMock.andWhere).toHaveBeenCalledWith(
       'stepAttempt.status = :status',

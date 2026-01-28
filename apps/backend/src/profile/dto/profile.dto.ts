@@ -17,7 +17,7 @@ export interface ProfileSummaryResult {
   followingCount: number;
   totalStudyTimeSeconds: number;
   totalStudyTimeMinutes: number;
-  solvedQuestionCount: number;
+  solvedQuizzesCount: number;
 }
 
 export interface ProfileFollowUser {

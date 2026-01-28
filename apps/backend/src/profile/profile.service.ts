@@ -17,7 +17,7 @@ import { UserFollow } from './entities/user-follow.entity';
 interface SolveStatsResult {
   totalStudyTimeSeconds: number;
   totalStudyTimeMinutes: number;
-  solvedQuestionCount: number;
+  solvedQuizzesCount: number;
 }
 
 interface SolveStatsRawResult {
@@ -76,7 +76,7 @@ export class ProfileService {
       followingCount,
       totalStudyTimeSeconds: solveStats.totalStudyTimeSeconds,
       totalStudyTimeMinutes: solveStats.totalStudyTimeMinutes,
-      solvedQuestionCount: solveStats.solvedQuestionCount,
+      solvedQuizzesCount: solveStats.solvedQuizzesCount,
     };
   }
 
@@ -248,13 +248,13 @@ export class ProfileService {
       .getRawOne<SolveStatsRawResult>();
 
     const totalStudyTimeSeconds = Number(rawDuration?.totalDurationSeconds ?? 0);
-    const solvedQuestionCount = Number(rawStats?.solvedCount ?? 0);
+    const solvedQuizzesCount = Number(rawStats?.solvedCount ?? 0);
     const totalStudyTimeMinutes = Math.floor(totalStudyTimeSeconds / 60);
 
     return {
       totalStudyTimeSeconds,
       totalStudyTimeMinutes,
-      solvedQuestionCount,
+      solvedQuizzesCount,
     };
   }
 }

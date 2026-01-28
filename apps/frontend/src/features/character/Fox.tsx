@@ -1,114 +1,60 @@
 import { useGLTF, useTexture } from '@react-three/drei';
-import { useGraph } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { type ThreeElements, useGraph } from '@react-three/fiber';
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { type GLTF, SkeletonUtils } from 'three-stdlib';
+import { SkeletonUtils } from 'three-stdlib';
 
-import { useFixSkinnedMesh } from './hooks/useFixSkinnedMesh';
+import { useFixSkinnedMesh } from '@/feat/character/hooks/useFixSkinnedMesh';
+import type { GLTFResult } from '@/feat/character/types';
 
-type ActionName =
-  | 'rig.005'
-  | 'eyebrow'
-  | 'eyelash'
-  | 'head'
-  | 'teeth'
-  | 'tongue'
-  | 'Armature'
-  | 'Armature.001';
+export type FoxModelProps = ThreeElements['group'];
 
-interface GLTFAction extends THREE.AnimationClip {
-  name: ActionName;
-}
-
-type GLTFResult = GLTF & {
-  nodes: {
-    teeth: THREE.Mesh;
-    tongue_1: THREE.Mesh;
-    body: THREE.SkinnedMesh;
-    ear_inside: THREE.SkinnedMesh;
-    eye_left: THREE.SkinnedMesh;
-    iris_left: THREE.SkinnedMesh;
-    eye_right: THREE.SkinnedMesh;
-    iris_right: THREE.SkinnedMesh;
-    muffler: THREE.SkinnedMesh;
-    nose_1: THREE.SkinnedMesh;
-    eyebrow: THREE.SkinnedMesh;
-    eyelash: THREE.SkinnedMesh;
-    head_1: THREE.SkinnedMesh;
-    tail_1: THREE.SkinnedMesh;
-    muffler001: THREE.SkinnedMesh;
-    root: THREE.Bone;
-    ['MCH-torsoparent']: THREE.Bone;
-    ['MCH-hand_ikparentL']: THREE.Bone;
-    ['MCH-upper_arm_ik_targetparentL']: THREE.Bone;
-    ['MCH-hand_ikparentR']: THREE.Bone;
-    ['MCH-upper_arm_ik_targetparentR']: THREE.Bone;
-    ['MCH-eye_commonparent']: THREE.Bone;
-    ['MCH-foot_ikparentL']: THREE.Bone;
-    ['MCH-thigh_ik_targetparentL']: THREE.Bone;
-    ['MCH-foot_ikparentR']: THREE.Bone;
-    ['MCH-thigh_ik_targetparentR']: THREE.Bone;
-    ['MCH-lip_armBL001']: THREE.Bone;
-    ['MCH-lip_armBR001']: THREE.Bone;
-    ['MCH-lip_armTL001']: THREE.Bone;
-    ['MCH-lip_armTR001']: THREE.Bone;
-    tail: THREE.Bone;
-    Bone: THREE.Bone;
-    Armature: THREE.Object3D; // 꼬리 Armature 그룹
-    Armature001: THREE.Object3D;
-  };
-  materials: {
-    teeth: THREE.MeshStandardMaterial;
-    tongue: THREE.MeshStandardMaterial;
-    body: THREE.MeshStandardMaterial;
-    ear_inside: THREE.MeshStandardMaterial;
-    eye: THREE.MeshStandardMaterial;
-    iris: THREE.MeshStandardMaterial;
-    muffler: THREE.MeshStandardMaterial;
-    nose: THREE.MeshStandardMaterial;
-    eyebrow: THREE.MeshStandardMaterial;
-    eyelash: THREE.MeshStandardMaterial;
-    face: THREE.MeshStandardMaterial;
-    tail: THREE.MeshStandardMaterial;
-    muffler_tail: THREE.MeshStandardMaterial;
-  };
-  animations: GLTFAction[];
-};
-
-export function FoxModel(props: React.JSX.IntrinsicElements['group']) {
+export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(({ ...props }, ref) => {
   const group = useRef<THREE.Group>(null!);
+
+  // ref 전달
+  useImperativeHandle(ref, () => group.current);
+
+  // GLTF 로드 (캐싱됨)
   const { scene } = useGLTF('/fox/model.glb') as unknown as GLTFResult;
+
+  // 씬 복제 (인스턴스마다 독립적인 애니메이션을 위해)
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes, materials } = useGraph(clone) as unknown as GLTFResult;
 
-  // 눈알 반짝이게 재질 교체
-  const [colorMap, roughnessMap, transmissionMap] = useTexture([
+  // 눈알 반짝이는 재질
+  const eyeTextures = useTexture([
     '/fox/textures/eyes_color.png',
     '/fox/textures/eyes_roughness.png',
     '/fox/textures/eyes_transmission.png',
   ]);
 
+  // 눈 재질 교체
   useMemo(() => {
-    if (materials.eye) {
-      const physicalMat = new THREE.MeshPhysicalMaterial({
+    if (eyeTextures.length === 3 && materials.eye) {
+      const [colorMap, roughnessMap, transmissionMap] = eyeTextures;
+
+      materials.eye = new THREE.MeshPhysicalMaterial({
         map: colorMap,
         roughnessMap: roughnessMap,
         transmissionMap: transmissionMap,
-        transmission: 1, // 유리처럼 빛을 통과시킴
+        transmission: 0.95,
         ior: 1.2, // 유리 굴절률
-        thickness: 0.1, // 유리 두께감
+        thickness: 0.1,
+        roughness: 0.1,
+        metalness: 0,
+        clearcoat: 1, // 코팅 효과
+        clearcoatRoughness: 0.1,
       });
-
-      materials.eye = physicalMat;
     }
-  }, [materials, colorMap, roughnessMap, transmissionMap]);
+  }, [materials, eyeTextures]);
 
+  // SkinnedMesh 수정
   useFixSkinnedMesh(clone);
 
   return (
     <group ref={group} {...props} dispose={null}>
       <group name="Scene">
-        {/* 리깅 루트 및 MCH 컨트롤러 뼈대 */}
         <group name="rig005">
           <primitive object={nodes.root} />
           <primitive object={nodes['MCH-torsoparent']} />
@@ -126,7 +72,6 @@ export function FoxModel(props: React.JSX.IntrinsicElements['group']) {
           <primitive object={nodes['MCH-lip_armTL001']} />
           <primitive object={nodes['MCH-lip_armTR001']} />
 
-          {/* 메인 캐릭터 바디 및 얼굴 파트 */}
           {nodes.body?.geometry?.attributes?.position && (
             <skinnedMesh
               name="body"
@@ -243,12 +188,14 @@ export function FoxModel(props: React.JSX.IntrinsicElements['group']) {
             />
           )}
         </group>
-        {/* tail, muffler tail */}
+
         {nodes.Armature && <primitive object={nodes.Armature} />}
         {nodes.Armature001 && <primitive object={nodes.Armature001} />}
       </group>
     </group>
   );
-}
+});
+
+FoxModel.displayName = 'FoxModel';
 
 useGLTF.preload('/fox/model.glb');

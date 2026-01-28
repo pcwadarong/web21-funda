@@ -1,12 +1,14 @@
 import { useGLTF, useTexture } from '@react-three/drei';
 import { type ThreeElements, useGraph } from '@react-three/fiber';
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { useFixSkinnedMesh } from '@/feat/character/hooks/useFixSkinnedMesh';
 import { useFoxAnimation } from '@/feat/character/hooks/usefoxanimation';
 import type { FoxAnimationConfig, GLTFResult } from '@/feat/character/types';
+
+import { useFoxDebug } from './useFoxDebug';
 
 export type FoxModelProps = ThreeElements['group'] & {
   animation?: FoxAnimationConfig;
@@ -27,6 +29,8 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const { nodes, materials } = useGraph(clone) as unknown as GLTFResult;
 
+    useFoxDebug(nodes);
+
     // 눈알 반짝이는 재질
     const eyeTextures = useTexture(
       enhancedEyes
@@ -38,25 +42,24 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
         : [],
     );
 
-    // 눈 재질 교체
-    useMemo(() => {
-      if (enhancedEyes && eyeTextures.length === 3 && materials.eye) {
-        const [colorMap, roughnessMap, transmissionMap] = eyeTextures;
+    const eyeMaterial = useMemo(() => {
+      if (eyeTextures.length !== 3) return undefined;
+      const [colorMap, roughnessMap, transmissionMap] = eyeTextures;
+      return new THREE.MeshPhysicalMaterial({
+        map: colorMap,
+        roughnessMap: roughnessMap,
+        transmissionMap: transmissionMap,
+        transmission: 0.95,
+        ior: 1.2, // 유리 굴절률
+        thickness: 0.1,
+        roughness: 0.1,
+        metalness: 0,
+        clearcoat: 1, // 코팅 효과
+        clearcoatRoughness: 0.1,
+      });
+    }, [eyeTextures]);
 
-        materials.eye = new THREE.MeshPhysicalMaterial({
-          map: colorMap,
-          roughnessMap: roughnessMap,
-          transmissionMap: transmissionMap,
-          transmission: 0.95,
-          ior: 1.2, // 유리 굴절률
-          thickness: 0.1,
-          roughness: 0.1,
-          metalness: 0,
-          clearcoat: 1, // 코팅 효과
-          clearcoatRoughness: 0.1,
-        });
-      }
-    }, [materials, eyeTextures, enhancedEyes]);
+    useEffect(() => () => eyeMaterial?.dispose(), [eyeMaterial]);
 
     // SkinnedMesh 수정
     useFixSkinnedMesh(clone);
@@ -67,7 +70,7 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
     return (
       <group ref={group} {...props} dispose={null}>
         <group name="Scene">
-          <group name="rig005">
+          <group name="rig_body">
             <primitive object={nodes.root} />
             <primitive object={nodes['MCH-torsoparent']} />
             <primitive object={nodes['MCH-hand_ikparentL']} />
@@ -108,7 +111,7 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
               <skinnedMesh
                 name="eye_left"
                 geometry={nodes.eye_left.geometry}
-                material={materials.eye}
+                material={eyeMaterial ?? materials.eye}
                 skeleton={nodes.eye_left.skeleton}
                 frustumCulled={false}
               >
@@ -128,7 +131,7 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
               <skinnedMesh
                 name="eye_right"
                 geometry={nodes.eye_right.geometry}
-                material={materials.eye}
+                material={eyeMaterial ?? materials.eye}
                 skeleton={nodes.eye_right.skeleton}
                 frustumCulled={false}
               >
@@ -201,8 +204,35 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
             )}
           </group>
 
-          {nodes.Armature && <primitive object={nodes.Armature} />}
-          {nodes.Armature001 && <primitive object={nodes.Armature001} />}
+          {nodes.rig_tail && (
+            <group name="rig_tail">
+              <primitive object={nodes.rig_tail} />
+              {nodes.tail_1?.geometry?.attributes?.position && (
+                <skinnedMesh
+                  name="tail_1"
+                  geometry={nodes.tail_1.geometry}
+                  material={materials.tail}
+                  skeleton={nodes.tail_1.skeleton}
+                  frustumCulled={false}
+                />
+              )}
+            </group>
+          )}
+
+          {nodes.rig_muffler && (
+            <group name="rig_muffler">
+              <primitive object={nodes.rig_muffler} />
+              {nodes.muffler001?.geometry?.attributes?.position && (
+                <skinnedMesh
+                  name="muffler001"
+                  geometry={nodes.muffler001.geometry}
+                  material={materials.muffler_tail}
+                  skeleton={nodes.muffler001.skeleton}
+                  frustumCulled={false}
+                />
+              )}
+            </group>
+          )}
         </group>
       </group>
     );

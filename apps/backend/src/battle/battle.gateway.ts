@@ -117,20 +117,68 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const participant = this.buildParticipant(room, payload, client.id);
-    const nextRoom = applyJoin(room, { roomId: room.roomId, participant });
-    const updatedRoom: BattleRoomState = room.hostParticipantId
-      ? nextRoom
-      : {
-          ...nextRoom,
-          hostParticipantId: participant.participantId,
-        };
+    // 쿠키에서 client_id 추출
+    const clientId = this.extractClientIdFromCookie(client.handshake.headers.cookie);
+
+    // 이미 같은 userId 또는 clientId를 가진 참여자가 있는지 확인
+    const existingParticipant = room.participants.find(
+      p => (payload.userId && p.userId === payload.userId) || (clientId && p.clientId === clientId),
+    );
+
+    let updatedRoom: BattleRoomState;
+
+    if (existingParticipant) {
+      // 기존 참여자: socket ID만 업데이트 (재연결 처리)
+      const updatedParticipants = room.participants.map(p =>
+        p.participantId === existingParticipant.participantId
+          ? { ...p, participantId: client.id, isConnected: true }
+          : p,
+      );
+
+      const nextRoom: BattleRoomState = {
+        ...room,
+        participants: updatedParticipants,
+      };
+
+      // hostParticipantId를 clientId 또는 userId로 설정
+      const hostId = clientId || payload.userId?.toString();
+
+      updatedRoom = room.hostParticipantId
+        ? nextRoom
+        : {
+            ...nextRoom,
+            hostParticipantId: hostId || existingParticipant.participantId,
+          };
+
+      this.logger.log(
+        `Reconnected participant: userId=${payload.userId}, clientId=${clientId}, socketId=${client.id}`,
+      );
+    } else {
+      // 새로운 참여자: 추가
+      const participant = this.buildParticipant(room, payload, client.id, clientId);
+      const nextRoom = applyJoin(room, { roomId: room.roomId, participant });
+
+      // hostParticipantId를 clientId 또는 userId로 설정 (socket 재연결 대비)
+      const hostId = clientId || payload.userId?.toString();
+
+      updatedRoom = room.hostParticipantId
+        ? nextRoom
+        : {
+            ...nextRoom,
+            hostParticipantId: hostId || participant.participantId,
+          };
+
+      this.logger.log(
+        `New participant joined: userId=${payload.userId}, clientId=${clientId}, socketId=${client.id}`,
+      );
+    }
 
     this.battleService.saveRoom(updatedRoom);
     client.join(updatedRoom.roomId);
     this.server.to(updatedRoom.roomId).emit('battle:participantsUpdated', {
       roomId: updatedRoom.roomId,
       participants: updatedRoom.participants,
+      settings: updatedRoom.settings,
     });
   }
 
@@ -325,21 +373,27 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @param room 방 상태
    * @param payload 참가자 식별 정보
    * @param participantId 소켓 연결 ID
+   * @param clientId 게스트 사용자 식별자 (클라이언트 쿠키)
    * @returns 참가자 정보
    */
   private buildParticipant(
-    room: { participants: BattleParticipant[] },
+    room: { participants: BattleParticipant[]; hostParticipantId?: string },
     payload: { userId?: number | null; displayName?: string },
     participantId: string,
+    clientId?: string,
   ): BattleParticipant {
     const displayName = payload.displayName ?? this.createGuestName(room.participants);
+    // 첫 번째 참가자(호스트가 아직 정해지지 않은 경우)가 호스트가 된다
+    const isHost = !room.hostParticipantId;
 
     return {
       participantId,
       userId: payload.userId ?? null,
+      clientId,
       displayName,
       score: 0,
       isConnected: true,
+      isHost,
       joinedAt: Date.now(),
       leftAt: null,
     };
@@ -399,6 +453,28 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     return `${baseName}${index}`;
+  }
+
+  /**
+   * 쿠키 헤더에서 client_id를 추출한다.
+   *
+   * @param cookieHeader Set-Cookie 헤더 값
+   * @returns client_id 또는 undefined
+   */
+  private extractClientIdFromCookie(cookieHeader?: string): string | undefined {
+    if (!cookieHeader) {
+      return undefined;
+    }
+
+    const cookies = cookieHeader.split(';').map(c => c.trim());
+    for (const cookie of cookies) {
+      const [name, value] = cookie.split('=');
+      if (name === 'client_id' && value) {
+        return decodeURIComponent(value);
+      }
+    }
+
+    return undefined;
   }
 
   /**

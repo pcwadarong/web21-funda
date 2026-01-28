@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type {
   BattleParticipant,
   BattleQuizData,
+  BattleReward,
   BattleRoomSettings,
   BattleRoomStatus,
   Ranking,
@@ -28,6 +29,7 @@ interface BattleState {
   status: BattleRoomStatus | null;
   participants: BattleParticipant[];
   rankings: Ranking[];
+  rewards: BattleReward[];
 
   // 3. 퀴즈 진행 정보
   currentQuizIndex: number;
@@ -70,13 +72,14 @@ export const useBattleStore = create<BattleState>(set => ({
   status: null,
   participants: [],
   rankings: [],
+  rewards: [],
   currentQuizIndex: 0,
   totalQuizzes: 10,
   remainingSeconds: 0,
   currentQuiz: null,
   currentQuizId: 0,
   quizEndsAt: 0,
-  resultEndsAt: 0,
+  resultEndsAt: null,
   selectedAnswers: [],
   quizSolutions: [],
   questionStatuses: [],
@@ -128,6 +131,7 @@ export const useBattleStore = create<BattleState>(set => ({
         status: null,
         participants: [],
         rankings: [],
+        rewards: [],
         currentQuizIndex: 0,
         totalQuizzes: 10,
         remainingSeconds: 0,

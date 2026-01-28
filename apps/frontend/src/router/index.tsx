@@ -28,6 +28,15 @@ const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
 const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
+const BattleTestPage = lazy(() =>
+  import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
+);
+const BattleQuizPage = lazy(() =>
+  import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
+);
+const BattleResultPage = lazy(() =>
+  import('@/pages/battle/BattleResultPage').then(m => ({ default: m.BattleResultPage })),
+);
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
@@ -72,6 +81,8 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
+          { path: 'battle/test', element: <BattleTestPage /> },
+          { path: 'battle/quiz', element: <BattleQuizPage /> },
         ],
       },
       {
@@ -86,6 +97,7 @@ export const router = createBrowserRouter([
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'temp', element: <TempPage /> },
           { path: 'battle', element: <Battle /> },
+          { path: 'battle/result', element: <BattleResultPage /> },
         ],
       },
 

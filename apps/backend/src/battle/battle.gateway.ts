@@ -393,13 +393,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     });
 
     this.battleService.saveRoom(updatedRoom);
-
-    console.log('submit quizId', payload.quizId);
-    console.log('current quizId', updatedRoom.quizIds[updatedRoom.currentQuizIndex]);
-    console.log(
-      'submissions',
-      updatedRoom.participants.find(p => p.participantId === client.id)?.submissions,
-    );
   }
 
   /**
@@ -686,11 +679,13 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     const normalizedRoom = this.normalizeRoom(latestRoom);
-    if (!normalizedRoom) {
-      return;
-    }
+    const roomWithResultEndsAt: BattleRoomState = {
+      ...normalizedRoom,
+      resultEndsAt,
+    };
+    this.battleService.saveRoom(roomWithResultEndsAt);
 
-    const sockets = await this.server.to(normalizedRoom.roomId).fetchSockets();
+    const sockets = await this.server.to(roomWithResultEndsAt.roomId).fetchSockets();
 
     //문제 종료 시점에 문제 결과 및 state 전송
     sockets.forEach(socket => {
@@ -698,7 +693,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       const submission = this.getSubmission(normalizedRoom, participantId); // 저장해둔 제출
 
       socket.emit('battle:result', {
-        roomId: normalizedRoom.roomId,
+        roomId: roomWithResultEndsAt.roomId,
         isCorrect: submission?.isCorrect,
         scoreDelta: submission?.scoreDelta,
         totalScore: submission?.totalScore,
@@ -706,15 +701,18 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       });
     });
 
-    this.server.to(normalizedRoom.roomId).emit('battle:state', {
-      roomId: normalizedRoom.roomId,
-      status: normalizedRoom.status,
+    this.server.to(roomWithResultEndsAt.roomId).emit('battle:state', {
+      roomId: roomWithResultEndsAt.roomId,
+      status: roomWithResultEndsAt.status,
       remainingSeconds: delay,
-      rankings: this.buildRankings(normalizedRoom),
+      rankings: this.buildRankings(roomWithResultEndsAt),
       resultEndsAt,
     });
 
-    const nextRoom = { ...normalizedRoom, currentQuizIndex: advancedRoom.currentQuizIndex };
+    const nextRoom = {
+      ...roomWithResultEndsAt,
+      currentQuizIndex: advancedRoom.currentQuizIndex,
+    };
     this.battleService.saveRoom(nextRoom);
 
     setTimeout(async () => {

@@ -45,7 +45,7 @@
   <br/>
   <b>Field</b> (분야) &nbsp;→&nbsp; <b>Unit</b> (챕터) &nbsp;→&nbsp; <b>Step</b> (단위) &nbsp;→&nbsp; <b>Quiz</b> (실전)
   <br/>
-  <code>Frontend / Backend / CS / DevOps / AI</code>
+  <code>프론트엔드 / 백엔드 / 모바일 / CS 기초 / 알고리즘 / 게임 개발 / 데이터·AI 기초 / 데브옵스</code>
   <br/><br/>
 </div>
 

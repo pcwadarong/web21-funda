@@ -2,10 +2,12 @@ import { useCallback, useEffect } from 'react';
 
 import type {
   BattleParticipant,
+  BattleQuizData,
   BattleRoomSettings,
   BattleRoomStatus,
   Ranking,
 } from '@/feat/battle/types';
+import type { CorrectAnswerType, MatchingPair } from '@/feat/quiz/types';
 import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
 
@@ -15,7 +17,8 @@ export function useBattleSocket() {
 
   // Zustand 스토어에서 상태와 액션 가져오기
   const battleStatus = useBattleStore(state => state.status);
-  const { setBattleState, setParticipants, reset } = useBattleStore(state => state.actions);
+  const { setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus, reset } =
+    useBattleStore(state => state.actions);
 
   useEffect(() => {
     if (!socket) return;
@@ -29,11 +32,13 @@ export function useBattleSocket() {
       status: BattleRoomStatus;
       remainingSeconds: number;
       rankings: Ranking[];
+      resultEndsAt?: number;
     }) => {
       setBattleState({
         status: data.status,
         remainingSeconds: data.remainingSeconds,
         rankings: data.rankings,
+        resultEndsAt: data.resultEndsAt ?? undefined,
       });
     };
 
@@ -49,6 +54,35 @@ export function useBattleSocket() {
           ...data,
         },
       });
+    };
+
+    const handleBattleQuiz = (data: BattleQuizData) => {
+      setQuiz(data);
+    };
+
+    const handleBattleResult = (data: {
+      quizResult?: {
+        solution?: {
+          explanation?: string;
+          correct_option_id?: string;
+          correct_pairs?: MatchingPair[];
+        };
+      };
+    }) => {
+      const currentIndex = useBattleStore.getState().currentQuizIndex;
+      const solution = data.quizResult?.solution ?? {};
+      const correctAnswer: CorrectAnswerType | null =
+        solution.correct_pairs !== undefined
+          ? { pairs: solution.correct_pairs }
+          : solution.correct_option_id
+            ? String(solution.correct_option_id)
+            : null;
+
+      setQuizSolution(currentIndex, {
+        correctAnswer,
+        explanation: solution.explanation ?? '',
+      });
+      setQuestionStatus(currentIndex, 'checked');
     };
 
     // 4. 게임 종료 및 무효 처리
@@ -68,6 +102,8 @@ export function useBattleSocket() {
     socket.on('battle:participantsUpdated', handleParticipantsUpdated);
     socket.on('battle:state', handleBattleState);
     socket.on('battle:roomUpdated', handleRoomUpdated);
+    socket.on('battle:quiz', handleBattleQuiz);
+    socket.on('battle:result', handleBattleResult);
     socket.on('battle:finish', handleBattleFinish);
     socket.on('battle:invalid', handleBattleInvalid);
     socket.on('battle:error', handleBattleError);
@@ -76,11 +112,13 @@ export function useBattleSocket() {
       socket.off('battle:participantsUpdated', handleParticipantsUpdated);
       socket.off('battle:state', handleBattleState);
       socket.off('battle:roomUpdated', handleRoomUpdated);
+      socket.off('battle:quiz', handleBattleQuiz);
+      socket.off('battle:result', handleBattleResult);
       socket.off('battle:finish', handleBattleFinish);
       socket.off('battle:invalid', handleBattleInvalid);
       socket.off('battle:error', handleBattleError);
     };
-  }, [socket, setBattleState, setParticipants]);
+  }, [socket, setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus]);
 
   const disconnect = useCallback(() => {
     socketContext.disconnect();

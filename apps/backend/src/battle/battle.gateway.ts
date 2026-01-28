@@ -99,7 +99,12 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   @SubscribeMessage('battle:join')
   handleJoin(
     @MessageBody()
-    payload: { roomId: string; userId?: number | null; displayName?: string },
+    payload: {
+      roomId: string;
+      userId?: number | null;
+      displayName?: string;
+      profileImageUrl?: string;
+    },
     @ConnectedSocket() client: Socket,
   ): void {
     const room = this.battleService.getRoom(payload.roomId);
@@ -272,6 +277,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       maxPlayers: nextRoom.settings.maxPlayers,
       timeLimitType: nextRoom.settings.timeLimitType,
       participants: nextRoom.participants,
+      timeLimitSeconds: nextRoom.settings.timeLimitSeconds,
     });
     this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
       roomId: nextRoom.roomId,
@@ -383,7 +389,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   private buildParticipant(
     room: { participants: BattleParticipant[]; hostParticipantId?: string },
-    payload: { userId?: number | null; displayName?: string },
+    payload: { userId?: number | null; displayName?: string; profileImageUrl?: string },
     participantId: string,
     clientId?: string,
   ): BattleParticipant {
@@ -401,6 +407,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       isHost,
       joinedAt: Date.now(),
       leftAt: null,
+      avatar: payload.profileImageUrl,
     };
   }
 

@@ -1,5 +1,5 @@
 import { css } from '@emotion/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { GameSettingsPanel } from '@/feat/battle/components/GameSettingsPanel';
@@ -14,6 +14,7 @@ interface Participant {
   name: string;
   avatar: string;
   participantId: string;
+  profileImageUrl?: string;
 }
 
 export const BattleRoom = () => {
@@ -32,14 +33,17 @@ export const BattleRoom = () => {
   // Cleanup on unmount
   const { leaveRoom } = useSocketContext();
   const roomId = useBattleStore(state => state.roomId);
+  const unmountedRef = useRef(false);
 
   useEffect(
     () => () => {
-      if (roomId) {
+      if (roomId && !unmountedRef.current) {
+        unmountedRef.current = true;
         leaveRoom(roomId);
+        useBattleStore.getState().actions.reset();
       }
     },
-    [],
+    [roomId, leaveRoom],
   );
 
   // battleStore에서 participants 읽기
@@ -51,6 +55,7 @@ export const BattleRoom = () => {
     name: p.displayName,
     avatar: '🧸', // 기본 아바타
     participantId: p.participantId, // 현재 사용자 구별용
+    profileImageUrl: p.avatar, // 로그인 사용자 프로필 이미지
   }));
 
   return (

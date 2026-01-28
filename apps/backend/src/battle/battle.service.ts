@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { QuizResultService } from '../common/utils/quiz-result.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 import type { MatchingPair, QuizSubmissionResponse } from '../roadmap/dto/quiz-submission.dto';
 import { Quiz } from '../roadmap/entities/quiz.entity';
+import { User } from '../users/entities/user.entity';
 
 import { BattleStore } from './battle.store';
 import { BattleRoomState } from './battle-state';
@@ -17,6 +18,8 @@ export class BattleService {
     private readonly battleStore: BattleStore,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly quizContentService: QuizContentService,
     private readonly quizResultService: QuizResultService,
   ) {}
@@ -151,6 +154,32 @@ export class BattleService {
     };
 
     return result;
+  }
+
+  /**
+   * 우승 사용자에게 다이아 보상을 지급한다.
+   *
+   * @param userIds 보상 대상 사용자 ID 목록
+   * @param amount 다이아 지급량
+   * @returns 없음
+   */
+  async grantDiamondRewards(userIds: number[], amount: number): Promise<void> {
+    if (userIds.length === 0) {
+      return;
+    }
+
+    const users = await this.userRepository.find({
+      where: { id: In(userIds) },
+    });
+    if (users.length === 0) {
+      return;
+    }
+
+    for (const user of users) {
+      user.diamondCount = user.diamondCount + amount;
+    }
+
+    await this.userRepository.save(users);
   }
 
   /**

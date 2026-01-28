@@ -15,6 +15,7 @@ import { QuizzesController } from './quizzes.controller';
 import { RoadmapController } from './roadmap.controller';
 import { RoadmapService } from './roadmap.service';
 import { StepsController } from './steps.controller';
+import { UnitsController } from './units.controller';
 
 @Module({
   imports: [
@@ -31,7 +32,13 @@ import { StepsController } from './steps.controller';
     ]),
     RankingModule,
   ],
-  controllers: [RoadmapController, FieldsController, StepsController, QuizzesController],
+  controllers: [
+    RoadmapController,
+    FieldsController,
+    StepsController,
+    QuizzesController,
+    UnitsController,
+  ],
   providers: [RoadmapService, CodeFormatter, QuizContentService, QuizResultService, RedisService],
   exports: [TypeOrmModule],
 })

@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { QuizContentService } from '../common/utils/quiz-content.service';
-import { Quiz, Step } from '../roadmap/entities';
+import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities/user.entity';
 
 import { SolveLog, UserQuizStatus, UserStepAttempt, UserStepStatus } from './entities';
@@ -19,6 +19,7 @@ import { ProgressService } from './progress.service';
       UserStepAttempt,
       SolveLog,
       Step,
+      CheckpointQuizPool,
       Quiz,
       User,
     ]),

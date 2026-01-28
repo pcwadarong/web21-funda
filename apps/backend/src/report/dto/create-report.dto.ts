@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsInt,
+  IsOptional,
+  Min,
   registerDecorator,
   ValidationOptions,
   ValidatorConstraint,
@@ -51,6 +54,16 @@ export function IsValidReportDescription(validationOptions?: ValidationOptions) 
 }
 
 export class CreateReportDto {
+  @ApiProperty({
+    description: '신고 사용자 ID',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  userId?: number;
+
   @ApiProperty({
     description: '퀴즈 신고 사유 (제공된 옵션 선택 또는 자유 텍스트 입력)',
     enum: REPORT_REASONS,

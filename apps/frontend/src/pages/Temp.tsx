@@ -1,4 +1,4 @@
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Stats } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense } from 'react';
 import * as THREE from 'three';
@@ -22,6 +22,8 @@ export default function TempPage() {
         </Suspense>
 
         <OrbitControls makeDefault minDistance={2} maxDistance={10} />
+
+        {process.env.NODE_ENV === 'development' && <Stats />}
       </Canvas>
     </div>
   );

@@ -70,3 +70,22 @@ export type GLTFResult = GLTF & {
   };
   animations: GLTFAction[];
 };
+
+export type FoxNodes = GLTFResult['nodes'];
+
+/**
+ * 여우 애니메이션 컨트롤러
+ * Bone 기반 애니메이션 + Shape Key 조합
+ */
+export interface FoxAnimationConfig {
+  /** 손 흔들기 활성화 */
+  waveHand?: boolean;
+  /** 눈 깜빡임 활성화 */
+  blink?: boolean;
+  /** 시선 추적 활성화 (마우스/카메라) */
+  lookAt?: boolean;
+  /** 자동 회전 활성화 */
+  autoRotate?: boolean;
+  /** 애니메이션 속도 배율 */
+  speedMultiplier?: number;
+}

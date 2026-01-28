@@ -28,6 +28,7 @@ export type BattleErrorCode =
  * 참가자 상세 정보 (battle:participantsUpdated 용)
  */
 export interface BattleParticipant {
+  avatar: string | undefined; // 프로필 이미지 URL
   participantId: string; // 소켓 ID (고유 식별자)
   userId: number | null; // 로그인 유저는 ID, 비로그인은 null
   displayName: string; // 화면에 표시할 닉네임
@@ -54,7 +55,6 @@ export interface BattleRoomSettings {
   fieldSlug: string; // 퀴즈 분야 (CS 등)
   maxPlayers: number; // 최대 인원
   timeLimitType: BattleTimeLimitType;
-  timeLimitSeconds: number; // 실제 카운트다운 초
 }
 
 /**

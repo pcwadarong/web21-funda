@@ -33,6 +33,9 @@ export class Unit {
   @Column({ type: 'text', nullable: true })
   description?: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  overview?: string | null;
+
   @Column({ name: 'order_index', type: 'int' })
   orderIndex!: number;
 

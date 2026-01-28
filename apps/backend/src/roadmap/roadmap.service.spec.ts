@@ -14,7 +14,7 @@ import {
 import { RankingService } from '../ranking/ranking.service';
 import { User } from '../users/entities/user.entity';
 
-import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
+import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
 import { RoadmapService } from './roadmap.service';
 
 jest.mock('../common/utils/code-formatter');
@@ -25,6 +25,7 @@ describe('RoadmapService', () => {
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
   let checkpointQuizPoolRepository: Partial<Repository<CheckpointQuizPool>>;
+  let unitRepository: Partial<Repository<Unit>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
@@ -55,6 +56,8 @@ describe('RoadmapService', () => {
   let quizFindMock: jest.Mock;
   let formatMock: jest.Mock;
   let stepStatusFindMock: jest.Mock;
+  let findUnitMock: jest.Mock<Promise<Unit | null>, [FindOneOptions<Unit>]>;
+  let unitSaveMock: jest.Mock;
 
   beforeEach(() => {
     findFieldsMock = jest.fn();
@@ -72,6 +75,8 @@ describe('RoadmapService', () => {
     quizFindMock = jest.fn();
     formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
     stepStatusFindMock = jest.fn();
+    findUnitMock = jest.fn();
+    unitSaveMock = jest.fn();
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -93,6 +98,10 @@ describe('RoadmapService', () => {
     };
     checkpointQuizPoolRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(checkpointPoolQueryBuilderMock),
+    };
+    unitRepository = {
+      findOne: findUnitMock,
+      save: unitSaveMock,
     };
     solveLogRepository = {
       create: jest.fn(),
@@ -130,6 +139,7 @@ describe('RoadmapService', () => {
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
       checkpointQuizPoolRepository as Repository<CheckpointQuizPool>,
+      unitRepository as Repository<Unit>,
       codeFormatter as CodeFormatter,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
@@ -225,6 +235,64 @@ describe('RoadmapService', () => {
     expect(result.unit?.steps.filter(step => step.isCheckpoint).length).toBe(0);
     expect(result.unit?.steps.find(step => step.id === 10)?.quizCount).toBe(5);
     expect(result.unit?.steps.find(step => step.id === 11)?.quizCount).toBe(4);
+  });
+
+  it('유닛 개요를 응답한다', async () => {
+    findUnitMock.mockResolvedValue({
+      id: 1,
+      title: 'HTML',
+      overview: '### 소개\n\nHTML 기본을 소개합니다.',
+    } as Unit);
+
+    const result = await service.getUnitOverview(1);
+
+    expect(result).toEqual({
+      unit: {
+        id: 1,
+        title: 'HTML',
+        overview: '### 소개\n\nHTML 기본을 소개합니다.',
+      },
+    });
+  });
+
+  it('유닛이 없으면 개요 조회에서 예외를 던진다', async () => {
+    findUnitMock.mockResolvedValue(null);
+
+    await expect(service.getUnitOverview(999)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('유닛 개요를 수정한다', async () => {
+    const unit = {
+      id: 1,
+      title: 'HTML',
+      overview: null,
+    } as Unit;
+
+    findUnitMock.mockResolvedValue(unit);
+    unitSaveMock.mockImplementation(async (savedUnit: Unit) => savedUnit);
+
+    const result = await service.updateUnitOverview(1, '### 새 개요');
+
+    expect(unitSaveMock).toHaveBeenCalledWith({
+      id: 1,
+      title: 'HTML',
+      overview: '### 새 개요',
+    });
+    expect(result).toEqual({
+      unit: {
+        id: 1,
+        title: 'HTML',
+        overview: '### 새 개요',
+      },
+    });
+  });
+
+  it('유닛이 없으면 개요 수정에서 예외를 던진다', async () => {
+    findUnitMock.mockResolvedValue(null);
+
+    await expect(service.updateUnitOverview(999, '### 새 개요')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('필드/유닛/스텝과 퀴즈 개수를 응답한다', async () => {

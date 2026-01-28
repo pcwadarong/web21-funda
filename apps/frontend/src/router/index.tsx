@@ -31,9 +31,9 @@ const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: 
 const BattleRoom = lazy(() =>
   import('@/pages/battle/BattleRoom').then(m => ({ default: m.BattleRoom })),
 );
-const BattleTestPage = lazy(() =>
-  import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
-);
+// const BattleTestPage = lazy(() =>
+//   import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
+// );
 const BattleQuizPage = lazy(() =>
   import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
 );
@@ -84,7 +84,7 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
-          { path: 'battle/test', element: <BattleTestPage /> },
+          // { path: 'battle/test', element: <BattleTestPage /> },
           { path: 'battle/quiz', element: <BattleQuizPage /> },
         ],
       },

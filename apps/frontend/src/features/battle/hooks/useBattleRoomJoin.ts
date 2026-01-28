@@ -35,11 +35,10 @@ export function useBattleRoomJoin(inviteToken: string) {
     // 소켓 참여에 사용할 userId 계산
     const userId = isLoggedIn && user ? user.id : null;
 
-    // battleStore에 roomId, inviteToken, currentUserId 저장
+    // battleStore에 roomId, inviteToken 저장
     setBattleState({
       roomId: data.roomId,
       inviteToken,
-      currentUserId: userId,
     });
 
     // 소켓 참여

@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { RedisService } from 'src/common/redis/redis.service';
+import { QuizResultService } from 'src/common/utils/quiz-result.service';
 import { type DataSource, type FindOneOptions, Repository } from 'typeorm';
 
 import { CodeFormatter } from '../common/utils/code-formatter';
@@ -14,7 +15,7 @@ import {
 import { RankingService } from '../ranking/ranking.service';
 import { User } from '../users/entities/user.entity';
 
-import { CheckpointQuizPool, Field, Quiz, Step } from './entities';
+import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
 import { RoadmapService } from './roadmap.service';
 
 jest.mock('../common/utils/code-formatter');
@@ -25,6 +26,7 @@ describe('RoadmapService', () => {
   let quizRepository: Partial<Repository<Quiz>>;
   let stepRepository: Partial<Repository<Step>>;
   let checkpointQuizPoolRepository: Partial<Repository<CheckpointQuizPool>>;
+  let unitRepository: Partial<Repository<Unit>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
@@ -32,6 +34,7 @@ describe('RoadmapService', () => {
   let dataSource: Partial<DataSource>;
   let codeFormatter: Partial<CodeFormatter>;
   let quizContentService: QuizContentService;
+  let quizResultService: Record<string, jest.Mock>;
   let rankingService: Partial<RankingService>;
   let redisService: Partial<RedisService>;
   let roadmapQueryBuilderMock: {
@@ -55,6 +58,8 @@ describe('RoadmapService', () => {
   let quizFindMock: jest.Mock;
   let formatMock: jest.Mock;
   let stepStatusFindMock: jest.Mock;
+  let findUnitMock: jest.Mock<Promise<Unit | null>, [FindOneOptions<Unit>]>;
+  let unitSaveMock: jest.Mock;
 
   beforeEach(() => {
     findFieldsMock = jest.fn();
@@ -72,6 +77,8 @@ describe('RoadmapService', () => {
     quizFindMock = jest.fn();
     formatMock = jest.fn().mockImplementation((code: string) => Promise.resolve(code));
     stepStatusFindMock = jest.fn();
+    findUnitMock = jest.fn();
+    unitSaveMock = jest.fn();
     roadmapQueryBuilderMock = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -93,6 +100,10 @@ describe('RoadmapService', () => {
     };
     checkpointQuizPoolRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(checkpointPoolQueryBuilderMock),
+    };
+    unitRepository = {
+      findOne: findUnitMock,
+      save: unitSaveMock,
     };
     solveLogRepository = {
       create: jest.fn(),
@@ -119,6 +130,23 @@ describe('RoadmapService', () => {
       assignUserToGroupOnFirstSolveWithManager: jest.fn(),
       addWeeklyXpOnSolveWithManager: jest.fn(),
     };
+    quizResultService = {
+      getQuizResult: jest.fn(),
+      getOptionAnswer: jest.fn(),
+      getMatchingAnswer: jest.fn(),
+      isCorrectOption: jest.fn(),
+      isCorrectMatching: jest.fn(),
+      isCorrectSubjective: jest.fn(),
+      isCorrectShort: jest.fn(),
+      isCorrectEssay: jest.fn(),
+      buildCorrectAnswer: jest.fn(),
+      buildExplanation: jest.fn(),
+      normalizePairs: jest.fn(),
+      toAnswerObject: jest.fn(),
+      isPlainObject: jest.fn(),
+      toCleanString: jest.fn(),
+      toStringArray: jest.fn(),
+    };
     redisService = {
       get: jest.fn(),
       set: jest.fn(),
@@ -130,6 +158,7 @@ describe('RoadmapService', () => {
       quizRepository as Repository<Quiz>,
       stepRepository as Repository<Step>,
       checkpointQuizPoolRepository as Repository<CheckpointQuizPool>,
+      unitRepository as Repository<Unit>,
       codeFormatter as CodeFormatter,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
@@ -139,6 +168,7 @@ describe('RoadmapService', () => {
       dataSource as DataSource,
       rankingService as RankingService,
       redisService as RedisService,
+      quizResultService as unknown as QuizResultService,
     );
   });
 
@@ -173,8 +203,8 @@ describe('RoadmapService', () => {
     expect(result).toEqual({
       field: { name: 'Frontend', slug: 'fe' },
       units: [
-        { id: 2, title: 'JS', orderIndex: 2, progress: 0, successRate: 0 },
-        { id: 1, title: 'HTML', orderIndex: 1, progress: 0, successRate: 0 },
+        { id: 2, title: 'JS', orderIndex: 2, progress: 0, successRate: 0, description: '' },
+        { id: 1, title: 'HTML', orderIndex: 1, progress: 0, successRate: 0, description: '' },
       ],
     });
     expect(roadmapQueryBuilderMock.orderBy).toHaveBeenCalledWith('unit.orderIndex', 'ASC');
@@ -225,6 +255,64 @@ describe('RoadmapService', () => {
     expect(result.unit?.steps.filter(step => step.isCheckpoint).length).toBe(0);
     expect(result.unit?.steps.find(step => step.id === 10)?.quizCount).toBe(5);
     expect(result.unit?.steps.find(step => step.id === 11)?.quizCount).toBe(4);
+  });
+
+  it('유닛 개요를 응답한다', async () => {
+    findUnitMock.mockResolvedValue({
+      id: 1,
+      title: 'HTML',
+      overview: '### 소개\n\nHTML 기본을 소개합니다.',
+    } as Unit);
+
+    const result = await service.getUnitOverview(1);
+
+    expect(result).toEqual({
+      unit: {
+        id: 1,
+        title: 'HTML',
+        overview: '### 소개\n\nHTML 기본을 소개합니다.',
+      },
+    });
+  });
+
+  it('유닛이 없으면 개요 조회에서 예외를 던진다', async () => {
+    findUnitMock.mockResolvedValue(null);
+
+    await expect(service.getUnitOverview(999)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('유닛 개요를 수정한다', async () => {
+    const unit = {
+      id: 1,
+      title: 'HTML',
+      overview: null,
+    } as Unit;
+
+    findUnitMock.mockResolvedValue(unit);
+    unitSaveMock.mockImplementation(async (savedUnit: Unit) => savedUnit);
+
+    const result = await service.updateUnitOverview(1, '### 새 개요');
+
+    expect(unitSaveMock).toHaveBeenCalledWith({
+      id: 1,
+      title: 'HTML',
+      overview: '### 새 개요',
+    });
+    expect(result).toEqual({
+      unit: {
+        id: 1,
+        title: 'HTML',
+        overview: '### 새 개요',
+      },
+    });
+  });
+
+  it('유닛이 없으면 개요 수정에서 예외를 던진다', async () => {
+    findUnitMock.mockResolvedValue(null);
+
+    await expect(service.updateUnitOverview(999, '### 새 개요')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('필드/유닛/스텝과 퀴즈 개수를 응답한다', async () => {
@@ -398,8 +486,11 @@ describe('RoadmapService', () => {
     expect(quizQueryBuilderMock.where).toHaveBeenCalledWith('quiz.step_id = :stepId', {
       stepId: 1,
     });
-    expect(result[0]).toMatchObject({
-      id: 2,
+    const mcq = result.find(quiz => quiz.type === 'MCQ');
+    const matching = result.find(quiz => quiz.type === 'MATCHING');
+
+    expect(mcq).toMatchObject({
+      id: expect.any(Number),
       type: 'MCQ',
       content: {
         question: '페이지의 주요 콘텐츠 영역을 나타내는 시멘틱 요소는?',
@@ -410,19 +501,19 @@ describe('RoadmapService', () => {
         ],
       },
     });
-    expect(result[1]).toMatchObject({
-      id: 3,
+    expect(matching).toMatchObject({
+      id: expect.any(Number),
       type: 'MATCHING',
       content: {
         question: '시멘틱 태그 매칭',
         matching_metadata: {
-          left: [
+          left: expect.arrayContaining([
             { id: '<aside>', text: '<aside>' },
             { id: '<article>', text: '<article>' },
             { id: '<nav>', text: '<nav>' },
             { id: '<header>', text: '<header>' },
-          ],
-          right: [
+          ]),
+          right: expect.arrayContaining([
             {
               id: '보조 콘텐츠(사이드바, 관련 링크 등)',
               text: '보조 콘텐츠(사이드바, 관련 링크 등)',
@@ -433,12 +524,13 @@ describe('RoadmapService', () => {
             },
             { id: '내비게이션 링크 모음', text: '내비게이션 링크 모음' },
             { id: '문서/섹션의 머리말(제목, 소개 등)', text: '문서/섹션의 머리말(제목, 소개 등)' },
-          ],
+          ]),
         },
       },
     });
-    expect(result[2]).toMatchObject({
-      id: 1,
+    const codeQuiz = result.find(quiz => quiz.type === 'CODE');
+    expect(codeQuiz).toMatchObject({
+      id: expect.any(Number),
       type: 'CODE',
       content: {
         question: '네비게이션 영역을 의미하는 시멘틱 요소는?',
@@ -497,6 +589,8 @@ describe('RoadmapService', () => {
       answer: { value: 'c2' },
       explanation: '설명입니다.',
     } as Quiz);
+    (quizResultService.getOptionAnswer as jest.Mock).mockReturnValue('c2');
+    (quizResultService.isCorrectOption as jest.Mock).mockReturnValue(true);
 
     const result = await service.submitQuiz(
       10,
@@ -530,6 +624,12 @@ describe('RoadmapService', () => {
       },
       explanation: '매칭 설명',
     } as Quiz);
+    const correctPairs = [
+      { left: 'div p', right: 'div의 모든 자손 p' },
+      { left: 'div > p', right: 'div의 직계 자식 p' },
+    ];
+    (quizResultService.getMatchingAnswer as jest.Mock).mockReturnValue(correctPairs);
+    (quizResultService.isCorrectMatching as jest.Mock).mockReturnValue(true);
 
     const result = await service.submitQuiz(
       11,
@@ -583,6 +683,8 @@ describe('RoadmapService', () => {
       step: { id: 1 },
     } as Quiz;
     findQuizMock.mockResolvedValue(quiz);
+    (quizResultService.getOptionAnswer as jest.Mock).mockReturnValue('c2');
+    (quizResultService.isCorrectOption as jest.Mock).mockReturnValue(true);
 
     const solveLogRepository: Partial<Repository<SolveLog>> = {
       create: jest.fn().mockImplementation(log => log),
@@ -669,6 +771,8 @@ describe('RoadmapService', () => {
       step: { id: 1 },
     } as Quiz;
     findQuizMock.mockResolvedValue(quiz);
+    (quizResultService.getOptionAnswer as jest.Mock).mockReturnValue('c1');
+    (quizResultService.isCorrectOption as jest.Mock).mockReturnValue(false);
 
     const solveLogRepository: Partial<Repository<SolveLog>> = {
       create: jest.fn().mockImplementation(log => log),

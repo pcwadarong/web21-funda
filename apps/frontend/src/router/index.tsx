@@ -18,9 +18,16 @@ import { guestLoader, protectedLoader } from '@/router/loaders/authLoaders';
 const AdminQuizUpload = lazy(() =>
   import('@/pages/admin/QuizUpload').then(m => ({ default: m.AdminQuizUpload })),
 );
+const AdminUnitOverviewUpload = lazy(() =>
+  import('@/pages/admin/UnitOverviewUpload').then(m => ({ default: m.AdminUnitOverviewUpload })),
+);
+const AdminLeaderboard = lazy(() =>
+  import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
+);
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
+const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
@@ -31,6 +38,7 @@ const SelectField = lazy(() =>
   import('@/pages/learn/SelectField').then(m => ({ default: m.SelectField })),
 );
 const Quiz = lazy(() => import('@/pages/quiz/Quiz').then(m => ({ default: m.Quiz })));
+const Overview = lazy(() => import('@/pages/learn/Overview').then(m => ({ default: m.Overview })));
 const QuizResult = lazy(() =>
   import('@/pages/quiz/QuizResult').then(m => ({ default: m.QuizResult })),
 );
@@ -44,6 +52,9 @@ const Profile = lazy(() => import('@/pages/user/Profile').then(m => ({ default: 
 const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: m.Setting })));
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
+);
+const BattleQuizPage = lazy(() =>
+  import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
 );
 
 export const router = createBrowserRouter([
@@ -64,6 +75,7 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
+          { path: 'battle/:inviteToken', element: <BattleQuizPage /> }, //임시 적용 (state로 변경 예정)
         ],
       },
       {
@@ -72,10 +84,12 @@ export const router = createBrowserRouter([
           { path: 'learn', element: <Learn /> },
           { path: 'learn/select-field', element: <SelectField /> },
           { path: 'learn/roadmap', element: <Roadmap /> },
+          { path: 'learn/overview/:unitId', element: <Overview /> },
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'temp', element: <TempPage /> },
+          { path: 'battle', element: <Battle /> },
         ],
       },
 
@@ -116,7 +130,9 @@ export const router = createBrowserRouter([
                 path: 'admin',
                 element: <AdminGuard />,
                 children: [
+                  { path: 'leaderboard', element: <AdminLeaderboard /> },
                   { path: 'quizzes/upload', element: <AdminQuizUpload /> },
+                  { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
                   { path: 'quizzes/reports', element: <Reports /> },
                 ],
               },

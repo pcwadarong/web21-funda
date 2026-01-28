@@ -15,13 +15,13 @@ export function AdminQuizUpload() {
   }, []);
 
   // 실제 API 호출 로직
-  const handleUploadSubmit = useCallback(async (file: File) => {
+  const handleUploadSubmit = useCallback(async (files: File[]) => {
     setBusy(true);
     setStatus('업로드 중...');
     setResult(null);
 
     try {
-      const parsed = await adminService.uploadQuizzes(file);
+      const parsed = await adminService.uploadQuizzes(files);
       setStatus('업로드 완료');
       setResult(parsed);
     } catch (error) {

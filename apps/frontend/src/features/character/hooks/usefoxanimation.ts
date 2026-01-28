@@ -5,16 +5,6 @@ import * as THREE from 'three';
 import type { FoxAnimationConfig, FoxNodes } from '../types';
 
 /**
- * 재사용을 위한 임시 객체들 (Garbage Collection 방지)
- */
-const _targetPos = new THREE.Vector3(); // 마우스가 가리키는 3D 공간의 목표 지점
-const _currentPos = new THREE.Vector3(); // 현재 여우 머리(Bone)의 세계관(World) 좌표
-const _direction = new THREE.Vector3(); // 머리에서 목표 지점을 향하는 화살표(방향 벡터)
-const _quat = new THREE.Quaternion(); // 방향 벡터를 회전값으로 변환하기 위한 4원수(Quaternion)
-const _euler = new THREE.Euler(); // Quaternion을 x, y, z로 변환한 값
-const _v0 = new THREE.Vector3(0, 0, -1); // 모델이 기본적으로 바라보는 정면 방향 기준점
-
-/**
  * 표정 및 입 모양 구성 데이터
  */
 const EXPRESSION_CONFIGS = {
@@ -44,10 +34,9 @@ const EXPRESSION_CONFIGS = {
     eyebrow: { a: 0 },
   },
   open_O: {
-    head: { a: 0.4, o: 1, mouth_smile: 0, wink: 0, eyes_closed: 0 },
+    head: { a: 0, o: 1, mouth_smile: 0, wink: 0, eyes_closed: 0 },
     eyelash: { smile: 0, wink: 0 },
-    teeth: { a: 0.4, o: 1, smile: 0 },
-    tongue: { a: 0.4 },
+    teeth: { a: 0, o: 1, smile: 0 },
     eyebrow: { a: 0 },
   },
   default: {
@@ -84,13 +73,10 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
     waveHand = false,
     blink = false,
     lookAt = false,
-    autoRotate = false,
     speedMultiplier = 1,
     smile = false,
     bigSmile = false,
-    wiggleHips = false,
     wagTail = false,
-    wiggleEars = false,
     wink = false,
     openMouth = false,
   } = config;
@@ -102,18 +88,9 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
   const refs = useMemo(
     () => ({
       bones: {
-        // 손
-        handL: nodes['hand_ik.L'] as THREE.Bone,
-        handR: nodes['hand_ik.R'] as THREE.Bone,
-
-        // 머리 & 눈
-        headCommon: nodes['MCH-eye_commonparent'] as THREE.Bone,
-        head: nodes.head as THREE.Bone,
-        eyeL: nodes['eye.L'] as THREE.Bone,
-        eyeR: nodes['eye.R'] as THREE.Bone,
+        defHead: nodes['DEF-spine.006'] as THREE.Bone,
 
         // 몸통
-        hips: nodes.hips as THREE.Bone,
         torso: nodes.torso as THREE.Bone,
         spine: nodes.spine_fk as THREE.Bone,
 
@@ -124,18 +101,11 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
         tail3: nodes.tail003 as THREE.Bone,
         tail4: nodes.tail004 as THREE.Bone,
 
-        // 귀
-        earL: nodes['ear.L'] as THREE.Bone,
-        earR: nodes['ear.R'] as THREE.Bone,
-
         // 눈썹
         browTL: nodes['brow.T.L'] as THREE.Bone,
         browTR: nodes['brow.T.R'] as THREE.Bone,
         browBL: nodes['brow.B.L'] as THREE.Bone,
         browBR: nodes['brow.B.R'] as THREE.Bone,
-
-        // 입
-        jaw: nodes.jaw as THREE.Bone,
       },
       morphs: {
         eyelash: nodes.eyelash,
@@ -182,33 +152,13 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
     // 제스처
     // ==========================================
 
-    // 손 흔들기
-    if (waveHand && bones.handL && bones.handR) {
-      const angle = Math.sin(time * 3) * 0.5;
-      bones.handL.rotation.z = Math.max(0, angle);
-      bones.handR.rotation.z = Math.min(0, -angle);
-    }
-
-    // 엉덩이 흔들기
-    if (wiggleHips && bones.hips) {
-      const sway = Math.sin(time * 2) * 0.1;
-      bones.hips.rotation.z = sway;
-      bones.hips.position.x = sway * 0.05;
-    }
-
     // 꼬리 흔들기
     if (wagTail) {
       const wag = Math.sin(time * 4);
       [bones.tail, bones.tail1, bones.tail2, bones.tail3, bones.tail4].forEach((b, i) => {
-        if (b) b.rotation.y = wag * (0.2 - i * 0.05);
+        if (b) b.rotation.y = wag * (0.3 - i * 0.05);
+        b.updateMatrixWorld(true);
       });
-    }
-
-    // 귀 움직이기
-    if (wiggleEars) {
-      const wiggle = Math.sin(time * 3) * 0.15;
-      if (bones.earL) bones.earL.rotation.z = wiggle;
-      if (bones.earR) bones.earR.rotation.z = -wiggle;
     }
 
     // ==========================================
@@ -244,37 +194,34 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
     // 시선 추적
     // ==========================================
 
-    if (lookAt && bones.headCommon) {
-      const { pointer, camera } = state;
+    if (lookAt && bones.defHead) {
+      const { pointer } = state;
       mouseLerp.current.lerp(pointer, 0.1);
 
-      _targetPos.set(mouseLerp.current.x * 2, mouseLerp.current.y * 2, -5);
-      _targetPos.applyMatrix4(camera.matrixWorld);
+      const targetRotationY = -mouseLerp.current.x * 0.6; // 좌우
+      const targetRotationX = mouseLerp.current.y * 0.4; // 상하
 
-      bones.headCommon.getWorldPosition(_currentPos);
-      _direction.subVectors(_targetPos, _currentPos).normalize();
-      _quat.setFromUnitVectors(_v0, _direction);
-      _euler.setFromQuaternion(_quat);
-
-      bones.headCommon.rotation.x = THREE.MathUtils.lerp(
-        bones.headCommon.rotation.x,
-        _euler.x * 0.3,
+      bones.defHead.rotation.y = THREE.MathUtils.lerp(
+        bones.defHead.rotation.y,
+        targetRotationY,
         0.1,
       );
-      bones.headCommon.rotation.y = THREE.MathUtils.lerp(
-        bones.headCommon.rotation.y,
-        _euler.y * 0.3,
+      bones.defHead.rotation.x = THREE.MathUtils.lerp(
+        bones.defHead.rotation.x,
+        targetRotationX,
         0.1,
       );
+
+      bones.defHead.updateMatrixWorld(true);
     }
 
-    // ==========================================
-    // 자동 회전
-    // ==========================================
-
-    if (autoRotate && bones.head) {
-      bones.head.rotation.y = Math.sin(time * 0.5) * 0.2;
-    }
+    // 5. SkinnedMesh 업데이트 강제
+    Object.values(nodes).forEach(node => {
+      // node가 존재하고, SkinnedMesh 타입이며, skeleton 객체가 실제로 있을 때만 호출
+      if (node && (node as any).isSkinnedMesh && (node as any).skeleton) {
+        (node as any).skeleton.update();
+      }
+    });
   });
 
   return {
@@ -282,12 +229,9 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
       waveHand ||
       blink ||
       lookAt ||
-      autoRotate ||
       smile ||
       bigSmile ||
-      wiggleHips ||
       wagTail ||
-      wiggleEars ||
       wink ||
       openMouth
     ),

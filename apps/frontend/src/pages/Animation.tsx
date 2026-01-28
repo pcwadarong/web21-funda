@@ -32,19 +32,13 @@ const CATEGORIES = [
   },
   {
     title: '제스처',
-    items: [
-      { key: 'waveHand', value: true, label: '손 흔들기', icon: '👋' },
-      { key: 'wiggleHips', value: true, label: '엉덩이 흔들기', icon: '💃' },
-      { key: 'wagTail', value: true, label: '꼬리 흔들기', icon: '🦊' },
-      { key: 'wiggleEars', value: true, label: '귀 움직이기', icon: '👂' },
-    ],
+    items: [{ key: 'wagTail', value: true, label: '꼬리 흔들기', icon: '🦊' }],
   },
   {
     title: '기타 설정',
     items: [
       { key: 'blink', value: true, label: '눈 깜빡임 자동', icon: '👁️' },
       { key: 'lookAt', value: true, label: '시선 추적', icon: '👀' },
-      { key: 'autoRotate', value: true, label: '자동 회전', icon: '🔄' },
     ],
   },
 ] as const;
@@ -149,14 +143,14 @@ export function FoxAnimation() {
         <Suspense fallback={null}>
           <FoxLighting />
           <FoxModel scale={0.5} position={[0, 0, 0]} animation={animation} enhancedEyes={true} />
+          <OrbitControls
+            makeDefault
+            target={[0, 0.8, 0]}
+            minDistance={2}
+            maxDistance={10}
+            enablePan={false}
+          />
         </Suspense>
-        <OrbitControls
-          makeDefault
-          target={[0, 0.8, 0]}
-          minDistance={2}
-          maxDistance={10}
-          enablePan={false}
-        />
         {process.env.NODE_ENV === 'development' && <Stats />}
       </Canvas>
     </div>

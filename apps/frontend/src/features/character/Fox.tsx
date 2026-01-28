@@ -8,8 +8,6 @@ import { useFixSkinnedMesh } from '@/feat/character/hooks/useFixSkinnedMesh';
 import { useFoxAnimation } from '@/feat/character/hooks/usefoxanimation';
 import type { FoxAnimationConfig, GLTFResult } from '@/feat/character/types';
 
-import { useFoxDebug } from './useFoxDebug';
-
 export type FoxModelProps = ThreeElements['group'] & {
   animation?: FoxAnimationConfig;
   enhancedEyes?: boolean;
@@ -28,8 +26,6 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
     // 씬 복제 (인스턴스마다 독립적인 애니메이션을 위해)
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const { nodes, materials } = useGraph(clone) as unknown as GLTFResult;
-
-    useFoxDebug(nodes);
 
     // 눈알 반짝이는 재질
     const eyeTextures = useTexture(
@@ -66,7 +62,6 @@ export const FoxModel = forwardRef<THREE.Group, FoxModelProps>(
 
     // 애니메이션 컨트롤러
     useFoxAnimation(nodes, animation);
-
     return (
       <group ref={group} {...props} dispose={null}>
         <group name="Scene">

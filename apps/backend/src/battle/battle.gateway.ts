@@ -338,18 +338,38 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     @MessageBody() payload: { roomId: string; quizId: number; answer: unknown },
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
-    // 정답 검증 로직
-    const quiz = await this.battleService.getBattleQuizById(payload.quizId);
-
-    if (!quiz) {
+    const room = this.battleService.getRoom(payload.roomId);
+    if (!room) {
       return;
     }
 
-    const selection = payload as { option_id?: string; pairs?: MatchingPair[] };
+    if (room.status !== 'in_progress') {
+      return;
+    }
 
+    const currentQuizId = room.quizIds[room.currentQuizIndex];
+    if (currentQuizId !== payload.quizId) {
+      return;
+    }
+
+    const participant = room.participants.find(
+      currentParticipant => currentParticipant.participantId === client.id,
+    );
+    if (!participant) {
+      return;
+    }
+
+    const alreadySubmitted = participant.submissions.some(
+      submission => submission.quizId === payload.quizId,
+    );
+    if (alreadySubmitted) {
+      return;
+    }
+
+    const selection = this.buildSelection(payload.answer);
     const quizResult = await this.battleService.getBattleQuizResultById(payload.quizId, {
       quiz_id: payload.quizId,
-      type: quiz.type,
+      type: '',
       selection,
     });
 
@@ -357,44 +377,52 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const isCorrect = payload.answer === undefined ? false : quizResult.is_correct;
-
-    // 점수 계산 로직
-    const scoreDelta = isCorrect ? 10 : -10;
-    const room = this.battleService.getRoom(payload.roomId);
-
-    if (!room) {
-      return;
-    }
-
-    const totalScore = this.getParticipantScore(room, client.id) + scoreDelta;
+    const scoreDelta = quizResult.is_correct ? 10 : -10;
+    const totalScore = participant.score + scoreDelta;
 
     const updatedRoom = applySubmission(room, {
-      participantId: client.id,
+      participantId: participant.participantId,
       quizId: payload.quizId,
-      isCorrect,
+      isCorrect: quizResult.is_correct,
       scoreDelta,
       totalScore,
       quizResult,
       submittedAt: Date.now(),
     });
+
     this.battleService.saveRoom(updatedRoom);
   }
 
   /**
-   * 참가자 점수를 조회한다.
+   * 제출 답안을 selection 구조로 변환한다.
    *
-   * @param room 방 상태
-   * @param participantId 참가자 ID
-   * @returns 참가자 점수 (없으면 0)
+   * @param answer 제출 답안
+   * @returns selection 객체
    */
-  private getParticipantScore(room: BattleRoomState, participantId: string): number {
-    const participant = room.participants.find(p => p.participantId === participantId);
-    if (!participant) {
-      return 0;
+  private buildSelection(answer: unknown): { option_id?: string; pairs?: MatchingPair[] } {
+    if (typeof answer === 'string') {
+      return { option_id: answer };
     }
 
-    return participant.score;
+    if (this.isMatchingAnswer(answer)) {
+      return { pairs: answer.pairs };
+    }
+
+    return {};
+  }
+
+  /**
+   * 매칭 답안 여부를 확인한다.
+   *
+   * @param answer 제출 답안
+   * @returns 매칭 답안 여부
+   */
+  private isMatchingAnswer(answer: unknown): answer is { pairs: MatchingPair[] } {
+    if (!answer || typeof answer !== 'object') {
+      return false;
+    }
+
+    return Array.isArray((answer as { pairs?: unknown }).pairs);
   }
 
   /**

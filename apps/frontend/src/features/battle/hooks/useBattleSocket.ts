@@ -41,12 +41,14 @@ export function useBattleSocket() {
     const handleRoomUpdated = (data: Partial<BattleRoomSettings>) => {
       // 호출 시점의 최신 상태 로딩
       const currentSettings = useBattleStore.getState().settings;
-      if (!currentSettings) return;
 
+      // settings가 없으면 data에서 기본값 사용, 있으면 병합
       setBattleState({
         settings: {
-          ...currentSettings,
-          ...data,
+          fieldSlug: data.fieldSlug ?? currentSettings?.fieldSlug ?? 'backend',
+          maxPlayers: data.maxPlayers ?? currentSettings?.maxPlayers ?? 5,
+          timeLimitType: data.timeLimitType ?? currentSettings?.timeLimitType ?? 'recommended',
+          timeLimitSeconds: data.timeLimitSeconds ?? currentSettings?.timeLimitSeconds ?? 15,
         },
       });
     };

@@ -25,6 +25,7 @@ export const BattleQuizPage = () => {
     quizSolutions,
     questionStatuses,
     resultEndsAt,
+    rankings,
   } = useBattleStore();
   const { setBattleState, setSelectedAnswer, setQuestionStatus } = actions;
 
@@ -144,6 +145,8 @@ export const BattleQuizPage = () => {
         handleCheckAnswer={handleCheckAnswer}
         handleNextQuestion={handleNextQuestion}
         resultEndsAt={resultEndsAt}
+        rankings={rankings}
+        currentParticipantId={socket?.id ?? null}
       />
       <button
         type="button"

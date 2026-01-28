@@ -1,9 +1,10 @@
 import { css } from '@emotion/react';
 
-import type { BattleQuizData } from '@/feat/battle/types';
+import type { BattleQuizData, Ranking } from '@/feat/battle/types';
 import { QuizContentCard } from '@/feat/quiz/components/QuizContentCard';
 import { QuizHeader } from '@/feat/quiz/components/QuizHeader';
 import type { AnswerType, CorrectAnswerType, QuestionStatus } from '@/feat/quiz/types';
+import { BattleRankBar } from '@/features/battle/components/BattleRankBar';
 
 interface BattleQuizContainerProps {
   quizInfo: BattleQuizData;
@@ -15,6 +16,8 @@ interface BattleQuizContainerProps {
   isLastQuestion: boolean;
   isReviewMode: boolean;
   resultEndsAt: number | null;
+  rankings: Ranking[];
+  currentParticipantId?: string | null;
   handleAnswerChange: (answer: AnswerType) => void;
   handleCheckAnswer: () => Promise<void>;
   handleNextQuestion: () => void;
@@ -30,6 +33,8 @@ export const BattleQuizContainer = ({
   isLastQuestion,
   isReviewMode,
   resultEndsAt,
+  rankings,
+  currentParticipantId,
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
@@ -43,6 +48,11 @@ export const BattleQuizContainer = ({
       endsAt={resultEndsAt ?? quizInfo.endsAt}
     />
     <main css={mainStyle}>
+      <BattleRankBar
+        rankings={rankings}
+        currentParticipantId={currentParticipantId}
+        totalParticipants={rankings.length}
+      />
       <QuizContentCard
         question={quizInfo.question}
         status={questionStatuses[quizInfo.index] ?? 'idle'}
@@ -73,10 +83,12 @@ const containerStyle = css`
 const mainStyle = css`
   flex: 1;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   overflow-y: auto;
   padding: 24px;
+  gap: 24px;
 
   @media (max-width: 768px) {
     padding: 0;

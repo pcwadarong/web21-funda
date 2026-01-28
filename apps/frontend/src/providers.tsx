@@ -6,6 +6,7 @@ import { Loading } from '@/components/Loading';
 import ErrorBoundary from '@/features/error/components/ErrorBoundary';
 import { ErrorView } from '@/features/error/components/ErrorView';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { SocketProvider } from '@/providers/SocketProvider';
 import { ModalProvider } from '@/store/modalStore';
 import { ThemeStoreProvider, useThemeStore } from '@/store/themeStore';
 import { ToastProvider } from '@/store/toastStore';
@@ -61,9 +62,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           <ErrorBoundary fallback={<ErrorView {...APP_ERROR_FALLBACK} />}>
             <Suspense fallback={<Loading />}>
               <AuthProvider>
-                <ToastProvider>
-                  <ModalProvider>{children}</ModalProvider>
-                </ToastProvider>
+                <SocketProvider>
+                  <ToastProvider>
+                    <ModalProvider>{children}</ModalProvider>
+                  </ToastProvider>
+                </SocketProvider>
               </AuthProvider>
             </Suspense>
           </ErrorBoundary>

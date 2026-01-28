@@ -1,7 +1,7 @@
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, useTexture } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import { type GLTF, SkeletonUtils } from 'three-stdlib';
 
 import { useFixSkinnedMesh } from './hooks/useFixSkinnedMesh';
@@ -80,6 +80,28 @@ export function FoxModel(props: React.JSX.IntrinsicElements['group']) {
   const { scene } = useGLTF('/fox/model.glb') as unknown as GLTFResult;
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes, materials } = useGraph(clone) as unknown as GLTFResult;
+
+  // 눈알 반짝이게 재질 교체
+  const [colorMap, roughnessMap, transmissionMap] = useTexture([
+    '/fox/textures/eyes_color.png',
+    '/fox/textures/eyes_roughness.png',
+    '/fox/textures/eyes_transmission.png',
+  ]);
+
+  useMemo(() => {
+    if (materials.eye) {
+      const physicalMat = new THREE.MeshPhysicalMaterial({
+        map: colorMap,
+        roughnessMap: roughnessMap,
+        transmissionMap: transmissionMap,
+        transmission: 1, // 유리처럼 빛을 통과시킴
+        ior: 1.2, // 유리 굴절률
+        thickness: 0.1, // 유리 두께감
+      });
+
+      materials.eye = physicalMat;
+    }
+  }, [materials, colorMap, roughnessMap, transmissionMap]);
 
   useFixSkinnedMesh(clone);
 

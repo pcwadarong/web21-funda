@@ -339,6 +339,12 @@ export const applyLeave = (
     }
   }
 
+  // isHost 필드 재계산: 첫 번째 참여자만 호스트
+  const updatedParticipants = nextParticipants.map((participant, index) => ({
+    ...participant,
+    isHost: index === 0,
+  }));
+
   const nextStatus =
     nextParticipants.length < 2 && state.status !== 'finished' && state.status !== 'invalid'
       ? 'invalid'
@@ -346,7 +352,7 @@ export const applyLeave = (
 
   return {
     ...state,
-    participants: nextParticipants,
+    participants: updatedParticipants,
     hostParticipantId: nextHostParticipantId,
     status: nextStatus,
   };

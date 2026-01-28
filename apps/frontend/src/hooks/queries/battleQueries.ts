@@ -1,9 +1,14 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 
+import type { BattleRoomSettings } from '@/feat/battle/types';
 import { battleService } from '@/services/battleService';
 
 export const useJoinBattleRoomQuery = (inviteToken: string) =>
-  useSuspenseQuery({
+  useSuspenseQuery<{
+    roomId: string;
+    canJoin: boolean;
+    settings: BattleRoomSettings;
+  }>({
     queryKey: ['battle-room', inviteToken],
     queryFn: () => battleService.joinBattleRoom(inviteToken),
     retry: false,

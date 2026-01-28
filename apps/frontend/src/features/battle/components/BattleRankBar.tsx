@@ -31,17 +31,21 @@ export const BattleRankBar = ({
       if (index === 0) return ranking;
 
       const prev = baseRankings[index - 1];
-      return prev && prev.score === ranking.score
-        ? { ...ranking, place: baseRankings[index - 1].place }
-        : ranking;
+      if (!prev) return ranking;
+
+      return prev.score === ranking.score ? { ...ranking, place: prev.place } : ranking;
     });
 
     const myRankingIndex = rankingsWithPlace.findIndex(
       ranking => ranking.participantId === currentParticipantId,
     );
 
-    const myRanking = rankingsWithPlace.splice(myRankingIndex, 1)[0];
-    rankingsWithPlace.unshift(myRanking);
+    if (myRankingIndex > -1) {
+      const myRanking = rankingsWithPlace.splice(myRankingIndex, 1)[0];
+      if (myRanking) {
+        rankingsWithPlace.unshift(myRanking);
+      }
+    }
 
     return {
       visibleRankings: rankingsWithPlace.slice(0, maxVisible),

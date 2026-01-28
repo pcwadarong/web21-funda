@@ -67,11 +67,11 @@ export const QuizContentCard = ({
 
   const battleSubmitButtonLabel = status === 'checking' ? '다른 사람 기다리는 중..' : '제출하기';
   const battleNextButtonLabel = isLast
-    ? '자동으로 다음 문제로 이동합니다..'
-    : '자동으로 경기 결과가 나타납니다..';
+    ? '자동으로 경기 결과가 나타납니다..'
+    : '자동으로 다음 문제로 이동합니다..';
   const battleNextButtonLabelWithTimer =
     displaySeconds !== null
-      ? `${formatTimer(displaySeconds)}초 뒤 ${battleNextButtonLabel}`
+      ? `${displaySeconds}초 뒤 ${battleNextButtonLabel}`
       : battleNextButtonLabel;
 
   return (
@@ -242,9 +242,3 @@ const reportButtonStyle = (theme: Theme, isDarkMode: boolean) => css`
     align-self: end;
   }
 `;
-
-const formatTimer = (totalSeconds: number): string => {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.max(0, totalSeconds % 60);
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};

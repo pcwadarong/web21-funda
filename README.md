@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="https://github.com/user-attachments/assets/ee0fae84-04b7-4da2-93b9-362c03969d55" alt="Funda 히어로 UI" width="720" />
+  <img src="https://github.com/user-attachments/assets/a063f0bf-37f6-49fc-99b5-15f34c39210f" alt="Funda 히어로 UI" />
 
   <p>
     <a href="https://funda.website"><strong>🌐 배포 사이트</strong></a> • 

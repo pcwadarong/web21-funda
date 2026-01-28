@@ -32,6 +32,7 @@ export interface BattleParticipant {
   userId: number | null; // 로그인 유저는 ID, 비로그인은 null
   displayName: string; // 화면에 표시할 닉네임
   score: number; // 현재 누적 점수
+  isHost: boolean; // 방장 여부
   isConnected: boolean; // 현재 연결 여부
   joinedAt: number; // 입장 시간 (타임스탬프)
   leftAt: number | null; // 퇴장 시간
@@ -90,4 +91,12 @@ export interface BattleResultData {
   isCorrect: boolean;
   scoreDelta: number; // +10, -10 등 점수 변화량
   totalScore: number; // 합산된 최종 점수
+}
+
+/**
+ * POST /battles/rooms/join 응답
+ */
+export interface JoinBattleRoomResponse {
+  roomId: string;
+  canJoin: boolean;
 }

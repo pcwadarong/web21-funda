@@ -102,7 +102,7 @@ export const Profile = () => {
 
         <div css={twoColumnGridStyle}>
           <section css={cardStyle(theme)}>
-            <div css={tabRowStyle(theme)}>
+            <div css={tabRowStyle(theme, activeTab)}>
               <button
                 type="button"
                 css={tabStyle(theme, activeTab === 'following')}
@@ -350,21 +350,32 @@ const cardStyle = (theme: Theme) => css`
   gap: 16px;
 `;
 
-const tabRowStyle = (theme: Theme) => css`
+const tabRowStyle = (theme: Theme, activeTab: 'following' | 'followers') => css`
+  position: relative;
   display: flex;
+  align-items: flex-end;
   border-bottom: 1px solid ${theme.colors.border.default};
-  padding-bottom: 8px;
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 50%;
+    height: 2px;
+    background: ${theme.colors.primary.main};
+    transform: translateX(${activeTab === 'following' ? '0%' : '100%'});
+    transition: transform 200ms ease;
+  }
 `;
 
 const tabStyle = (theme: Theme, isActive: boolean) => css`
   flex: 1;
   border: none;
   background: transparent;
-  padding: 6px 0;
+  padding: 6px 0 8px;
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${isActive ? theme.colors.primary.main : theme.colors.text.light};
-  border-bottom: 2px solid ${isActive ? theme.colors.primary.main : 'transparent'};
 `;
 
 const listStyle = css`

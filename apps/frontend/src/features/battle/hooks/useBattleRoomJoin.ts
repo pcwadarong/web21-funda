@@ -17,7 +17,7 @@ export function useBattleRoomJoin(inviteToken: string) {
 
   // 이미 join한 방 추적 (중복 join 방지)
   const currentRoomId = useBattleStore(state => state.roomId);
-
+  const participants = useBattleStore(state => state.participants);
   useEffect(() => {
     if (!isAuthReady || !data) return;
 
@@ -27,23 +27,32 @@ export function useBattleRoomJoin(inviteToken: string) {
       return;
     }
 
-    // 이미 같은 방에 join했으면 다시 join하지 않기
-    if (currentRoomId === data.roomId) {
-      return;
-    }
-
     // 소켓 참여에 사용할 userId 계산
     const userId = isLoggedIn && user ? user.id : null;
 
-    // battleStore에 roomId, inviteToken 저장
+    // 이미 같은 방에 join했으면 다시 join하지 않기
+    if (currentRoomId === data.roomId && participants.length > 0) {
+      return;
+    }
+    // battleStore에 roomId, inviteToken, settings 저장
     setBattleState({
       roomId: data.roomId,
       inviteToken,
+      settings: data.settings,
     });
 
     // 소켓 참여
     joinRoom(data.roomId, { userId }); // displayName 미전달 → 백엔드 자동 생성
-  }, [data, isAuthReady, inviteToken, navigate, isLoggedIn, user, currentRoomId]);
+  }, [
+    data,
+    isAuthReady,
+    inviteToken,
+    navigate,
+    isLoggedIn,
+    user,
+    currentRoomId,
+    participants.length,
+  ]);
 
   return { roomId: data?.roomId, canJoin: data?.canJoin };
 }

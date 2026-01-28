@@ -23,11 +23,7 @@ import type { FieldRoadmapResponse } from './dto/field-roadmap.dto';
 import type { FieldUnitsResponse, StepSummary } from './dto/field-units.dto';
 import type { FirstUnitResponse, UnitSummary } from './dto/first-unit.dto';
 import type { QuizResponse } from './dto/quiz-list.dto';
-import type {
-  MatchingPair,
-  QuizSubmissionRequest,
-  QuizSubmissionResponse,
-} from './dto/quiz-submission.dto';
+import type { QuizSubmissionRequest, QuizSubmissionResponse } from './dto/quiz-submission.dto';
 import type { UnitOverviewResponse } from './dto/unit-overview.dto';
 import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
 

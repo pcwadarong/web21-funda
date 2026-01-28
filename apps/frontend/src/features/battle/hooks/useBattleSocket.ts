@@ -1,8 +1,10 @@
 import { useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import type {
   BattleParticipant,
   BattleQuizData,
+  BattleReward,
   BattleRoomSettings,
   BattleRoomStatus,
   Ranking,
@@ -19,6 +21,7 @@ export function useBattleSocket() {
   const battleStatus = useBattleStore(state => state.status);
   const { setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus, reset } =
     useBattleStore(state => state.actions);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!socket) return;
@@ -90,7 +93,15 @@ export function useBattleSocket() {
     };
 
     // 4. 게임 종료 및 무효 처리
-    const handleBattleFinish = () => setBattleState({ status: 'finished' });
+    const handleBattleFinish = (data: { rankings?: Ranking[]; rewards?: BattleReward[] }) => {
+      setBattleState({
+        status: 'finished',
+        rankings: data.rankings ?? [],
+        rewards: data.rewards ?? [],
+      });
+
+      navigate('/battle/result');
+    };
     const handleBattleInvalid = (data: { reason: string }) => {
       setBattleState({ status: 'invalid' });
       console.warn('Game Invalid:', data.reason); //TODO: 이유 UI에 출력
@@ -122,7 +133,15 @@ export function useBattleSocket() {
       socket.off('battle:invalid', handleBattleInvalid);
       socket.off('battle:error', handleBattleError);
     };
-  }, [socket, setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus]);
+  }, [
+    socket,
+    setBattleState,
+    setParticipants,
+    setQuiz,
+    setQuizSolution,
+    setQuestionStatus,
+    navigate,
+  ]);
 
   const disconnect = useCallback(() => {
     socketContext.disconnect();

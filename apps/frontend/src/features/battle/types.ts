@@ -93,3 +93,12 @@ export interface BattleResultData {
   scoreDelta: number; // +10, -10 등 점수 변화량
   totalScore: number; // 합산된 최종 점수
 }
+
+/**
+ * 배틀 보상 정보
+ */
+export interface BattleReward {
+  participantId: string;
+  rewardType: 'diamond';
+  amount: number;
+}

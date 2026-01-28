@@ -26,7 +26,7 @@ export class BattleController {
     const roomId = this.createRoomId();
     const inviteToken = this.createInviteToken();
 
-    const fieldSlug = body.fieldSlug ?? 'cs';
+    const fieldSlug = body.fieldSlug ?? 'fe';
     const maxPlayers = body.maxPlayers ?? 5;
     const timeLimitType = body.timeLimitType ?? 'recommended';
 

@@ -1,5 +1,6 @@
 import ArrowLeft from '@/assets/arrow-left.svg?react';
 import Check from '@/assets/check.svg?react';
+import Copy from '@/assets/copy.svg?react';
 import Algorithm from '@/assets/field-icons/algorithm.svg?react';
 import Backend from '@/assets/field-icons/backend.svg?react';
 import Cloud from '@/assets/field-icons/cloud.svg?react';
@@ -78,6 +79,7 @@ export const IconMap = {
   GraphUp,
   Lightning,
   Battle,
+  Copy,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

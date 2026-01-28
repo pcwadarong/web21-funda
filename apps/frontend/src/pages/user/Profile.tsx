@@ -2,6 +2,8 @@ import { css, useTheme } from '@emotion/react';
 import { useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
+import { Modal } from '@/components/Modal';
+import { FollowListModal } from '@/features/profile/components/FollowListModal';
 import {
   useProfileFollowers,
   useProfileFollowing,
@@ -40,6 +42,7 @@ export const Profile = () => {
   const profileImageUrl = profileSummary?.profileImageUrl ?? null;
 
   const listItems = useMemo(() => selectedList ?? [], [selectedList]);
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
 
   return (
     <main css={pageStyle}>
@@ -116,7 +119,11 @@ export const Profile = () => {
                     </div>
                   ))}
               </div>
-              <button type="button" css={moreButtonStyle(theme)}>
+              <button
+                type="button"
+                css={moreButtonStyle(theme)}
+                onClick={() => setIsFollowModalOpen(true)}
+              >
                 더보기
               </button>
             </div>
@@ -161,6 +168,23 @@ export const Profile = () => {
             </div>
           </section>
         </div>
+        {isFollowModalOpen && (
+          <Modal
+            title="친구 목록"
+            content={
+              <FollowListModal
+                initialTab={activeTab}
+                followingCount={followingCount}
+                followerCount={followerCount}
+                following={following ?? []}
+                followers={followers ?? []}
+                isLoading={isListLoading}
+              />
+            }
+            onClose={() => setIsFollowModalOpen(false)}
+            maxWidth={720}
+          />
+        )}
       </div>
     </main>
   );
@@ -296,12 +320,12 @@ const cardStyle = (theme: Theme) => css`
 
 const tabRowStyle = (theme: Theme) => css`
   display: flex;
-  gap: 12px;
   border-bottom: 1px solid ${theme.colors.border.default};
   padding-bottom: 8px;
 `;
 
 const tabStyle = (theme: Theme, isActive: boolean) => css`
+  flex: 1;
   border: none;
   background: transparent;
   padding: 6px 0;

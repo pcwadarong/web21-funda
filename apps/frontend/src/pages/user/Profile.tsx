@@ -1,8 +1,9 @@
 import { css, useTheme } from '@emotion/react';
 import { useMemo, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { Modal } from '@/components/Modal';
+import { ErrorView } from '@/features/error/components/ErrorView';
 import { FollowListModal } from '@/features/profile/components/FollowListModal';
 import {
   useProfileFollowers,
@@ -16,18 +17,45 @@ export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
   const theme = useTheme();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'following' | 'followers'>('following');
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
   const numericUserId = userId ? Number(userId) : null;
   const shouldFetch = Number.isFinite(numericUserId ?? NaN) ? numericUserId : null;
 
-  const { data: profileSummary } = useProfileSummary(shouldFetch);
+  const {
+    data: profileSummary,
+    error: profileSummaryError,
+    isLoading: isProfileLoading,
+  } = useProfileSummary(shouldFetch);
   const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
   const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
 
+  const followingList = useMemo(() => following ?? [], [following]);
+
+  const followerList = useMemo(() => followers ?? [], [followers]);
+
+  const followerCount = followerList.length;
+  const followingCount = followingList.length;
+
+  const activeList = useMemo(
+    () => (activeTab === 'following' ? followingList : followerList),
+    [activeTab, followerList, followingList],
+  );
+
+  const mainListItems = useMemo(() => activeList.slice(0, 3), [activeList]);
+
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
   if (!userId && !user) return <Navigate to="/login" replace />;
+  if (!isProfileLoading && (profileSummaryError || (shouldFetch !== null && !profileSummary))) {
+    return (
+      <ErrorView
+        title="사용자를 찾을 수 없습니다."
+        description="요청하신 사용자 정보가 존재하지 않습니다."
+      />
+    );
+  }
 
-  const selectedList = activeTab === 'following' ? following : followers;
   const isListLoading = activeTab === 'following' ? isFollowingLoading : isFollowersLoading;
 
   const displayName = profileSummary?.displayName ?? '사용자';
@@ -37,12 +65,11 @@ export const Profile = () => {
   const totalStudyTimeText = profileSummary ? `${profileSummary.totalStudyTimeMinutes} min` : '-';
   const solvedQuizzesText = profileSummary ? `${profileSummary.solvedQuizzesCount}` : '-';
   const streakText = profileSummary ? `${profileSummary.currentStreak} days` : '-';
-  const followerCount = profileSummary?.followerCount ?? 0;
-  const followingCount = profileSummary?.followingCount ?? 0;
   const profileImageUrl = profileSummary?.profileImageUrl ?? null;
-
-  const listItems = useMemo(() => selectedList ?? [], [selectedList]);
-  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
+  const handleMoveToProfile = (targetUserId: number) => {
+    navigate(`/profile/${targetUserId}`);
+    setIsFollowModalOpen(false);
+  };
 
   return (
     <main css={pageStyle}>
@@ -94,29 +121,36 @@ export const Profile = () => {
             <div css={followListBodyStyle}>
               <div css={listStyle}>
                 {isListLoading && <span css={emptyTextStyle(theme)}>로딩 중...</span>}
-                {!isListLoading && listItems.length === 0 && (
+                {!isListLoading && activeList.length === 0 && (
                   <span css={emptyTextStyle(theme)}>표시할 사용자가 없습니다.</span>
                 )}
                 {!isListLoading &&
-                  listItems.map(member => (
-                    <div key={member.userId} css={listItemStyle(theme)}>
-                      {member.profileImageUrl ? (
-                        <img
-                          src={member.profileImageUrl}
-                          alt={`${member.displayName} 프로필`}
-                          css={listAvatarStyle(theme)}
-                        />
-                      ) : (
-                        <div css={listAvatarStyle(theme)} />
-                      )}
-                      <div css={listTextStyle}>
-                        <strong css={listNameStyle(theme)}>{member.displayName}</strong>
-                        <span css={listSubStyle(theme)}>
-                          {member.experience} XP · {member.tier?.name ?? '-'}
-                        </span>
+                  mainListItems.map(member => (
+                    <button
+                      key={member.userId}
+                      type="button"
+                      css={listItemButtonStyle(theme)}
+                      onClick={() => handleMoveToProfile(member.userId)}
+                    >
+                      <div css={listItemStyle(theme)}>
+                        {member.profileImageUrl ? (
+                          <img
+                            src={member.profileImageUrl}
+                            alt={`${member.displayName} 프로필`}
+                            css={listAvatarStyle(theme)}
+                          />
+                        ) : (
+                          <div css={listAvatarStyle(theme)} />
+                        )}
+                        <div css={listTextStyle}>
+                          <strong css={listNameStyle(theme)}>{member.displayName}</strong>
+                          <span css={listSubStyle(theme)}>
+                            {member.experience} XP · {member.tier?.name ?? '-'}
+                          </span>
+                        </div>
+                        <span css={listRankStyle(theme)} />
                       </div>
-                      <span css={listRankStyle(theme)} />
-                    </div>
+                    </button>
                   ))}
               </div>
               <button
@@ -130,18 +164,18 @@ export const Profile = () => {
           </section>
 
           <section css={cardStyle(theme)}>
-            <h2 css={sectionTitleStyle(theme)}>펀다의 통계</h2>
+            <h2 css={sectionTitleStyle(theme)}>{displayName}의 통계</h2>
             <div css={statListStyle}>
               <div css={statItemStyle(theme)}>
-                <span css={statLabelStyle(theme)}>Total Study Time</span>
+                <span css={statLabelStyle(theme)}>총 학습 시간</span>
                 <strong css={statValueStyle(theme)}>{totalStudyTimeText}</strong>
               </div>
               <div css={statItemStyle(theme)}>
-                <span css={statLabelStyle(theme)}>Questions Solved</span>
+                <span css={statLabelStyle(theme)}>푼 문제 수</span>
                 <strong css={statValueStyle(theme)}>{solvedQuizzesText}</strong>
               </div>
               <div css={statItemStyle(theme)}>
-                <span css={statLabelStyle(theme)}>Current Streak</span>
+                <span css={statLabelStyle(theme)}>현재 스트릭</span>
                 <strong css={statValueStyle(theme)}>{streakText}</strong>
               </div>
             </div>
@@ -176,9 +210,10 @@ export const Profile = () => {
                 initialTab={activeTab}
                 followingCount={followingCount}
                 followerCount={followerCount}
-                following={following ?? []}
-                followers={followers ?? []}
+                following={followingList}
+                followers={followerList}
                 isLoading={isListLoading}
+                onUserClick={handleMoveToProfile}
               />
             }
             onClose={() => setIsFollowModalOpen(false)}
@@ -217,10 +252,7 @@ const pageTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  background: linear-gradient(90deg, ${theme.colors.primary.main}, ${theme.colors.primary.light});
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: ${theme.colors.primary.main};
   letter-spacing: 0.12em;
   padding-left: 0.5rem;
 `;
@@ -346,6 +378,7 @@ const followListBodyStyle = css`
   flex-direction: column;
   gap: 12px;
   flex: 1;
+  min-height: 210px;
 `;
 
 const listItemStyle = (theme: Theme) => css`
@@ -356,6 +389,18 @@ const listItemStyle = (theme: Theme) => css`
   padding: 10px 12px;
   border-radius: ${theme.borderRadius.medium};
   background: ${theme.colors.surface.default};
+`;
+
+const listItemButtonStyle = (theme: Theme) => css`
+  border: none;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: ${theme.borderRadius.medium};
+  &:hover {
+    background: ${theme.colors.surface.bold};
+  }
 `;
 
 const listAvatarStyle = (theme: Theme) => css`

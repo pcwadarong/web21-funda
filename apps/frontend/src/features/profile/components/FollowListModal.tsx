@@ -11,6 +11,7 @@ interface FollowListModalProps {
   followers: ProfileFollowUser[];
   following: ProfileFollowUser[];
   isLoading: boolean;
+  onUserClick: (userId: number) => void;
 }
 
 export const FollowListModal = ({
@@ -20,6 +21,7 @@ export const FollowListModal = ({
   followers,
   following,
   isLoading,
+  onUserClick,
 }: FollowListModalProps) => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState<'following' | 'followers'>(initialTab);
@@ -53,24 +55,31 @@ export const FollowListModal = ({
         {!isLoading && list.length === 0 && <p css={emptyTextStyle(theme)}>{emptyText}</p>}
         {!isLoading &&
           list.map(member => (
-            <div key={member.userId} css={listItemStyle(theme)}>
-              {member.profileImageUrl ? (
-                <img
-                  src={member.profileImageUrl}
-                  alt={`${member.displayName} 프로필`}
-                  css={avatarStyle(theme)}
-                />
-              ) : (
-                <div css={avatarStyle(theme)} />
-              )}
-              <div css={textStyle}>
-                <strong css={nameStyle(theme)}>{member.displayName}</strong>
-                <span css={subStyle(theme)}>
-                  {member.experience} XP · {member.tier?.name ?? '-'}
-                </span>
+            <button
+              key={member.userId}
+              type="button"
+              css={listItemButtonStyle(theme)}
+              onClick={() => onUserClick(member.userId)}
+            >
+              <div css={listItemStyle(theme)}>
+                {member.profileImageUrl ? (
+                  <img
+                    src={member.profileImageUrl}
+                    alt={`${member.displayName} 프로필`}
+                    css={avatarStyle(theme)}
+                  />
+                ) : (
+                  <div css={avatarStyle(theme)} />
+                )}
+                <div css={textStyle}>
+                  <strong css={nameStyle(theme)}>{member.displayName}</strong>
+                  <span css={subStyle(theme)}>
+                    {member.experience} XP · {member.tier?.name ?? '-'}
+                  </span>
+                </div>
+                <span css={rankStyle(theme)} />
               </div>
-              <span css={rankStyle(theme)} />
-            </div>
+            </button>
           ))}
       </div>
     </div>
@@ -121,6 +130,18 @@ const listItemStyle = (theme: Theme) => css`
   padding: 10px 12px;
   border-radius: ${theme.borderRadius.medium};
   background: ${theme.colors.surface.default};
+`;
+
+const listItemButtonStyle = (theme: Theme) => css`
+  border: none;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: ${theme.borderRadius.medium};
+  &:hover {
+    background: ${theme.colors.surface.bold};
+  }
 `;
 
 const avatarStyle = (theme: Theme) => css`

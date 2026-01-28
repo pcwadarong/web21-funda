@@ -20,6 +20,7 @@ export const useProfileSummary = (userId: number | null) =>
     },
     enabled: userId !== null,
     staleTime: 1000 * 60,
+    retry: false,
   });
 
 export const useProfileFollowers = (userId: number | null) =>

@@ -27,13 +27,21 @@ export function useBattleRoomJoin(inviteToken: string) {
       return;
     }
 
-    // 소켓 참여에 사용할 userId 계산
+    // 소켓 참여에 사용할 사용자 정보
     const userId = isLoggedIn && user ? user.id : null;
+    const displayName = isLoggedIn && user ? user.displayName : undefined;
+    const profileImageUrl = isLoggedIn && user ? (user.profileImageUrl ?? undefined) : undefined;
 
     // 이미 같은 방에 join했으면 다시 join하지 않기
     if (currentRoomId === data.roomId && participants.length > 0) {
       return;
     }
+
+    // 다른 방으로 진입하는 경우, 이전 상태 초기화
+    if (currentRoomId && currentRoomId !== data.roomId) {
+      useBattleStore.getState().actions.reset();
+    }
+
     // battleStore에 roomId, inviteToken, settings 저장
     setBattleState({
       roomId: data.roomId,
@@ -42,7 +50,7 @@ export function useBattleRoomJoin(inviteToken: string) {
     });
 
     // 소켓 참여
-    joinRoom(data.roomId, { userId }); // displayName 미전달 → 백엔드 자동 생성
+    joinRoom(data.roomId, { userId, displayName, profileImageUrl });
   }, [
     data,
     isAuthReady,

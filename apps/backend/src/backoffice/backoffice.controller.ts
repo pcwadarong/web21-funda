@@ -99,4 +99,57 @@ export class BackofficeController {
 
     return summary;
   }
+
+  @Post('units/overview/upload')
+  @UseInterceptors(FilesInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: '유닛 개요 대량 업로드 (JSONL)',
+    description: 'JSONL 파일을 통해 유닛 개요(overview)를 일괄 업데이트합니다.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiCreatedResponse({
+    description: '업로드 결과 요약',
+    schema: {
+      example: {
+        processed: 10,
+        unitsUpdated: 9,
+        unitsNotFound: 1,
+      },
+    },
+  })
+  async uploadUnitOverviews(@UploadedFiles() files: UploadedQuizFile[]) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('업로드된 파일이 없습니다.');
+    }
+
+    const summary = {
+      processed: 0,
+      unitsUpdated: 0,
+      unitsNotFound: 0,
+    };
+
+    for (const file of files) {
+      const fileSummary = await this.backofficeService.uploadUnitOverviewsFromJsonl(file.buffer);
+      summary.processed += fileSummary.processed;
+      summary.unitsUpdated += fileSummary.unitsUpdated;
+      summary.unitsNotFound += fileSummary.unitsNotFound;
+    }
+
+    return summary;
+  }
 }

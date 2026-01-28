@@ -17,6 +17,9 @@ import { guestLoader, protectedLoader } from '@/router/loaders/authLoaders';
 const AdminQuizUpload = lazy(() =>
   import('@/pages/admin/QuizUpload').then(m => ({ default: m.AdminQuizUpload })),
 );
+const AdminUnitOverviewUpload = lazy(() =>
+  import('@/pages/admin/UnitOverviewUpload').then(m => ({ default: m.AdminUnitOverviewUpload })),
+);
 const AdminLeaderboard = lazy(() =>
   import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
 );
@@ -123,6 +126,7 @@ export const router = createBrowserRouter([
                 children: [
                   { path: 'leaderboard', element: <AdminLeaderboard /> },
                   { path: 'quizzes/upload', element: <AdminQuizUpload /> },
+                  { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
                   { path: 'quizzes/reports', element: <Reports /> },
                 ],
               },

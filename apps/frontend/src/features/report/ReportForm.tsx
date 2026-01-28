@@ -65,7 +65,7 @@ const ReportModal = ({ quizId }: ReportModalProps) => {
       const response = await createReportMutation.mutateAsync({
         quizId,
         data: {
-          userId: user?.id,
+          userId: Number(user?.id),
           report_description,
         },
       });

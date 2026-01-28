@@ -27,6 +27,7 @@ export type BattleParticipant = {
   userId: number | null;
   clientId?: string; // 게스트 사용자 식별용 (HttpOnly 쿠키에서)
   displayName: string;
+  avatar?: string; // 프로필 이미지 URL
   score: number;
   isConnected: boolean;
   isHost: boolean; // 방장 여부

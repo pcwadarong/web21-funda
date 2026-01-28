@@ -34,6 +34,7 @@ const SelectField = lazy(() =>
   import('@/pages/learn/SelectField').then(m => ({ default: m.SelectField })),
 );
 const Quiz = lazy(() => import('@/pages/quiz/Quiz').then(m => ({ default: m.Quiz })));
+const Overview = lazy(() => import('@/pages/learn/Overview').then(m => ({ default: m.Overview })));
 const QuizResult = lazy(() =>
   import('@/pages/quiz/QuizResult').then(m => ({ default: m.QuizResult })),
 );
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
           { path: 'learn', element: <Learn /> },
           { path: 'learn/select-field', element: <SelectField /> },
           { path: 'learn/roadmap', element: <Roadmap /> },
+          { path: 'learn/overview/:unitId', element: <Overview /> },
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },

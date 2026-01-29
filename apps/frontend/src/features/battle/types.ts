@@ -30,11 +30,13 @@ export type BattleErrorCode =
  * 참가자 상세 정보 (battle:participantsUpdated 용)
  */
 export interface BattleParticipant {
+  avatar: string | undefined; // 프로필 이미지 URL
   participantId: string; // 소켓 ID (고유 식별자)
   userId: number | null; // 로그인 유저는 ID, 비로그인은 null
   displayName: string; // 화면에 표시할 닉네임
   score: number; // 현재 누적 점수
   avatar?: string; // 프로필 이미지 URL (선택)
+  isHost: boolean; // 방장 여부
   isConnected: boolean; // 현재 연결 여부
   joinedAt: number; // 입장 시간 (타임스탬프)
   leftAt: number | null; // 퇴장 시간
@@ -56,7 +58,6 @@ export interface BattleRoomSettings {
   fieldSlug: string; // 퀴즈 분야 (CS 등)
   maxPlayers: number; // 최대 인원
   timeLimitType: BattleTimeLimitType;
-  timeLimitSeconds: number; // 실제 카운트다운 초
 }
 
 /**
@@ -95,6 +96,13 @@ export interface BattleResultData {
   totalScore: number; // 합산된 최종 점수
 }
 
+/**
+ * POST /battles/rooms/join 응답
+ */
+export interface JoinBattleRoomResponse {
+  roomId: string;
+  canJoin: boolean;
+}
 /**
  * 배틀 보상 정보
  */

@@ -1,14 +1,14 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
+import { AdminSuspenseLayout } from '@/layouts/AdminSuspenseLayout';
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
+// import { ServicePreparation } from '@/pages/common/ServicePreparation';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
-// import { ServicePreparation } from '@/pages/common/ServicePreparation';
-import TempPage from '@/pages/Temp';
 import { AdminGuard } from '@/router/guards/AdminGuard';
 import { GuestGuard } from '@/router/guards/GuestGuard';
 import { LoginGuard } from '@/router/guards/LoginGuard';
@@ -24,20 +24,24 @@ const AdminUnitOverviewUpload = lazy(() =>
 const AdminLeaderboard = lazy(() =>
   import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
 );
+const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
+
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
 const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
-const BattleTestPage = lazy(() =>
-  import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
+const BattleRoom = lazy(() =>
+  import('@/pages/battle/BattleRoom').then(m => ({ default: m.BattleRoom })),
 );
+// const BattleTestPage = lazy(() =>
+//   import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
+// );
 const BattleQuizPage = lazy(() =>
   import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
 );
 const BattleResultPage = lazy(() =>
   import('@/pages/battle/BattleResultPage').then(m => ({ default: m.BattleResultPage })),
 );
-const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 const InitialFields = lazy(() =>
   import('@/pages/learn/InitialFields').then(m => ({ default: m.InitialFields })),
 );
@@ -62,6 +66,7 @@ const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: 
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
 );
+const Animation = lazy(() => import('@/pages/Animation').then(m => ({ default: m.FoxAnimation })));
 
 export const router = createBrowserRouter([
   {
@@ -81,7 +86,7 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
-          { path: 'battle/test', element: <BattleTestPage /> },
+          // { path: 'battle/test', element: <BattleTestPage /> },
           { path: 'battle/quiz', element: <BattleQuizPage /> },
         ],
       },
@@ -95,8 +100,13 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
-          { path: 'temp', element: <TempPage /> },
+          { path: 'animation', element: <Animation /> },
           { path: 'battle', element: <Battle /> },
+          {
+            path: 'battle/:inviteToken',
+            element: <BattleRoom />,
+            errorElement: <Navigate to="/battle" replace />,
+          },
           { path: 'battle/result', element: <BattleResultPage /> },
         ],
       },
@@ -129,11 +139,10 @@ export const router = createBrowserRouter([
               { path: 'profile/:userId?', element: <Profile /> },
             ],
           },
-          // 사이드바가 없는 페이지 그룹
+          // 관리자 전용 (이중 보호)
           {
-            element: <SidebarSuspenseLayout />,
+            element: <AdminSuspenseLayout />,
             children: [
-              // 관리자 전용 (이중 보호)
               {
                 path: 'admin',
                 element: <AdminGuard />,

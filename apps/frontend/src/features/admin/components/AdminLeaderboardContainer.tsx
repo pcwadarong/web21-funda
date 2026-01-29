@@ -74,11 +74,45 @@ export const AdminLeaderboardContainer = ({
   const groupOptions = buildGroupOptions();
 
   return (
-    <main css={pageStyle}>
-      <div css={pageContentStyle}>
-        <header css={headerStyle}>
-          <h1 css={pageTitleStyle(theme)}>ADMIN LEADERBOARD</h1>
-          {onRefresh && (
+    <div css={pageContentStyle}>
+      <form css={filterCardStyle(theme)} onSubmit={handleSubmit}>
+        <div css={filterGridStyle}>
+          <label css={filterLabelStyle(theme)} htmlFor="admin-ranking-tier">
+            <span>티어</span>
+            <select
+              id="admin-ranking-tier"
+              value={filters.tierName}
+              onChange={event => onFilterChange('tierName', event.target.value)}
+              css={filterSelectStyle(theme)}
+            >
+              <option value="">선택</option>
+              {tierOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label css={filterLabelStyle(theme)} htmlFor="admin-ranking-group">
+            <span>그룹 번호</span>
+            <select
+              id="admin-ranking-group"
+              value={filters.groupIndex}
+              onChange={event => onFilterChange('groupIndex', event.target.value)}
+              css={filterSelectStyle(theme)}
+            >
+              <option value="">선택</option>
+              {groupOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div css={filterActionsStyle}>
+          {formError && <p css={formErrorStyle(theme)}>{formError}</p>}
+          {onRefresh && stateType === 'normal' && (
             <button
               css={refreshButtonStyle(theme, isRefreshing)}
               onClick={onRefresh}
@@ -89,125 +123,79 @@ export const AdminLeaderboardContainer = ({
               <SVGIcon icon="Refresh" size="sm" />
             </button>
           )}
-        </header>
+          <button css={filterSubmitStyle(theme)} type="submit" disabled={isLoading}>
+            조회
+          </button>
+        </div>
+      </form>
 
-        <form css={filterCardStyle(theme)} onSubmit={handleSubmit}>
-          <div css={filterGridStyle}>
-            <label css={filterLabelStyle(theme)} htmlFor="admin-ranking-tier">
-              <span>티어</span>
-              <select
-                id="admin-ranking-tier"
-                value={filters.tierName}
-                onChange={event => onFilterChange('tierName', event.target.value)}
-                css={filterSelectStyle(theme)}
-              >
-                <option value="">선택</option>
-                {tierOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label css={filterLabelStyle(theme)} htmlFor="admin-ranking-group">
-              <span>그룹 번호</span>
-              <select
-                id="admin-ranking-group"
-                value={filters.groupIndex}
-                onChange={event => onFilterChange('groupIndex', event.target.value)}
-                css={filterSelectStyle(theme)}
-              >
-                <option value="">선택</option>
-                {groupOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div css={filterActionsStyle}>
-            {formError && <p css={formErrorStyle(theme)}>{formError}</p>}
-            <button css={filterSubmitStyle(theme)} type="submit" disabled={isLoading}>
-              조회
-            </button>
-          </div>
-        </form>
-
-        {isLoading ? (
-          <Loading text="랭킹 정보를 불러오는 중입니다." />
-        ) : stateType !== 'normal' ? (
-          <LeaderboardStateMessage state={stateType} message={stateMessage} />
-        ) : (
-          <>
-            <section css={summaryCardStyle(theme)} data-section="summary">
-              <div>
-                <div css={summaryMainStyle}>
-                  <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
-                  <button
-                    type="button"
-                    aria-label="리더보드 안내 열기"
-                    css={infoButtonStyle(theme)}
-                    onClick={() =>
-                      openModal('리더보드란?', <InfoLeaderBoardModal />, {
-                        maxWidth: 880,
-                      })
-                    }
-                  >
-                    <span>?</span>
-                  </button>
-                </div>
-                <p css={summarySubTextStyle(theme)}>
-                  {weeklyRanking!.weekKey}주차 · 그룹 {weeklyRanking!.groupIndex} · 총{' '}
-                  {weeklyRanking!.totalMembers}명
-                </p>
+      {isLoading ? (
+        <Loading text="랭킹 정보를 불러오는 중입니다." />
+      ) : stateType !== 'normal' ? (
+        <LeaderboardStateMessage state={stateType} message={stateMessage} />
+      ) : (
+        <>
+          <section css={summaryCardStyle(theme)} data-section="summary">
+            <div>
+              <div css={summaryMainStyle}>
+                <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
+                <button
+                  type="button"
+                  aria-label="리더보드 안내 열기"
+                  css={infoButtonStyle(theme)}
+                  onClick={() =>
+                    openModal('리더보드란?', <InfoLeaderBoardModal />, {
+                      maxWidth: 880,
+                    })
+                  }
+                >
+                  <span>?</span>
+                </button>
               </div>
-              <div css={summaryRightStyle(theme)}>{remainingDaysText}</div>
-            </section>
+              <p css={summarySubTextStyle(theme)}>
+                {weeklyRanking!.weekKey}주차 · 그룹 {weeklyRanking!.groupIndex} · 총{' '}
+                {weeklyRanking!.totalMembers}명
+              </p>
+            </div>
+            <div css={summaryRightStyle(theme)}>{remainingDaysText}</div>
+          </section>
 
-            <section css={leaderboardCardStyle(theme)} data-section="ranking">
-              {weeklyRanking!.tier.name !== 'MASTER' && (
-                <div css={zoneSectionStyle}>
-                  <MemberList members={groupedMembers!.promotion} />
-                  <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
-                    <SVGIcon
-                      style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
-                      icon="ArrowLeft"
-                      size="sm"
-                    />
-                    <span>승급권</span>
-                  </div>
-                </div>
-              )}
+          <section css={leaderboardCardStyle(theme)} data-section="ranking">
+            {weeklyRanking!.tier.name !== 'MASTER' && (
               <div css={zoneSectionStyle}>
-                <MemberList members={groupedMembers!.maintain} />
-              </div>
-              {weeklyRanking!.tier.name !== 'BRONZE' && (
-                <div css={zoneSectionStyle}>
-                  <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
-                    <SVGIcon
-                      icon="ArrowLeft"
-                      style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
-                      size="sm"
-                    />
-                    <span>강등권</span>
-                  </div>
-                  <MemberList members={groupedMembers!.demotion} />
+                <MemberList members={groupedMembers!.promotion} />
+                <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                  <SVGIcon
+                    style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
+                    icon="ArrowLeft"
+                    size="sm"
+                  />
+                  <span>승급권</span>
                 </div>
-              )}
-            </section>
-          </>
-        )}
-      </div>
-    </main>
+              </div>
+            )}
+            <div css={zoneSectionStyle}>
+              <MemberList members={groupedMembers!.maintain} />
+            </div>
+            {weeklyRanking!.tier.name !== 'BRONZE' && (
+              <div css={zoneSectionStyle}>
+                <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                  <SVGIcon
+                    icon="ArrowLeft"
+                    style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
+                    size="sm"
+                  />
+                  <span>강등권</span>
+                </div>
+                <MemberList members={groupedMembers!.demotion} />
+              </div>
+            )}
+          </section>
+        </>
+      )}
+    </div>
   );
 };
-
-const pageStyle = css`
-  flex: 1;
-  min-height: 100vh;
-  padding: 32px 24px 120px;
-`;
 
 const pageContentStyle = css`
   width: 100%;
@@ -216,48 +204,6 @@ const pageContentStyle = css`
   display: flex;
   flex-direction: column;
   gap: 20px;
-`;
-
-const headerStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-`;
-
-const pageTitleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
-  font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${theme.colors.primary.main};
-  letter-spacing: 0.12em;
-  padding-left: 0.5rem;
-`;
-
-const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: ${theme.colors.primary.main};
-  border-radius: ${theme.borderRadius.medium};
-  transition: background-color 150ms ease;
-
-  ${isRefreshing &&
-  css`
-    animation: ${keyframes`
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    `} 1s linear infinite;
-  `}
-
-  &:hover {
-    background: ${isRefreshing ? 'transparent' : theme.colors.surface.bold};
-  }
 `;
 
 const filterCardStyle = (theme: Theme) => css`
@@ -329,7 +275,33 @@ const filterActionsStyle = css`
 
 const formErrorStyle = (theme: Theme) => css`
   color: ${theme.colors.error.main};
-  font-size: ${theme.typography['12Medium'].fontSize};
+  font-size: ${theme.typography['16Medium'].fontSize};
+`;
+
+const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: ${theme.colors.primary.main};
+  border-radius: ${theme.borderRadius.medium};
+  transition: background-color 150ms ease;
+  margin-left: auto;
+
+  ${isRefreshing &&
+  css`
+    animation: ${keyframes`
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      `} 1s linear infinite;
+  `}
+
+  &:hover {
+    background: ${isRefreshing ? 'transparent' : theme.colors.surface.bold};
+  }
 `;
 
 const filterSubmitStyle = (theme: Theme) => css`

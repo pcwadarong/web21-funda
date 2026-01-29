@@ -36,8 +36,13 @@ export const BattleRankBar = ({
     baseRankings.forEach((ranking, index) => {
       let place = index + 1;
 
-      if (index > 0 && baseRankings[index - 1].score === ranking.score) {
-        place = rankingsWithPlace[index - 1].place;
+      if (index > 0) {
+        const prevRanking = baseRankings[index - 1];
+        const prevPlace = rankingsWithPlace[index - 1];
+
+        if (prevRanking && prevPlace && prevRanking.score === ranking.score) {
+          place = prevPlace.place;
+        }
       }
 
       rankingsWithPlace.push({ ...ranking, place });

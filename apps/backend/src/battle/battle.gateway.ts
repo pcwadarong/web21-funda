@@ -1011,12 +1011,14 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @returns 모두 준비 완료 여부
    */
   private isAllParticipantsReady(room: BattleRoomState): boolean {
-    if (room.participants.length === 0) {
+    const connectedParticipants = room.participants.filter(participant => participant.isConnected);
+
+    if (connectedParticipants.length === 0) {
       return false;
     }
 
     const readySet = new Set(room.readyParticipantIds);
-    return room.participants.every(participant => readySet.has(participant.participantId));
+    return connectedParticipants.every(participant => readySet.has(participant.participantId));
   }
 
   /**

@@ -10,13 +10,13 @@ import type { Theme } from '@/styles/theme';
 
 // UI 문자열과 백엔드 데이터 타입 매핑 상수
 const BUILD_OPTIONS = [
-  { label: '프론트엔드', value: 'frontend' },
-  { label: '백엔드', value: 'backend' },
-  { label: '모바일', value: 'mobile' },
+  { label: '프론트엔드', value: 'fe' },
+  { label: '백엔드', value: 'be' },
+  { label: '모바일', value: 'mo' },
   { label: 'CS 기초', value: 'cs' },
-  { label: '알고리즘', value: 'algorithm' },
+  { label: '알고리즘', value: 'algo' },
   { label: '게임 개발', value: 'game' },
-  { label: '데이터/ AI기초', value: 'data' },
+  { label: '데이터/ AI기초', value: 'da' },
   { label: '데브옵스', value: 'devops' },
 ];
 
@@ -51,7 +51,7 @@ export const GameSettingsPanel = () => {
     // 백엔드의 검증과 브로드캐스트를 기다린다 (로컬 state는 socket 이벤트로 업데이트)
     socket.emit('battle:updateRoom', {
       roomId,
-      fieldSlug: updates.fieldSlug ?? settings?.fieldSlug ?? 'backend',
+      fieldSlug: updates.fieldSlug ?? settings?.fieldSlug ?? 'be',
       maxPlayers: updates.maxPlayers ?? settings?.maxPlayers ?? 5,
       timeLimitType: updates.timeLimitType ?? settings?.timeLimitType ?? 'recommended',
     });

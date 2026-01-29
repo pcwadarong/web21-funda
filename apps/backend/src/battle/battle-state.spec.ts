@@ -1,4 +1,4 @@
-import { applyLeave, applyStart, BattleRoomState } from './battle-state';
+import { applyDisconnect, applyLeave, applyStart, BattleRoomState } from './battle-state';
 
 const baseRoomState: BattleRoomState = {
   roomId: 'room_test',
@@ -67,5 +67,16 @@ describe('battle-state', () => {
     });
 
     expect(nextRoom.readyParticipantIds).toEqual([]);
+  });
+
+  it('applyDisconnect는 참가자를 목록에서 유지한 채 연결 해제 처리한다.', () => {
+    const nextRoom = applyDisconnect(baseRoomState, {
+      roomId: baseRoomState.roomId,
+      participantId: 'socket-2',
+      now: 200,
+    });
+
+    const disconnected = nextRoom.participants.find(p => p.participantId === 'socket-2');
+    expect(disconnected?.isConnected).toBe(false);
   });
 });

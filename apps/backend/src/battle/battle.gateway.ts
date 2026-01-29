@@ -16,6 +16,7 @@ import type { MatchingPair } from '../roadmap/dto/quiz-submission.dto';
 
 import { BattleService } from './battle.service';
 import {
+  applyDisconnect,
   applyFinish,
   applyJoin,
   applyLeave,
@@ -74,7 +75,49 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected: ${client.id}`);
-    this.handleLeave({ roomId: '' }, client);
+    this.handleDisconnectInternal(client);
+  }
+
+  /**
+   * 연결 해제 시 참가자를 일시적으로 연결 해제 처리한다.
+   *
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
+  private handleDisconnectInternal(client: Socket): void {
+    const roomId = this.findRoomIdByParticipant(client.id);
+    if (!roomId) {
+      return;
+    }
+
+    const room = this.battleService.getRoom(roomId);
+    if (!room) {
+      return;
+    }
+
+    const nextRoom: BattleRoomState = applyDisconnect(room, {
+      roomId,
+      participantId: client.id,
+      now: Date.now(),
+    });
+
+    this.battleService.saveRoom(nextRoom);
+
+    this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
+      roomId: nextRoom.roomId,
+      participants: nextRoom.participants,
+    });
+
+    const connectedCount = nextRoom.participants.filter(
+      participant => participant.isConnected,
+    ).length;
+
+    if (nextRoom.status === 'in_progress' && connectedCount < 2) {
+      this.server.to(nextRoom.roomId).emit('battle:invalid', {
+        roomId: nextRoom.roomId,
+        reason: '참가자가 부족합니다.',
+      });
+    }
   }
 
   /**
@@ -121,12 +164,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const validation = validateJoin(room);
-    if (!validation.ok) {
-      client.emit('battle:error', validation);
-      return;
-    }
-
     // 쿠키에서 client_id 추출
     const clientId = this.extractClientIdFromCookie(client.handshake.headers.cookie);
 
@@ -135,13 +172,21 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       p => (payload.userId && p.userId === payload.userId) || (clientId && p.clientId === clientId),
     );
 
+    if (!existingParticipant) {
+      const validation = validateJoin(room);
+      if (!validation.ok) {
+        client.emit('battle:error', validation);
+        return;
+      }
+    }
+
     let updatedRoom: BattleRoomState;
 
     if (existingParticipant) {
       // 기존 참여자: socket ID만 업데이트 (재연결 처리)
       const updatedParticipants = room.participants.map(p =>
         p.participantId === existingParticipant.participantId
-          ? { ...p, participantId: client.id, isConnected: true }
+          ? { ...p, participantId: client.id, isConnected: true, leftAt: null }
           : p,
       );
 

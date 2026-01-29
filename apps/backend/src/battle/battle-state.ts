@@ -98,6 +98,12 @@ export type LeaveBattleRoomParams = {
   penaltyScore: number;
 };
 
+export type DisconnectBattleRoomParams = {
+  roomId: string;
+  participantId: string;
+  now: number;
+};
+
 export type StartBattleRoomParams = {
   roomId: string;
   requesterParticipantId: string;
@@ -146,6 +152,8 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
  * @returns 검증 결과
  */
 export const validateJoin = (state: BattleRoomState): BattleValidationResult => {
+  const connectedCount = state.participants.filter(participant => participant.isConnected).length;
+
   if (state.inviteExpired) {
     return {
       ok: false,
@@ -162,7 +170,7 @@ export const validateJoin = (state: BattleRoomState): BattleValidationResult => 
     };
   }
 
-  if (state.participants.length >= state.settings.maxPlayers) {
+  if (connectedCount >= state.settings.maxPlayers) {
     return {
       ok: false,
       code: 'ROOM_FULL',
@@ -218,6 +226,8 @@ export const validateStart = (
   state: BattleRoomState,
   requesterParticipantId: string,
 ): BattleValidationResult => {
+  const connectedCount = state.participants.filter(participant => participant.isConnected).length;
+
   if (state.status !== 'waiting') {
     return {
       ok: false,
@@ -238,7 +248,7 @@ export const validateStart = (
     };
   }
 
-  if (state.participants.length < 2) {
+  if (connectedCount < 2) {
     return {
       ok: false,
       code: 'INVALID_STATE',
@@ -362,6 +372,47 @@ export const applyLeave = (
     hostParticipantId: nextHostParticipantId,
     readyParticipantIds: nextReadyParticipantIds,
     status: nextStatus,
+  };
+};
+
+/**
+ * 참가자를 연결 해제 상태로 변경한다.
+ *
+ * @param state 방 상태
+ * @param params 연결 해제 정보
+ * @returns 변경된 방 상태
+ */
+export const applyDisconnect = (
+  state: BattleRoomState,
+  params: DisconnectBattleRoomParams,
+): BattleRoomState => {
+  const updatedParticipants = state.participants.map(participant => {
+    if (participant.participantId !== params.participantId) {
+      return participant;
+    }
+
+    return {
+      ...participant,
+      isConnected: false,
+      leftAt: params.now,
+    };
+  });
+
+  const normalizedParticipants = updatedParticipants.map(participant => ({
+    ...participant,
+    isHost: participant.participantId === state.hostParticipantId,
+  }));
+
+  const nextReadyParticipantIds = state.readyParticipantIds.filter(readyParticipantId =>
+    normalizedParticipants.some(
+      participant => participant.participantId === readyParticipantId && participant.isConnected,
+    ),
+  );
+
+  return {
+    ...state,
+    participants: normalizedParticipants,
+    readyParticipantIds: nextReadyParticipantIds,
   };
 };
 

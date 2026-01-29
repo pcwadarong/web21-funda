@@ -5,8 +5,7 @@ import { useParams } from 'react-router-dom';
 import { GameSettingsPanel } from '@/feat/battle/components/GameSettingsPanel';
 import { ParticipantsList } from '@/feat/battle/components/ParticipantsList';
 import { useBattleRoomJoin } from '@/feat/battle/hooks/useBattleRoomJoin';
-import { useSocketContext } from '@/providers/SocketProvider';
-import { useBattleStore } from '@/store/battleStore';
+import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 
 interface Participant {
   id: number;
@@ -27,8 +26,8 @@ export const BattleRoom = () => {
   useBattleRoomJoin(inviteToken);
 
   // Cleanup on unmount
-  const { socket, emitEvent } = useSocketContext();
-  const roomId = useBattleStore(state => state.roomId);
+  const { battleState, leaveBattle } = useBattleSocket();
+  const { roomId, status, participants: battleParticipants } = battleState;
   const unmountedRef = useRef(false);
 
   useEffect(
@@ -37,23 +36,16 @@ export const BattleRoom = () => {
         return;
       }
 
-      const currentStatus = useBattleStore.getState().status;
       // 게임 진행 중이거나 종료된 상태에서 라우팅으로 언마운트될 때는 방을 떠나지 않는다.
-      if (currentStatus === 'in_progress' || currentStatus === 'finished') {
+      if (status === 'in_progress' || status === 'finished') {
         return;
       }
 
       unmountedRef.current = true;
-      if (socket?.connected && roomId) {
-        emitEvent('battle:leave', { roomId });
-      }
-      useBattleStore.getState().actions.reset();
+      leaveBattle(roomId);
     },
-    [roomId, socket, emitEvent],
+    [roomId, status, leaveBattle],
   );
-
-  // battleStore에서 participants 읽기
-  const battleParticipants = useBattleStore(state => state.participants);
 
   // BattleParticipant → Participant 타입 변환
   const participants: Participant[] = battleParticipants.map(p => ({

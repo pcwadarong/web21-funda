@@ -8,13 +8,62 @@ import type {
   BattleRoomStatus,
   Ranking,
 } from '@/feat/battle/types';
-import type { AnswerType, CorrectAnswerType, MatchingPair } from '@/feat/quiz/types';
+import type {
+  AnswerType,
+  CorrectAnswerType,
+  MatchingPair,
+  QuestionStatus,
+  QuizQuestion,
+} from '@/feat/quiz/types';
+import type { SocketContextValue } from '@/providers/SocketProvider';
 import { useSocketContext } from '@/providers/SocketProvider';
 import { useAuthStore } from '@/store/authStore';
 import { useBattleStore } from '@/store/battleStore';
 import { useToast } from '@/store/toastStore';
 
-export function useBattleSocket() {
+export interface UseBattleSocketReturn extends SocketContextValue {
+  battleState: {
+    roomId: string | null;
+    inviteToken: string | null;
+    settings: BattleRoomSettings | null;
+    hostParticipantId: string | null;
+    status: BattleRoomStatus | null;
+    participants: BattleParticipant[];
+    rankings: Ranking[];
+    rewards: BattleReward[];
+    currentQuizIndex: number;
+    totalQuizzes: number;
+    remainingSeconds: number;
+    currentQuiz: QuizQuestion | null;
+    currentQuizId: number;
+    quizEndsAt: number;
+    resultEndsAt: number | null;
+    selectedAnswers: AnswerType[];
+    quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
+    questionStatuses: QuestionStatus[];
+  };
+  battleStatus: BattleRoomStatus | null;
+  joinBattle: (
+    roomId: string,
+    userData?: {
+      userId?: number | null;
+      displayName?: string;
+      profileImageUrl?: string;
+    },
+    options?: {
+      inviteToken?: string;
+      settings?: BattleRoomSettings;
+    },
+  ) => void;
+  leaveBattle: (roomId: string) => void;
+  readyBattle: (roomId: string) => void;
+  submitAnswer: (roomId: string, quizId: number, answer: AnswerType, index: number) => void;
+  restartBattle: (roomId: string) => void;
+  setSelectedAnswer: (index: number, answer: AnswerType) => void;
+  setQuestionStatus: (index: number, status: QuestionStatus) => void;
+}
+
+export function useBattleSocket(): UseBattleSocketReturn {
   const socketContext = useSocketContext();
   const { socket, status: socketStatus, connect } = socketContext;
   const { showToast } = useToast();

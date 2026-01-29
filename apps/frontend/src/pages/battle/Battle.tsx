@@ -1,22 +1,19 @@
 import { useEffect } from 'react';
 
 import { BattleContainer } from '@/features/battle/components/BattleContainer';
+import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 import { useCreateBattleRoomMutation } from '@/hooks/queries/battleQueries';
-import { useSocketContext } from '@/providers/SocketProvider';
-import { useBattleStore } from '@/store/battleStore';
 
 export const Battle = () => {
   const createBattleRoom = useCreateBattleRoomMutation();
-  const { socket, emitEvent } = useSocketContext();
-  const roomId = useBattleStore(state => state.roomId);
-  const resetBattleState = useBattleStore(state => state.actions.reset);
+  const { battleState, leaveBattle } = useBattleSocket();
+  const { roomId } = battleState;
 
   useEffect(() => {
-    if (socket?.connected && roomId) {
-      emitEvent('battle:leave', { roomId });
+    if (roomId) {
+      leaveBattle(roomId);
     }
-    resetBattleState();
-  }, [socket, roomId, emitEvent, resetBattleState]);
+  }, [roomId, leaveBattle]);
 
   const onCreateRoom = () => {
     createBattleRoom.mutate();

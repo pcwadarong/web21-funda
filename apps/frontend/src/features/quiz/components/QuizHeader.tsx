@@ -30,7 +30,7 @@ export const QuizHeader = ({
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const { leaveRoom, disconnect } = useBattleSocket();
+  const { emitEvent, disconnect } = useBattleSocket();
   const roomId = useBattleStore(state => (isBattleMode ? state.roomId : null));
   const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
   const resultEndsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
@@ -53,14 +53,14 @@ export const QuizHeader = ({
   const handleExit = useCallback(() => {
     if (isBattleMode) {
       if (roomId) {
-        leaveRoom(roomId);
+        emitEvent('battle:leave', { roomId });
         disconnect();
         navigate('/battle');
       }
     } else {
       navigate('/learn');
     }
-  }, [navigate, leaveRoom, roomId]);
+  }, [navigate, emitEvent, disconnect, roomId, isBattleMode]);
 
   const progress = (completedSteps / totalSteps) * 100;
 

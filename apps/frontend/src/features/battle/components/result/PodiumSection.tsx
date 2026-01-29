@@ -45,7 +45,7 @@ export const PodiumSection = ({ topThree, participants, rewards }: PodiumSection
 
             <div css={podiumBoxStyle(idx)}>
               <div css={podiumStatsContainer}>
-                <span css={podiumScoreStyle}>+{ranking.score}</span>
+                <span css={podiumScoreStyle}>{ranking.score}</span>
 
                 {reward && (
                   <div css={podiumRewardStyle}>

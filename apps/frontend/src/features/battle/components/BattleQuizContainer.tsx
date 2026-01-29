@@ -7,15 +7,13 @@ import type { AnswerType, CorrectAnswerType, QuestionStatus } from '@/feat/quiz/
 import { BattleRankBar } from '@/features/battle/components/BattleRankBar';
 
 interface BattleQuizContainerProps {
-  quizInfo: BattleQuizData;
-  remainingSeconds: number;
+  quizInfo: Omit<BattleQuizData, 'endsAt'>;
   selectedAnswers: AnswerType[];
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
   questionStatuses: QuestionStatus[];
   isCheckDisabled: boolean;
   isLastQuestion: boolean;
   isReviewMode: boolean;
-  resultEndsAt: number | null;
   rankings: Ranking[];
   currentParticipantId?: string | null;
   handleAnswerChange: (answer: AnswerType) => void;
@@ -25,14 +23,12 @@ interface BattleQuizContainerProps {
 
 export const BattleQuizContainer = ({
   quizInfo,
-  remainingSeconds,
   selectedAnswers,
   quizSolutions,
   questionStatuses,
   isCheckDisabled,
   isLastQuestion,
   isReviewMode,
-  resultEndsAt,
   rankings,
   currentParticipantId,
   handleAnswerChange,
@@ -44,8 +40,6 @@ export const BattleQuizContainer = ({
       currentStep={quizInfo.index + 1}
       totalSteps={quizInfo.total}
       completedSteps={quizInfo.index}
-      remainingSeconds={remainingSeconds}
-      endsAt={resultEndsAt ?? quizInfo.endsAt}
       isBattleMode
     />
     <main css={mainStyle}>
@@ -67,8 +61,6 @@ export const BattleQuizContainer = ({
         isLast={isLastQuestion}
         isReviewMode={isReviewMode}
         isBattleMode
-        remainingSeconds={remainingSeconds}
-        endsAt={resultEndsAt}
       />
     </main>
   </div>

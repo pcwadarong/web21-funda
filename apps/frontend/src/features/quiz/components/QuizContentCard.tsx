@@ -12,6 +12,7 @@ import type {
 import { AiAskModal } from '@/features/ai-ask/components/AiAskModal';
 import ReportModal from '@/features/report/ReportForm';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
+import { useBattleStore } from '@/store/battleStore';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
@@ -47,13 +48,13 @@ export const QuizContentCard = ({
   isLast,
   isReviewMode,
   isBattleMode = false,
-  remainingSeconds,
-  endsAt,
 }: QuizContentCardProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
   const showResult = status === 'checked';
+  const endsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
+  const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
   const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
   let nextButtonLabel = '다음 문제';
 

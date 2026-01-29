@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { Loading } from '@/comp/Loading';
-import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
 import { BattleQuizContainer } from '@/features/battle/components/BattleQuizContainer';
+import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
 
 export const BattleQuizPage = () => {
-  const { socket } = useBattleSocket();
-
-  const navigate = useNavigate();
+  const { socket } = useSocketContext();
 
   // 기본 정보
   const roomId = useBattleStore(state => state.roomId);
@@ -50,28 +47,14 @@ export const BattleQuizPage = () => {
   }, [roomId]);
 
   useEffect(() => {
-    if (!roomId) {
-      navigate('/battle');
-      return;
-    }
-  }, [roomId, status, navigate]);
-
-  useEffect(() => {
-    if (!socket || !roomId) {
-      return;
-    }
-
-    if (status !== 'in_progress') {
-      return;
-    }
-
-    if (readySentRef.current) {
-      return;
-    }
+    // socket과 roomId는 BattleFlowManager에서 검사하므로 여기서는 status만 확인
+    if (status !== 'in_progress' || readySentRef.current) return;
 
     // 문제 로딩 전에 서버에 준비 완료 신호를 보낸다.
-    readySentRef.current = true;
-    socket.emit('battle:ready', { roomId });
+    if (socket && roomId) {
+      readySentRef.current = true;
+      socket.emit('battle:ready', { roomId });
+    }
   }, [socket, roomId, status]);
 
   const handleAnswerChange = useCallback(
@@ -82,6 +65,7 @@ export const BattleQuizPage = () => {
   );
 
   const handleCheckAnswer = useCallback(async () => {
+    // socket과 roomId는 BattleFlowManager에서 검사하므로 여기서는 currentQuizId만 확인
     if (!socket || !roomId || !currentQuizId) return;
 
     setQuestionStatus(currentQuizIndex, 'checking');
@@ -103,12 +87,6 @@ export const BattleQuizPage = () => {
     const selected = selectedAnswers[currentQuizIndex];
     return statusForCurrent !== 'idle' || selected == null;
   }, [questionStatuses, selectedAnswers, currentQuizIndex]);
-
-  useEffect(() => {
-    if (status === 'invalid') {
-      navigate('/battle');
-    }
-  }, [status, navigate]);
 
   if (status !== 'in_progress' || !currentQuiz) return <Loading text="배틀 로딩 중" />;
 

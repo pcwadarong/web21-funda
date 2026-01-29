@@ -1,7 +1,8 @@
 import { lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 
 import { AdminSuspenseLayout } from '@/layouts/AdminSuspenseLayout';
+import { BattleFlowLayout } from '@/layouts/BattleFlowLayout';
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
 // import { ServicePreparation } from '@/pages/common/ServicePreparation';
@@ -33,9 +34,6 @@ const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: 
 const BattleRoom = lazy(() =>
   import('@/pages/battle/BattleRoom').then(m => ({ default: m.BattleRoom })),
 );
-// const BattleTestPage = lazy(() =>
-//   import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
-// );
 const BattleQuizPage = lazy(() =>
   import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
 );
@@ -86,8 +84,6 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
-          // { path: 'battle/test', element: <BattleTestPage /> },
-          { path: 'battle/quiz', element: <BattleQuizPage /> },
         ],
       },
       {
@@ -101,13 +97,6 @@ export const router = createBrowserRouter([
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'animation', element: <Animation /> },
-          { path: 'battle', element: <Battle /> },
-          {
-            path: 'battle/:inviteToken',
-            element: <BattleRoom />,
-            errorElement: <Navigate to="/battle" replace />,
-          },
-          { path: 'battle/result', element: <BattleResultPage /> },
         ],
       },
 
@@ -119,6 +108,25 @@ export const router = createBrowserRouter([
           { path: 'login', element: <Login /> },
           { path: 'auth/check', element: <AuthCheck /> },
           { path: 'initial-fields', element: <InitialFields /> },
+        ],
+      },
+
+      // 배틀 전용
+      {
+        element: <BattleFlowLayout />,
+        children: [
+          {
+            element: <PageSuspenseLayout />,
+            children: [{ path: 'battle/quiz', element: <BattleQuizPage /> }],
+          },
+          {
+            element: <SidebarSuspenseLayout />,
+            children: [
+              { path: 'battle', element: <Battle /> },
+              { path: 'battle/:inviteToken', element: <BattleRoom /> },
+              { path: 'battle/result', element: <BattleResultPage /> },
+            ],
+          },
         ],
       },
 

@@ -48,6 +48,6 @@ const mainLayoutStyle = css`
   gap: 40px;
 
   @media (max-width: 768px) {
-    padding-bottom: 120px;
+    padding-bottom: 105px;
   }
 `;

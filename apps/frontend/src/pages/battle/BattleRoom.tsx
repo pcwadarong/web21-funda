@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom';
 import { GameSettingsPanel } from '@/feat/battle/components/GameSettingsPanel';
 import { ParticipantsList } from '@/feat/battle/components/ParticipantsList';
 import { useBattleRoomJoin } from '@/feat/battle/hooks/useBattleRoomJoin';
-import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
 
@@ -27,9 +26,6 @@ export const BattleRoom = () => {
   // 소켓 연결 및 방 참여
   useBattleRoomJoin(inviteToken);
 
-  // 소켓 이벤트 리스닝
-  useBattleSocket();
-
   // Cleanup on unmount
   const { leaveRoom } = useSocketContext();
   const roomId = useBattleStore(state => state.roomId);
@@ -42,8 +38,8 @@ export const BattleRoom = () => {
       }
 
       const currentStatus = useBattleStore.getState().status;
-      // 게임 진행 중 라우팅으로 언마운트될 때는 방을 떠나지 않는다.
-      if (currentStatus === 'in_progress') {
+      // 게임 진행 중이거나 종료된 상태에서 라우팅으로 언마운트될 때는 방을 떠나지 않는다.
+      if (currentStatus === 'in_progress' || currentStatus === 'finished') {
         return;
       }
 

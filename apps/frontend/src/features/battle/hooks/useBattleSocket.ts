@@ -1,5 +1,4 @@
 import { useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import type {
   BattleParticipant,
@@ -17,7 +16,6 @@ import { useToast } from '@/store/toastStore';
 export function useBattleSocket() {
   const socketContext = useSocketContext();
   const { socket } = socketContext;
-  const navigate = useNavigate();
   const { showToast } = useToast();
 
   // Zustand 스토어에서 상태와 액션 가져오기
@@ -52,10 +50,6 @@ export function useBattleSocket() {
         rankings: data.rankings,
         resultEndsAt: data.resultEndsAt ?? undefined,
       });
-
-      if (data.status === 'in_progress') {
-        navigate('/battle/quiz');
-      }
     };
 
     // 3. 방 설정 변경 브로드캐스트
@@ -114,8 +108,6 @@ export function useBattleSocket() {
         rankings: data.rankings ?? [],
         rewards: data.rewards ?? [],
       });
-
-      navigate('/battle/result');
     };
     const handleBattleInvalid = (data: { reason: string }) => {
       setBattleState({ status: 'invalid' });
@@ -126,7 +118,6 @@ export function useBattleSocket() {
     const handleBattleError = (error: { code: string; message: string }) => {
       if (error.code === 'ROOM_FULL' || error.code === 'ROOM_NOT_JOINABLE') {
         showToast('방에 입장할 수 없습니다. 다른 방을 이용해 주세요.');
-        navigate('/battle');
         setBattleState({ status: 'invalid' });
       }
     };
@@ -157,7 +148,6 @@ export function useBattleSocket() {
     setQuiz,
     setQuizSolution,
     setQuestionStatus,
-    navigate,
     showToast,
   ]);
 

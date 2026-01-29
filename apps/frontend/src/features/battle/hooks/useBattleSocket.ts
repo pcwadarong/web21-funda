@@ -8,7 +8,7 @@ import type {
   BattleRoomStatus,
   Ranking,
 } from '@/feat/battle/types';
-import type { CorrectAnswerType, MatchingPair } from '@/feat/quiz/types';
+import type { AnswerType, CorrectAnswerType, MatchingPair } from '@/feat/quiz/types';
 import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
 import { useToast } from '@/store/toastStore';
@@ -156,9 +156,113 @@ export function useBattleSocket() {
     reset();
   }, [socketContext, reset]);
 
+  /**
+   * 배틀 방 참가 요청을 보냅니다.
+   * @param roomId 방 ID
+   * @param userData 사용자 정보 (userId, displayName, profileImageUrl)
+   */
+  const joinBattle = useCallback(
+    (
+      roomId: string,
+      userData: {
+        userId?: number | null;
+        displayName?: string;
+        profileImageUrl?: string;
+      },
+    ) => {
+      if (!socket) return;
+
+      socket.emit('battle:join', {
+        roomId,
+        userId: userData.userId ?? null,
+        displayName: userData.displayName,
+        profileImageUrl: userData.profileImageUrl,
+      });
+    },
+    [socket],
+  );
+
+  /**
+   * 배틀 방 퇴장 요청을 보내고 스토어를 초기화합니다.
+   * @param roomId 방 ID
+   */
+  const leaveBattle = useCallback(
+    (roomId: string) => {
+      if (!socket) return;
+
+      socket.emit('battle:leave', { roomId });
+      reset();
+    },
+    [socket, reset],
+  );
+
+  /**
+   * 배틀 준비 완료 신호를 보냅니다.
+   * @param roomId 방 ID
+   */
+  const readyBattle = useCallback(
+    (roomId: string) => {
+      if (!socket) return;
+
+      socket.emit('battle:ready', { roomId });
+    },
+    [socket],
+  );
+
+  /**
+   * 정답 제출 요청을 보내고 해당 문제의 상태를 'checking'으로 변경합니다.
+   * @param roomId 방 ID
+   * @param quizId 퀴즈 ID
+   * @param answer 제출 답안
+   * @param index 문제 인덱스
+   */
+  const submitAnswer = useCallback(
+    (roomId: string, quizId: number, answer: AnswerType, index: number) => {
+      if (!socket) return;
+
+      // 답안을 백엔드 형식에 맞게 변환
+      const payloadAnswer: string | { pairs: MatchingPair[] } | null =
+        typeof answer === 'string'
+          ? answer
+          : answer && typeof answer === 'object' && 'pairs' in answer
+            ? { pairs: answer.pairs }
+            : null;
+
+      socket.emit('battle:submitAnswer', {
+        roomId,
+        quizId,
+        answer: payloadAnswer,
+      });
+
+      // 제출 후 상태를 'checking'으로 변경
+      setQuestionStatus(index, 'checking');
+    },
+    [socket, setQuestionStatus],
+  );
+
+  /**
+   * 배틀 재시작 요청을 보내고 스토어를 초기화합니다.
+   * @param roomId 방 ID
+   */
+  const restartBattle = useCallback(
+    (roomId: string) => {
+      if (!socket) return;
+
+      socket.emit('battle:restart', { roomId });
+      reset();
+    },
+    [socket, reset],
+  );
+
   return {
     ...socketContext,
     battleStatus, // UI에서 접근하기 편하도록 분리해서 반환
     disconnect,
+    // 배틀 액션 메서드들
+    joinBattle,
+    leaveBattle,
+    readyBattle,
+    submitAnswer,
+    restartBattle,
   };
 }

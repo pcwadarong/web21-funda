@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Loading } from '@/comp/Loading';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
@@ -8,6 +9,7 @@ import { useBattleStore } from '@/store/battleStore';
 
 export const BattleQuizPage = () => {
   const { socket } = useBattleSocket();
+  const navigate = useNavigate();
   const {
     roomId,
     currentQuiz,
@@ -30,6 +32,13 @@ export const BattleQuizPage = () => {
   useEffect(() => {
     readySentRef.current = false;
   }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId) {
+      navigate('/battle');
+      return;
+    }
+  }, [roomId, status, navigate]);
 
   useEffect(() => {
     if (!socket || !roomId) {

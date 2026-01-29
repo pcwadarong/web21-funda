@@ -95,11 +95,21 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const nextRoom: BattleRoomState = applyDisconnect(room, {
-      roomId,
-      participantId: client.id,
-      now: Date.now(),
-    });
+    const now = Date.now();
+
+    const nextRoom: BattleRoomState =
+      room.status === 'in_progress'
+        ? applyLeave(room, {
+            roomId,
+            participantId: client.id,
+            now,
+            penaltyScore: -999,
+          })
+        : applyDisconnect(room, {
+            roomId,
+            participantId: client.id,
+            now,
+          });
 
     this.battleService.saveRoom(nextRoom);
 
@@ -107,17 +117,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       roomId: nextRoom.roomId,
       participants: nextRoom.participants,
     });
-
-    const connectedCount = nextRoom.participants.filter(
-      participant => participant.isConnected,
-    ).length;
-
-    if (nextRoom.status === 'in_progress' && connectedCount < 2) {
-      this.server.to(nextRoom.roomId).emit('battle:invalid', {
-        roomId: nextRoom.roomId,
-        reason: '참가자가 부족합니다.',
-      });
-    }
   }
 
   /**

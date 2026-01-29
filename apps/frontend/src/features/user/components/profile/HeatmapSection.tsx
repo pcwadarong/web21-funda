@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
 
 import type { Theme } from '@/styles/theme';
 
@@ -16,7 +17,7 @@ interface HeatmapSectionProps {
  * 연간 학습 활동을 히트맵 형태로 표시하는 섹션입니다.
  * 현재는 디자인 규격에 맞는 placeholder만 구현되어 있습니다.
  */
-export const HeatmapSection = ({ weeks = 12 }: HeatmapSectionProps) => {
+export const HeatmapSection = memo(({ weeks = 12 }: HeatmapSectionProps) => {
   const theme = useTheme();
   const totalDays = weeks * 7; // 12주 = 84일
 
@@ -30,7 +31,9 @@ export const HeatmapSection = ({ weeks = 12 }: HeatmapSectionProps) => {
       </div>
     </section>
   );
-};
+});
+
+HeatmapSection.displayName = 'HeatmapSection';
 
 const cardStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};

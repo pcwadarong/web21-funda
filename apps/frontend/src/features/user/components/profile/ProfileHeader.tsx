@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import type { ProfileSummaryResult } from '@/features/profile/types';
@@ -20,13 +21,22 @@ interface ProfileHeaderProps {
  *
  * 그라데이션 배경의 헤더 영역으로, 프로필 이미지, 사용자 이름, 티어, XP, 다이아몬드 정보를 표시합니다.
  */
-export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderProps) => {
+export const ProfileHeader = memo(({ profileSummary, diamondCount }: ProfileHeaderProps) => {
   const theme = useTheme();
 
-  const displayName = profileSummary?.displayName ?? '사용자';
-  const tierName = profileSummary?.tier?.name ?? 'BRONZE';
-  const experience = profileSummary?.experience ?? 0;
-  const profileImageUrl = profileSummary?.profileImageUrl ?? null;
+  const displayName = useMemo(
+    () => profileSummary?.displayName ?? '사용자',
+    [profileSummary?.displayName],
+  );
+  const tierName = useMemo(
+    () => profileSummary?.tier?.name ?? 'BRONZE',
+    [profileSummary?.tier?.name],
+  );
+  const experience = useMemo(() => profileSummary?.experience ?? 0, [profileSummary?.experience]);
+  const profileImageUrl = useMemo(
+    () => profileSummary?.profileImageUrl ?? null,
+    [profileSummary?.profileImageUrl],
+  );
 
   return (
     <section css={headerCardStyle(theme)}>
@@ -61,7 +71,9 @@ export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderPro
       </button>
     </section>
   );
-};
+});
+
+ProfileHeader.displayName = 'ProfileHeader';
 
 const headerCardStyle = (theme: Theme) => css`
   display: flex;
@@ -104,10 +116,6 @@ const nameRowWrapperStyle = css`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-
-  button {
-    margin-top: 9px;
-  }
 `;
 
 const nameStyle = (theme: Theme) => css`

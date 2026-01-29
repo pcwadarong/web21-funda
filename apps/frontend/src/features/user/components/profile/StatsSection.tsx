@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import type { ProfileSummaryResult } from '@/features/profile/types';
@@ -27,39 +28,41 @@ interface StatsSectionProps {
 }
 
 /**
+ * 통계 아이템 설정 배열 (상수)
+ */
+const STATS_CONFIG: StatItemConfig[] = [
+  {
+    icon: 'CheckCircle',
+    label: '총 학습 시간',
+    getValue: summary => (summary ? `${summary.totalStudyTimeMinutes} min` : '-'),
+  },
+  {
+    icon: 'Sheet',
+    label: '총 문제 수',
+    getValue: summary => (summary ? `${summary.solvedQuizzesCount}` : '-'),
+  },
+  {
+    icon: 'Streak',
+    label: '연속 학습일수',
+    getValue: summary => (summary ? `${summary.currentStreak} days` : '-'),
+  },
+];
+
+/**
  * 통계 섹션
  *
  * 사용자의 학습 통계(총 학습 시간, 총 문제 수, 연속 학습일수)를 아이콘과 함께 표시합니다.
+ *
+ * React.memo로 메모이제이션되어 props가 변경되지 않으면 리렌더링되지 않습니다.
  */
-export const StatsSection = ({ profileSummary, displayName }: StatsSectionProps) => {
+export const StatsSection = memo(({ profileSummary, displayName }: StatsSectionProps) => {
   const theme = useTheme();
-
-  /**
-   * 통계 아이템 설정 배열
-   */
-  const statsConfig: StatItemConfig[] = [
-    {
-      icon: 'CheckCircle',
-      label: '총 학습 시간',
-      getValue: summary => (summary ? `${summary.totalStudyTimeMinutes} min` : '-'),
-    },
-    {
-      icon: 'Sheet',
-      label: '총 문제 수',
-      getValue: summary => (summary ? `${summary.solvedQuizzesCount}` : '-'),
-    },
-    {
-      icon: 'Streak',
-      label: '연속 학습일수',
-      getValue: summary => (summary ? `${summary.currentStreak} days` : '-'),
-    },
-  ];
 
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>{displayName}의 통계</h2>
       <div css={statListStyle}>
-        {statsConfig.map((stat, index) => (
+        {STATS_CONFIG.map((stat, index) => (
           <div key={index} css={statItemStyle(theme)}>
             <SVGIcon icon={stat.icon} />
             <div>
@@ -71,7 +74,9 @@ export const StatsSection = ({ profileSummary, displayName }: StatsSectionProps)
       </div>
     </section>
   );
-};
+});
+
+StatsSection.displayName = 'StatsSection';
 
 const cardStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};

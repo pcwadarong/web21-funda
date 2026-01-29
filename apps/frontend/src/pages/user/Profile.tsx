@@ -1,13 +1,15 @@
+import { useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { ErrorView } from '@/features/error/components/ErrorView';
 import { ProfileContainer } from '@/features/user/components/profile/ProfileContainer';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
   useProfileFollowers,
   useProfileFollowing,
   useProfileSummary,
 } from '@/hooks/queries/profileQueries';
-import { useAuthUser } from '@/store/authStore';
+import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 
 /**
  * 프로필 페이지
@@ -19,6 +21,8 @@ export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
   const navigate = useNavigate();
+  const isLoggedIn = useIsLoggedIn();
+  const isAuthReady = useIsAuthReady();
 
   const numericUserId = userId ? Number(userId) : null;
   const shouldFetch = Number.isFinite(numericUserId ?? NaN) ? numericUserId : null;
@@ -28,6 +32,7 @@ export const Profile = () => {
     error: profileSummaryError,
     isLoading: isProfileLoading,
   } = useProfileSummary(shouldFetch);
+
   const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
   const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
 
@@ -45,12 +50,16 @@ export const Profile = () => {
     );
   }
 
-  const handleUserClick = (targetUserId: number) => {
-    navigate(`/profile/${targetUserId}`);
-  };
+  const { data: rankingMe } = useRankingMe(isLoggedIn && isAuthReady && !!user);
 
-  // TODO: 실제 다이아몬드 개수는 프로필 API에서 가져와야 함
-  const diamondCount = 0;
+  const diamondCount = rankingMe?.diamondCount ?? 0;
+
+  const handleUserClick = useCallback(
+    (targetUserId: number) => {
+      navigate(`/profile/${targetUserId}`);
+    },
+    [navigate],
+  );
 
   return (
     <ProfileContainer

@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
 
 import type { Theme } from '@/styles/theme';
 
@@ -20,25 +21,29 @@ interface ChartSectionProps {
  * 학습 시간을 차트 형태로 표시하는 섹션입니다.
  * 현재는 디자인 규격에 맞는 placeholder만 구현되어 있습니다.
  */
-export const ChartSection = ({
-  startDate = '2025.12.21',
-  endDate = '2025.12.21',
-  caption = '최근 한 주, 하루 평균 학습 시간은 n분 n초예요.',
-}: ChartSectionProps) => {
-  const theme = useTheme();
+export const ChartSection = memo(
+  ({
+    startDate = '2025.12.21',
+    endDate = '2025.12.21',
+    caption = '최근 한 주, 하루 평균 학습 시간은 n분 n초예요.',
+  }: ChartSectionProps) => {
+    const theme = useTheme();
 
-  return (
-    <section css={cardStyle(theme)}>
-      <h2 css={sectionTitleStyle(theme)}>학습 시간</h2>
-      <p css={chartCaptionStyle(theme)}>{caption}</p>
-      <div css={chartPlaceholderStyle(theme)} />
-      <div css={chartAxisStyle(theme)}>
-        <span>{startDate}</span>
-        <span>{endDate}</span>
-      </div>
-    </section>
-  );
-};
+    return (
+      <section css={cardStyle(theme)}>
+        <h2 css={sectionTitleStyle(theme)}>학습 시간</h2>
+        <p css={chartCaptionStyle(theme)}>{caption}</p>
+        <div css={chartPlaceholderStyle(theme)} />
+        <div css={chartAxisStyle(theme)}>
+          <span>{startDate}</span>
+          <span>{endDate}</span>
+        </div>
+      </section>
+    );
+  },
+);
+
+ChartSection.displayName = 'ChartSection';
 
 const cardStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};

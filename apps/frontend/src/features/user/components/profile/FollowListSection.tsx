@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 
 import { Modal } from '@/components/Modal';
 import { FollowListModal } from '@/features/profile/components/FollowListModal';
@@ -28,103 +28,107 @@ interface FollowListSectionProps {
  * 팔로잉/팔로워 탭 전환 기능과 함께 최대 3명의 사용자를 미리보기로 표시합니다.
  * '더보기' 버튼을 통해 전체 목록을 모달로 확인할 수 있습니다.
  */
-export const FollowListSection = ({
-  following,
-  followers,
-  isFollowingLoading,
-  isFollowersLoading,
-  onUserClick,
-}: FollowListSectionProps) => {
-  const theme = useTheme();
-  const [activeTab, setActiveTab] = useState<'following' | 'followers'>('following');
-  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
+export const FollowListSection = memo(
+  ({
+    following,
+    followers,
+    isFollowingLoading,
+    isFollowersLoading,
+    onUserClick,
+  }: FollowListSectionProps) => {
+    const theme = useTheme();
+    const [activeTab, setActiveTab] = useState<'following' | 'followers'>('following');
+    const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
 
-  const followingCount = following.length;
-  const followerCount = followers.length;
+    const followingCount = following.length;
+    const followerCount = followers.length;
 
-  const activeList = useMemo(
-    () => (activeTab === 'following' ? following : followers),
-    [activeTab, followers, following],
-  );
+    const activeList = useMemo(
+      () => (activeTab === 'following' ? following : followers),
+      [activeTab, followers, following],
+    );
 
-  const mainListItems = useMemo(() => activeList.slice(0, 3), [activeList]);
+    const mainListItems = useMemo(() => activeList.slice(0, 3), [activeList]);
 
-  const isListLoading = activeTab === 'following' ? isFollowingLoading : isFollowersLoading;
+    const isListLoading = activeTab === 'following' ? isFollowingLoading : isFollowersLoading;
 
-  const handleMoveToProfile = (targetUserId: number) => {
-    onUserClick(targetUserId);
-    setIsFollowModalOpen(false);
-  };
+    const handleMoveToProfile = (targetUserId: number) => {
+      onUserClick(targetUserId);
+      setIsFollowModalOpen(false);
+    };
 
-  return (
-    <>
-      <section css={cardStyle(theme)}>
-        <div css={tabRowStyle(theme, activeTab)}>
-          <button
-            type="button"
-            css={tabStyle(theme, activeTab === 'following')}
-            onClick={() => setActiveTab('following')}
-          >
-            팔로잉 {followingCount}
-          </button>
-          <button
-            type="button"
-            css={tabStyle(theme, activeTab === 'followers')}
-            onClick={() => setActiveTab('followers')}
-          >
-            팔로워 {followerCount}
-          </button>
-        </div>
-        <div css={followListBodyStyle}>
-          <div css={listStyle}>
-            {isListLoading && <EmptyView message="로딩 중..." theme={theme} />}
-            {!isListLoading && activeList.length === 0 && (
-              <EmptyView message="표시할 사용자가 없습니다." theme={theme} />
-            )}
-            {!isListLoading &&
-              mainListItems.map((member, index) => (
-                <FollowListItem
-                  key={member.userId}
-                  member={member}
-                  rank={index + 1}
-                  onClick={() => handleMoveToProfile(member.userId)}
-                  theme={theme}
-                />
-              ))}
-          </div>
-          {activeList.length > 3 && (
+    return (
+      <>
+        <section css={cardStyle(theme)}>
+          <div css={tabRowStyle(theme, activeTab)}>
             <button
               type="button"
-              css={moreButtonStyle(theme)}
-              onClick={() => setIsFollowModalOpen(true)}
+              css={tabStyle(theme, activeTab === 'following')}
+              onClick={() => setActiveTab('following')}
             >
-              {activeList.length - 3}명 더보기 &gt;
+              팔로잉 {followingCount}
             </button>
-          )}
-        </div>
-      </section>
+            <button
+              type="button"
+              css={tabStyle(theme, activeTab === 'followers')}
+              onClick={() => setActiveTab('followers')}
+            >
+              팔로워 {followerCount}
+            </button>
+          </div>
+          <div css={followListBodyStyle}>
+            <div css={listStyle}>
+              {isListLoading && <EmptyView message="로딩 중..." theme={theme} />}
+              {!isListLoading && activeList.length === 0 && (
+                <EmptyView message="표시할 사용자가 없습니다." theme={theme} />
+              )}
+              {!isListLoading &&
+                mainListItems.map((member, index) => (
+                  <FollowListItem
+                    key={member.userId}
+                    member={member}
+                    rank={index + 1}
+                    onClick={() => handleMoveToProfile(member.userId)}
+                    theme={theme}
+                  />
+                ))}
+            </div>
+            {activeList.length > 3 && (
+              <button
+                type="button"
+                css={moreButtonStyle(theme)}
+                onClick={() => setIsFollowModalOpen(true)}
+              >
+                {activeList.length - 3}명 더보기 &gt;
+              </button>
+            )}
+          </div>
+        </section>
 
-      {isFollowModalOpen && (
-        <Modal
-          title="친구 목록"
-          content={
-            <FollowListModal
-              initialTab={activeTab}
-              followingCount={followingCount}
-              followerCount={followerCount}
-              following={following}
-              followers={followers}
-              isLoading={isListLoading}
-              onUserClick={handleMoveToProfile}
-            />
-          }
-          onClose={() => setIsFollowModalOpen(false)}
-          maxWidth={720}
-        />
-      )}
-    </>
-  );
-};
+        {isFollowModalOpen && (
+          <Modal
+            title="친구 목록"
+            content={
+              <FollowListModal
+                initialTab={activeTab}
+                followingCount={followingCount}
+                followerCount={followerCount}
+                following={following}
+                followers={followers}
+                isLoading={isListLoading}
+                onUserClick={handleMoveToProfile}
+              />
+            }
+            onClose={() => setIsFollowModalOpen(false)}
+            maxWidth={720}
+          />
+        )}
+      </>
+    );
+  },
+);
+
+FollowListSection.displayName = 'FollowListSection';
 
 /**
  * 팔로우 리스트 아이템 Props

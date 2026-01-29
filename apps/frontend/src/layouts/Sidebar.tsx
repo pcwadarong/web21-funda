@@ -9,7 +9,7 @@ import type { Theme } from '@/styles/theme';
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
-  { id: 'battle', label: '실시간 배틀', icon: 'Battle', path: '/battle' },
+  { id: 'battle', label: '퀴즈배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;

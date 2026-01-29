@@ -1,6 +1,8 @@
 import ArrowLeft from '@/assets/arrow-left.svg?react';
 import Check from '@/assets/check.svg?react';
+import CheckCircle from '@/assets/check-circle.svg?react';
 import Copy from '@/assets/copy.svg?react';
+import Edit from '@/assets/edit.svg?react';
 import Algorithm from '@/assets/field-icons/algorithm.svg?react';
 import Backend from '@/assets/field-icons/backend.svg?react';
 import Cloud from '@/assets/field-icons/cloud.svg?react';
@@ -24,6 +26,7 @@ import Refresh from '@/assets/refresh.svg?react';
 import Report from '@/assets/report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
 import Send from '@/assets/send.svg?react';
+import Sheet from '@/assets/sheet.svg?react';
 import Battle from '@/assets/sidebar-icons/battle.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
@@ -38,6 +41,7 @@ import Star from '@/assets/star.svg?react';
 import Start from '@/assets/start.svg?react';
 import Timer from '@/assets/timer.svg?react';
 import Graph from '@/assets/upward-graph.svg?react';
+import Xp from '@/assets/xp.svg?react';
 
 export const IconMap = {
   ArrowLeft,
@@ -45,8 +49,10 @@ export const IconMap = {
   Algorithm,
   Backend,
   Cloud,
+  CheckCircle,
   ComputerScience,
   Data,
+  Edit,
   Frontend,
   Game,
   Mobile,
@@ -61,6 +67,7 @@ export const IconMap = {
   Report,
   RoundStar,
   Send,
+  Sheet,
   Book,
   Diamond,
   Fire,
@@ -79,6 +86,7 @@ export const IconMap = {
   GraphUp,
   Lightning,
   Battle,
+  Xp,
   Copy,
 } as const;
 

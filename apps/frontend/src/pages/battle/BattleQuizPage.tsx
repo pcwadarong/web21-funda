@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Loading } from '@/comp/Loading';
@@ -30,6 +30,36 @@ export const BattleQuizPage = () => {
 
   // 액션
   const { setSelectedAnswer, setQuestionStatus } = useBattleStore(state => state.actions);
+  const readySentRef = useRef(false);
+
+  useEffect(() => {
+    readySentRef.current = false;
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId) {
+      navigate('/battle');
+      return;
+    }
+  }, [roomId, status, navigate]);
+
+  useEffect(() => {
+    if (!socket || !roomId) {
+      return;
+    }
+
+    if (status !== 'in_progress') {
+      return;
+    }
+
+    if (readySentRef.current) {
+      return;
+    }
+
+    // 문제 로딩 전에 서버에 준비 완료 신호를 보낸다.
+    readySentRef.current = true;
+    socket.emit('battle:ready', { roomId });
+  }, [socket, roomId, status]);
 
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {

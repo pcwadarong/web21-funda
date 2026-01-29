@@ -14,7 +14,6 @@ export const BattleQuizPage = () => {
 
   // 기본 정보
   const roomId = useBattleStore(state => state.roomId);
-  const inviteToken = useBattleStore(state => state.inviteToken);
   const status = useBattleStore(state => state.status);
 
   // 퀴즈 데이터
@@ -63,10 +62,10 @@ export const BattleQuizPage = () => {
   }, [questionStatuses, selectedAnswers, currentQuizIndex]);
 
   useEffect(() => {
-    if (status === 'invalid' && inviteToken) {
+    if (status === 'invalid') {
       navigate(`/battle`);
     }
-  }, [status, inviteToken, navigate]);
+  }, [status, navigate]);
 
   if (status !== 'in_progress' || !currentQuiz) return <Loading text="배틀 로딩 중" />;
 

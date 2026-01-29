@@ -32,7 +32,6 @@ export const QuizHeader = ({
 
   const { leaveRoom } = useBattleSocket();
   const roomId = useBattleStore(state => state.roomId);
-  const inviteToken = useBattleStore(state => state.inviteToken);
   const remainingSeconds = useBattleStore(state => state.remainingSeconds);
   const resultEndsAt = useBattleStore(state => state.resultEndsAt);
   const quizEndsAt = useBattleStore(state => state.quizEndsAt);
@@ -53,14 +52,14 @@ export const QuizHeader = ({
 
   const handleExit = useCallback(() => {
     if (isBattleMode) {
-      if (roomId && inviteToken) {
+      if (roomId) {
         leaveRoom(roomId);
         navigate('/battle');
       }
     } else {
       navigate('/learn');
     }
-  }, [navigate, leaveRoom, roomId, inviteToken]);
+  }, [navigate, leaveRoom, roomId]);
 
   const progress = (completedSteps / totalSteps) * 100;
 

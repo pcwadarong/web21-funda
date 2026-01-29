@@ -239,10 +239,14 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         : null,
     });
 
+    const remainingSeconds = nextRoom.quizEndsAt
+      ? Math.max(0, Math.ceil((nextRoom.quizEndsAt - Date.now()) / 1000))
+      : nextRoom.settings.timeLimitSeconds;
+
     this.server.to(nextRoom.roomId).emit('battle:state', {
       roomId: nextRoom.roomId,
       status: nextRoom.status,
-      remainingSeconds: nextRoom.settings.timeLimitSeconds, // 추후 endsAt과 비교하여 실제 남은 시간 내려주기
+      remainingSeconds,
       rankings: this.buildRankings(nextRoom),
     });
 
@@ -840,7 +844,10 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         type: '',
         selection: {},
       });
-      if (!quizResult) return normalizedRoom;
+      if (!quizResult) {
+        this.logger.warn(`Quiz result not found for quizId=${quizId}, skipping normalization`);
+        return normalizedRoom;
+      }
 
       for (const participantId of room.participants.map(p => p.participantId)) {
         const participant = normalizedRoom.participants.find(

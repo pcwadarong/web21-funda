@@ -53,8 +53,8 @@ export const QuizContentCard = ({
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
   const showResult = status === 'checked';
-  const endsAt = useBattleStore(state => state.resultEndsAt);
-  const remainingSeconds = useBattleStore(state => state.remainingSeconds);
+  const endsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
+  const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
   const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
   let nextButtonLabel = '다음 문제';
 

@@ -2,17 +2,23 @@ import type { Theme } from '@emotion/react';
 import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/components/Button';
+import { Loading } from '@/components/Loading';
 import { useModal } from '@/store/modalStore';
 
 import { InfoBattleModal } from './InfoBattleModal';
 
 interface BattleContainerProps {
   onClick: () => void;
+  isLoading?: boolean;
 }
 
-export const BattleContainer = ({ onClick }: BattleContainerProps) => {
+export const BattleContainer = ({ onClick, isLoading = false }: BattleContainerProps) => {
   const theme = useTheme();
   const { openModal } = useModal();
+
+  if (isLoading) {
+    return <Loading text="방 생성 중" />;
+  }
 
   return (
     <div css={containerStyle()}>

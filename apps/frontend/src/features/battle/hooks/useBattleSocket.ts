@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/shallow';
 
 import type {
   BattleParticipant,
@@ -58,26 +59,28 @@ export function useBattleSocket(): UseBattleSocketReturn {
   const isAuthReady = useAuthStore(state => state.isAuthReady);
 
   // Zustand 스토어에서 상태와 액션 가져오기
-  const battleState = useBattleStore(state => ({
-    roomId: state.roomId,
-    inviteToken: state.inviteToken,
-    settings: state.settings,
-    hostParticipantId: state.hostParticipantId,
-    status: state.status,
-    participants: state.participants,
-    rankings: state.rankings,
-    rewards: state.rewards,
-    currentQuizIndex: state.currentQuizIndex,
-    totalQuizzes: state.totalQuizzes,
-    remainingSeconds: state.remainingSeconds,
-    currentQuiz: state.currentQuiz,
-    currentQuizId: state.currentQuizId,
-    quizEndsAt: state.quizEndsAt,
-    resultEndsAt: state.resultEndsAt,
-    selectedAnswers: state.selectedAnswers,
-    quizSolutions: state.quizSolutions,
-    questionStatuses: state.questionStatuses,
-  }));
+  const battleState = useBattleStore(
+    useShallow(state => ({
+      roomId: state.roomId,
+      inviteToken: state.inviteToken,
+      settings: state.settings,
+      hostParticipantId: state.hostParticipantId,
+      status: state.status,
+      participants: state.participants,
+      rankings: state.rankings,
+      rewards: state.rewards,
+      currentQuizIndex: state.currentQuizIndex,
+      totalQuizzes: state.totalQuizzes,
+      remainingSeconds: state.remainingSeconds,
+      currentQuiz: state.currentQuiz,
+      currentQuizId: state.currentQuizId,
+      quizEndsAt: state.quizEndsAt,
+      resultEndsAt: state.resultEndsAt,
+      selectedAnswers: state.selectedAnswers,
+      quizSolutions: state.quizSolutions,
+      questionStatuses: state.questionStatuses,
+    })),
+  );
   const {
     setBattleState,
     setParticipants,
@@ -261,34 +264,24 @@ export function useBattleSocket(): UseBattleSocketReturn {
       },
     ) => {
       // 인증 준비 상태 확인
-      if (!isAuthReady) {
-        return;
-      }
+      if (!isAuthReady || !socket) return;
 
-      // 소켓 연결 상태 확인 및 자동 연결
+      // 연결이 끊겼다면 연결 시도 후 리턴
       if (socketStatus === 'disconnected') {
         connect();
-        // 연결 완료를 기다리지 않고 반환 (연결 후 별도로 joinBattle 호출 필요)
         return;
       }
 
-      if (!socket || socketStatus !== 'connected') {
-        return;
-      }
+      if (socketStatus !== 'connected') return;
 
       // 현재 방 정보 확인
-      const currentRoomId = battleState.roomId;
-      const currentParticipants = battleState.participants;
+      const currentStore = useBattleStore.getState();
 
       // 이미 같은 방에 join했으면 다시 join하지 않기
-      if (currentRoomId === roomId && currentParticipants.length > 0) {
-        return;
-      }
+      if (currentStore.roomId === roomId && currentStore.participants.length > 0) return;
 
       // 다른 방으로 진입하는 경우, 이전 상태 초기화
-      if (currentRoomId && currentRoomId !== roomId) {
-        reset();
-      }
+      if (currentStore.roomId && currentStore.roomId !== roomId) reset();
 
       // userData가 없으면 인증 스토어에서 자동 수집
       const finalUserData = userData ?? {
@@ -297,38 +290,18 @@ export function useBattleSocket(): UseBattleSocketReturn {
         profileImageUrl: isLoggedIn && user ? (user.profileImageUrl ?? undefined) : undefined,
       };
 
-      // battleStore에 roomId, inviteToken, settings 저장
-      if (options?.inviteToken || options?.settings) {
-        setBattleState({
-          roomId,
-          ...(options.inviteToken && { inviteToken: options.inviteToken }),
-          ...(options.settings && { settings: options.settings }),
-        });
-      } else if (!currentRoomId) {
-        // roomId만 저장 (inviteToken과 settings는 나중에 업데이트될 수 있음)
-        setBattleState({ roomId });
-      }
+      setBattleState({
+        roomId,
+        ...(options?.inviteToken && { inviteToken: options.inviteToken }),
+        ...(options?.settings && { settings: options.settings }),
+      });
 
-      // battle:join 이벤트 발송
       socket.emit('battle:join', {
         roomId,
-        userId: finalUserData.userId ?? null,
-        displayName: finalUserData.displayName,
-        profileImageUrl: finalUserData.profileImageUrl,
+        ...finalUserData,
       });
     },
-    [
-      isAuthReady,
-      socketStatus,
-      connect,
-      socket,
-      battleState.roomId,
-      battleState.participants,
-      reset,
-      isLoggedIn,
-      user,
-      setBattleState,
-    ],
+    [isAuthReady, socketStatus, connect, socket, setBattleState, isLoggedIn, user, reset],
   );
 
   /**

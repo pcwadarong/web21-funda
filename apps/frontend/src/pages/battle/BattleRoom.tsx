@@ -55,14 +55,10 @@ export const BattleRoom = () => {
 
   useEffect(
     () => () => {
-      if (!roomId || unmountedRef.current) {
-        return;
-      }
+      if (!roomId || unmountedRef.current) return;
 
       // 게임 진행 중이거나 종료된 상태에서 라우팅으로 언마운트될 때는 방을 떠나지 않는다.
-      if (status === 'in_progress' || status === 'finished') {
-        return;
-      }
+      if (status === 'in_progress' || status === 'finished') return;
 
       unmountedRef.current = true;
       leaveBattle(roomId);

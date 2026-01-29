@@ -463,14 +463,23 @@ export const applyFinish = (
 export const applyRestart = (
   state: BattleRoomState,
   _params: RestartBattleRoomParams,
-): BattleRoomState => ({
-  ...state,
-  status: 'waiting',
-  readyParticipantIds: [],
-  startedAt: null,
-  endedAt: null,
-  currentQuizIndex: 0,
-});
+): BattleRoomState => {
+  // 모든 참여자의 점수와 제출 기록 초기화
+  const resetParticipants = state.participants.map(participant => ({
+    ...participant,
+    score: 0,
+    submissions: [],
+  }));
+
+  return {
+    ...state,
+    status: 'waiting',
+    startedAt: null,
+    endedAt: null,
+    currentQuizIndex: 0,
+    participants: resetParticipants,
+  };
+};
 
 export const applySubmission = (
   state: BattleRoomState,

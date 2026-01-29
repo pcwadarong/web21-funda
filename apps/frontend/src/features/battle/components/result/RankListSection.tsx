@@ -62,7 +62,7 @@ export const RankListSection = ({
                   </div>
                   <span css={userNameStyle}>{ranking.displayName}</span>
                 </div>
-                <div css={scoreValueStyle}>+{ranking.score}</div>
+                <div css={scoreValueStyle}>{ranking.score}</div>
               </li>
             );
           })}

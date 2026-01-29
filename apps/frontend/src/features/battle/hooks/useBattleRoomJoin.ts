@@ -9,7 +9,7 @@ import { useBattleStore } from '@/store/battleStore';
 export function useBattleRoomJoin(inviteToken: string) {
   const navigate = useNavigate();
   const { data } = useJoinBattleRoomQuery(inviteToken);
-  const { joinRoom } = useSocketContext();
+  const { status, connect, emitEvent } = useSocketContext();
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
   const user = useAuthStore(state => state.user);
   const isAuthReady = useAuthStore(state => state.isAuthReady);
@@ -18,14 +18,17 @@ export function useBattleRoomJoin(inviteToken: string) {
   // 이미 join한 방 추적 (중복 join 방지)
   const currentRoomId = useBattleStore(state => state.roomId);
   const participants = useBattleStore(state => state.participants);
-  useEffect(() => {
-    if (!isAuthReady || !data) return;
 
-    // canJoin 체크
-    if (!data.canJoin) {
-      navigate('/battle'); // 자동 리다이렉트
-      return;
-    }
+  // 소켓 연결 트리거: disconnected 상태일 때 connect() 호출
+  useEffect(() => {
+    if (!isAuthReady || !data || !data.canJoin) return;
+    if (status === 'disconnected') connect();
+  }, [status, isAuthReady, data, connect]);
+
+  // 2. 소켓 연결 완료 후 battle:join 이벤트 발송 (status 기반 선언적 로직)
+  useEffect(() => {
+    if (!isAuthReady || !data || !data.canJoin) return;
+    if (status !== 'connected') return;
 
     // 소켓 참여에 사용할 사용자 정보
     const userId = isLoggedIn && user ? user.id : null;
@@ -33,14 +36,10 @@ export function useBattleRoomJoin(inviteToken: string) {
     const profileImageUrl = isLoggedIn && user ? (user.profileImageUrl ?? undefined) : undefined;
 
     // 이미 같은 방에 join했으면 다시 join하지 않기
-    if (currentRoomId === data.roomId && participants.length > 0) {
-      return;
-    }
+    if (currentRoomId === data.roomId && participants.length > 0) return;
 
     // 다른 방으로 진입하는 경우, 이전 상태 초기화
-    if (currentRoomId && currentRoomId !== data.roomId) {
-      useBattleStore.getState().actions.reset();
-    }
+    if (currentRoomId && currentRoomId !== data.roomId) useBattleStore.getState().actions.reset();
 
     // battleStore에 roomId, inviteToken, settings 저장
     setBattleState({
@@ -49,18 +48,32 @@ export function useBattleRoomJoin(inviteToken: string) {
       settings: data.settings,
     });
 
-    // 소켓 참여
-    joinRoom(data.roomId, { userId, displayName, profileImageUrl });
+    // 소켓 연결 완료 후 battle:join 이벤트 발송
+    emitEvent('battle:join', {
+      roomId: data.roomId,
+      userId,
+      displayName,
+      profileImageUrl,
+    });
   }, [
-    data,
+    status,
     isAuthReady,
+    data,
     inviteToken,
-    navigate,
     isLoggedIn,
     user,
     currentRoomId,
     participants.length,
+    setBattleState,
+    emitEvent,
   ]);
+
+  // canJoin이 false일 때 /battle로 리다이렉트
+  useEffect(() => {
+    if (data && !data.canJoin) {
+      navigate('/battle');
+    }
+  }, [data, navigate]);
 
   return { roomId: data?.roomId, canJoin: data?.canJoin };
 }

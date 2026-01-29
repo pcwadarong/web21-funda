@@ -14,12 +14,14 @@ export function useBattleFlow() {
   const navigate = useNavigate();
   const status = useBattleStore(state => state.status);
   const roomId = useBattleStore(state => state.roomId);
-  const prevStatusRef = useRef<BattleRoomStatus | null>(null);
   const inviteToken = useBattleStore(state => state.inviteToken);
+  const prevStatusRef = useRef<BattleRoomStatus | null>(null);
 
   useEffect(() => {
     // status가 변경되지 않았으면 리턴
-    if (status === prevStatusRef.current) return;
+    if (status === prevStatusRef.current) {
+      return;
+    }
 
     // roomId가 없으면 배틀 관련 상태가 아니므로 리턴
     if (!roomId) {
@@ -29,6 +31,14 @@ export function useBattleFlow() {
 
     // status에 따라 적절한 경로로 navigate
     switch (status) {
+      case 'waiting':
+        // waiting: inviteToken이 있으면 /battle/${inviteToken}, 없으면 /battle
+        if (inviteToken) {
+          navigate(`/battle/${inviteToken}`, { replace: true });
+        } else {
+          navigate('/battle', { replace: true });
+        }
+        break;
       case 'in_progress':
         navigate('/battle/quiz', { replace: true });
         break;
@@ -38,17 +48,11 @@ export function useBattleFlow() {
       case 'invalid':
         navigate('/battle', { replace: true });
         break;
-      case 'waiting':
-        // 재시작
-        if (inviteToken) navigate(`/battle/${inviteToken}`, { replace: true });
-        else navigate('/battle', { replace: true });
-
-        break;
       case null:
         // status가 null이면 배틀 상태가 아니므로 리턴
         break;
     }
 
     prevStatusRef.current = status;
-  }, [status, roomId, navigate]);
+  }, [status, roomId, inviteToken, navigate]);
 }

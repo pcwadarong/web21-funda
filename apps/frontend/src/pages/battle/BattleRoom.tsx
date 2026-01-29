@@ -27,7 +27,7 @@ export const BattleRoom = () => {
   useBattleRoomJoin(inviteToken);
 
   // Cleanup on unmount
-  const { leaveRoom } = useSocketContext();
+  const { socket, emitEvent } = useSocketContext();
   const roomId = useBattleStore(state => state.roomId);
   const unmountedRef = useRef(false);
 
@@ -44,10 +44,12 @@ export const BattleRoom = () => {
       }
 
       unmountedRef.current = true;
-      leaveRoom(roomId);
+      if (socket?.connected && roomId) {
+        emitEvent('battle:leave', { roomId });
+      }
       useBattleStore.getState().actions.reset();
     },
-    [roomId, leaveRoom],
+    [roomId, socket, emitEvent],
   );
 
   // battleStore에서 participants 읽기

@@ -30,7 +30,7 @@ const MAX_PLAYER_OPTIONS = [2, 5, 10, 25, 30];
 
 export const GameSettingsPanel = () => {
   const theme = useTheme();
-  const { socket } = useSocketContext();
+  const { socket, emitEvent } = useSocketContext();
   const { showToast } = useToast();
 
   // Zustand Store 데이터 추출
@@ -49,7 +49,7 @@ export const GameSettingsPanel = () => {
     if (!roomId || !socket || !isHost) return;
 
     // 백엔드의 검증과 브로드캐스트를 기다린다 (로컬 state는 socket 이벤트로 업데이트)
-    socket.emit('battle:updateRoom', {
+    emitEvent('battle:updateRoom', {
       roomId,
       fieldSlug: updates.fieldSlug ?? settings?.fieldSlug ?? 'be',
       maxPlayers: updates.maxPlayers ?? settings?.maxPlayers ?? 5,
@@ -75,7 +75,7 @@ export const GameSettingsPanel = () => {
       alert('호스트만 게임을 시작할 수 있습니다.');
       return;
     }
-    socket?.emit('battle:start', { roomId });
+    emitEvent('battle:start', { roomId });
   };
 
   return (

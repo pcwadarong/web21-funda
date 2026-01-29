@@ -7,16 +7,16 @@ import { useBattleStore } from '@/store/battleStore';
 
 export const Battle = () => {
   const createBattleRoom = useCreateBattleRoomMutation();
-  const { leaveRoom } = useSocketContext();
-  const socketRoomId = useSocketContext().roomId;
+  const { socket, emitEvent } = useSocketContext();
+  const roomId = useBattleStore(state => state.roomId);
   const resetBattleState = useBattleStore(state => state.actions.reset);
 
   useEffect(() => {
-    if (socketRoomId) {
-      leaveRoom(socketRoomId);
+    if (socket?.connected && roomId) {
+      emitEvent('battle:leave', { roomId });
     }
     resetBattleState();
-  }, [socketRoomId, leaveRoom, resetBattleState]);
+  }, [socket, roomId, emitEvent, resetBattleState]);
 
   const onCreateRoom = () => {
     createBattleRoom.mutate();

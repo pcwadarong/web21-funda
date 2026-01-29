@@ -7,7 +7,7 @@ import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
 
 export const BattleQuizPage = () => {
-  const { socket } = useSocketContext();
+  const { socket, emitEvent } = useSocketContext();
 
   // 기본 정보
   const roomId = useBattleStore(state => state.roomId);
@@ -53,9 +53,9 @@ export const BattleQuizPage = () => {
     // 문제 로딩 전에 서버에 준비 완료 신호를 보낸다.
     if (socket && roomId) {
       readySentRef.current = true;
-      socket.emit('battle:ready', { roomId });
+      emitEvent('battle:ready', { roomId });
     }
-  }, [socket, roomId, status]);
+  }, [socket, roomId, status, emitEvent]);
 
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {
@@ -70,12 +70,20 @@ export const BattleQuizPage = () => {
 
     setQuestionStatus(currentQuizIndex, 'checking');
 
-    socket.emit('battle:submitAnswer', {
+    emitEvent('battle:submitAnswer', {
       roomId,
       quizId: currentQuizId,
       answer: selectedAnswers[currentQuizIndex] ?? null,
     });
-  }, [socket, roomId, currentQuizId, selectedAnswers, currentQuizIndex, setQuestionStatus]);
+  }, [
+    socket,
+    roomId,
+    currentQuizId,
+    selectedAnswers,
+    currentQuizIndex,
+    setQuestionStatus,
+    emitEvent,
+  ]);
 
   const handleNextQuestion = useCallback(() => {
     // 서버가 다음 문제를 내려주므로 클라이언트에서는 상태만 초기화

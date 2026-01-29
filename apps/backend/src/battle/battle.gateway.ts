@@ -183,26 +183,34 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     if (existingParticipant) {
       // 기존 참여자: socket ID만 업데이트 (재연결 처리)
-      const updatedParticipants = room.participants.map(p =>
-        p.participantId === existingParticipant.participantId
-          ? { ...p, participantId: client.id, isConnected: true, leftAt: null }
-          : p,
+      const previousParticipantId = existingParticipant.participantId;
+      const updatedParticipantId = client.id;
+
+      const updatedParticipants = room.participants.map(participant =>
+        participant.participantId === previousParticipantId
+          ? { ...participant, participantId: updatedParticipantId, isConnected: true, leftAt: null }
+          : participant,
       );
 
-      const nextRoom: BattleRoomState = {
+      let nextHostParticipantId = room.hostParticipantId;
+      if (!nextHostParticipantId) {
+        nextHostParticipantId = updatedParticipantId;
+      }
+
+      if (room.hostParticipantId === previousParticipantId) {
+        nextHostParticipantId = updatedParticipantId;
+      }
+
+      const normalizedParticipants = updatedParticipants.map(participant => ({
+        ...participant,
+        isHost: participant.participantId === nextHostParticipantId,
+      }));
+
+      updatedRoom = {
         ...room,
-        participants: updatedParticipants,
+        hostParticipantId: nextHostParticipantId,
+        participants: normalizedParticipants,
       };
-
-      // hostParticipantId를 clientId 또는 userId로 설정
-      const hostId = clientId || payload.userId?.toString();
-
-      updatedRoom = room.hostParticipantId
-        ? nextRoom
-        : {
-            ...nextRoom,
-            hostParticipantId: hostId || existingParticipant.participantId,
-          };
 
       this.logger.log(
         `Reconnected participant: userId=${payload.userId}, clientId=${clientId}, socketId=${client.id}`,
@@ -212,15 +220,18 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       const participant = this.buildParticipant(room, payload, client.id, clientId);
       const nextRoom = applyJoin(room, { roomId: room.roomId, participant });
 
-      // hostParticipantId를 clientId 또는 userId로 설정 (socket 재연결 대비)
-      const hostId = clientId || payload.userId?.toString();
+      const nextHostParticipantId = room.hostParticipantId || participant.participantId;
 
-      updatedRoom = room.hostParticipantId
-        ? nextRoom
-        : {
-            ...nextRoom,
-            hostParticipantId: hostId || participant.participantId,
-          };
+      const normalizedParticipants = nextRoom.participants.map(currentParticipant => ({
+        ...currentParticipant,
+        isHost: currentParticipant.participantId === nextHostParticipantId,
+      }));
+
+      updatedRoom = {
+        ...nextRoom,
+        hostParticipantId: nextHostParticipantId,
+        participants: normalizedParticipants,
+      };
 
       this.logger.log(
         `New participant joined: userId=${payload.userId}, clientId=${clientId}, socketId=${client.id}`,

@@ -4,7 +4,7 @@ import { BattleLobbyContainer } from '@/feat/battle/components/lobby/BattleLobby
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useCreateBattleRoomMutation } from '@/hooks/queries/battleQueries';
 
-export const Battle = () => {
+export const BattleLobbyPage = () => {
   const createBattleRoom = useCreateBattleRoomMutation();
   const { battleState, leaveBattle } = useBattleSocket();
   const { roomId } = battleState;

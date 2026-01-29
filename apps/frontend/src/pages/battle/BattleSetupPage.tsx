@@ -15,7 +15,7 @@ interface Participant {
   profileImageUrl?: string;
 }
 
-export const BattleRoom = () => {
+export const BattleSetupPage = () => {
   const { inviteToken } = useParams<{ inviteToken: string }>();
   const navigate = useNavigate();
 

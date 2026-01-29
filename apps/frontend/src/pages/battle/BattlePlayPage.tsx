@@ -5,7 +5,7 @@ import { BattlePlayContainer } from '@/feat/battle/components/play/BattlePlayCon
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
 
-export const BattleQuizPage = () => {
+export const BattlePlayPage = () => {
   const { battleState, socket, setSelectedAnswer, setQuestionStatus, submitAnswer } =
     useBattleSocket();
 

@@ -30,14 +30,16 @@ const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default:
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
-const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
-const BattleRoom = lazy(() =>
-  import('@/pages/battle/BattleRoom').then(m => ({ default: m.BattleRoom })),
+const BattleLobby = lazy(() =>
+  import('@/pages/battle/BattleLobbyPage').then(m => ({ default: m.BattleLobbyPage })),
 );
-const BattleQuizPage = lazy(() =>
-  import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
+const BattleSetup = lazy(() =>
+  import('@/pages/battle/BattleSetupPage').then(m => ({ default: m.BattleSetupPage })),
 );
-const BattleResultPage = lazy(() =>
+const BattlePlay = lazy(() =>
+  import('@/pages/battle/BattlePlayPage').then(m => ({ default: m.BattlePlayPage })),
+);
+const BattleResult = lazy(() =>
   import('@/pages/battle/BattleResultPage').then(m => ({ default: m.BattleResultPage })),
 );
 const InitialFields = lazy(() =>
@@ -117,14 +119,14 @@ export const router = createBrowserRouter([
         children: [
           {
             element: <PageSuspenseLayout />,
-            children: [{ path: 'battle/quiz', element: <BattleQuizPage /> }],
+            children: [{ path: 'battle/play', element: <BattlePlay /> }],
           },
           {
             element: <SidebarSuspenseLayout />,
             children: [
-              { path: 'battle', element: <Battle /> },
-              { path: 'battle/:inviteToken', element: <BattleRoom /> },
-              { path: 'battle/result', element: <BattleResultPage /> },
+              { path: 'battle', element: <BattleLobby /> },
+              { path: 'battle/:inviteToken', element: <BattleSetup /> },
+              { path: 'battle/result', element: <BattleResult /> },
             ],
           },
         ],

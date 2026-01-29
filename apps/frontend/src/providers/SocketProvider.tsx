@@ -22,7 +22,10 @@ export interface SocketContextValue {
   roomId: string | null;
   connect: () => void;
   disconnect: () => void;
-  joinRoom: (roomId: string, payload?: { userId?: number | null; displayName?: string }) => void;
+  joinRoom: (
+    roomId: string,
+    payload?: { userId?: number | null; displayName?: string; profileImageUrl?: string },
+  ) => void;
   leaveRoom: (roomId: string) => void;
 }
 
@@ -62,7 +65,7 @@ export function SocketProvider({ children, namespace = '/battle' }: SocketProvid
   const [roomId, setRoomId] = useState<string | null>(null);
   const pendingJoinRef = useRef<{
     roomId: string;
-    payload?: { userId?: number | null; displayName?: string };
+    payload?: { userId?: number | null; displayName?: string; profileImageUrl?: string };
   } | null>(null);
 
   /**
@@ -84,7 +87,10 @@ export function SocketProvider({ children, namespace = '/battle' }: SocketProvid
    * Battle 방 참가
    */
   const joinRoom = useCallback(
-    (targetRoomId: string, payload?: { userId?: number | null; displayName?: string }) => {
+    (
+      targetRoomId: string,
+      payload?: { userId?: number | null; displayName?: string; profileImageUrl?: string },
+    ) => {
       if (socket?.connected) {
         // 이미 연결되어 있으면 바로 join
         socket.emit('battle:join', {

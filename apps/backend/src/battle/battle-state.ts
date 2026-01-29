@@ -40,10 +40,13 @@ export type ParticipantSubmission = BattleQuizSubmission & {
 export type BattleParticipant = {
   participantId: string;
   userId: number | null;
+  clientId?: string; // 게스트 사용자 식별용 (HttpOnly 쿠키에서)
   displayName: string;
+  avatar?: string; // 프로필 이미지 URL
   score: number;
   submissions: BattleQuizSubmission[];
   isConnected: boolean;
+  isHost: boolean; // 방장 여부
   joinedAt: number;
   leftAt: number | null;
 };
@@ -187,7 +190,11 @@ export const validateUpdateRoom = (
     };
   }
 
-  if (state.hostParticipantId !== requesterParticipantId) {
+  // 요청자의 참가자 정보 찾기 (socket.id 기반)
+  const requester = state.participants.find(p => p.participantId === requesterParticipantId);
+
+  // 요청자가 호스트인지 확인 (isHost 플래그 사용)
+  if (!requester?.isHost) {
     return {
       ok: false,
       code: 'NOT_HOST',
@@ -217,7 +224,11 @@ export const validateStart = (
     };
   }
 
-  if (state.hostParticipantId !== requesterParticipantId) {
+  // 요청자의 참가자 정보 찾기 (socket.id 기반)
+  const requester = state.participants.find(p => p.participantId === requesterParticipantId);
+
+  // 요청자가 호스트인지 확인 (isHost 플래그 사용)
+  if (!requester?.isHost) {
     return {
       ok: false,
       code: 'NOT_HOST',
@@ -328,6 +339,12 @@ export const applyLeave = (
     }
   }
 
+  // isHost 필드 재계산: 첫 번째 참여자만 호스트
+  const updatedParticipants = nextParticipants.map((participant, index) => ({
+    ...participant,
+    isHost: index === 0,
+  }));
+
   const nextStatus =
     nextParticipants.length < 2 && state.status !== 'finished' && state.status !== 'invalid'
       ? 'invalid'
@@ -335,7 +352,7 @@ export const applyLeave = (
 
   return {
     ...state,
-    participants: nextParticipants,
+    participants: updatedParticipants,
     hostParticipantId: nextHostParticipantId,
     status: nextStatus,
   };

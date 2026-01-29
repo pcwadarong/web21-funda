@@ -477,6 +477,7 @@ export const applyRestart = (
     startedAt: null,
     endedAt: null,
     currentQuizIndex: 0,
+    quizIds: [], // 퀴즈 ID 초기화 (다음 게임 시작 시 새로 생성됨)
     participants: resetParticipants,
   };
 };

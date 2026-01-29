@@ -15,6 +15,7 @@ export const BattleResultPage = () => {
   const rewards = useBattleStore(state => state.rewards);
   const roomId = useBattleStore(state => state.roomId);
   const inviteToken = useBattleStore(state => state.inviteToken);
+  const { reset: resetBattleStore } = useBattleStore(state => state.actions);
   // 15초 타이머
   const [timeLeft, setTimeLeft] = useState(8);
 
@@ -24,7 +25,7 @@ export const BattleResultPage = () => {
       // 타이머 종료 시 대기실로 이동
       if (!socket || !roomId) return;
       socket.emit('battle:restart', { roomId });
-
+      resetBattleStore();
       navigate(`/battle/${inviteToken}`);
       return;
     }
@@ -32,13 +33,13 @@ export const BattleResultPage = () => {
       setTimeLeft(prev => prev - 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, navigate, inviteToken]);
+  }, [timeLeft, navigate, inviteToken, resetBattleStore]);
 
   // 한 번 더 하기: battle:restart 이벤트 emit + 상태 초기화 + 대기실로 이동
   const handleRestart = () => {
     if (!socket || !roomId) return;
     socket.emit('battle:restart', { roomId });
-
+    resetBattleStore();
     navigate(`/battle/${inviteToken}`);
   };
 

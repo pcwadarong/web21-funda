@@ -339,11 +339,66 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(nextRoom.roomId).emit('battle:state', {
       roomId: nextRoom.roomId,
       status: nextRoom.status,
+      remainingSeconds: 0,
+      rankings: this.buildRankings(nextRoom),
+    });
+  }
+
+  /**
+   * 배틀 준비 완료 신호를 처리한다.
+   *
+   * @param payload 방 ID
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
+  @SubscribeMessage('battle:ready')
+  handleReady(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
+    const room = this.battleService.getRoom(payload.roomId);
+    if (!room) {
+      client.emit('battle:error', {
+        code: 'ROOM_NOT_FOUND',
+        message: '방을 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    if (room.status !== 'in_progress') {
+      return;
+    }
+
+    const participant = room.participants.find(p => p.participantId === client.id);
+    if (!participant) {
+      return;
+    }
+
+    if (room.readyParticipantIds.includes(participant.participantId)) {
+      return;
+    }
+
+    const nextReadyParticipantIds = [...room.readyParticipantIds, participant.participantId];
+    const nextRoom: BattleRoomState = {
+      ...room,
+      readyParticipantIds: nextReadyParticipantIds,
+    };
+
+    this.battleService.saveRoom(nextRoom);
+
+    if (!this.isAllParticipantsReady(nextRoom)) {
+      return;
+    }
+
+    if (nextRoom.quizEndsAt) {
+      return;
+    }
+
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
       remainingSeconds: nextRoom.settings.timeLimitSeconds,
       rankings: this.buildRankings(nextRoom),
     });
 
-    await this.sendCurrentQuiz(nextRoom);
+    void this.sendCurrentQuiz(nextRoom);
   }
 
   /**
@@ -892,6 +947,21 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       displayName: participant.displayName,
       score: participant.score,
     }));
+  }
+
+  /**
+   * 모든 참가자가 준비 완료 상태인지 확인한다.
+   *
+   * @param room 방 상태
+   * @returns 모두 준비 완료 여부
+   */
+  private isAllParticipantsReady(room: BattleRoomState): boolean {
+    if (room.participants.length === 0) {
+      return false;
+    }
+
+    const readySet = new Set(room.readyParticipantIds);
+    return room.participants.every(participant => readySet.has(participant.participantId));
   }
 
   /**

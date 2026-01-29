@@ -57,6 +57,7 @@ export type BattleRoomState = {
   status: BattleRoomStatus;
   settings: BattleRoomSettings;
   participants: BattleParticipant[];
+  readyParticipantIds: string[];
   inviteToken: string;
   inviteExpired: boolean;
   startedAt: number | null;
@@ -126,6 +127,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   status: 'waiting',
   settings: params.settings,
   participants: [],
+  readyParticipantIds: [],
   inviteToken: params.inviteToken,
   inviteExpired: false,
   startedAt: null,
@@ -339,11 +341,15 @@ export const applyLeave = (
     }
   }
 
-  // isHost 필드 재계산: 첫 번째 참여자만 호스트
-  const updatedParticipants = nextParticipants.map((participant, index) => ({
+  // hostParticipantId 기준으로 isHost를 재계산한다.
+  const updatedParticipants = nextParticipants.map(participant => ({
     ...participant,
-    isHost: index === 0,
+    isHost: participant.participantId === nextHostParticipantId,
   }));
+
+  const nextReadyParticipantIds = state.readyParticipantIds.filter(readyParticipantId =>
+    updatedParticipants.some(participant => participant.participantId === readyParticipantId),
+  );
 
   const nextStatus =
     nextParticipants.length < 2 && state.status !== 'finished' && state.status !== 'invalid'
@@ -354,6 +360,7 @@ export const applyLeave = (
     ...state,
     participants: updatedParticipants,
     hostParticipantId: nextHostParticipantId,
+    readyParticipantIds: nextReadyParticipantIds,
     status: nextStatus,
   };
 };
@@ -372,6 +379,7 @@ export const applyStart = (
   ...state,
   status: 'in_progress',
   inviteExpired: true,
+  readyParticipantIds: [],
   startedAt: params.now,
   endedAt: null,
   currentQuizIndex: 0,
@@ -408,6 +416,7 @@ export const applyRestart = (
 ): BattleRoomState => ({
   ...state,
   status: 'waiting',
+  readyParticipantIds: [],
   startedAt: null,
   endedAt: null,
   currentQuizIndex: 0,

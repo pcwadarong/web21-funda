@@ -13,7 +13,6 @@ import type {
   CorrectAnswerType,
   MatchingPair,
   QuestionStatus,
-  QuizQuestion,
 } from '@/feat/quiz/types';
 import type { SocketContextValue } from '@/providers/SocketProvider';
 import { useSocketContext } from '@/providers/SocketProvider';
@@ -21,27 +20,10 @@ import { useAuthStore } from '@/store/authStore';
 import { useBattleStore } from '@/store/battleStore';
 import { useToast } from '@/store/toastStore';
 
+type BattleStateWithoutActions = Omit<ReturnType<typeof useBattleStore.getState>, 'actions'>;
+
 export interface UseBattleSocketReturn extends SocketContextValue {
-  battleState: {
-    roomId: string | null;
-    inviteToken: string | null;
-    settings: BattleRoomSettings | null;
-    hostParticipantId: string | null;
-    status: BattleRoomStatus | null;
-    participants: BattleParticipant[];
-    rankings: Ranking[];
-    rewards: BattleReward[];
-    currentQuizIndex: number;
-    totalQuizzes: number;
-    remainingSeconds: number;
-    currentQuiz: QuizQuestion | null;
-    currentQuizId: number;
-    quizEndsAt: number;
-    resultEndsAt: number | null;
-    selectedAnswers: AnswerType[];
-    quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
-    questionStatuses: QuestionStatus[];
-  };
+  battleState: BattleStateWithoutActions;
   battleStatus: BattleRoomStatus | null;
   joinBattle: (
     roomId: string,
@@ -59,6 +41,8 @@ export interface UseBattleSocketReturn extends SocketContextValue {
   readyBattle: (roomId: string) => void;
   submitAnswer: (roomId: string, quizId: number, answer: AnswerType, index: number) => void;
   restartBattle: (roomId: string) => void;
+  updateRoom: (roomId: string, settings: BattleRoomSettings) => void;
+  startBattle: (roomId: string) => void;
   setSelectedAnswer: (index: number, answer: AnswerType) => void;
   setQuestionStatus: (index: number, status: QuestionStatus) => void;
 }
@@ -348,17 +332,22 @@ export function useBattleSocket(): UseBattleSocketReturn {
   );
 
   /**
-   * 배틀 방 퇴장 요청을 보내고 스토어를 초기화합니다.
+   * 방 설정 변경 요청을 보냅니다.
    * @param roomId 방 ID
+   * @param settings 변경할 방 설정
    */
-  const leaveBattle = useCallback(
-    (roomId: string) => {
+  const updateRoom = useCallback(
+    (roomId: string, settings: BattleRoomSettings) => {
       if (!socket) return;
 
-      socket.emit('battle:leave', { roomId });
-      reset();
+      socket.emit('battle:updateRoom', {
+        roomId,
+        fieldSlug: settings.fieldSlug,
+        maxPlayers: settings.maxPlayers,
+        timeLimitType: settings.timeLimitType,
+      });
     },
-    [socket, reset],
+    [socket],
   );
 
   /**
@@ -377,6 +366,19 @@ export function useBattleSocket(): UseBattleSocketReturn {
 
       readySentRef.current = true;
       socket.emit('battle:ready', { roomId });
+    },
+    [socket],
+  );
+
+  /**
+   * 배틀 게임 시작 요청을 보냅니다.
+   * @param roomId 방 ID
+   */
+  const startBattle = useCallback(
+    (roomId: string) => {
+      if (!socket) return;
+
+      socket.emit('battle:start', { roomId });
     },
     [socket],
   );
@@ -413,6 +415,20 @@ export function useBattleSocket(): UseBattleSocketReturn {
   );
 
   /**
+   * 배틀 방 퇴장 요청을 보내고 스토어를 초기화합니다.
+   * @param roomId 방 ID
+   */
+  const leaveBattle = useCallback(
+    (roomId: string) => {
+      if (!socket) return;
+
+      socket.emit('battle:leave', { roomId });
+      reset();
+    },
+    [socket, reset],
+  );
+
+  /**
    * 배틀 재시작 요청을 보내고 스토어를 초기화합니다.
    * @param roomId 방 ID
    */
@@ -438,6 +454,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
     readyBattle,
     submitAnswer,
     restartBattle,
+    updateRoom,
+    startBattle,
     disconnect,
     // 스토어 액션들 (일관성을 위해 훅을 통해 제공)
     setSelectedAnswer,

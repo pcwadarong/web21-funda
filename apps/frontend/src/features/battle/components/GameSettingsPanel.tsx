@@ -3,8 +3,7 @@ import { css, useTheme } from '@emotion/react';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
 import type { BattleRoomSettings, BattleTimeLimitType } from '@/feat/battle/types';
-import { useSocketContext } from '@/providers/SocketProvider';
-import { useBattleStore } from '@/store/battleStore';
+import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
@@ -30,13 +29,10 @@ const MAX_PLAYER_OPTIONS = [2, 5, 10, 25, 30];
 
 export const GameSettingsPanel = () => {
   const theme = useTheme();
-  const { socket, emitEvent } = useSocketContext();
   const { showToast } = useToast();
+  const { battleState, socket, updateRoom, startBattle } = useBattleSocket();
 
-  // Zustand Store 데이터 추출
-  const roomId = useBattleStore(state => state.roomId);
-  const participants = useBattleStore(state => state.participants);
-  const settings = useBattleStore(state => state.settings);
+  const { roomId, participants, settings } = battleState;
 
   // 호스트 여부 확인 (socket.id 기반)
   const isHost = participants.find(p => p.participantId === socket?.id)?.isHost ?? false;
@@ -49,8 +45,7 @@ export const GameSettingsPanel = () => {
     if (!roomId || !socket || !isHost) return;
 
     // 백엔드의 검증과 브로드캐스트를 기다린다 (로컬 state는 socket 이벤트로 업데이트)
-    emitEvent('battle:updateRoom', {
-      roomId,
+    updateRoom(roomId, {
       fieldSlug: updates.fieldSlug ?? settings?.fieldSlug ?? 'be',
       maxPlayers: updates.maxPlayers ?? settings?.maxPlayers ?? 5,
       timeLimitType: updates.timeLimitType ?? settings?.timeLimitType ?? 'recommended',
@@ -71,11 +66,11 @@ export const GameSettingsPanel = () => {
     }
   };
   const handleStartGame = () => {
-    if (!isHost) {
+    if (!isHost || !roomId) {
       alert('호스트만 게임을 시작할 수 있습니다.');
       return;
     }
-    emitEvent('battle:start', { roomId });
+    startBattle(roomId);
   };
 
   return (

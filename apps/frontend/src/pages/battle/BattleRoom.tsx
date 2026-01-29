@@ -1,10 +1,10 @@
 import { css } from '@emotion/react';
 import { useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { GameSettingsPanel } from '@/feat/battle/components/GameSettingsPanel';
 import { ParticipantsList } from '@/feat/battle/components/ParticipantsList';
-import { useBattleRoomJoin } from '@/feat/battle/hooks/useBattleRoomJoin';
+import { useJoinBattleRoomQuery } from '@/hooks/queries/battleQueries';
 import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 
 interface Participant {
@@ -17,17 +17,40 @@ interface Participant {
 
 export const BattleRoom = () => {
   const { inviteToken } = useParams<{ inviteToken: string }>();
+  const navigate = useNavigate();
 
   if (!inviteToken) {
     throw new Error('inviteToken is required');
   }
 
-  // 소켓 연결 및 방 참여
-  useBattleRoomJoin(inviteToken);
-
-  // Cleanup on unmount
-  const { battleState, leaveBattle } = useBattleSocket();
+  // 방 참가 가능 여부 확인
+  const { data } = useJoinBattleRoomQuery(inviteToken);
+  const { battleState, joinBattle, leaveBattle, status: socketStatus, connect } = useBattleSocket();
   const { roomId, status, participants: battleParticipants } = battleState;
+
+  // 소켓 연결 및 방 참여 로직
+  useEffect(() => {
+    if (!data || !data.canJoin) {
+      if (data && !data.canJoin) {
+        navigate('/battle');
+      }
+      return;
+    }
+
+    // 소켓 연결 트리거
+    if (socketStatus === 'disconnected') {
+      connect();
+      return;
+    }
+
+    // 소켓 연결 완료 후 join
+    if (socketStatus === 'connected' && data.roomId) {
+      joinBattle(data.roomId, undefined, {
+        inviteToken,
+        settings: data.settings,
+      });
+    }
+  }, [data, inviteToken, socketStatus, connect, joinBattle, navigate]);
   const unmountedRef = useRef(false);
 
   useEffect(

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import type {
   BattleParticipant,
@@ -10,18 +10,46 @@ import type {
 } from '@/feat/battle/types';
 import type { AnswerType, CorrectAnswerType, MatchingPair } from '@/feat/quiz/types';
 import { useSocketContext } from '@/providers/SocketProvider';
+import { useAuthStore } from '@/store/authStore';
 import { useBattleStore } from '@/store/battleStore';
 import { useToast } from '@/store/toastStore';
 
 export function useBattleSocket() {
   const socketContext = useSocketContext();
-  const { socket } = socketContext;
+  const { socket, status: socketStatus, connect } = socketContext;
   const { showToast } = useToast();
 
+  // 인증 정보
+  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const user = useAuthStore(state => state.user);
+  const isAuthReady = useAuthStore(state => state.isAuthReady);
+
   // Zustand 스토어에서 상태와 액션 가져오기
-  const battleStatus = useBattleStore(state => state.status);
+  const battleState = useBattleStore(state => ({
+    roomId: state.roomId,
+    inviteToken: state.inviteToken,
+    settings: state.settings,
+    hostParticipantId: state.hostParticipantId,
+    status: state.status,
+    participants: state.participants,
+    rankings: state.rankings,
+    rewards: state.rewards,
+    currentQuizIndex: state.currentQuizIndex,
+    totalQuizzes: state.totalQuizzes,
+    remainingSeconds: state.remainingSeconds,
+    currentQuiz: state.currentQuiz,
+    currentQuizId: state.currentQuizId,
+    quizEndsAt: state.quizEndsAt,
+    resultEndsAt: state.resultEndsAt,
+    selectedAnswers: state.selectedAnswers,
+    quizSolutions: state.quizSolutions,
+    questionStatuses: state.questionStatuses,
+  }));
   const { setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus, reset } =
     useBattleStore(state => state.actions);
+
+  // ready 중복 요청 방지를 위한 ref
+  const readySentRef = useRef(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -151,6 +179,11 @@ export function useBattleSocket() {
     showToast,
   ]);
 
+  // roomId 변경 시 readySentRef 리셋
+  useEffect(() => {
+    readySentRef.current = false;
+  }, [battleState.roomId]);
+
   const disconnect = useCallback(() => {
     socketContext.disconnect();
     reset();
@@ -158,28 +191,95 @@ export function useBattleSocket() {
 
   /**
    * 배틀 방 참가 요청을 보냅니다.
+   * 소켓 연결 상태를 확인하고, 필요시 자동으로 연결합니다.
+   * 중복 join을 방지하고, 다른 방으로 이동 시 상태를 초기화합니다.
+   *
    * @param roomId 방 ID
-   * @param userData 사용자 정보 (userId, displayName, profileImageUrl)
+   * @param userData 사용자 정보 (선택적, 없으면 인증 스토어에서 자동 수집)
+   * @param options 추가 옵션 (inviteToken, settings 등)
    */
   const joinBattle = useCallback(
     (
       roomId: string,
-      userData: {
+      userData?: {
         userId?: number | null;
         displayName?: string;
         profileImageUrl?: string;
       },
+      options?: {
+        inviteToken?: string;
+        settings?: BattleRoomSettings;
+      },
     ) => {
-      if (!socket) return;
+      // 인증 준비 상태 확인
+      if (!isAuthReady) {
+        return;
+      }
 
+      // 소켓 연결 상태 확인 및 자동 연결
+      if (socketStatus === 'disconnected') {
+        connect();
+        // 연결 완료를 기다리지 않고 반환 (연결 후 별도로 joinBattle 호출 필요)
+        return;
+      }
+
+      if (!socket || socketStatus !== 'connected') {
+        return;
+      }
+
+      // 현재 방 정보 확인
+      const currentRoomId = battleState.roomId;
+      const currentParticipants = battleState.participants;
+
+      // 이미 같은 방에 join했으면 다시 join하지 않기
+      if (currentRoomId === roomId && currentParticipants.length > 0) {
+        return;
+      }
+
+      // 다른 방으로 진입하는 경우, 이전 상태 초기화
+      if (currentRoomId && currentRoomId !== roomId) {
+        reset();
+      }
+
+      // userData가 없으면 인증 스토어에서 자동 수집
+      const finalUserData = userData ?? {
+        userId: isLoggedIn && user ? user.id : null,
+        displayName: isLoggedIn && user ? user.displayName : undefined,
+        profileImageUrl: isLoggedIn && user ? (user.profileImageUrl ?? undefined) : undefined,
+      };
+
+      // battleStore에 roomId, inviteToken, settings 저장
+      if (options?.inviteToken || options?.settings) {
+        setBattleState({
+          roomId,
+          ...(options.inviteToken && { inviteToken: options.inviteToken }),
+          ...(options.settings && { settings: options.settings }),
+        });
+      } else if (!currentRoomId) {
+        // roomId만 저장 (inviteToken과 settings는 나중에 업데이트될 수 있음)
+        setBattleState({ roomId });
+      }
+
+      // battle:join 이벤트 발송
       socket.emit('battle:join', {
         roomId,
-        userId: userData.userId ?? null,
-        displayName: userData.displayName,
-        profileImageUrl: userData.profileImageUrl,
+        userId: finalUserData.userId ?? null,
+        displayName: finalUserData.displayName,
+        profileImageUrl: finalUserData.profileImageUrl,
       });
     },
-    [socket],
+    [
+      isAuthReady,
+      socketStatus,
+      connect,
+      socket,
+      battleState.roomId,
+      battleState.participants,
+      reset,
+      isLoggedIn,
+      user,
+      setBattleState,
+    ],
   );
 
   /**
@@ -198,12 +298,19 @@ export function useBattleSocket() {
 
   /**
    * 배틀 준비 완료 신호를 보냅니다.
+   * 동일한 문제에 대해 중복 요청이 가지 않도록 관리합니다.
    * @param roomId 방 ID
    */
   const readyBattle = useCallback(
     (roomId: string) => {
       if (!socket) return;
 
+      // 이미 ready를 보냈으면 중복 요청 방지
+      if (readySentRef.current) {
+        return;
+      }
+
+      readySentRef.current = true;
       socket.emit('battle:ready', { roomId });
     },
     [socket],
@@ -256,13 +363,16 @@ export function useBattleSocket() {
 
   return {
     ...socketContext,
-    battleStatus, // UI에서 접근하기 편하도록 분리해서 반환
-    disconnect,
+    // 배틀 상태 전체 반환 (페이지에서 여러 훅을 부르지 않도록)
+    battleState,
+    // 편의를 위한 별칭
+    battleStatus: battleState.status,
     // 배틀 액션 메서드들
     joinBattle,
     leaveBattle,
     readyBattle,
     submitAnswer,
     restartBattle,
+    disconnect,
   };
 }

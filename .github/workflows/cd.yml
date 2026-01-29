@@ -25,7 +25,7 @@ jobs:
             APP_DIR=~/web21-funda
             cd $APP_DIR
 
-            # 1. 최신 코드 가져오기 (배포 설정 파일 갱신)
+            # 1. 최신 코드 가져오기 (배포 설정 파일 갱신) 배포용
             git pull origin main
 
             # 2. .env 파일 생성 (루트 디렉토리)

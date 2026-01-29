@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
+import { useBattleStore } from '@/store/battleStore';
 import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {
@@ -22,26 +24,42 @@ export const QuizHeader = ({
   totalSteps,
   completedSteps,
   heartCount,
-  remainingSeconds,
-  endsAt,
   isBattleMode = false,
 }: QuizHeaderProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
 
+  const { leaveRoom } = useBattleSocket();
+  const roomId = useBattleStore(state => (isBattleMode ? state.roomId : null));
+  const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
+  const resultEndsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
+  const quizEndsAt = useBattleStore(state => (isBattleMode ? state.quizEndsAt : 0));
+  const endsAt = resultEndsAt ?? quizEndsAt;
+
   const handleCloseClick = useCallback(() => {
-    if (completedSteps > 0) setShowExitModal(true);
-    else navigate('/learn');
-  }, [completedSteps, navigate]);
+    if (isBattleMode) {
+      setShowExitModal(true);
+    } else {
+      if (completedSteps > 0) setShowExitModal(true);
+      else navigate('/learn');
+    }
+  }, [completedSteps, navigate, isBattleMode]);
 
   const handleContinue = useCallback(() => {
     setShowExitModal(false);
   }, []);
 
   const handleExit = useCallback(() => {
-    navigate('/learn');
-  }, [navigate]);
+    if (isBattleMode) {
+      if (roomId) {
+        leaveRoom(roomId);
+        navigate('/battle');
+      }
+    } else {
+      navigate('/learn');
+    }
+  }, [navigate, leaveRoom, roomId]);
 
   const progress = (completedSteps / totalSteps) * 100;
 
@@ -50,7 +68,7 @@ export const QuizHeader = ({
   return (
     <>
       <header css={headerStyle(theme)}>
-        <div css={headerContentStyle(heartCount)}>
+        <div css={headerContentStyle(heartCount, isBattleMode)}>
           <button css={closeButtonStyle(theme)} onClick={handleCloseClick}>
             ✕
           </button>
@@ -67,7 +85,7 @@ export const QuizHeader = ({
             <span css={heartValueStyle(theme)}>{heartCount}</span>
           </div>
         )}
-        {displaySeconds !== null && (
+        {isBattleMode && displaySeconds !== null && (
           <>
             <div css={verticalDividerStyle(theme)}></div>
             <div css={timerStyle(theme, displaySeconds)}>{formatTimer(displaySeconds)}</div>
@@ -112,11 +130,11 @@ const headerStyle = (theme: Theme) => css`
   border-bottom: 1px solid ${theme.colors.border.default};
 `;
 
-const headerContentStyle = (heartCount?: number) => css`
+const headerContentStyle = (heartCount?: number, isBattleMode?: boolean) => css`
   display: flex;
   align-items: center;
   gap: 16px;
-  max-width: 42.5rem;
+  max-width: ${isBattleMode ? '42.5rem' : '47.5rem'};
   width: 100%;
   ${heartCount === undefined || heartCount === 0 ? '' : 'margin-left: 80px;'}
 `;
@@ -130,6 +148,7 @@ const verticalDividerStyle = (theme: Theme) => css`
 const closeButtonStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Medium'].fontSize};
   color: ${theme.colors.text.default};
+  text-align: center;
 `;
 
 const progressContainerStyle = (theme: Theme) => css`

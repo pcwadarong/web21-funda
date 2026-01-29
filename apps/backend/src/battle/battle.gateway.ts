@@ -16,6 +16,7 @@ import type { MatchingPair } from '../roadmap/dto/quiz-submission.dto';
 
 import { BattleService } from './battle.service';
 import {
+  applyDisconnect,
   applyFinish,
   applyJoin,
   applyLeave,
@@ -74,7 +75,55 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected: ${client.id}`);
-    this.handleLeave({ roomId: '' }, client);
+    this.handleDisconnectInternal(client);
+  }
+
+  /**
+   * 연결 해제 시 참가자를 일시적으로 연결 해제 처리한다.
+   *
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
+  private handleDisconnectInternal(client: Socket): void {
+    const roomId = this.findRoomIdByParticipant(client.id);
+    if (!roomId) {
+      return;
+    }
+
+    const room = this.battleService.getRoom(roomId);
+    if (!room) {
+      return;
+    }
+
+    const now = Date.now();
+
+    const nextRoom: BattleRoomState =
+      room.status === 'in_progress'
+        ? applyLeave(room, {
+            roomId,
+            participantId: client.id,
+            now,
+            penaltyScore: -999,
+          })
+        : applyDisconnect(room, {
+            roomId,
+            participantId: client.id,
+            now,
+          });
+
+    this.battleService.saveRoom(nextRoom);
+
+    this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
+      roomId: nextRoom.roomId,
+      participants: nextRoom.participants,
+    });
+
+    if (nextRoom.status === 'invalid') {
+      this.server.to(nextRoom.roomId).emit('battle:invalid', {
+        roomId: nextRoom.roomId,
+        reason: '참가자가 부족합니다.',
+      });
+    }
   }
 
   /**
@@ -121,12 +170,6 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const validation = validateJoin(room);
-    if (!validation.ok) {
-      client.emit('battle:error', validation);
-      return;
-    }
-
     // 쿠키에서 client_id 추출
     const clientId = this.extractClientIdFromCookie(client.handshake.headers.cookie);
 
@@ -135,30 +178,46 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       p => (payload.userId && p.userId === payload.userId) || (clientId && p.clientId === clientId),
     );
 
+    if (!existingParticipant) {
+      const validation = validateJoin(room);
+      if (!validation.ok) {
+        client.emit('battle:error', validation);
+        return;
+      }
+    }
+
     let updatedRoom: BattleRoomState;
 
     if (existingParticipant) {
       // 기존 참여자: socket ID만 업데이트 (재연결 처리)
-      const updatedParticipants = room.participants.map(p =>
-        p.participantId === existingParticipant.participantId
-          ? { ...p, participantId: client.id, isConnected: true }
-          : p,
+      const previousParticipantId = existingParticipant.participantId;
+      const updatedParticipantId = client.id;
+
+      const updatedParticipants = room.participants.map(participant =>
+        participant.participantId === previousParticipantId
+          ? { ...participant, participantId: updatedParticipantId, isConnected: true, leftAt: null }
+          : participant,
       );
 
-      const nextRoom: BattleRoomState = {
+      let nextHostParticipantId = room.hostParticipantId;
+      if (!nextHostParticipantId) {
+        nextHostParticipantId = updatedParticipantId;
+      }
+
+      if (room.hostParticipantId === previousParticipantId) {
+        nextHostParticipantId = updatedParticipantId;
+      }
+
+      const normalizedParticipants = updatedParticipants.map(participant => ({
+        ...participant,
+        isHost: participant.participantId === nextHostParticipantId,
+      }));
+
+      updatedRoom = {
         ...room,
-        participants: updatedParticipants,
+        hostParticipantId: nextHostParticipantId,
+        participants: normalizedParticipants,
       };
-
-      // hostParticipantId를 clientId 또는 userId로 설정
-      const hostId = clientId || payload.userId?.toString();
-
-      updatedRoom = room.hostParticipantId
-        ? nextRoom
-        : {
-            ...nextRoom,
-            hostParticipantId: hostId || existingParticipant.participantId,
-          };
 
       this.logger.log(
         `Reconnected participant: userId=${payload.userId}, clientId=${clientId}, socketId=${client.id}`,
@@ -168,15 +227,18 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       const participant = this.buildParticipant(room, payload, client.id, clientId);
       const nextRoom = applyJoin(room, { roomId: room.roomId, participant });
 
-      // hostParticipantId를 clientId 또는 userId로 설정 (socket 재연결 대비)
-      const hostId = clientId || payload.userId?.toString();
+      const nextHostParticipantId = room.hostParticipantId || participant.participantId;
 
-      updatedRoom = room.hostParticipantId
-        ? nextRoom
-        : {
-            ...nextRoom,
-            hostParticipantId: hostId || participant.participantId,
-          };
+      const normalizedParticipants = nextRoom.participants.map(currentParticipant => ({
+        ...currentParticipant,
+        isHost: currentParticipant.participantId === nextHostParticipantId,
+      }));
+
+      updatedRoom = {
+        ...nextRoom,
+        hostParticipantId: nextHostParticipantId,
+        participants: normalizedParticipants,
+      };
 
       this.logger.log(
         `New participant joined: userId=${payload.userId}, clientId=${clientId}, socketId=${client.id}`,
@@ -215,6 +277,9 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
+    // 퇴장할 참가자 정보 미리 보관
+    const leavingParticipant = room.participants.find(p => p.participantId === client.id) ?? null;
+
     const nextRoom: BattleRoomState = applyLeave(room, {
       roomId,
       participantId: client.id,
@@ -228,12 +293,29 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
       roomId: nextRoom.roomId,
       participants: nextRoom.participants,
+      leavingParticipant: leavingParticipant
+        ? {
+            participantId: leavingParticipant.participantId,
+            displayName: leavingParticipant.displayName,
+          }
+        : null,
+    });
+
+    const remainingSeconds = nextRoom.quizEndsAt
+      ? Math.max(0, Math.ceil((nextRoom.quizEndsAt - Date.now()) / 1000))
+      : nextRoom.settings.timeLimitSeconds;
+
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
+      remainingSeconds,
+      rankings: this.buildRankings(nextRoom),
     });
 
     if (nextRoom.status === 'invalid') {
       this.server.to(nextRoom.roomId).emit('battle:invalid', {
         roomId: nextRoom.roomId,
-        reason: '참가자가 부족합니다.',
+        reason: '참가자가 부족하여 종료 되었습니다.',
       });
     }
   }
@@ -339,11 +421,66 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(nextRoom.roomId).emit('battle:state', {
       roomId: nextRoom.roomId,
       status: nextRoom.status,
+      remainingSeconds: 0,
+      rankings: this.buildRankings(nextRoom),
+    });
+  }
+
+  /**
+   * 배틀 준비 완료 신호를 처리한다.
+   *
+   * @param payload 방 ID
+   * @param client 소켓 연결 정보
+   * @returns 없음
+   */
+  @SubscribeMessage('battle:ready')
+  handleReady(@MessageBody() payload: { roomId: string }, @ConnectedSocket() client: Socket): void {
+    const room = this.battleService.getRoom(payload.roomId);
+    if (!room) {
+      client.emit('battle:error', {
+        code: 'ROOM_NOT_FOUND',
+        message: '방을 찾을 수 없습니다.',
+      });
+      return;
+    }
+
+    if (room.status !== 'in_progress') {
+      return;
+    }
+
+    const participant = room.participants.find(p => p.participantId === client.id);
+    if (!participant) {
+      return;
+    }
+
+    if (room.readyParticipantIds.includes(participant.participantId)) {
+      return;
+    }
+
+    const nextReadyParticipantIds = [...room.readyParticipantIds, participant.participantId];
+    const nextRoom: BattleRoomState = {
+      ...room,
+      readyParticipantIds: nextReadyParticipantIds,
+    };
+
+    this.battleService.saveRoom(nextRoom);
+
+    if (!this.isAllParticipantsReady(nextRoom)) {
+      return;
+    }
+
+    if (nextRoom.quizEndsAt) {
+      return;
+    }
+
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
       remainingSeconds: nextRoom.settings.timeLimitSeconds,
       rankings: this.buildRankings(nextRoom),
     });
 
-    await this.sendCurrentQuiz(nextRoom);
+    void this.sendCurrentQuiz(nextRoom);
   }
 
   /**
@@ -766,7 +903,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const normalizedRoom = this.normalizeRoom(latestRoom);
+    const normalizedRoom = await this.normalizeRoom(latestRoom);
     const roomWithResultEndsAt: BattleRoomState = {
       ...normalizedRoom,
       resultEndsAt,
@@ -814,11 +951,21 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @param room 현재 방 상태
    * @returns 정규화된 방 상태
    */
-  private normalizeRoom(room: BattleRoomState): BattleRoomState {
+  private async normalizeRoom(room: BattleRoomState): Promise<BattleRoomState> {
     const quizId = room.quizIds[room.currentQuizIndex];
     let normalizedRoom = room;
 
     if (quizId) {
+      const quizResult = await this.battleService.getBattleQuizResultById(quizId, {
+        quiz_id: quizId,
+        type: '',
+        selection: {},
+      });
+      if (!quizResult) {
+        this.logger.warn(`Quiz result not found for quizId=${quizId}, skipping normalization`);
+        return normalizedRoom;
+      }
+
       for (const participantId of room.participants.map(p => p.participantId)) {
         const participant = normalizedRoom.participants.find(
           p => p.participantId === participantId,
@@ -835,11 +982,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
           isCorrect: false,
           scoreDelta,
           totalScore,
-          quizResult: {
-            quiz_id: quizId,
-            is_correct: false,
-            solution: { explanation: null },
-          },
+          quizResult,
           submittedAt: Date.now(),
         });
       }
@@ -892,6 +1035,23 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       displayName: participant.displayName,
       score: participant.score,
     }));
+  }
+
+  /**
+   * 모든 참가자가 준비 완료 상태인지 확인한다.
+   *
+   * @param room 방 상태
+   * @returns 모두 준비 완료 여부
+   */
+  private isAllParticipantsReady(room: BattleRoomState): boolean {
+    const connectedParticipants = room.participants.filter(participant => participant.isConnected);
+
+    if (connectedParticipants.length === 0) {
+      return false;
+    }
+
+    const readySet = new Set(room.readyParticipantIds);
+    return connectedParticipants.every(participant => readySet.has(participant.participantId));
   }
 
   /**

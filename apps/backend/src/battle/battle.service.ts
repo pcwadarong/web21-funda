@@ -78,6 +78,9 @@ export class BattleService {
       .innerJoin('step.unit', 'unit')
       .innerJoin('unit.field', 'field')
       .where('field.slug = :fieldSlug', { fieldSlug })
+      .andWhere('(quiz.type IS NULL OR UPPER(quiz.type) != :matchingType)', {
+        matchingType: 'MATCHING',
+      })
       .getRawMany<{ id: number }>();
 
     const shuffled = this.shuffleArray(quizRows.map(quiz => quiz.id));

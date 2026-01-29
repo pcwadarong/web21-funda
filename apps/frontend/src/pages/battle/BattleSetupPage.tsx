@@ -2,10 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
-import {
-  BattleSetupContainer,
-  type BattleSetupParticipant,
-} from '@/features/battle/components/setup/BattleSetupContainer';
+import type { Participant } from '@/feat/battle/types';
+import { BattleSetupContainer } from '@/features/battle/components/setup/BattleSetupContainer';
 import { useJoinBattleRoomQuery } from '@/hooks/queries/battleQueries';
 
 function hashString(str: string): number {
@@ -61,7 +59,7 @@ export const BattleSetupPage = () => {
     [roomId, status, leaveBattle],
   );
 
-  const participants: BattleSetupParticipant[] = battleParticipants.map(p => ({
+  const participants: Participant[] = battleParticipants.map(p => ({
     id: p.userId || hashString(p.participantId),
     name: p.displayName,
     avatar: '🧸',

@@ -31,10 +31,10 @@ export const QuizHeader = ({
   const [showExitModal, setShowExitModal] = useState(false);
 
   const { leaveRoom } = useBattleSocket();
-  const roomId = useBattleStore(state => state.roomId);
-  const remainingSeconds = useBattleStore(state => state.remainingSeconds);
-  const resultEndsAt = useBattleStore(state => state.resultEndsAt);
-  const quizEndsAt = useBattleStore(state => state.quizEndsAt);
+  const roomId = useBattleStore(state => (isBattleMode ? state.roomId : null));
+  const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
+  const resultEndsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
+  const quizEndsAt = useBattleStore(state => (isBattleMode ? state.quizEndsAt : 0));
   const endsAt = resultEndsAt ?? quizEndsAt;
 
   const handleCloseClick = useCallback(() => {

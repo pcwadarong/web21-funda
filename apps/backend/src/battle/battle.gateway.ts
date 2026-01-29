@@ -117,6 +117,13 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       roomId: nextRoom.roomId,
       participants: nextRoom.participants,
     });
+
+    if (nextRoom.status === 'invalid') {
+      this.server.to(nextRoom.roomId).emit('battle:invalid', {
+        roomId: nextRoom.roomId,
+        reason: '참가자가 부족합니다.',
+      });
+    }
   }
 
   /**

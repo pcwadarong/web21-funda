@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Loading } from '@/comp/Loading';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
@@ -8,23 +9,28 @@ import { useBattleStore } from '@/store/battleStore';
 
 export const BattleQuizPage = () => {
   const { socket } = useBattleSocket();
-  const {
-    roomId,
-    currentQuiz,
-    currentQuizIndex,
-    currentQuizId,
-    totalQuizzes,
-    quizEndsAt,
-    remainingSeconds,
-    status,
-    actions,
-    selectedAnswers,
-    quizSolutions,
-    questionStatuses,
-    resultEndsAt,
-    rankings,
-  } = useBattleStore();
-  const { setSelectedAnswer, setQuestionStatus } = actions;
+
+  const navigate = useNavigate();
+
+  // 기본 정보
+  const roomId = useBattleStore(state => state.roomId);
+  const inviteToken = useBattleStore(state => state.inviteToken);
+  const status = useBattleStore(state => state.status);
+
+  // 퀴즈 데이터
+  const currentQuiz = useBattleStore(state => state.currentQuiz);
+  const currentQuizId = useBattleStore(state => state.currentQuizId);
+  const currentQuizIndex = useBattleStore(state => state.currentQuizIndex);
+  const totalQuizzes = useBattleStore(state => state.totalQuizzes);
+
+  // 답변 및 결과
+  const selectedAnswers = useBattleStore(state => state.selectedAnswers);
+  const quizSolutions = useBattleStore(state => state.quizSolutions);
+  const questionStatuses = useBattleStore(state => state.questionStatuses);
+  const rankings = useBattleStore(state => state.rankings);
+
+  // 액션
+  const { setSelectedAnswer, setQuestionStatus } = useBattleStore(state => state.actions);
 
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {
@@ -56,21 +62,25 @@ export const BattleQuizPage = () => {
     return statusForCurrent !== 'idle' || selected == null;
   }, [questionStatuses, selectedAnswers, currentQuizIndex]);
 
-  if (status !== 'in_progress' || !currentQuiz) return <Loading />;
+  useEffect(() => {
+    if (status === 'invalid' && inviteToken) {
+      navigate(`/battle/${inviteToken}`);
+    }
+  }, [status, inviteToken, navigate]);
+
+  if (status !== 'in_progress' || !currentQuiz) return <Loading text="배틀 로딩 중" />;
 
   const quizInfo = {
     quizId: currentQuizId,
     question: currentQuiz,
     index: currentQuizIndex,
     total: totalQuizzes,
-    endsAt: quizEndsAt,
   };
 
   return (
     <>
       <BattleQuizContainer
         quizInfo={quizInfo}
-        remainingSeconds={remainingSeconds}
         selectedAnswers={selectedAnswers}
         quizSolutions={quizSolutions}
         questionStatuses={questionStatuses}
@@ -80,7 +90,6 @@ export const BattleQuizPage = () => {
         handleAnswerChange={handleAnswerChange}
         handleCheckAnswer={handleCheckAnswer}
         handleNextQuestion={handleNextQuestion}
-        resultEndsAt={resultEndsAt}
         rankings={rankings}
         currentParticipantId={socket?.id ?? null}
       />

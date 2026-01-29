@@ -29,8 +29,15 @@ export function useBattleSocket() {
     if (!socket) return;
 
     // 1. 참가자 명단 업데이트 (입장/퇴장 시)
-    const handleParticipantsUpdated = (data: { participants: BattleParticipant[] }) =>
+    const handleParticipantsUpdated = (data: {
+      participants: BattleParticipant[];
+      leavingParticipant?: BattleParticipant;
+    }) => {
+      if (data.leavingParticipant)
+        showToast(`${data.leavingParticipant.displayName}님이 퇴장하셨습니다.`);
+
       setParticipants(data.participants);
+    };
 
     // 2. 게임 전체 상태 업데이트 (배틀 상태, 남은 시간, 순위)
     const handleBattleState = (data: {
@@ -67,11 +74,12 @@ export function useBattleSocket() {
     };
 
     const handleBattleQuiz = (data: BattleQuizData) => {
-      setQuiz(data);
-
       setBattleState({
+        status: 'in_progress',
         resultEndsAt: null,
       });
+
+      setQuiz(data);
     };
 
     const handleBattleResult = (data: {
@@ -111,7 +119,7 @@ export function useBattleSocket() {
     };
     const handleBattleInvalid = (data: { reason: string }) => {
       setBattleState({ status: 'invalid' });
-      console.warn('Game Invalid:', data.reason); //TODO: 이유 UI에 출력
+      showToast(`${data.reason}`);
     };
 
     // 5. 에러 처리

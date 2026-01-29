@@ -215,6 +215,9 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
+    // 퇴장할 참가자 정보 미리 보관
+    const leavingParticipant = room.participants.find(p => p.participantId === client.id) ?? null;
+
     const nextRoom: BattleRoomState = applyLeave(room, {
       roomId,
       participantId: client.id,
@@ -228,12 +231,25 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
       roomId: nextRoom.roomId,
       participants: nextRoom.participants,
+      leavingParticipant: leavingParticipant
+        ? {
+            participantId: leavingParticipant.participantId,
+            displayName: leavingParticipant.displayName,
+          }
+        : null,
+    });
+
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
+      remainingSeconds: nextRoom.settings.timeLimitSeconds, // 추후 endsAt과 비교하여 실제 남은 시간 내려주기
+      rankings: this.buildRankings(nextRoom),
     });
 
     if (nextRoom.status === 'invalid') {
       this.server.to(nextRoom.roomId).emit('battle:invalid', {
         roomId: nextRoom.roomId,
-        reason: '참가자가 부족합니다.',
+        reason: '참가자가 부족하여 종료 되었습니다.',
       });
     }
   }
@@ -766,7 +782,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    const normalizedRoom = this.normalizeRoom(latestRoom);
+    const normalizedRoom = await this.normalizeRoom(latestRoom);
     const roomWithResultEndsAt: BattleRoomState = {
       ...normalizedRoom,
       resultEndsAt,
@@ -814,11 +830,18 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * @param room 현재 방 상태
    * @returns 정규화된 방 상태
    */
-  private normalizeRoom(room: BattleRoomState): BattleRoomState {
+  private async normalizeRoom(room: BattleRoomState): Promise<BattleRoomState> {
     const quizId = room.quizIds[room.currentQuizIndex];
     let normalizedRoom = room;
 
     if (quizId) {
+      const quizResult = await this.battleService.getBattleQuizResultById(quizId, {
+        quiz_id: quizId,
+        type: '',
+        selection: {},
+      });
+      if (!quizResult) return normalizedRoom;
+
       for (const participantId of room.participants.map(p => p.participantId)) {
         const participant = normalizedRoom.participants.find(
           p => p.participantId === participantId,
@@ -835,11 +858,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
           isCorrect: false,
           scoreDelta,
           totalScore,
-          quizResult: {
-            quiz_id: quizId,
-            is_correct: false,
-            solution: { explanation: null },
-          },
+          quizResult,
           submittedAt: Date.now(),
         });
       }

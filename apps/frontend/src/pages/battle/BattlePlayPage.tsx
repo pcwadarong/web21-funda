@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo } from 'react';
 
+import correctSound from '@/assets/audio/correct.mp3';
+import wrongSound from '@/assets/audio/wrong.mp3';
 import { Loading } from '@/comp/Loading';
 import { BattlePlayContainer } from '@/feat/battle/components/play/BattlePlayContainer';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
+import { useSound } from '@/hooks/useSound';
 
 export const BattlePlayPage = () => {
   const { battleState, socket, setSelectedAnswer, setQuestionStatus, submitAnswer } =
     useBattleSocket();
+  const { playSound } = useSound();
 
   // battleState에서 필요한 상태 추출
   const {
@@ -34,6 +38,34 @@ export const BattlePlayPage = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
+
+  // battle:result 이벤트에서 정답/오답 소리 재생
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleBattleResult = (data: {
+      isCorrect?: boolean;
+      quizResult?: {
+        solution?: {
+          explanation?: string;
+          correct_option_id?: string;
+          correct_pairs?: Array<{ left: string; right: string }>;
+        };
+      };
+    }) => {
+      if (data.isCorrect) {
+        playSound({ src: correctSound, currentTime: 0.05 });
+      } else {
+        playSound({ src: wrongSound, currentTime: 0.05 });
+      }
+    };
+
+    socket.on('battle:result', handleBattleResult);
+
+    return () => {
+      socket.off('battle:result', handleBattleResult);
+    };
+  }, [socket, playSound]);
 
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {

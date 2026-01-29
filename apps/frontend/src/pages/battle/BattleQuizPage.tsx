@@ -33,6 +33,19 @@ export const BattleQuizPage = () => {
   const readySentRef = useRef(false);
 
   useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
     readySentRef.current = false;
   }, [roomId]);
 
@@ -93,7 +106,7 @@ export const BattleQuizPage = () => {
 
   useEffect(() => {
     if (status === 'invalid') {
-      navigate(`/battle`);
+      navigate('/battle');
     }
   }, [status, navigate]);
 

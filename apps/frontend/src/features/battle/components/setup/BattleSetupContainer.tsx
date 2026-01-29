@@ -1,22 +1,16 @@
 import { css } from '@emotion/react';
 
-import { BattleOptionsPanel } from '@/feat/battle/components/setup/BattleOptionsPanel';
-import { ParticipantsList } from '@/feat/battle/components/setup/ParticipantsList';
+import type { Participant } from '@/feat/battle/types';
 
-export interface BattleSetupParticipant {
-  id: number;
-  name: string;
-  avatar: string;
-  participantId: string;
-  profileImageUrl?: string;
-}
+import { BattleOptionsPanel } from './BattleOptionsPanel';
+import { ParticipantsList } from './ParticipantsList';
 
 interface BattleSetupContainerProps {
-  participants: BattleSetupParticipant[];
+  participants: Participant[];
 }
 
 export const BattleSetupContainer = ({ participants }: BattleSetupContainerProps) => (
-  <div css={containerStyle}>
+  <div css={mainContainerStyle}>
     <section css={leftSectionStyle}>
       <ParticipantsList participants={participants} />
     </section>
@@ -26,26 +20,45 @@ export const BattleSetupContainer = ({ participants }: BattleSetupContainerProps
   </div>
 );
 
-const containerStyle = css`
+const mainContainerStyle = css`
   display: flex;
-  height: 100vh;
   width: 100%;
+  height: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  align-items: center;
-  gap: 70px;
+  gap: 40px;
+  padding: 30px;
+  overflow: hidden;
+
+  @media (max-width: 1200px) {
+    flex-direction: column;
+    padding: 20px;
+    gap: 0;
+  }
 `;
 
 const leftSectionStyle = css`
   flex: 1;
-  overflow-y: auto;
-  height: 600px;
-  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 1200px) {
+    order: 2;
+  }
 `;
 
 const rightSectionStyle = css`
   flex: 1.2;
+  min-width: 400px;
   display: flex;
-  height: 600px;
   flex-direction: column;
+
+  @media (max-width: 1200px) {
+    order: 1;
+    flex: 0 1 auto;
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 20px;
+  }
 `;

@@ -60,6 +60,17 @@ export interface BattleRoomSettings {
 }
 
 /**
+ * 방 참여자 정보
+ */
+export interface Participant {
+  id: number;
+  name: string;
+  avatar: string;
+  participantId: string;
+  profileImageUrl?: string; // 로그인 사용자 프로필 이미지
+}
+
+/**
  * 배틀 방 전체 상태 (Store 관리용)
  */
 export interface BattleRoomState {

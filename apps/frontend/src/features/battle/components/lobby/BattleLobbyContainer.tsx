@@ -75,7 +75,7 @@ const logoPlaceholderStyle = (theme: Theme) => css`
 const titleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['36ExtraBold'].fontSize};
   line-height: ${theme.typography['36ExtraBold'].lineHeight};
-  font-weight: ${theme.typography['36ExtraBold'].fontWeight};
+  font-weight: ${theme.typography['24Bold'].fontWeight};
   color: ${theme.colors.text.light};
 `;
 

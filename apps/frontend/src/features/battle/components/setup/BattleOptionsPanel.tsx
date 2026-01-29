@@ -1,175 +1,174 @@
 import { css, useTheme } from '@emotion/react';
+import { useState } from 'react';
 
-import { Button } from '@/comp/Button';
-import SVGIcon from '@/comp/SVGIcon';
-import type { BattleRoomSettings, BattleTimeLimitType } from '@/feat/battle/types';
+import { Button } from '@/components/Button';
+import SVGIcon from '@/components/SVGIcon';
+import type { BattleRoomSettings } from '@/feat/battle/types';
 import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
-// UI 문자열과 백엔드 데이터 타입 매핑 상수
-const BUILD_OPTIONS = [
-  { label: '프론트엔드', value: 'fe' },
-  { label: '백엔드', value: 'be' },
-  { label: '모바일', value: 'mo' },
-  { label: 'CS 기초', value: 'cs' },
-  { label: '알고리즘', value: 'algo' },
-  { label: '게임 개발', value: 'game' },
-  { label: '데이터/ AI기초', value: 'da' },
-  { label: '데브옵스', value: 'devops' },
-];
-
-const TIME_OPTIONS = [
-  { label: '신속하게(10초)', value: 'fast' as BattleTimeLimitType },
-  { label: '적절하게(15초)', value: 'recommended' as BattleTimeLimitType },
-  { label: '여유롭게(25초)', value: 'relaxed' as BattleTimeLimitType },
-];
-
-const MAX_PLAYER_OPTIONS = [2, 5, 10, 25, 30];
+export const BATTLE_CONFIG: Record<
+  keyof BattleRoomSettings,
+  { label: string; options: { label: string; value: any }[] }
+> = {
+  maxPlayers: {
+    label: '최대 인원 수',
+    options: [2, 5, 10, 25, 30].map(v => ({ label: `${v}명`, value: v })),
+  },
+  timeLimitType: {
+    label: '제한 시간',
+    options: [
+      { label: '10초', value: 'fast' },
+      { label: '15초', value: 'recommended' },
+      { label: '25초', value: 'relaxed' },
+    ],
+  },
+  fieldSlug: {
+    label: '필드 선택',
+    options: [
+      { label: '프론트엔드', value: 'fe' },
+      { label: '백엔드', value: 'be' },
+      { label: '모바일', value: 'mo' },
+      { label: 'CS 기초', value: 'cs' },
+      { label: '알고리즘', value: 'algo' },
+      { label: '데브옵스', value: 'devops' },
+    ],
+  },
+};
 
 export const BattleOptionsPanel = () => {
   const theme = useTheme();
   const { showToast } = useToast();
+  const [isExpanded, setIsExpanded] = useState(true);
   const { battleState, socket, updateRoom, startBattle } = useBattleSocket();
-
   const { roomId, participants, settings } = battleState;
-
-  // 호스트 여부 확인 (socket.id 기반)
   const isHost = participants.find(p => p.participantId === socket?.id)?.isHost ?? false;
 
-  /**
-   * 서버에 설정 변경 요청을 보냅니다.
-   * 로컬 state를 바꾸지 않고 서버의 응답을 기다립니다.
-   */
-  const emitRoomUpdate = (updates: Partial<BattleRoomSettings>) => {
-    if (!roomId || !socket || !isHost) return;
-
-    // 백엔드의 검증과 브로드캐스트를 기다린다 (로컬 state는 socket 이벤트로 업데이트)
-    updateRoom(roomId, {
-      fieldSlug: updates.fieldSlug ?? settings?.fieldSlug ?? 'be',
-      maxPlayers: updates.maxPlayers ?? settings?.maxPlayers ?? 5,
-      timeLimitType: updates.timeLimitType ?? settings?.timeLimitType ?? 'recommended',
-    });
-  };
-  const handleCopyInviteLink = async () => {
+  const handleCopyLink = async () => {
     try {
-      // 1. 현재 브라우저에 표시된 전체 URL을 가져옵니다.
-      const currentUrl = window.location.href;
-
-      // 2. 클립보드에 복사합니다.
-      await navigator.clipboard.writeText(currentUrl);
-
-      // 3. 사용자 피드백
+      await navigator.clipboard.writeText(window.location.href);
       showToast('초대 링크가 복사되었습니다. 친구에게 공유해보세요! 🚀');
     } catch {
       showToast('링크 복사에 실패했습니다. 주소창의 링크를 직접 복사해주세요.');
     }
   };
-  const handleStartGame = () => {
-    if (!isHost || !roomId) {
-      alert('호스트만 게임을 시작할 수 있습니다.');
-      return;
-    }
-    startBattle(roomId);
-  };
 
   return (
     <div css={containerStyle}>
-      <h2 css={titleStyle(theme)}>게임 세팅</h2>
-
-      <div css={contentCardStyle(theme)}>
-        {/* 최대 인원 수 설정 */}
-        <section css={sectionStyle}>
-          <div css={sectionLabelStyle(theme)}>
-            최대 인원 수 {!isHost && <span css={hostOnlyLabelStyle}>(호스트만 변경 가능)</span>}
+      <div css={headerWrapper}>
+        <h2 css={titleStyle(theme)}>SETTING</h2>
+        <button css={toggleButtonStyle(theme)} onClick={() => setIsExpanded(!isExpanded)}>
+          <span css={toggleTextStyle(theme)}>{isExpanded ? '접기' : '펼치기'}</span>
+          <div css={iconWrapperStyle(isExpanded)}>
+            <SVGIcon icon="ArrowLeft" size="sm" />
           </div>
-          <div css={buttonGroupStyle}>
-            {MAX_PLAYER_OPTIONS.map(option => (
-              <button
-                key={option}
-                css={pillButtonStyle(theme, settings?.maxPlayers === option)}
-                disabled={!isHost}
-                onClick={() => emitRoomUpdate({ maxPlayers: option })}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* 제한 시간 설정 */}
-        <section css={sectionStyle}>
-          <div css={sectionLabelStyle(theme)}>
-            제한 시간 {!isHost && <span css={hostOnlyLabelStyle}>(호스트만 변경 가능)</span>}
-          </div>
-          <div css={buttonGroupStyle}>
-            {TIME_OPTIONS.map(option => (
-              <button
-                key={option.value}
-                css={pillButtonStyle(theme, settings?.timeLimitType === option.value)}
-                disabled={!isHost}
-                onClick={() => emitRoomUpdate({ timeLimitType: option.value })}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* 필드 선택 설정 */}
-        <section css={sectionStyle}>
-          <div css={sectionLabelStyle(theme)}>
-            필드 선택 {!isHost && <span css={hostOnlyLabelStyle}>(호스트만 변경 가능)</span>}
-          </div>
-          <div css={buildGridStyle}>
-            {BUILD_OPTIONS.map(option => (
-              <button
-                key={option.value}
-                css={pillButtonStyle(theme, settings?.fieldSlug === option.value)}
-                disabled={!isHost}
-                onClick={() => emitRoomUpdate({ fieldSlug: option.value })}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </section>
+        </button>
       </div>
 
+      {/* 1. 설정 카드 영역: isExpanded에 따라 노출 여부 결정 */}
+      <div css={collapsibleStyle(isExpanded)}>
+        <div css={contentCardStyle(theme)}>
+          {Object.entries(BATTLE_CONFIG).map(([key, config]) => (
+            <section key={key} css={sectionStyle}>
+              <div css={sectionLabelStyle(theme)}>{config.label}</div>
+              <div css={buttonGroupStyle}>
+                {config.options.map(opt => (
+                  <button
+                    key={opt.value}
+                    css={pillButtonStyle(
+                      theme,
+                      settings?.[key as keyof typeof settings] === opt.value,
+                    )}
+                    disabled={!isHost}
+                    onClick={() => updateRoom(roomId!, { ...settings!, [key]: opt.value })}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. 버튼 영역: 설정창의 상태와 상관없이 항상 노출 */}
       <div css={actionButtonsStyle}>
-        <Button variant="secondary" css={flexBtn} onClick={handleCopyInviteLink}>
-          <SVGIcon icon={'Copy'} size="md" />
-          초대 링크 복사
+        <Button variant="secondary" fullWidth onClick={handleCopyLink} css={flexBtn}>
+          <SVGIcon icon="Copy" size="md" /> 초대 링크 복사
         </Button>
         <Button
           variant="primary"
-          css={flexBtn}
+          fullWidth
           disabled={!isHost}
-          onClick={handleStartGame}
-          style={{
-            opacity: isHost ? 1 : 0.5,
-            cursor: isHost ? 'pointer' : 'not-allowed',
-          }}
+          onClick={() => startBattle(roomId!)}
+          css={flexBtn}
         >
-          {isHost ? '게임시작' : '게임시작 (호스트만)'}
+          {isHost ? '게임 시작' : '호스트 대기 중'}
         </Button>
       </div>
     </div>
   );
 };
 
-// --- Styles ---
-
 const containerStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  flex-shrink: 0;
+`;
+
+const collapsibleStyle = (isExpanded: boolean) => css`
+  display: flex;
+  flex-direction: column;
+  @media (max-width: 1200px) {
+    display: ${isExpanded ? 'flex' : 'none'};
+  }
+`;
+
+const actionButtonsStyle = css`
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+`;
+
+const headerWrapper = css`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['24Medium'].fontSize};
-  font-weight: ${theme.typography['24Medium'].fontWeight};
+  font-size: 14px;
   color: ${theme.colors.primary.main};
+  font-weight: 600;
+`;
+
+const toggleButtonStyle = (theme: Theme) => css`
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  gap: 6px;
+  align-items: center;
+  color: ${theme.colors.text.weak};
+
+  @media (max-width: 1200px) {
+    display: flex;
+  }
+`;
+
+const toggleTextStyle = (theme: Theme) => css`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${theme.colors.text.weak};
+`;
+
+const iconWrapperStyle = (isExpanded: boolean) => css`
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+  transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(-90deg)'};
 `;
 
 const contentCardStyle = (theme: Theme) => css`
@@ -178,74 +177,45 @@ const contentCardStyle = (theme: Theme) => css`
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  gap: 24px;
+  border: 1px solid ${theme.colors.border.default};
 `;
 
 const sectionStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 `;
 
 const sectionLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  font-weight: ${theme.typography['16Medium'].fontWeight};
+  font-size: 13px;
+  font-weight: 600;
   color: ${theme.colors.text.weak};
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const hostOnlyLabelStyle = css`
-  color: #999;
-  font-size: 12px;
-  font-weight: 400;
 `;
 
 const buttonGroupStyle = css`
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-`;
-
-const pillButtonStyle = (theme: Theme, isActive: boolean) => css`
-  flex: 1;
-  min-width: 80px;
-  padding: 12px 16px;
-  border-radius: 50px;
-  border: none;
-  background: ${isActive ? theme.colors.primary.main : theme.colors.surface.bold};
-  color: ${isActive ? theme.colors.surface.strong : theme.colors.text.default};
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  &:hover:not(:disabled) {
-    filter: brightness(0.95);
-  }
-`;
-
-const buildGridStyle = css`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 `;
 
-const actionButtonsStyle = css`
-  display: flex;
-  gap: 16px;
-  margin-top: 10px;
+const pillButtonStyle = (theme: Theme, active: boolean) => css`
+  padding: 10px;
+  border-radius: ${theme.borderRadius.large};
+  border: 1px solid ${active ? theme.colors.primary.main : theme.colors.border.default};
+  background: ${active ? theme.colors.grayscale[50] : theme.colors.surface.default};
+  color: ${active ? theme.colors.primary.main : theme.colors.text.default};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const flexBtn = css`
-  flex: 1;
+  height: 48px;
   gap: 8px;
-  height: 52px;
 `;

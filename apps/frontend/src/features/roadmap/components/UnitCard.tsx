@@ -58,7 +58,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
           : undefined
       }
     >
-      <header css={cardHeaderStyle(effectiveVariant)}>
+      <header css={cardHeaderStyle}>
         <div>
           <h3 css={cardTitleStyle(theme)}>{unit.title}</h3>
           <p css={cardDescriptionStyle(theme)}>{unit.description}</p>
@@ -103,7 +103,7 @@ const cardStyle = (
   isInteractive: boolean,
   variant: UnitVariant,
 ) => css`
-  min-height: ${variant === 'compact' ? '8.5rem' : '13.75rem'};
+  min-height: ${variant === 'compact' ? '6.5rem' : '11.5rem'};
   background: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.medium};
   border: 2px solid ${getStatusBorderColor(theme, status)};
@@ -143,13 +143,13 @@ const cardStyle = (
   `}
 `;
 
-const cardHeaderStyle = (variant: UnitVariant) => css`
-  height: ${variant === 'compact' ? 'unset' : '5rem'};
+const cardHeaderStyle = css`
+  height: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-direction: ${variant === 'compact' ? 'column' : 'row'};
+  flex-direction: row;
   overflow-y: auto;
   -ms-overflow-style: none;
 
@@ -159,7 +159,6 @@ const cardHeaderStyle = (variant: UnitVariant) => css`
 `;
 
 const cardTitleStyle = (theme: Theme) => css`
-  margin: 0 0 6px;
   font-size: ${theme.typography['16Bold'].fontSize};
   line-height: ${theme.typography['16Bold'].lineHeight};
   font-weight: ${theme.typography['16Bold'].fontWeight};
@@ -167,6 +166,7 @@ const cardTitleStyle = (theme: Theme) => css`
 `;
 
 const cardDescriptionStyle = (theme: Theme) => css`
+  margin: 6px 0;
   font-size: ${theme.typography['12Medium'].fontSize};
   line-height: ${theme.typography['12Medium'].lineHeight};
   font-weight: ${theme.typography['12Medium'].fontWeight};

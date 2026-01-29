@@ -65,17 +65,17 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
 const primaryStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
   color: ${colors.light.grayscale[50]};
-  box-shadow: 0 10px 0 ${theme.colors.primary.dark};
+  box-shadow: 0 0.5rem 0 ${theme.colors.primary.dark};
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 0 ${theme.colors.primary.dark};
+    box-shadow: 0 0.7rem 0 ${theme.colors.primary.dark};
     filter: brightness(1.02);
   }
 
   &:active {
     transform: translateY(0);
-    box-shadow: 0 8px 0 ${theme.colors.primary.dark};
+    box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark};
   }
 `;
 

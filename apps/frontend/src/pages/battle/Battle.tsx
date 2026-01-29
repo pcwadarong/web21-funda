@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { BattleContainer } from '@/features/battle/components/BattleContainer';
-import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
+import { BattleContainer } from '@/feat/battle/components/BattleContainer';
+import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useCreateBattleRoomMutation } from '@/hooks/queries/battleQueries';
 
 export const Battle = () => {

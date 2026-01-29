@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { Loading } from '@/comp/Loading';
+import { BattleQuizContainer } from '@/feat/battle/components/BattleQuizContainer';
+import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
-import { BattleQuizContainer } from '@/features/battle/components/BattleQuizContainer';
-import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 
 export const BattleQuizPage = () => {
   const { battleState, socket, setSelectedAnswer, setQuestionStatus, submitAnswer } =

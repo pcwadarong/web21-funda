@@ -4,8 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { GameSettingsPanel } from '@/feat/battle/components/GameSettingsPanel';
 import { ParticipantsList } from '@/feat/battle/components/ParticipantsList';
+import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useJoinBattleRoomQuery } from '@/hooks/queries/battleQueries';
-import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 
 interface Participant {
   id: number;

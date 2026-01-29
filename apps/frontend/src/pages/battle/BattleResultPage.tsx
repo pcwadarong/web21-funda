@@ -1,4 +1,5 @@
 import { css, keyframes } from '@emotion/react';
+import { useEffect, useState } from 'react';
 
 import BronzeMedal from '@/assets/bronze-medal.svg';
 import GoldMedal from '@/assets/gold-medal.svg';
@@ -16,6 +17,7 @@ const lightFlicker = keyframes`
 
 export const BattleResultPage = () => {
   // const { participants, rewards } = useBattleStore();
+  const [timeLeft, setTimeLeft] = useState(15);
 
   const mockParticipants = [
     {
@@ -68,6 +70,15 @@ export const BattleResultPage = () => {
     { participantId: 'p1', rewardType: 'diamond', amount: 2 },
     { participantId: 'p2', rewardType: 'diamond', amount: 1 },
   ];
+
+  // 타이머 로직: 1초마다 감소
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
   const rewardMap = Object.fromEntries(mockRewards.map(r => [r.participantId, r]));
 
@@ -158,7 +169,7 @@ export const BattleResultPage = () => {
           </ul>
         </section>
 
-        <p css={timerTextStyle}>15초 뒤 자동으로 대기실로 이동합니다</p>
+        <p css={timerTextStyle}>{timeLeft}초 뒤 자동으로 대기실로 이동합니다</p>
 
         <div css={buttonGroupStyle}>
           <Button variant="secondary" fullWidth>

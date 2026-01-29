@@ -30,7 +30,7 @@ export const QuizHeader = ({
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const { leaveRoom } = useBattleSocket();
+  const { leaveRoom, disconnect } = useBattleSocket();
   const roomId = useBattleStore(state => (isBattleMode ? state.roomId : null));
   const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
   const resultEndsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
@@ -54,6 +54,7 @@ export const QuizHeader = ({
     if (isBattleMode) {
       if (roomId) {
         leaveRoom(roomId);
+        disconnect();
         navigate('/battle');
       }
     } else {

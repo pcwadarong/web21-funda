@@ -37,11 +37,19 @@ export const BattleRoom = () => {
 
   useEffect(
     () => () => {
-      if (roomId && !unmountedRef.current) {
-        unmountedRef.current = true;
-        leaveRoom(roomId);
-        useBattleStore.getState().actions.reset();
+      if (!roomId || unmountedRef.current) {
+        return;
       }
+
+      const currentStatus = useBattleStore.getState().status;
+      // 게임 진행 중 라우팅으로 언마운트될 때는 방을 떠나지 않는다.
+      if (currentStatus === 'in_progress') {
+        return;
+      }
+
+      unmountedRef.current = true;
+      leaveRoom(roomId);
+      useBattleStore.getState().actions.reset();
     },
     [roomId, leaveRoom],
   );

@@ -45,6 +45,10 @@ export function useBattleSocket() {
         rankings: data.rankings,
         resultEndsAt: data.resultEndsAt ?? undefined,
       });
+
+      if (data.status === 'in_progress') {
+        navigate('/battle/quiz');
+      }
     };
 
     // 3. 방 설정 변경 브로드캐스트

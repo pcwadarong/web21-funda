@@ -64,7 +64,7 @@ export const BattleQuizPage = () => {
 
   useEffect(() => {
     if (status === 'invalid' && inviteToken) {
-      navigate(`/battle/${inviteToken}`);
+      navigate(`/battle`);
     }
   }, [status, inviteToken, navigate]);
 

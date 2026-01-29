@@ -52,7 +52,7 @@ const contentStyle = () => css`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   text-align: center;
   word-break: keep-all;
   width: 100%;
@@ -73,16 +73,16 @@ const logoPlaceholderStyle = (theme: Theme) => css`
 `;
 
 const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['36ExtraBold'].fontSize};
-  line-height: ${theme.typography['36ExtraBold'].lineHeight};
+  font-size: ${theme.typography['24Bold'].fontSize};
+  line-height: ${theme.typography['24Bold'].lineHeight};
   font-weight: ${theme.typography['24Bold'].fontWeight};
   color: ${theme.colors.text.light};
 `;
 
 const subtitleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['24Medium'].fontSize};
-  line-height: ${theme.typography['24Medium'].lineHeight};
-  font-weight: ${theme.typography['24Medium'].fontWeight};
+  font-size: ${theme.typography['20Medium'].fontSize};
+  line-height: ${theme.typography['20Medium'].lineHeight};
+  font-weight: ${theme.typography['20Medium'].fontWeight};
   color: ${theme.colors.text.weak};
 `;
 

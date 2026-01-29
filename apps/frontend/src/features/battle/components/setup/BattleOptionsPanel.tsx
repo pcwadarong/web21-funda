@@ -4,13 +4,11 @@ import { useState } from 'react';
 import { Button } from '@/components/Button';
 import SVGIcon from '@/components/SVGIcon';
 import type { BattleRoomSettings } from '@/feat/battle/types';
-import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
-import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 export const BATTLE_CONFIG: Record<
   keyof BattleRoomSettings,
-  { label: string; options: { label: string; value: any }[] }
+  { label: string; options: { label: string; value: number | string }[] }
 > = {
   maxPlayers: {
     label: '최대 인원 수',
@@ -37,22 +35,25 @@ export const BATTLE_CONFIG: Record<
   },
 };
 
-export const BattleOptionsPanel = () => {
-  const theme = useTheme();
-  const { showToast } = useToast();
-  const [isExpanded, setIsExpanded] = useState(true);
-  const { battleState, socket, updateRoom, startBattle } = useBattleSocket();
-  const { roomId, participants, settings } = battleState;
-  const isHost = participants.find(p => p.participantId === socket?.id)?.isHost ?? false;
+export interface BattleOptionsPanelProps {
+  isHost: boolean;
+  roomId: string | null;
+  settings: BattleRoomSettings | null;
+  onUpdateRoom: (roomId: string, settings: BattleRoomSettings) => void;
+  onStartBattle: (roomId: string) => void;
+  onCopyLink: () => void;
+}
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      showToast('초대 링크가 복사되었습니다. 친구에게 공유해보세요! 🚀');
-    } catch {
-      showToast('링크 복사에 실패했습니다. 주소창의 링크를 직접 복사해주세요.');
-    }
-  };
+export const BattleOptionsPanel = ({
+  isHost,
+  roomId,
+  settings,
+  onUpdateRoom,
+  onStartBattle,
+  onCopyLink,
+}: BattleOptionsPanelProps) => {
+  const theme = useTheme();
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <div css={containerStyle}>
@@ -81,7 +82,9 @@ export const BattleOptionsPanel = () => {
                       settings?.[key as keyof typeof settings] === opt.value,
                     )}
                     disabled={!isHost}
-                    onClick={() => updateRoom(roomId!, { ...settings!, [key]: opt.value })}
+                    onClick={() =>
+                      roomId && settings && onUpdateRoom(roomId, { ...settings, [key]: opt.value })
+                    }
                   >
                     {opt.label}
                   </button>
@@ -94,14 +97,14 @@ export const BattleOptionsPanel = () => {
 
       {/* 2. 버튼 영역: 설정창의 상태와 상관없이 항상 노출 */}
       <div css={actionButtonsStyle}>
-        <Button variant="secondary" fullWidth onClick={handleCopyLink} css={flexBtn}>
+        <Button variant="secondary" fullWidth onClick={onCopyLink} css={flexBtn}>
           <SVGIcon icon="Copy" size="md" /> 초대 링크 복사
         </Button>
         <Button
           variant="primary"
           fullWidth
           disabled={!isHost}
-          onClick={() => startBattle(roomId!)}
+          onClick={() => roomId && onStartBattle(roomId)}
           css={flexBtn}
         >
           {isHost ? '게임 시작' : '호스트 대기 중'}

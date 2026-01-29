@@ -2,16 +2,16 @@ import { css, useTheme } from '@emotion/react';
 
 import { Avatar } from '@/components/Avatar';
 import type { Participant } from '@/feat/battle/types';
-import { useSocketContext } from '@/providers/SocketProvider';
 import type { Theme } from '@/styles/theme';
 
 interface ParticipantsListProps {
   participants: Participant[];
+  /** 현재 사용자 소켓 ID (참여자 카드 하이라이트용) */
+  currentParticipantId?: string | null;
 }
 
-export const ParticipantsList = ({ participants }: ParticipantsListProps) => {
+export const ParticipantsList = ({ participants, currentParticipantId }: ParticipantsListProps) => {
   const theme = useTheme();
-  const { socket } = useSocketContext();
 
   return (
     <div css={containerStyle}>
@@ -22,7 +22,7 @@ export const ParticipantsList = ({ participants }: ParticipantsListProps) => {
         <div css={gridWrapperStyle}>
           <div css={gridStyle}>
             {participants.map((participant, index) => {
-              const isCurrentUser = participant.participantId === socket?.id;
+              const isCurrentUser = participant.participantId === currentParticipantId;
               return (
                 <div key={participant.id} css={cardStyle(theme, isCurrentUser)}>
                   <div css={leftInfoStyle}>

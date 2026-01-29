@@ -1,21 +1,46 @@
 import { css } from '@emotion/react';
 
-import type { Participant } from '@/feat/battle/types';
+import type { BattleRoomSettings, Participant } from '@/feat/battle/types';
 
 import { BattleOptionsPanel } from './BattleOptionsPanel';
 import { ParticipantsList } from './ParticipantsList';
 
-interface BattleSetupContainerProps {
+export interface BattleSetupContainerProps {
   participants: Participant[];
+  /** 현재 사용자 소켓 ID (참여자 카드 하이라이트용) */
+  currentParticipantId?: string | null;
+  /** 방 설정 패널용 */
+  isHost: boolean;
+  roomId: string | null;
+  settings: BattleRoomSettings | null;
+  onUpdateRoom: (roomId: string, settings: BattleRoomSettings) => void;
+  onStartBattle: (roomId: string) => void;
+  onCopyLink: () => void;
 }
 
-export const BattleSetupContainer = ({ participants }: BattleSetupContainerProps) => (
+export const BattleSetupContainer = ({
+  participants,
+  currentParticipantId,
+  isHost,
+  roomId,
+  settings,
+  onUpdateRoom,
+  onStartBattle,
+  onCopyLink,
+}: BattleSetupContainerProps) => (
   <div css={mainContainerStyle}>
     <section css={leftSectionStyle}>
-      <ParticipantsList participants={participants} />
+      <ParticipantsList participants={participants} currentParticipantId={currentParticipantId} />
     </section>
     <section css={rightSectionStyle}>
-      <BattleOptionsPanel />
+      <BattleOptionsPanel
+        isHost={isHost}
+        roomId={roomId}
+        settings={settings}
+        onUpdateRoom={onUpdateRoom}
+        onStartBattle={onStartBattle}
+        onCopyLink={onCopyLink}
+      />
     </section>
   </div>
 );
@@ -33,7 +58,7 @@ const mainContainerStyle = css`
   @media (max-width: 1200px) {
     flex-direction: column;
     padding: 20px;
-    gap: 0;
+    gap: 20px;
   }
 `;
 

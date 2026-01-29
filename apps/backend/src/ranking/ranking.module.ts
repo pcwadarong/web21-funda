@@ -12,6 +12,7 @@ import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeeklySnapshot } from './entities/ranking-weekly-snapshot.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
+import { AdminRankingController } from './admin-ranking.controller';
 import { RankingController } from './ranking.controller';
 import { RankingService } from './ranking.service';
 import { RankingEvaluationService } from './ranking-evaluation.service';
@@ -32,7 +33,7 @@ import { RankingQueryService } from './ranking-query.service';
       User,
     ]),
   ],
-  controllers: [RankingController],
+  controllers: [RankingController, AdminRankingController],
   providers: [RankingService, RankingEvaluationService, RankingQueryService],
   exports: [RankingService],
 })

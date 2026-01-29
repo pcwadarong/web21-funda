@@ -11,6 +11,7 @@ import type {
 } from '@/feat/quiz/types';
 import { AiAskModal } from '@/features/ai-ask/components/AiAskModal';
 import ReportModal from '@/features/report/ReportForm';
+import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
@@ -28,6 +29,9 @@ interface QuizContentCardProps {
   onNext: () => void;
   isLast: boolean;
   isReviewMode: boolean;
+  isBattleMode?: boolean;
+  remainingSeconds?: number | null;
+  endsAt?: number | null;
 }
 
 export const QuizContentCard = ({
@@ -42,11 +46,15 @@ export const QuizContentCard = ({
   onNext,
   isLast,
   isReviewMode,
+  isBattleMode = false,
+  remainingSeconds,
+  endsAt,
 }: QuizContentCardProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
   const showResult = status === 'checked';
+  const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
   let nextButtonLabel = '다음 문제';
 
   if (isLast) {
@@ -56,6 +64,15 @@ export const QuizContentCard = ({
       nextButtonLabel = '결과 보기';
     }
   }
+
+  const battleSubmitButtonLabel = status === 'checking' ? '다른 사람 기다리는 중..' : '제출하기';
+  const battleNextButtonLabel = isLast
+    ? '자동으로 경기 결과가 나타납니다..'
+    : '자동으로 다음 문제로 이동합니다..';
+  const battleNextButtonLabelWithTimer =
+    displaySeconds !== null
+      ? `${displaySeconds}초 뒤 ${battleNextButtonLabel}`
+      : battleNextButtonLabel;
 
   return (
     <div css={cardStyle(theme)}>
@@ -91,29 +108,36 @@ export const QuizContentCard = ({
       <div css={footerStyle(theme)}>
         {showResult ? (
           <>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                openModal(
-                  'AI에게 질문하기',
-                  <AiAskModal quiz={question} correctAnswer={correctAnswer ?? null} />,
-                  {
-                    maxWidth: 880,
-                    padding: false,
-                  },
-                )
-              }
-              css={flexBtn}
-            >
-              AI 질문
-            </Button>
-            <Button variant="primary" onClick={onNext} css={flexBtn}>
-              {nextButtonLabel}
+            {!isBattleMode && (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  openModal(
+                    'AI에게 질문하기',
+                    <AiAskModal quiz={question} correctAnswer={correctAnswer ?? null} />,
+                    {
+                      maxWidth: 880,
+                      padding: false,
+                    },
+                  )
+                }
+                css={flexBtn}
+              >
+                AI 질문
+              </Button>
+            )}
+
+            <Button variant="primary" onClick={onNext} css={flexBtn} disabled={isBattleMode}>
+              {isBattleMode ? battleNextButtonLabelWithTimer : nextButtonLabel}
             </Button>
           </>
         ) : (
           <Button variant="primary" onClick={onCheck} disabled={isSubmitDisabled} css={flexBtn}>
-            {status === 'checking' ? '확인 중..' : '정답 확인'}
+            {isBattleMode
+              ? battleSubmitButtonLabel
+              : status === 'checking'
+                ? '확인 중..'
+                : '정답 확인'}
           </Button>
         )}
       </div>

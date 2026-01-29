@@ -9,13 +9,21 @@ import type { Theme } from '@/styles/theme';
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
+  { id: 'battle', label: '실시간 배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
 const ADMIN_NAV_ITEMS = [
+  { id: 'admin-leaderboard', label: '랭킹 관리', icon: 'Ranking', path: '/admin/leaderboard' },
   { id: 'reports', label: '퀴즈 리포트', icon: 'Report', path: '/admin/quizzes/reports' }, // 아이콘은 적절한 것으로 변경 가능
   { id: 'upload', label: '퀴즈 업로드', icon: 'Star', path: '/admin/quizzes/upload' },
+  {
+    id: 'unit-overview',
+    label: '유닛 개요 업로드',
+    icon: 'Star',
+    path: '/admin/units/overview/upload',
+  },
 ] as const;
 
 export const Sidebar = () => {
@@ -43,6 +51,9 @@ export const Sidebar = () => {
 
     // 학습하기의 경우 하위 경로도 포함
     if (item.id === 'learn') return currentPath.startsWith('/learn');
+
+    // 실시간 배틀의 경우 하위 경로도 포함
+    if (item.id === 'battle') return currentPath.startsWith('/battle');
 
     // 나머지는 정확히 일치하는지 확인
     return currentPath === item.path;

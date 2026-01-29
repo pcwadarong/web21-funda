@@ -2,11 +2,16 @@ import { apiFetch } from './api';
 
 interface ReportRequest {
   report_description: string;
+  userId?: number;
 }
 
 export interface ReportResponse {
   id: number;
   quizId: number;
+  question?: string | null;
+  userId?: number | null;
+  userDisplayName?: string | null;
+  userEmail?: string | null;
   report_description: string;
   createdAt: string;
 }

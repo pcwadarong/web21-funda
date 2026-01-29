@@ -1,45 +1,27 @@
-import { useCallback, useState } from 'react';
-
-import { AdminQuizUploadContainer } from '@/feat/admin/components/QuizUploadContainer';
+import { JsonlUploadCard } from '@/feat/admin/components/JsonlUploadCard';
+import { useAdminJsonlUpload } from '@/feat/admin/hooks/useAdminJsonlUpload';
 import { adminService, type UploadResponse } from '@/services/adminService';
 
 export function AdminQuizUpload() {
-  const [status, setStatus] = useState('대기 중');
-  const [result, setResult] = useState<UploadResponse | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [hasFile, setHasFile] = useState(false);
-
-  // 파일 유무 상태 변경 핸들러
-  const handleFileChange = useCallback((filePresent: boolean) => {
-    setHasFile(filePresent);
-  }, []);
-
-  // 실제 API 호출 로직
-  const handleUploadSubmit = useCallback(async (file: File) => {
-    setBusy(true);
-    setStatus('업로드 중...');
-    setResult(null);
-
-    try {
-      const parsed = await adminService.uploadQuizzes(file);
-      setStatus('업로드 완료');
-      setResult(parsed);
-    } catch (error) {
-      setStatus('업로드 실패');
-      setResult({ error: (error as Error).message });
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  const { status, result, busy, hasFile, onFileChange, onSubmit } =
+    useAdminJsonlUpload<UploadResponse>(adminService.uploadQuizzes);
 
   return (
-    <AdminQuizUploadContainer
+    <JsonlUploadCard
+      title="JSONL 퀴즈 업로드"
+      description={`quizzes.jsonl 형식의 JSON Lines 파일을 업로드하면 필드 → 유닛 → 스텝 → 퀴즈 순으로 업서트합니다. order_index가 없으면 자동으로 부모 레코드 개수 + 1을 사용합니다.`}
       status={status}
       result={result}
       busy={busy}
       hasFile={hasFile}
-      onFileChange={handleFileChange}
-      onSubmit={handleUploadSubmit}
+      onFileChange={onFileChange}
+      onSubmit={onSubmit}
+      tip={
+        <>
+          <span style={{ marginRight: '6px' }}>💡</span>
+          TIP: 잘못된 JSON 라인이 있으면 에러 메시지에 라인 번호가 표시됩니다.
+        </>
+      }
     />
   );
 }

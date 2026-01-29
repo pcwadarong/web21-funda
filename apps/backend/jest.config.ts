@@ -14,8 +14,12 @@ const config: Config = {
   // 동적 import를 사용하려고 해서 에러가 발생합니다.
   // 이를 해결하기 위해 code-formatter를 모킹합니다.
   moduleNameMapper: {
-    '^../common/utils/code-formatter$': '<rootDir>/src/common/utils/__mocks__/code-formatter.ts',
+    '^\\./code-formatter$': '<rootDir>/src/common/utils/__mocks__/code-formatter.ts',
+    '^\\.\\./common/utils/code-formatter$':
+      '<rootDir>/src/common/utils/__mocks__/code-formatter.ts',
+    '^src/common/utils/code-formatter$': '<rootDir>/src/common/utils/__mocks__/code-formatter.ts',
   },
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
 };
 
 export default config;

@@ -36,7 +36,7 @@ const extractLanguage = (className?: string | null): string | null => {
  * `@security` rehypeRaw 플러그인으로 raw HTML을 렌더링합니다.
  * 신뢰할 수 없는 사용자 입력은 sanitize 후 전달해야 합니다.
  */
-export const MarkdownRenderer = ({ text, customCss, allowHtml = false }: MarkdownRendererProps) => {
+export const MarkdownRenderer = ({ text, customCss, allowHtml = true }: MarkdownRendererProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
 
@@ -90,6 +90,29 @@ const markdownContainerStyle = css`
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  /* 중첩 ul */
+  & ul ul li {
+    list-style-type: circle !important;
+    margin: 8px 0 0 0;
+  }
+
+  /* 중첩 ol */
+  & ol ol li {
+    list-style-type: lower-alpha !important;
+    margin: 8px 0 0 0;
+  }
+
+  /* ul 안의 ol, ol 안의 ul 등 */
+  & ul ol li {
+    list-style-type: decimal !important;
+    margin: 8px 0 0 0;
+  }
+
+  & ol ul li {
+    list-style-type: disc !important;
+    margin: 8px 0 0 0;
+  }
 `;
 
 const markdownParagraphStyle = (theme: Theme) => css`
@@ -102,16 +125,17 @@ const markdownParagraphStyle = (theme: Theme) => css`
 const markdownListStyle = (theme: Theme) => css`
   margin: 0;
   padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
   color: ${theme.colors.text.default};
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
 `;
 
 const markdownListItemStyle = (theme: Theme) => css`
-  margin: 0;
+  display: list-item !important;
+  list-style-type: disc !important;
+  margin: 0 0 8px;
   color: ${theme.colors.text.default};
 `;
 

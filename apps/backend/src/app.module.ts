@@ -6,10 +6,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiAskModule } from './ai-ask/ai-ask.module';
 import { AuthModule } from './auth/auth.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
+import { BattleModule } from './battle/battle.module';
 import { RedisService } from './common/redis/redis.service';
 import { createTypeOrmOptions } from './config/typeorm.config';
 import { MetricsModule } from './metrics/metrics.module';
 import { NotificationModule } from './notification/notification.module';
+import { ProfileModule } from './profile/profile.module';
 import { ProgressModule } from './progress/progress.module';
 import { RankingModule } from './ranking/ranking.module';
 import { ReportModule } from './report/report.module';
@@ -37,6 +39,8 @@ import { AppService } from './app.service';
     NotificationModule,
     RankingModule,
     AiAskModule,
+    BattleModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService, RedisService],

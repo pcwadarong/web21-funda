@@ -1,0 +1,201 @@
+import { css } from '@emotion/react';
+
+import BronzeMedal from '@/assets/bronze-medal.svg';
+import GoldMedal from '@/assets/gold-medal.svg';
+import SilverMedal from '@/assets/silver-medal.svg';
+import { Button } from '@/comp/Button';
+import { AvatarImage } from '@/feat/battle/components/result/AvatarImage';
+import type { BattleParticipant, Ranking } from '@/feat/battle/types';
+import { typography } from '@/styles/typography';
+
+interface RankListSectionProps {
+  rankings: Ranking[];
+  participants: BattleParticipant[];
+  timeLeft: number;
+  onRestart: () => void;
+  onLeave: () => void;
+}
+
+export const RankListSection = ({
+  rankings,
+  participants,
+  timeLeft,
+  onRestart,
+  onLeave,
+}: RankListSectionProps) => {
+  const participantMap = Object.fromEntries(participants.map(p => [p.participantId, p]));
+
+  const renderRankBadge = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <img src={GoldMedal} alt="1st" css={medalStyle} />;
+      case 2:
+        return <img src={SilverMedal} alt="2nd" css={medalStyle} />;
+      case 3:
+        return <img src={BronzeMedal} alt="3rd" css={medalStyle} />;
+      default:
+        return <span css={rankNumberStyle}>{rank}</span>;
+    }
+  };
+
+  return (
+    <div css={contentSideStyle}>
+      <h1 css={titleStyle}>참여 인원</h1>
+
+      <div css={tableHeaderStyle}>
+        <span>등수</span>
+        <span>참가자</span>
+        <span>점수</span>
+      </div>
+
+      <section css={listContainerStyle}>
+        <ul css={participantListStyle}>
+          {rankings.map((ranking, index) => {
+            const participant = participantMap[ranking.participantId];
+
+            return (
+              <li key={ranking.participantId} css={itemStyle}>
+                <div css={rankBadgeAreaStyle}>{renderRankBadge(index + 1)}</div>
+                <div css={userInfoStyle}>
+                  <div css={avatarCircleStyle}>
+                    <AvatarImage src={participant?.avatar} alt={ranking.displayName} size="small" />
+                  </div>
+                  <span css={userNameStyle}>{ranking.displayName}</span>
+                </div>
+                <div css={scoreValueStyle}>+{ranking.score}</div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <p css={timerTextStyle}>{timeLeft}초 뒤 자동으로 대기실로 이동합니다</p>
+
+      <div css={buttonGroupStyle}>
+        <Button variant="secondary" fullWidth onClick={onRestart}>
+          한 번 더 하기
+        </Button>
+        <Button fullWidth onClick={onLeave}>
+          게임 종료하기
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const contentSideStyle = css`
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 40px;
+  color: #fff;
+  @media (max-width: 1300px) {
+    max-width: 100%;
+  }
+`;
+
+const titleStyle = css`
+  font-size: 32px;
+  color: #b2a6ff;
+  margin-bottom: 30px;
+`;
+
+const tableHeaderStyle = css`
+  display: flex;
+  justify-content: space-between;
+  font-size: ${typography['16Medium'].fontSize};
+  padding: 0 10px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  span:nth-of-type(2) {
+    flex: 1;
+    padding-left: 40px;
+  }
+`;
+
+const listContainerStyle = css`
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 20px;
+  padding-right: 10px;
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+`;
+
+const participantListStyle = css`
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+`;
+
+const itemStyle = css`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const rankBadgeAreaStyle = css`
+  width: 50px;
+  display: flex;
+  justify-content: center;
+`;
+
+const medalStyle = css`
+  width: 48px;
+  height: 48px;
+`;
+
+const rankNumberStyle = css`
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const userInfoStyle = css`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 20px;
+`;
+
+const avatarCircleStyle = css`
+  width: 44px;
+  height: 44px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+`;
+
+const userNameStyle = css`
+  font-size: 18px;
+  color: #fff;
+`;
+
+const scoreValueStyle = css`
+  font-size: 20px;
+  font-weight: 700;
+  color: #8b87ff;
+`;
+
+const timerTextStyle = css`
+  text-align: center;
+  font-size: 14px;
+  color: #aaa;
+  margin: 20px 0;
+`;
+
+const buttonGroupStyle = css`
+  display: flex;
+  gap: 16px;
+`;

@@ -6,7 +6,7 @@ import { getKstNextDayStart, getKstNow } from '../common/utils/kst-date';
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { DEFAULT_SCORE_WEIGHTS } from '../common/utils/score-weights';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
-import { Quiz, Step } from '../roadmap/entities';
+import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
@@ -27,6 +27,8 @@ export class ProgressService {
     private readonly stepStatusRepository: Repository<UserStepStatus>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    @InjectRepository(CheckpointQuizPool)
+    private readonly checkpointQuizPoolRepository: Repository<CheckpointQuizPool>,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(User)
@@ -53,7 +55,7 @@ export class ProgressService {
       order: { attemptNo: 'DESC' },
     });
     const nextAttemptNo = (lastAttempt?.attemptNo ?? 0) + 1;
-    const totalQuizzes = await this.quizRepository.count({ where: { step: { id: stepId } } });
+    const totalQuizzes = await this.getTotalQuizzesForStep(step);
 
     const attempt = this.stepAttemptRepository.create({
       userId,
@@ -95,15 +97,15 @@ export class ProgressService {
       Math.floor((finishedAtDate.getTime() - attempt.startedAt.getTime()) / 1000),
     );
 
-    const successRate =
-      attempt.totalQuizzes === 0 ? 0 : (scoreResult.correctCount / attempt.totalQuizzes) * 100;
+    const totalQuizzes = this.resolveTotalQuizzesForResult(attempt.totalQuizzes, scoreResult);
+    const successRate = totalQuizzes === 0 ? 0 : (scoreResult.correctCount / totalQuizzes) * 100;
 
     attempt.answeredCount = solveLogs.length;
     attempt.correctCount = scoreResult.correctCount;
     attempt.successRate = successRate;
     attempt.status = StepAttemptStatus.COMPLETED;
     attempt.finishedAt = finishedAtDate;
-    attempt.totalQuizzes = attempt.totalQuizzes ?? scoreResult.totalQuizzes;
+    attempt.totalQuizzes = totalQuizzes;
 
     await this.stepAttemptRepository.save(attempt);
 
@@ -233,6 +235,46 @@ export class ProgressService {
       where: { userId, step: { id: stepId }, status: StepAttemptStatus.IN_PROGRESS },
       order: { attemptNo: 'DESC' },
     });
+  }
+
+  /**
+   * 체크포인트 여부를 고려해 스텝의 총 퀴즈 수를 계산한다.
+   *
+   * @param step 스텝 엔티티
+   * @returns 총 퀴즈 수
+   */
+  private async getTotalQuizzesForStep(step: Step): Promise<number> {
+    const maxQuizCount = 10;
+
+    if (step.isCheckpoint) {
+      const totalInPool = await this.checkpointQuizPoolRepository.count({
+        where: { checkpointStep: { id: step.id } },
+      });
+
+      return Math.min(totalInPool, maxQuizCount);
+    }
+
+    const totalInStep = await this.quizRepository.count({ where: { step: { id: step.id } } });
+
+    return Math.min(totalInStep, maxQuizCount);
+  }
+
+  /**
+   * 결과 계산 시 사용할 총 퀴즈 수를 정한다.
+   *
+   * @param attemptTotal 시도에 저장된 총 퀴즈 수
+   * @param scoreResult 점수 계산 결과
+   * @returns 총 퀴즈 수
+   */
+  private resolveTotalQuizzesForResult(
+    attemptTotal: number,
+    scoreResult: StepAttemptScore,
+  ): number {
+    if (attemptTotal > 0) {
+      return attemptTotal;
+    }
+
+    return scoreResult.totalQuizzes;
   }
 
   /**

@@ -1,7 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from 'react-router-dom';
 
-import SVGIcon from '@/comp/SVGIcon';
+import SVGIcon from '@/components/SVGIcon';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
@@ -9,14 +9,17 @@ import type { Theme } from '@/styles/theme';
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
+  { id: 'battle', label: '실시간 배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
-const ADMIN_NAV_ITEMS = [
-  { id: 'reports', label: '퀴즈 리포트', icon: 'Report', path: '/admin/quizzes/reports' }, // 아이콘은 적절한 것으로 변경 가능
-  { id: 'upload', label: '퀴즈 업로드', icon: 'Star', path: '/admin/quizzes/upload' },
-] as const;
+const ADMIN_NAV_ITEM = {
+  id: 'admin',
+  label: '관리자 도구',
+  icon: 'Data',
+  path: '/admin',
+} as const;
 
 export const Sidebar = () => {
   const theme = useTheme();
@@ -31,22 +34,22 @@ export const Sidebar = () => {
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
 
-  // 전체 메뉴 구성 (관리자일 경우 관리자 메뉴 추가)
-  const allNavItems = isAdmin ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS] : NAV_ITEMS;
+  // 전체 메뉴 구성
+  const allNavItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
 
-  // 활성화된 네비게이션 아이템 찾기
-  const activeItemId = NAV_ITEMS.find(item => {
+  // 활성화된 네비게이션 아이템 ID 찾기 로직
+  const getActiveItemId = () => {
     const currentPath = location.pathname;
 
-    // 프로필의 경우 동적 경로 처리
-    if (item.id === 'profile') return currentPath.startsWith('/profile');
+    if (currentPath.startsWith('/admin')) return 'admin';
+    if (currentPath.startsWith('/profile')) return 'profile';
+    if (currentPath.startsWith('/learn')) return 'learn';
+    if (currentPath.startsWith('/battle')) return 'battle';
 
-    // 학습하기의 경우 하위 경로도 포함
-    if (item.id === 'learn') return currentPath.startsWith('/learn');
+    return NAV_ITEMS.find(item => currentPath === item.path)?.id;
+  };
 
-    // 나머지는 정확히 일치하는지 확인
-    return currentPath === item.path;
-  })?.id;
+  const activeItemId = getActiveItemId();
 
   return (
     <aside css={sidebarStyle(theme)}>
@@ -59,6 +62,7 @@ export const Sidebar = () => {
 
       <nav css={navStyle}>
         {allNavItems.map(item => {
+          // 프로필의 경우 유저 ID를 포함한 경로로 설정
           const targetPath = item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
 
           return (
@@ -75,6 +79,7 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+
       {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
           <div css={avatarStyle(theme)}>
@@ -93,6 +98,8 @@ export const Sidebar = () => {
     </aside>
   );
 };
+
+// --- 스타일 정의 (기존과 동일하되 가독성을 위해 유지) ---
 
 const sidebarStyle = (theme: Theme) => css`
   display: flex;
@@ -131,6 +138,7 @@ const logoSectionStyle = css`
   align-items: center;
   gap: 8px;
   margin-bottom: 32px;
+  text-decoration: none;
 
   @media (max-width: 768px) {
     display: none;
@@ -138,17 +146,9 @@ const logoSectionStyle = css`
 `;
 
 const logoIconStyle = css`
-  font-size: 24px;
-  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-
-  @media (max-width: 1024px) {
-    flex: 1;
-    text-align: center;
-  }
 `;
 
 const logoImageStyle = css`
@@ -160,7 +160,6 @@ const logoImageStyle = css`
 const logoTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
-  line-height: ${theme.typography['20Bold'].lineHeight};
   color: ${theme.colors.primary.main};
 
   @media (max-width: 1024px) {
@@ -222,21 +221,15 @@ const activeNavItemStyle = (theme: Theme) => css`
 `;
 
 const navIconStyle = css`
-  font-size: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-
-  @media (max-width: 768px) {
-    font-size: 24px;
-  }
 `;
 
 const navLabelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
 
   @media (max-width: 1024px) {
@@ -246,8 +239,6 @@ const navLabelStyle = (theme: Theme) => css`
   @media (max-width: 768px) {
     display: block;
     font-size: ${theme.typography['12Medium'].fontSize};
-    line-height: ${theme.typography['12Medium'].lineHeight};
-    font-weight: ${theme.typography['12Medium'].fontWeight};
   }
 `;
 
@@ -269,13 +260,6 @@ const userSectionStyle = (theme: Theme) => css`
   }
 `;
 
-const avatarImageStyle = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-`;
-
 const avatarStyle = (theme: Theme) => css`
   width: 40px;
   height: 40px;
@@ -284,15 +268,19 @@ const avatarStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
   overflow: hidden;
+  flex-shrink: 0;
 
   @media (max-width: 1024px) {
     width: 32px;
     height: 32px;
-    font-size: 16px;
   }
+`;
+
+const avatarImageStyle = css`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
 const userInfoStyle = css`
@@ -309,22 +297,16 @@ const userInfoStyle = css`
 
 const userNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Bold'].fontSize};
-  line-height: ${theme.typography['16Bold'].lineHeight};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
   color: ${theme.colors.text.strong};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const userLevelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${theme.colors.text.weak};
 `;
 
-const buildTierLabel = (tierName: string | null) => {
-  if (!tierName) {
-    return '티어 정보 없음';
-  }
-
-  return `${tierName} 티어`;
-};
+const buildTierLabel = (tierName: string | null) =>
+  tierName ? `${tierName} 티어` : '티어 정보 없음';

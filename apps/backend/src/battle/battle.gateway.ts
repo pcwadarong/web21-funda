@@ -97,6 +97,9 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     const now = Date.now();
 
+    // 퇴장할 참가자 정보 미리 보관
+    const leavingParticipant = room.participants.find(p => p.participantId === client.id) ?? null;
+
     const nextRoom: BattleRoomState =
       room.status === 'in_progress'
         ? applyLeave(room, {
@@ -116,12 +119,29 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
       roomId: nextRoom.roomId,
       participants: nextRoom.participants,
+      leavingParticipant: leavingParticipant
+        ? {
+            participantId: leavingParticipant.participantId,
+            displayName: leavingParticipant.displayName,
+          }
+        : null,
+    });
+
+    const remainingSeconds = nextRoom.quizEndsAt
+      ? Math.max(0, Math.ceil((nextRoom.quizEndsAt - Date.now()) / 1000))
+      : nextRoom.settings.timeLimitSeconds;
+
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
+      remainingSeconds,
+      rankings: this.buildRankings(nextRoom),
     });
 
     if (nextRoom.status === 'invalid') {
       this.server.to(nextRoom.roomId).emit('battle:invalid', {
         roomId: nextRoom.roomId,
-        reason: '참가자가 부족합니다.',
+        reason: '참가자가 부족하여 종료 되었습니다.',
       });
     }
   }

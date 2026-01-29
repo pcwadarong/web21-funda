@@ -7,12 +7,12 @@ import { useModal } from '@/store/modalStore';
 
 import { InfoBattleModal } from './InfoBattleModal';
 
-interface BattleContainerProps {
+interface BattleLobbyContainerProps {
   onClick: () => void;
   isLoading?: boolean;
 }
 
-export const BattleContainer = ({ onClick, isLoading = false }: BattleContainerProps) => {
+export const BattleLobbyContainer = ({ onClick, isLoading = false }: BattleLobbyContainerProps) => {
   const theme = useTheme();
   const { openModal } = useModal();
 
@@ -25,7 +25,7 @@ export const BattleContainer = ({ onClick, isLoading = false }: BattleContainerP
       <div css={contentStyle()}>
         <div css={logoPlaceholderStyle(theme)}></div>
 
-        <h1 css={titleStyle(theme)}>바로 시작되는 실시간 CS 퀴즈 배틀</h1>
+        <h1 css={titleStyle(theme)}>실시간 CS 퀴즈 배틀</h1>
         <p css={subtitleStyle(theme)}>방을 만들고 친구를 초대해 바로 대결해보세요!</p>
 
         <button
@@ -41,11 +41,9 @@ export const BattleContainer = ({ onClick, isLoading = false }: BattleContainerP
           <span>실시간 배틀이란 무엇인가요?</span>
         </button>
 
-        <div css={buttonGroupStyle}>
-          <Button variant="primary" onClick={onClick} fullWidth css={loginButtonStyle}>
-            <span>방 생성하기</span>
-          </Button>
-        </div>
+        <Button variant="primary" onClick={onClick} css={loginButtonStyle}>
+          방 생성하기
+        </Button>
       </div>
     </div>
   );
@@ -97,19 +95,12 @@ const subtitleStyle = (theme: Theme) => css`
   color: ${theme.colors.text.weak};
 `;
 
-const buttonGroupStyle = css`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 70%;
-  margin-top: 8px;
-`;
-
 const loginButtonStyle = css`
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 70%;
 `;
 
 const infoButtonStyle = (theme: Theme) => css`

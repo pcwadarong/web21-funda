@@ -2,14 +2,14 @@ import { ThemeProvider } from '@emotion/react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { action } from 'storybook/actions';
 
-import { BattleContainer } from '@/feat/battle/components/BattleContainer';
+import { BattleLobbyContainer } from '@/feat/battle/components/lobby/BattleLobbyContainer';
 import { ModalProvider } from '@/store/modalStore';
 import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
 
-const meta: Meta<typeof BattleContainer> = {
-  title: 'Features/Battle/BattleContainer',
-  component: BattleContainer,
+const meta: Meta<typeof BattleLobbyContainer> = {
+  title: 'Features/Battle/BattleLobbyContainer',
+  component: BattleLobbyContainer,
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -36,6 +36,6 @@ const meta: Meta<typeof BattleContainer> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof BattleContainer>;
+type Story = StoryObj<typeof BattleLobbyContainer>;
 
 export const Default: Story = {};

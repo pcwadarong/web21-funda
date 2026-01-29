@@ -2,8 +2,8 @@ import { css } from '@emotion/react';
 import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { GameSettingsPanel } from '@/feat/battle/components/GameSettingsPanel';
-import { ParticipantsList } from '@/feat/battle/components/ParticipantsList';
+import { BattleOptionsPanel } from '@/feat/battle/components/setup/BattleOptionsPanel';
+import { ParticipantsList } from '@/feat/battle/components/setup/ParticipantsList';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useJoinBattleRoomQuery } from '@/hooks/queries/battleQueries';
 
@@ -81,7 +81,7 @@ export const BattleRoom = () => {
         <ParticipantsList participants={participants} />
       </section>
       <section css={rightSectionStyle}>
-        <GameSettingsPanel />
+        <BattleOptionsPanel />
       </section>
     </div>
   );

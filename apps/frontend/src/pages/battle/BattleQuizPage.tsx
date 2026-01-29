@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { Loading } from '@/comp/Loading';
-import { BattleQuizContainer } from '@/feat/battle/components/BattleQuizContainer';
+import { BattlePlayContainer } from '@/feat/battle/components/play/BattlePlayContainer';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
 
@@ -71,7 +71,7 @@ export const BattleQuizPage = () => {
 
   return (
     <>
-      <BattleQuizContainer
+      <BattlePlayContainer
         quizInfo={quizInfo}
         selectedAnswers={selectedAnswers}
         quizSolutions={quizSolutions}

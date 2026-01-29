@@ -1,12 +1,12 @@
 import { css } from '@emotion/react';
 
+import { BattleRankBar } from '@/feat/battle/components/play/BattleRankBar';
 import type { BattleQuizData, Ranking } from '@/feat/battle/types';
 import { QuizContentCard } from '@/feat/quiz/components/QuizContentCard';
 import { QuizHeader } from '@/feat/quiz/components/QuizHeader';
 import type { AnswerType, CorrectAnswerType, QuestionStatus } from '@/feat/quiz/types';
-import { BattleRankBar } from '@/features/battle/components/BattleRankBar';
 
-interface BattleQuizContainerProps {
+interface BattlePlayContainerProps {
   quizInfo: Omit<BattleQuizData, 'endsAt'>;
   selectedAnswers: AnswerType[];
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
@@ -21,7 +21,7 @@ interface BattleQuizContainerProps {
   handleNextQuestion: () => void;
 }
 
-export const BattleQuizContainer = ({
+export const BattlePlayContainer = ({
   quizInfo,
   selectedAnswers,
   quizSolutions,
@@ -34,7 +34,7 @@ export const BattleQuizContainer = ({
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
-}: BattleQuizContainerProps) => (
+}: BattlePlayContainerProps) => (
   <div css={containerStyle}>
     <QuizHeader
       currentStep={quizInfo.index + 1}

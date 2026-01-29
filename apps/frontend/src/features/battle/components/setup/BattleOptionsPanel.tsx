@@ -27,7 +27,7 @@ const TIME_OPTIONS = [
 
 const MAX_PLAYER_OPTIONS = [2, 5, 10, 25, 30];
 
-export const GameSettingsPanel = () => {
+export const BattleOptionsPanel = () => {
   const theme = useTheme();
   const { showToast } = useToast();
   const { battleState, socket, updateRoom, startBattle } = useBattleSocket();

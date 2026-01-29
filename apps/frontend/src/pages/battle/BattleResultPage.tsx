@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { BattleResultContainer } from '@/feat/battle/components/BattleResultContainer';
+import { BattleResultContainer } from '@/feat/battle/components/result/BattleResultContainer';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 
 export const BattleResultPage = () => {

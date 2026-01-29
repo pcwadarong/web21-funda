@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { BattleContainer } from '@/feat/battle/components/BattleContainer';
+import { BattleLobbyContainer } from '@/feat/battle/components/lobby/BattleLobbyContainer';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import { useCreateBattleRoomMutation } from '@/hooks/queries/battleQueries';
 
@@ -19,5 +19,5 @@ export const Battle = () => {
     createBattleRoom.mutate();
   };
 
-  return <BattleContainer onClick={onCreateRoom} isLoading={createBattleRoom.isPending} />;
+  return <BattleLobbyContainer onClick={onCreateRoom} isLoading={createBattleRoom.isPending} />;
 };

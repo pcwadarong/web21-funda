@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import React from 'react';
 
+import { CodeBlock } from '@/comp/CodeBlock';
 import { inlineCodeStyle } from '@/comp/MarkdownRenderer';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
@@ -21,11 +22,12 @@ import { colors } from '@/styles/token';
 export const TextWithCodeStyle = ({ text }: { text: string }) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
-  // `...` 패턴, <...> 패턴, {{BLANK}} 패턴을 모두 찾는 정규식
+  // `...` 패턴, <...> 패턴, {{BLANK}} 패턴, ```...``` 패턴을 모두 찾는 정규식
   // 백틱: `로 시작해서 `로 끝나는 패턴 (이스케이프된 백틱 제외)
   // 태그: <로 시작해서 >로 끝나는 패턴
   // BLANK: {{BLANK}} 패턴
-  const pattern = /(`[^`]+`)|(<[^>]+>)|(\{\{BLANK\}\})/g;
+  // Triple Backticks: ```로 시작해서 ```로 끝나는 패턴 (multiline supported via [\s\S])
+  const pattern = /(```[\s\S]*?```)|(`[^`]+`)|(<[^>]+>)|(\{\{BLANK\}\})/g;
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -41,8 +43,31 @@ export const TextWithCodeStyle = ({ text }: { text: string }) => {
       parts.push(text.slice(lastIndex, match.index));
     }
 
-    // {{BLANK}} 패턴인 경우
-    if (match[3]) {
+    // Triple backticks (```...```)
+    if (match[1]) {
+      const content = match[1].slice(3, -3);
+      let language = 'javascript';
+      let code = content;
+
+      const firstLineBreak = content.indexOf('\n');
+      if (firstLineBreak > -1) {
+        const firstLine = content.slice(0, firstLineBreak).trim();
+        if (firstLine && !/\s/.test(firstLine)) {
+          language = firstLine;
+          code = content.slice(firstLineBreak + 1);
+        }
+      }
+
+      parts.push(
+        <div
+          key={`codeblock-${keyIndex++}`}
+          style={{ display: 'block', width: 'calc(100% + 100px)', margin: '12px 0' }}
+        >
+          <CodeBlock language={language}>{code.trim()}</CodeBlock>
+        </div>,
+      );
+      // {{BLANK}} 패턴인 경우
+    } else if (match[4]) {
       // 빈칸 스타일 적용
       parts.push(
         <span key={`blank-${keyIndex++}`} css={blankStyle(theme)}>

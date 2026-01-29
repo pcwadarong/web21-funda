@@ -57,6 +57,7 @@ export type BattleRoomState = {
   status: BattleRoomStatus;
   settings: BattleRoomSettings;
   participants: BattleParticipant[];
+  readyParticipantIds: string[];
   inviteToken: string;
   inviteExpired: boolean;
   startedAt: number | null;
@@ -97,6 +98,12 @@ export type LeaveBattleRoomParams = {
   penaltyScore: number;
 };
 
+export type DisconnectBattleRoomParams = {
+  roomId: string;
+  participantId: string;
+  now: number;
+};
+
 export type StartBattleRoomParams = {
   roomId: string;
   requesterParticipantId: string;
@@ -126,6 +133,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   status: 'waiting',
   settings: params.settings,
   participants: [],
+  readyParticipantIds: [],
   inviteToken: params.inviteToken,
   inviteExpired: false,
   startedAt: null,
@@ -144,6 +152,8 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
  * @returns 검증 결과
  */
 export const validateJoin = (state: BattleRoomState): BattleValidationResult => {
+  const connectedCount = state.participants.filter(participant => participant.isConnected).length;
+
   if (state.inviteExpired) {
     return {
       ok: false,
@@ -160,7 +170,7 @@ export const validateJoin = (state: BattleRoomState): BattleValidationResult => 
     };
   }
 
-  if (state.participants.length >= state.settings.maxPlayers) {
+  if (connectedCount >= state.settings.maxPlayers) {
     return {
       ok: false,
       code: 'ROOM_FULL',
@@ -216,6 +226,8 @@ export const validateStart = (
   state: BattleRoomState,
   requesterParticipantId: string,
 ): BattleValidationResult => {
+  const connectedCount = state.participants.filter(participant => participant.isConnected).length;
+
   if (state.status !== 'waiting') {
     return {
       ok: false,
@@ -236,7 +248,7 @@ export const validateStart = (
     };
   }
 
-  if (state.participants.length < 2) {
+  if (connectedCount < 2) {
     return {
       ok: false,
       code: 'INVALID_STATE',
@@ -339,22 +351,67 @@ export const applyLeave = (
     }
   }
 
-  // isHost 필드 재계산: 첫 번째 참여자만 호스트
-  const updatedParticipants = nextParticipants.map((participant, index) => ({
+  // hostParticipantId 기준으로 isHost를 재계산한다.
+  const updatedParticipants = nextParticipants.map(participant => ({
     ...participant,
-    isHost: index === 0,
+    isHost: participant.participantId === nextHostParticipantId,
   }));
 
-  const nextStatus =
-    nextParticipants.length < 2 && state.status !== 'finished' && state.status !== 'invalid'
-      ? 'invalid'
-      : state.status;
+  const nextReadyParticipantIds = state.readyParticipantIds.filter(readyParticipantId =>
+    updatedParticipants.some(participant => participant.participantId === readyParticipantId),
+  );
+
+  const shouldInvalidate = state.status === 'in_progress' && nextParticipants.length < 2;
+
+  const nextStatus = shouldInvalidate ? 'invalid' : state.status;
 
   return {
     ...state,
     participants: updatedParticipants,
     hostParticipantId: nextHostParticipantId,
+    readyParticipantIds: nextReadyParticipantIds,
     status: nextStatus,
+  };
+};
+
+/**
+ * 참가자를 연결 해제 상태로 변경한다.
+ *
+ * @param state 방 상태
+ * @param params 연결 해제 정보
+ * @returns 변경된 방 상태
+ */
+export const applyDisconnect = (
+  state: BattleRoomState,
+  params: DisconnectBattleRoomParams,
+): BattleRoomState => {
+  const updatedParticipants = state.participants.map(participant => {
+    if (participant.participantId !== params.participantId) {
+      return participant;
+    }
+
+    return {
+      ...participant,
+      isConnected: false,
+      leftAt: params.now,
+    };
+  });
+
+  const normalizedParticipants = updatedParticipants.map(participant => ({
+    ...participant,
+    isHost: participant.participantId === state.hostParticipantId,
+  }));
+
+  const nextReadyParticipantIds = state.readyParticipantIds.filter(readyParticipantId =>
+    normalizedParticipants.some(
+      participant => participant.participantId === readyParticipantId && participant.isConnected,
+    ),
+  );
+
+  return {
+    ...state,
+    participants: normalizedParticipants,
+    readyParticipantIds: nextReadyParticipantIds,
   };
 };
 
@@ -372,6 +429,7 @@ export const applyStart = (
   ...state,
   status: 'in_progress',
   inviteExpired: true,
+  readyParticipantIds: [],
   startedAt: params.now,
   endedAt: null,
   currentQuizIndex: 0,
@@ -405,13 +463,23 @@ export const applyFinish = (
 export const applyRestart = (
   state: BattleRoomState,
   _params: RestartBattleRoomParams,
-): BattleRoomState => ({
-  ...state,
-  status: 'waiting',
-  startedAt: null,
-  endedAt: null,
-  currentQuizIndex: 0,
-});
+): BattleRoomState => {
+  // 모든 참여자의 점수와 제출 기록 초기화
+  const resetParticipants = state.participants.map(participant => ({
+    ...participant,
+    score: 0,
+    submissions: [],
+  }));
+
+  return {
+    ...state,
+    status: 'waiting',
+    startedAt: null,
+    endedAt: null,
+    currentQuizIndex: 0,
+    participants: resetParticipants,
+  };
+};
 
 export const applySubmission = (
   state: BattleRoomState,

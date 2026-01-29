@@ -3,12 +3,11 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
+// import { ServicePreparation } from '@/pages/common/ServicePreparation';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
-// import { ServicePreparation } from '@/pages/common/ServicePreparation';
-import TempPage from '@/pages/Temp';
 import { AdminGuard } from '@/router/guards/AdminGuard';
 import { GuestGuard } from '@/router/guards/GuestGuard';
 import { LoginGuard } from '@/router/guards/LoginGuard';
@@ -62,6 +61,7 @@ const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: 
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
 );
+const Animation = lazy(() => import('@/pages/Animation').then(m => ({ default: m.FoxAnimation })));
 
 export const router = createBrowserRouter([
   {
@@ -95,7 +95,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
-          { path: 'temp', element: <TempPage /> },
+          { path: 'animation', element: <Animation /> },
           { path: 'battle', element: <Battle /> },
           { path: 'battle/result', element: <BattleResultPage /> },
         ],

@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
@@ -82,13 +83,13 @@ export const Sidebar = () => {
 
       {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
-          <div css={avatarStyle(theme)}>
-            {user.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt={user.displayName} css={avatarImageStyle} />
-            ) : (
-              <SVGIcon icon="Profile" size="md" />
-            )}
-          </div>
+          <Avatar
+            src={user.profileImageUrl}
+            name={user.displayName}
+            size="sm"
+            css={avatarStyle(theme)}
+            alt={user.displayName}
+          />
           <div css={userInfoStyle}>
             <div css={userNameStyle(theme)}>{user.displayName}</div>
             <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
@@ -261,26 +262,12 @@ const userSectionStyle = (theme: Theme) => css`
 `;
 
 const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
   background: ${theme.colors.primary.surface};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
 
   @media (max-width: 1024px) {
     width: 32px;
     height: 32px;
   }
-`;
-
-const avatarImageStyle = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 `;
 
 const userInfoStyle = css`

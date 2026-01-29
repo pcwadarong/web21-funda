@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 
+import { Avatar } from '@/components/Avatar';
 import type { Ranking } from '@/feat/battle/types';
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumbers';
 import { useBattleStore } from '@/store/battleStore';
@@ -123,17 +124,13 @@ export const BattleRankBar = ({
                 >
                   <div css={cardStyle(theme, isMine)}>
                     <div css={rankBadgeStyle(theme, isMine)}>{ranking.place}</div>
-                    <div css={avatarStyle(theme)}>
-                      {ranking.profileImg ? (
-                        <img
-                          src={ranking.profileImg}
-                          alt={ranking.displayName}
-                          css={avatarImageStyle}
-                        />
-                      ) : (
-                        getAvatarText(isMine ? '나' : ranking.displayName)
-                      )}
-                    </div>
+                    <Avatar
+                      src={ranking.profileImg}
+                      name={isMine ? '나' : ranking.displayName}
+                      size="sm"
+                      css={avatarStyle(theme)}
+                      alt={ranking.displayName}
+                    />
                     <div css={infoStyle}>
                       <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
                       <ScoreText value={ranking.score} color={scoreColor} />
@@ -149,14 +146,6 @@ export const BattleRankBar = ({
     </div>
   );
 };
-
-const getAvatarText = (name: string): string => name.trim().charAt(0) || '?';
-
-const avatarImageStyle = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
 
 const containerStyle = css`
   position: sticky;
@@ -227,17 +216,9 @@ const rankBadgeStyle = (theme: Theme, isMine: boolean) => css`
 `;
 
 const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
   flex: 0 0 40px;
-  border-radius: 50%;
   background: ${theme.colors.surface.bold};
   border: 1px solid ${theme.colors.border.default};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  color: ${theme.colors.text.default};
 `;
 
 const infoStyle = css`

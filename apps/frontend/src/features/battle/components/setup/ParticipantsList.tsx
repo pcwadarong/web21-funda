@@ -1,5 +1,6 @@
 import { css, useTheme } from '@emotion/react';
 
+import { Avatar } from '@/components/Avatar';
 import { useSocketContext } from '@/providers/SocketProvider';
 import type { Theme } from '@/styles/theme';
 
@@ -30,17 +31,13 @@ export const ParticipantsList = ({ participants }: ParticipantsListProps) => {
               <div key={participant.id} css={cardStyle(theme, isCurrentUser)}>
                 <div css={leftInfoStyle}>
                   <span css={numberStyle(theme)}>{index + 1}</span>
-                  <div css={avatarStyle}>
-                    {participant.profileImageUrl ? (
-                      <img
-                        css={abatarImgStyle}
-                        src={participant.profileImageUrl}
-                        alt={participant.name}
-                      />
-                    ) : (
-                      participant.avatar
-                    )}
-                  </div>
+                  <Avatar
+                    src={participant.profileImageUrl}
+                    name={participant.name}
+                    size="sm"
+                    css={avatarStyle}
+                    alt={participant.name}
+                  />
                   <div css={nameStyle(theme)}>{participant.name}</div>
                 </div>
                 {index === 0 && <span css={crownStyle}>👑</span>}
@@ -126,17 +123,6 @@ const leftInfoStyle = css`
 `;
 
 const avatarStyle = css`
-  font-size: 20px;
   width: 32px;
   height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-`;
-const abatarImgStyle = css`
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
 `;

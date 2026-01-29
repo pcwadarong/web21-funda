@@ -361,10 +361,9 @@ export const applyLeave = (
     updatedParticipants.some(participant => participant.participantId === readyParticipantId),
   );
 
-  const nextStatus =
-    nextParticipants.length < 2 && state.status !== 'finished' && state.status !== 'invalid'
-      ? 'invalid'
-      : state.status;
+  const shouldInvalidate = state.status === 'in_progress' && nextParticipants.length < 2;
+
+  const nextStatus = shouldInvalidate ? 'invalid' : state.status;
 
   return {
     ...state,

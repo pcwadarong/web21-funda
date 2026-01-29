@@ -17,7 +17,7 @@ const NAV_ITEMS = [
 
 const ADMIN_NAV_ITEM = {
   id: 'admin',
-  label: '관리자 도구',
+  label: '관리자',
   icon: 'Data',
   path: '/admin',
 } as const;
@@ -87,7 +87,6 @@ export const Sidebar = () => {
             src={user.profileImageUrl}
             name={user.displayName}
             size="sm"
-            css={avatarStyle(theme)}
             alt={user.displayName}
           />
           <div css={userInfoStyle}>
@@ -119,18 +118,19 @@ const sidebarStyle = (theme: Theme) => css`
   }
 
   @media (max-width: 768px) {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    order: 2;
+
     width: 100%;
-    height: auto;
+    height: 96px;
+    flex-shrink: 0;
+
     flex-direction: row;
-    justify-content: space-around;
     padding: 12px;
-    border-right: none;
+    background: ${theme.colors.surface.strong};
     border-top: 1px solid ${theme.colors.border.default};
-    z-index: 100;
+    align-items: center;
+    justify-content: space-around;
   }
 `;
 
@@ -162,7 +162,6 @@ const logoTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   color: ${theme.colors.primary.main};
-
   @media (max-width: 1024px) {
     display: none;
   }
@@ -192,6 +191,7 @@ const navItemStyle = (theme: Theme) => css`
   text-decoration: none;
   color: ${theme.colors.text.default};
   transition: background-color 150ms ease;
+  text-align: center;
 
   &:hover {
     background: ${theme.colors.surface.default};
@@ -258,15 +258,6 @@ const userSectionStyle = (theme: Theme) => css`
 
   @media (max-width: 768px) {
     display: none;
-  }
-`;
-
-const avatarStyle = (theme: Theme) => css`
-  background: ${theme.colors.primary.surface};
-
-  @media (max-width: 1024px) {
-    width: 32px;
-    height: 32px;
   }
 `;
 

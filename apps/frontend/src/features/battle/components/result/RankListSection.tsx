@@ -96,6 +96,7 @@ const contentSideStyle = css`
   flex-direction: column;
   background: rgba(0, 0, 0, 0.2);
   padding: 40px;
+  overflow-y: auto;
   color: #fff;
   @media (max-width: 1300px) {
     max-width: 100%;

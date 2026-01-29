@@ -21,52 +21,43 @@ export const BattleLobbyContainer = ({ onClick, isLoading = false }: BattleLobby
   }
 
   return (
-    <div css={containerStyle()}>
-      <div css={contentStyle()}>
-        <div css={logoPlaceholderStyle(theme)}></div>
+    <main css={contentStyle}>
+      <div css={logoPlaceholderStyle(theme)}></div>
 
-        <h1 css={titleStyle(theme)}>실시간 CS 퀴즈 배틀</h1>
-        <p css={subtitleStyle(theme)}>방을 만들고 친구를 초대해 바로 대결해보세요!</p>
+      <h1 css={titleStyle(theme)}>실시간 CS 퀴즈 배틀</h1>
+      <p css={subtitleStyle(theme)}>방을 만들고 친구를 초대해 바로 대결해보세요!</p>
 
-        <button
-          type="button"
-          aria-label="실시간 배틀 설명서 열기"
-          css={infoButtonStyle(theme)}
-          onClick={() =>
-            openModal('실시간 배틀이란?', <InfoBattleModal />, {
-              maxWidth: 880,
-            })
-          }
-        >
-          <span>실시간 배틀이란 무엇인가요?</span>
-        </button>
+      <button
+        type="button"
+        aria-label="실시간 배틀 설명서 열기"
+        css={infoButtonStyle(theme)}
+        onClick={() =>
+          openModal('실시간 배틀이란?', <InfoBattleModal />, {
+            maxWidth: 880,
+          })
+        }
+      >
+        <span>실시간 배틀이란 무엇인가요?</span>
+      </button>
 
-        <Button variant="primary" onClick={onClick} css={loginButtonStyle}>
-          방 생성하기
-        </Button>
-      </div>
-    </div>
+      <Button variant="primary" onClick={onClick} css={loginButtonStyle}>
+        방 생성하기
+      </Button>
+    </main>
   );
 };
 
-const containerStyle = () => css`
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-`;
-
 const contentStyle = () => css`
+  padding: 40px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 24px;
-  max-width: 600px;
-  width: 100%;
   text-align: center;
   word-break: keep-all;
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
 `;
 
 const logoPlaceholderStyle = (theme: Theme) => css`

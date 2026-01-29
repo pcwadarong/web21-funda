@@ -44,10 +44,5 @@ const mainLayoutStyle = css`
   width: 100vw;
   height: 100vh;
   background: linear-gradient(235deg, #0f0c29, #2a294e, #9f9db9);
-  overflow: hidden;
   gap: 40px;
-
-  @media (max-width: 768px) {
-    padding-bottom: 105px;
-  }
 `;

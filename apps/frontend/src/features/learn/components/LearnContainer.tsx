@@ -145,10 +145,6 @@ const mainStyle = css`
   overflow: visible;
   height: 100vh;
   min-height: 0;
-
-  @media (max-width: 768px) {
-    padding-bottom: 80px;
-  }
 `;
 
 const centerSectionStyle = css`

@@ -119,14 +119,16 @@ export const router = createBrowserRouter([
         children: [
           {
             element: <PageSuspenseLayout />,
-            children: [{ path: 'battle/play', element: <BattlePlay /> }],
+            children: [
+              { path: 'battle/play', element: <BattlePlay /> },
+              { path: 'battle/result', element: <BattleResult /> },
+            ],
           },
           {
             element: <SidebarSuspenseLayout />,
             children: [
               { path: 'battle', element: <BattleLobby /> },
               { path: 'battle/:inviteToken', element: <BattleSetup /> },
-              { path: 'battle/result', element: <BattleResult /> },
             ],
           },
         ],

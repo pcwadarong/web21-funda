@@ -12,16 +12,18 @@ import type {
 import type { CorrectAnswerType, MatchingPair } from '@/feat/quiz/types';
 import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
+import { useToast } from '@/store/toastStore';
 
 export function useBattleSocket() {
   const socketContext = useSocketContext();
   const { socket } = socketContext;
+  const navigate = useNavigate();
+  const { showToast } = useToast();
 
   // Zustand 스토어에서 상태와 액션 가져오기
   const battleStatus = useBattleStore(state => state.status);
   const { setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus, reset } =
     useBattleStore(state => state.actions);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!socket) return;
@@ -43,18 +45,23 @@ export function useBattleSocket() {
         rankings: data.rankings,
         resultEndsAt: data.resultEndsAt ?? undefined,
       });
+
+      if (data.status === 'in_progress') {
+        navigate('/battle/quiz');
+      }
     };
 
     // 3. 방 설정 변경 브로드캐스트
     const handleRoomUpdated = (data: Partial<BattleRoomSettings>) => {
       // 호출 시점의 최신 상태 로딩
       const currentSettings = useBattleStore.getState().settings;
-      if (!currentSettings) return;
 
+      // settings가 없으면 data에서 기본값 사용, 있으면 병합
       setBattleState({
         settings: {
-          ...currentSettings,
-          ...data,
+          fieldSlug: data.fieldSlug ?? currentSettings?.fieldSlug ?? 'backend',
+          maxPlayers: data.maxPlayers ?? currentSettings?.maxPlayers ?? 5,
+          timeLimitType: data.timeLimitType ?? currentSettings?.timeLimitType ?? 'recommended',
         },
       });
     };
@@ -110,6 +117,8 @@ export function useBattleSocket() {
     // 5. 에러 처리
     const handleBattleError = (error: { code: string; message: string }) => {
       if (error.code === 'ROOM_FULL' || error.code === 'ROOM_NOT_JOINABLE') {
+        showToast('방에 입장할 수 없습니다. 다른 방을 이용해 주세요.');
+        navigate('/battle');
         setBattleState({ status: 'invalid' });
       }
     };
@@ -141,6 +150,7 @@ export function useBattleSocket() {
     setQuizSolution,
     setQuestionStatus,
     navigate,
+    showToast,
   ]);
 
   const disconnect = useCallback(() => {

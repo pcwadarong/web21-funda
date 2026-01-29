@@ -1,6 +1,7 @@
 import ArrowLeft from '@/assets/arrow-left.svg?react';
 import Check from '@/assets/check.svg?react';
 import CheckCircle from '@/assets/check-circle.svg?react';
+import Copy from '@/assets/copy.svg?react';
 import Edit from '@/assets/edit.svg?react';
 import Algorithm from '@/assets/field-icons/algorithm.svg?react';
 import Backend from '@/assets/field-icons/backend.svg?react';
@@ -86,6 +87,7 @@ export const IconMap = {
   Lightning,
   Battle,
   Xp,
+  Copy,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

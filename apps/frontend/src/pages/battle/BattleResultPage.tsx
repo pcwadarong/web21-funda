@@ -1,71 +1,61 @@
-import { css } from '@emotion/react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { BattleResultContainer } from '@/features/battle/components/BattleResultContainer';
+import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
+import { useSocketContext } from '@/providers/SocketProvider';
 import { useBattleStore } from '@/store/battleStore';
 
 export const BattleResultPage = () => {
-  const { rankings, rewards } = useBattleStore();
+  const navigate = useNavigate();
+  const { socket } = useSocketContext();
+  const { disconnect } = useBattleSocket();
+
+  // 스토어에서 데이터 가져오기
+  const rankings = useBattleStore(state => state.rankings);
+  const participants = useBattleStore(state => state.participants);
+  const rewards = useBattleStore(state => state.rewards);
+  const roomId = useBattleStore(state => state.roomId);
+
+  // 15초 타이머
+  const [timeLeft, setTimeLeft] = useState(15);
+
+  // 타이머 로직: 1초마다 감소
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      // 타이머 종료 시 대기실로 이동
+      navigate('/battle');
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, navigate]);
+
+  // 한 번 더 하기: battle:restart 이벤트 emit
+  const handleRestart = () => {
+    if (!socket || !roomId) return;
+    socket.emit('battle:restart', { roomId });
+  };
+
+  // 게임 종료하기: battle:leave emit + disconnect + 메인으로 이동
+  const handleLeave = () => {
+    if (socket && roomId) {
+      socket.emit('battle:leave', { roomId });
+    }
+    disconnect();
+    navigate('/');
+  };
 
   return (
-    <div css={containerStyle}>
-      <h1 css={titleStyle}>배틀 결과</h1>
-
-      <section css={sectionStyle}>
-        <h2 css={sectionTitleStyle}>순위</h2>
-        {rankings.length === 0 ? (
-          <p>결과 데이터가 없습니다.</p>
-        ) : (
-          <ol css={listStyle}>
-            {rankings.map((ranking, index) => (
-              <li key={ranking.participantId}>
-                {index + 1}등 {ranking.displayName} - {ranking.score}점
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-
-      <section css={sectionStyle}>
-        <h2 css={sectionTitleStyle}>보상</h2>
-        {rewards.length === 0 ? (
-          <p>지급된 보상이 없습니다.</p>
-        ) : (
-          <ul css={listStyle}>
-            {rewards.map(reward => (
-              <li key={`${reward.participantId}-${reward.rewardType}`}>
-                {reward.participantId} : {reward.rewardType} {reward.amount}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+    <BattleResultContainer
+      rankings={rankings}
+      participants={participants}
+      rewards={rewards}
+      timeLeft={timeLeft}
+      onRestart={handleRestart}
+      onLeave={handleLeave}
+    />
   );
 };
-
-const containerStyle = css`
-  width: 100%;
-  min-height: 100vh;
-  background: #ffffff;
-  color: #111827;
-  padding: 32px;
-`;
-
-const titleStyle = css`
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 24px;
-`;
-
-const sectionStyle = css`
-  margin-bottom: 24px;
-`;
-
-const sectionTitleStyle = css`
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 12px;
-`;
-
-const listStyle = css`
-  padding-left: 20px;
-`;

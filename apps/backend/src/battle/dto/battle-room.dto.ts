@@ -16,4 +16,10 @@ export type JoinBattleRoomRequest = {
 export type JoinBattleRoomResponse = {
   roomId: string;
   canJoin: boolean;
+  settings: {
+    fieldSlug: string;
+    maxPlayers: number;
+    timeLimitType: 'recommended' | 'relaxed' | 'fast';
+    timeLimitSeconds: number;
+  };
 };

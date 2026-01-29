@@ -68,6 +68,7 @@ export class BattleController {
       return {
         roomId: room.roomId,
         canJoin: false,
+        settings: room.settings,
       };
     }
 
@@ -75,12 +76,14 @@ export class BattleController {
       return {
         roomId: room.roomId,
         canJoin: false,
+        settings: room.settings,
       };
     }
 
     return {
       roomId: room.roomId,
       canJoin: true,
+      settings: room.settings,
     };
   }
 

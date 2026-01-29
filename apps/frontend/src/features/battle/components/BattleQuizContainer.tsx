@@ -17,7 +17,7 @@ interface BattleQuizContainerProps {
   rankings: Ranking[];
   currentParticipantId?: string | null;
   handleAnswerChange: (answer: AnswerType) => void;
-  handleCheckAnswer: () => Promise<void>;
+  handleCheckAnswer: () => void;
   handleNextQuestion: () => void;
 }
 

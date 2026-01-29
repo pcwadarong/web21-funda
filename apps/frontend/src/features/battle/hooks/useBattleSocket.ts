@@ -45,8 +45,15 @@ export function useBattleSocket() {
     quizSolutions: state.quizSolutions,
     questionStatuses: state.questionStatuses,
   }));
-  const { setBattleState, setParticipants, setQuiz, setQuizSolution, setQuestionStatus, reset } =
-    useBattleStore(state => state.actions);
+  const {
+    setBattleState,
+    setParticipants,
+    setQuiz,
+    setQuizSolution,
+    setQuestionStatus,
+    setSelectedAnswer,
+    reset,
+  } = useBattleStore(state => state.actions);
 
   // ready 중복 요청 방지를 위한 ref
   const readySentRef = useRef(false);
@@ -183,6 +190,15 @@ export function useBattleSocket() {
   useEffect(() => {
     readySentRef.current = false;
   }, [battleState.roomId]);
+
+  // status가 'in_progress'가 되면 자동으로 ready 신호 전송
+  useEffect(() => {
+    if (battleState.status !== 'in_progress' || readySentRef.current) return;
+    if (!socket || !battleState.roomId) return;
+
+    readySentRef.current = true;
+    socket.emit('battle:ready', { roomId: battleState.roomId });
+  }, [battleState.status, battleState.roomId, socket]);
 
   const disconnect = useCallback(() => {
     socketContext.disconnect();
@@ -374,5 +390,8 @@ export function useBattleSocket() {
     submitAnswer,
     restartBattle,
     disconnect,
+    // 스토어 액션들 (일관성을 위해 훅을 통해 제공)
+    setSelectedAnswer,
+    setQuestionStatus,
   };
 }

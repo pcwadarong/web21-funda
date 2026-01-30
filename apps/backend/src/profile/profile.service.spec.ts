@@ -163,4 +163,41 @@ describe('ProfileService', () => {
     expect(firstFollower.userId).toBe(10);
     expect(firstFollower.tier?.name).toBe('BRONZE');
   });
+
+  it('팔로워 목록을 영문 우선 이름순으로 정렬한다', async () => {
+    userFindOneMock.mockResolvedValue({ id: 1 } as User);
+    followFindMock.mockResolvedValue([
+      {
+        follower: {
+          id: 11,
+          displayName: '앨리스',
+          profileImageUrl: null,
+          experience: 300,
+          currentTier: { id: 1, name: 'BRONZE', orderIndex: 1 },
+        },
+      } as UserFollow,
+      {
+        follower: {
+          id: 12,
+          displayName: 'Zoe',
+          profileImageUrl: null,
+          experience: 220,
+          currentTier: { id: 2, name: 'SILVER', orderIndex: 2 },
+        },
+      } as UserFollow,
+      {
+        follower: {
+          id: 13,
+          displayName: 'Adam',
+          profileImageUrl: null,
+          experience: 180,
+          currentTier: { id: 3, name: 'GOLD', orderIndex: 3 },
+        },
+      } as UserFollow,
+    ]);
+
+    const result = await service.getFollowers(1);
+
+    expect(result.map(user => user.displayName)).toEqual(['Adam', 'Zoe', '앨리스']);
+  });
 });

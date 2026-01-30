@@ -92,7 +92,6 @@ export class ProfileService {
     const follows = await this.followRepository.find({
       where: { followingId: userId },
       relations: { follower: { currentTier: true } },
-      order: { createdAt: 'DESC' },
     });
 
     const followers: ProfileFollowUser[] = [];
@@ -106,7 +105,7 @@ export class ProfileService {
       followers.push(this.buildFollowUserSummary(followerUser));
     }
 
-    return followers;
+    return this.sortFollowUsersByName(followers);
   }
 
   /**
@@ -121,7 +120,6 @@ export class ProfileService {
     const follows = await this.followRepository.find({
       where: { followerId: userId },
       relations: { following: { currentTier: true } },
-      order: { createdAt: 'DESC' },
     });
 
     const followingUsers: ProfileFollowUser[] = [];
@@ -135,7 +133,7 @@ export class ProfileService {
       followingUsers.push(this.buildFollowUserSummary(followingUser));
     }
 
-    return followingUsers;
+    return this.sortFollowUsersByName(followingUsers);
   }
 
   /**
@@ -224,6 +222,69 @@ export class ProfileService {
       experience: user.experience,
       tier: this.buildTierSummary(user.currentTier ?? null),
     };
+  }
+
+  /**
+   * 팔로우 목록을 이름 기준으로 정렬한다.
+   *
+   * - 영문 이름은 알파벳 순으로 먼저 배치한다.
+   * - 한글 이름은 영문 다음 순서로 배치한다.
+   * - 그 외 문자는 가장 마지막에 배치한다.
+   *
+   * @param {ProfileFollowUser[]} users 정렬할 사용자 목록
+   * @returns {ProfileFollowUser[]} 정렬된 사용자 목록
+   */
+  private sortFollowUsersByName(users: ProfileFollowUser[]): ProfileFollowUser[] {
+    const collatorEnglish = new Intl.Collator('en', { sensitivity: 'base' });
+    const collatorKorean = new Intl.Collator('ko', { sensitivity: 'base' });
+    const sortedUsers = [...users];
+
+    sortedUsers.sort((leftUser, rightUser) => {
+      const leftGroup = this.getDisplayNameGroup(leftUser.displayName);
+      const rightGroup = this.getDisplayNameGroup(rightUser.displayName);
+
+      if (leftGroup !== rightGroup) {
+        return leftGroup - rightGroup;
+      }
+
+      if (leftGroup === 0) {
+        return collatorEnglish.compare(leftUser.displayName, rightUser.displayName);
+      }
+
+      if (leftGroup === 1) {
+        return collatorKorean.compare(leftUser.displayName, rightUser.displayName);
+      }
+
+      return leftUser.displayName.localeCompare(rightUser.displayName);
+    });
+
+    return sortedUsers;
+  }
+
+  private getDisplayNameGroup(displayName: string): number {
+    const firstChar = displayName.trim().charAt(0);
+
+    if (!firstChar) {
+      return 2;
+    }
+
+    if (this.isEnglishCharacter(firstChar)) {
+      return 0;
+    }
+
+    if (this.isKoreanCharacter(firstChar)) {
+      return 1;
+    }
+
+    return 2;
+  }
+
+  private isEnglishCharacter(character: string): boolean {
+    return /[A-Za-z]/.test(character);
+  }
+
+  private isKoreanCharacter(character: string): boolean {
+    return /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(character);
   }
 
   private async calculateSolveStats(userId: number): Promise<SolveStatsResult> {

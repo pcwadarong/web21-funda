@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import correctSound from '@/assets/audio/correct.mp3';
-import startSound from '@/assets/audio/start.mp3';
 import timerSound from '@/assets/audio/timer.mp3';
 import wrongSound from '@/assets/audio/wrong.mp3';
 import { Loading } from '@/comp/Loading';
@@ -32,7 +31,7 @@ export const BattlePlayPage = () => {
     resultEndsAt,
   } = battleState;
 
-  const isResultPhase = Boolean(resultEndsAt);
+  const isResultPhase = typeof resultEndsAt === 'number' && resultEndsAt > 0;
   const timerEndsAt = !isResultPhase && quizEndsAt > 0 ? quizEndsAt : null;
   const timerSeconds = useCountdownTimer({
     endsAt: timerEndsAt,
@@ -90,12 +89,8 @@ export const BattlePlayPage = () => {
 
     const prevSeconds = lastTimerSecondsRef.current;
 
-    if (timerSeconds > 0 && timerSeconds <= 5 && timerSeconds !== prevSeconds) {
+    if (timerSeconds > 0 && timerSeconds <= 3 && timerSeconds !== prevSeconds) {
       playSound({ src: timerSound, currentTime: 0 });
-    }
-
-    if (timerSeconds === 0 && prevSeconds !== null && prevSeconds > 0) {
-      playSound({ src: startSound, currentTime: 0 });
     }
 
     lastTimerSecondsRef.current = timerSeconds;

@@ -111,6 +111,7 @@ export const BattleSetupPage = () => {
       isHost={isHost}
       roomId={roomId}
       settings={settings}
+      participantCount={battleParticipants.length}
       onUpdateRoom={updateRoom}
       onStartBattle={startBattle}
       onCopyLink={handleCopyLink}

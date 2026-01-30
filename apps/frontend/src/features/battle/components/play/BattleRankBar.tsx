@@ -1,8 +1,10 @@
 import { css, useTheme } from '@emotion/react';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 
+import { Avatar } from '@/components/Avatar';
 import type { Ranking } from '@/feat/battle/types';
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumbers';
+import { useBattleStore } from '@/store/battleStore';
 import type { Theme } from '@/styles/theme';
 
 interface BattleRankBarProps {
@@ -12,7 +14,7 @@ interface BattleRankBarProps {
   maxVisible?: number;
 }
 
-type RankingWithPlace = Ranking & { place: number };
+type RankingWithPlace = Ranking & { place: number; profileImg?: string };
 
 export const BattleRankBar = ({
   rankings,
@@ -21,19 +23,30 @@ export const BattleRankBar = ({
   maxVisible = 4,
 }: BattleRankBarProps) => {
   const theme = useTheme();
+
+  const participants = useBattleStore(state => state.participants);
+
   const { visibleRankings, participantCount } = useMemo(() => {
-    const baseRankings = rankings.map((ranking, index) => ({
+    const baseRankings = rankings.map(ranking => ({
       ...ranking,
-      place: index + 1,
+      profileImg: participants.find(p => p.participantId === ranking.participantId)?.avatar,
     }));
 
-    const rankingsWithPlace: RankingWithPlace[] = baseRankings.map((ranking, index) => {
-      if (index === 0) return ranking;
+    const rankingsWithPlace: RankingWithPlace[] = [];
 
-      const prev = baseRankings[index - 1];
-      if (!prev) return ranking;
+    baseRankings.forEach((ranking, index) => {
+      let place = index + 1;
 
-      return prev.score === ranking.score ? { ...ranking, place: prev.place } : ranking;
+      if (index > 0) {
+        const prevRanking = baseRankings[index - 1];
+        const prevPlace = rankingsWithPlace[index - 1];
+
+        if (prevRanking && prevPlace && prevRanking.score === ranking.score) {
+          place = prevPlace.place;
+        }
+      }
+
+      rankingsWithPlace.push({ ...ranking, place });
     });
 
     const myRankingIndex = rankingsWithPlace.findIndex(
@@ -51,7 +64,7 @@ export const BattleRankBar = ({
       visibleRankings: rankingsWithPlace.slice(0, maxVisible),
       participantCount: totalParticipants ?? rankings.length,
     };
-  }, [rankings, currentParticipantId, maxVisible, totalParticipants]);
+  }, [rankings, currentParticipantId, maxVisible, totalParticipants, participants]);
 
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const prevPositionsRef = useRef<Map<string, DOMRect>>(new Map());
@@ -111,9 +124,13 @@ export const BattleRankBar = ({
                 >
                   <div css={cardStyle(theme, isMine)}>
                     <div css={rankBadgeStyle(theme, isMine)}>{ranking.place}</div>
-                    <div css={avatarStyle(theme)}>
-                      {getAvatarText(isMine ? '나' : ranking.displayName)}
-                    </div>
+                    <Avatar
+                      src={ranking.profileImg}
+                      name={isMine ? '나' : ranking.displayName}
+                      size="sm"
+                      css={avatarStyle(theme)}
+                      alt={ranking.displayName}
+                    />
                     <div css={infoStyle}>
                       <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
                       <ScoreText value={ranking.score} color={scoreColor} />
@@ -129,8 +146,6 @@ export const BattleRankBar = ({
     </div>
   );
 };
-
-const getAvatarText = (name: string): string => name.trim().charAt(0) || '?';
 
 const containerStyle = css`
   position: sticky;
@@ -201,17 +216,9 @@ const rankBadgeStyle = (theme: Theme, isMine: boolean) => css`
 `;
 
 const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
   flex: 0 0 40px;
-  border-radius: 50%;
   background: ${theme.colors.surface.bold};
   border: 1px solid ${theme.colors.border.default};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  color: ${theme.colors.text.default};
 `;
 
 const infoStyle = css`
@@ -248,7 +255,7 @@ const countStyle = (theme: Theme) => css`
 `;
 
 const ScoreText = ({ value, color }: { value: number; color: string }) => {
-  const displayValue = useAnimatedNumber(value, 360);
+  const displayValue = useAnimatedNumber(value);
   const text = displayValue >= 0 ? `+${displayValue}` : `${displayValue}`;
   return <div css={[scoreStyle(color), scoreCountStyle]}>{text}</div>;
 };

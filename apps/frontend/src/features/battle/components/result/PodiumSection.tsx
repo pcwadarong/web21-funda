@@ -1,7 +1,7 @@
 import { css, keyframes } from '@emotion/react';
 
 import SVGIcon from '@/comp/SVGIcon';
-import { AvatarImage } from '@/feat/battle/components/result/AvatarImage';
+import { Avatar } from '@/components/Avatar';
 import type { BattleParticipant, BattleReward, Ranking } from '@/feat/battle/types';
 import { palette } from '@/styles/token';
 import { typography } from '@/styles/typography';
@@ -40,12 +40,18 @@ export const PodiumSection = ({ topThree, participants, rewards }: PodiumSection
             {idx === 1 && <div css={spotlightStyle} />}
 
             <div css={podiumAvatarStyle}>
-              <AvatarImage src={participant?.avatar} alt={ranking.displayName} size="medium" />
+              <Avatar
+                src={participant?.avatar}
+                name={ranking.displayName}
+                size="lg"
+                css={podiumAvatarInnerStyle}
+                alt={ranking.displayName}
+              />
             </div>
 
             <div css={podiumBoxStyle(idx)}>
               <div css={podiumStatsContainer}>
-                <span css={podiumScoreStyle}>+{ranking.score}</span>
+                <span css={podiumScoreStyle}>{ranking.score}</span>
 
                 {reward && (
                   <div css={podiumRewardStyle}>
@@ -118,6 +124,10 @@ const podiumAvatarStyle = css`
   z-index: 3;
   overflow: hidden;
   box-shadow: 0 0 30px rgb(238, 243, 255);
+`;
+
+const podiumAvatarInnerStyle = css`
+  background: white;
 `;
 
 const podiumBoxStyle = (idx: number) => css`

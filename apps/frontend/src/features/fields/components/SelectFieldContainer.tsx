@@ -13,65 +13,54 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
   const theme = useTheme();
 
   return (
-    <div css={containerStyle}>
-      <main css={mainStyle}>
-        <header css={headerStyle}>
-          <h1 css={title(theme)}>학습 분야 선택</h1>
-          <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
-        </header>
-        <section css={gridStyle}>
-          {fields.map(field => (
-            <button
-              key={field.slug}
-              onClick={() => onFieldClick(field.slug)}
-              css={fieldLabelStyle(theme)}
-            >
-              <div css={fieldNameWrapper}>
-                <span css={fieldNameStyle(theme)}>{field.name}</span>
-                <SVGIcon icon={field.icon} size="lg" />
-              </div>
-              <span css={fieldDescriptionStyle(theme)}>{field.description}</span>
-              <div css={goRoadmap(theme)}>
-                <span>로드맵 보기</span>
-                <SVGIcon icon={'NextArrow'} size="sm" />
-              </div>
-            </button>
-          ))}
-        </section>
-      </main>
+    <div css={contentWrapperStyle}>
+      <header css={headerStyle}>
+        <h1 css={title(theme)}>학습 분야 선택</h1>
+        <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
+      </header>
+
+      <section css={gridStyle}>
+        {fields.map(field => (
+          <button
+            key={field.slug}
+            onClick={() => onFieldClick(field.slug)}
+            css={fieldCardStyle(theme)}
+          >
+            <div css={fieldNameWrapper}>
+              <span css={fieldNameStyle(theme)}>{field.name}</span>
+              <SVGIcon icon={field.icon} size="lg" />
+            </div>
+            <p css={fieldDescriptionStyle(theme)}>{field.description}</p>
+            <div css={goRoadmap(theme)}>
+              <span>로드맵 보기</span>
+              <SVGIcon icon={'NextArrow'} size="sm" />
+            </div>
+          </button>
+        ))}
+      </section>
     </div>
   );
 };
 
-const containerStyle = css`
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-`;
-
-const mainStyle = css`
-  position: relative;
+const contentWrapperStyle = css`
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1.5rem 0;
-  overflow: hidden;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 40px 30px;
 
   @media (max-width: 768px) {
-    padding: 32px 20px 80px;
+    padding: 24px 20px;
   }
 `;
 
 const headerStyle = css`
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 `;
 
 const title = (theme: Theme) => css`
@@ -90,47 +79,40 @@ const subtitle = (theme: Theme) => css`
 `;
 
 const gridStyle = css`
-  position: relative;
-  z-index: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  padding: 10px 0 30px;
-  min-height: 0;
+  padding-bottom: 30px;
 
-  overflow-y: auto;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   @media (max-width: 768px) {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 `;
 
-const fieldLabelStyle = (theme: Theme) => css`
+const fieldCardStyle = (theme: Theme) => css`
+  /* 기존 fieldLabelStyle에서 버튼답게 스타일 정돈 */
+  all: unset; /* 기본 버튼 스타일 초기화 */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 180px;
-  gap: 16px;
+  min-height: 200px;
   padding: 24px;
   background: ${theme.colors.surface.strong};
   border: 2px solid ${theme.colors.border.default};
   border-radius: ${theme.borderRadius.medium};
+  cursor: pointer;
   transition: all 150ms ease-in-out;
   box-shadow: 0 4px 0 ${theme.colors.border.default};
-  color: ${theme.colors.text.default};
 
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 0 ${theme.colors.border.default};
-    border-color: ${theme.colors.primary.light};
+    border-color: ${theme.colors.primary.main};
   }
 
   &:active {

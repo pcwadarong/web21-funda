@@ -4,7 +4,7 @@ import BronzeMedal from '@/assets/bronze-medal.svg';
 import GoldMedal from '@/assets/gold-medal.svg';
 import SilverMedal from '@/assets/silver-medal.svg';
 import { Button } from '@/comp/Button';
-import { AvatarImage } from '@/feat/battle/components/result/AvatarImage';
+import { Avatar } from '@/components/Avatar';
 import type { BattleParticipant, Ranking } from '@/feat/battle/types';
 import { typography } from '@/styles/typography';
 
@@ -58,11 +58,17 @@ export const RankListSection = ({
                 <div css={rankBadgeAreaStyle}>{renderRankBadge(index + 1)}</div>
                 <div css={userInfoStyle}>
                   <div css={avatarCircleStyle}>
-                    <AvatarImage src={participant?.avatar} alt={ranking.displayName} size="small" />
+                    <Avatar
+                      src={participant?.avatar}
+                      name={ranking.displayName}
+                      size="sm"
+                      css={avatarCircleInnerStyle}
+                      alt={ranking.displayName}
+                    />
                   </div>
                   <span css={userNameStyle}>{ranking.displayName}</span>
                 </div>
-                <div css={scoreValueStyle}>+{ranking.score}</div>
+                <div css={scoreValueStyle}>{ranking.score}</div>
               </li>
             );
           })}
@@ -90,6 +96,7 @@ const contentSideStyle = css`
   flex-direction: column;
   background: rgba(0, 0, 0, 0.2);
   padding: 40px;
+  overflow-y: auto;
   color: #fff;
   @media (max-width: 1300px) {
     max-width: 100%;
@@ -175,6 +182,10 @@ const avatarCircleStyle = css`
   align-items: center;
   justify-content: center;
   overflow: hidden;
+`;
+
+const avatarCircleInnerStyle = css`
+  background: white;
 `;
 
 const userNameStyle = css`

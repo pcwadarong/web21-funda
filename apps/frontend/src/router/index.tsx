@@ -1,7 +1,8 @@
 import { lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 
 import { AdminSuspenseLayout } from '@/layouts/AdminSuspenseLayout';
+import { BattleFlowLayout } from '@/layouts/BattleFlowLayout';
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
 import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
 // import { ServicePreparation } from '@/pages/common/ServicePreparation';
@@ -29,17 +30,16 @@ const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default:
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
 );
-const Battle = lazy(() => import('@/pages/battle/Battle').then(m => ({ default: m.Battle })));
-const BattleRoom = lazy(() =>
-  import('@/pages/battle/BattleRoom').then(m => ({ default: m.BattleRoom })),
+const BattleLobby = lazy(() =>
+  import('@/pages/battle/BattleLobbyPage').then(m => ({ default: m.BattleLobbyPage })),
 );
-// const BattleTestPage = lazy(() =>
-//   import('@/pages/battle/BattleTestPage').then(m => ({ default: m.BattleTestPage })),
-// );
-const BattleQuizPage = lazy(() =>
-  import('@/pages/battle/BattleQuizPage').then(m => ({ default: m.BattleQuizPage })),
+const BattleSetup = lazy(() =>
+  import('@/pages/battle/BattleSetupPage').then(m => ({ default: m.BattleSetupPage })),
 );
-const BattleResultPage = lazy(() =>
+const BattlePlay = lazy(() =>
+  import('@/pages/battle/BattlePlayPage').then(m => ({ default: m.BattlePlayPage })),
+);
+const BattleResult = lazy(() =>
   import('@/pages/battle/BattleResultPage').then(m => ({ default: m.BattleResultPage })),
 );
 const InitialFields = lazy(() =>
@@ -86,8 +86,6 @@ export const router = createBrowserRouter([
               { path: 'review-result', element: <QuizReviewResult /> },
             ],
           },
-          // { path: 'battle/test', element: <BattleTestPage /> },
-          { path: 'battle/quiz', element: <BattleQuizPage /> },
         ],
       },
       {
@@ -101,13 +99,6 @@ export const router = createBrowserRouter([
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'animation', element: <Animation /> },
-          { path: 'battle', element: <Battle /> },
-          {
-            path: 'battle/:inviteToken',
-            element: <BattleRoom />,
-            errorElement: <Navigate to="/battle" replace />,
-          },
-          { path: 'battle/result', element: <BattleResultPage /> },
         ],
       },
 
@@ -119,6 +110,27 @@ export const router = createBrowserRouter([
           { path: 'login', element: <Login /> },
           { path: 'auth/check', element: <AuthCheck /> },
           { path: 'initial-fields', element: <InitialFields /> },
+        ],
+      },
+
+      // 배틀 전용
+      {
+        element: <BattleFlowLayout />,
+        children: [
+          {
+            element: <PageSuspenseLayout />,
+            children: [
+              { path: 'battle/quiz', element: <BattlePlay /> },
+              { path: 'battle/result', element: <BattleResult /> },
+            ],
+          },
+          {
+            element: <SidebarSuspenseLayout />,
+            children: [
+              { path: 'battle', element: <BattleLobby /> },
+              { path: 'battle/:inviteToken', element: <BattleSetup /> },
+            ],
+          },
         ],
       },
 

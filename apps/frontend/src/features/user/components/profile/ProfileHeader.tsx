@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
+import { Avatar } from '@/components/Avatar';
 import type { ProfileSummaryResult } from '@/features/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
@@ -41,11 +42,13 @@ export const ProfileHeader = memo(({ profileSummary, diamondCount }: ProfileHead
   return (
     <section css={headerCardStyle(theme)}>
       <div css={headerLeftWrapperStyle}>
-        {profileImageUrl ? (
-          <img src={profileImageUrl} alt={`${displayName} 프로필`} css={avatarStyle(theme)} />
-        ) : (
-          <div css={avatarStyle(theme)} />
-        )}
+        <Avatar
+          src={profileImageUrl}
+          name={displayName}
+          size="md"
+          css={avatarStyle(theme)}
+          alt={`${displayName} 프로필`}
+        />
         <div css={headerInfoWrapperStyle}>
           <div css={nameRowWrapperStyle}>
             <h1 css={nameStyle(theme)}>{displayName}</h1>
@@ -97,13 +100,7 @@ const headerLeftWrapperStyle = css`
 `;
 
 const avatarStyle = (theme: Theme) => css`
-  width: 5.5rem;
-  height: 5.5rem;
-  border-radius: 50%;
   background: ${theme.colors.primary.light};
-  object-fit: cover;
-  overflow: hidden;
-  flex-shrink: 0;
 `;
 
 const headerInfoWrapperStyle = css`

@@ -2,7 +2,7 @@ import { ThemeProvider } from '@emotion/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BattleContainer } from '@/feat/battle/components/BattleContainer';
+import { BattleLobbyContainer } from '@/feat/battle/components/lobby/BattleLobbyContainer';
 import { lightTheme } from '@/styles/theme';
 
 const mockOpenModal = vi.fn();
@@ -13,14 +13,14 @@ vi.mock('@/store/modalStore', () => ({
   }),
 }));
 
-const renderBattleContainer = (onClick = vi.fn()) =>
+const renderBattleLobbyContainer = (onClick = vi.fn()) =>
   render(
     <ThemeProvider theme={lightTheme}>
-      <BattleContainer onClick={onClick} />
+      <BattleLobbyContainer onClick={onClick} />
     </ThemeProvider>,
   );
 
-describe('BattleContainer 컴포넌트 테스트', () => {
+describe('BattleLobbyContainer 컴포넌트 테스트', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -30,13 +30,13 @@ describe('BattleContainer 컴포넌트 테스트', () => {
   });
 
   it('기본 렌더링이 올바르게 동작한다', () => {
-    renderBattleContainer();
+    renderBattleLobbyContainer();
 
-    expect(screen.getByText('바로 시작되는 실시간 CS 퀴즈 배틀')).toBeInTheDocument();
+    expect(screen.getByText('실시간 CS 퀴즈 배틀')).toBeInTheDocument();
   });
 
   it('설명 버튼 클릭 시 모달 오픈 함수가 호출된다', () => {
-    renderBattleContainer();
+    renderBattleLobbyContainer();
 
     fireEvent.click(screen.getByRole('button', { name: '실시간 배틀 설명서 열기' }));
 
@@ -50,7 +50,7 @@ describe('BattleContainer 컴포넌트 테스트', () => {
 
   it('방 생성하기 버튼 클릭 시 onClick이 호출된다', () => {
     const onClick = vi.fn();
-    renderBattleContainer(onClick);
+    renderBattleLobbyContainer(onClick);
 
     fireEvent.click(screen.getByText('방 생성하기'));
 

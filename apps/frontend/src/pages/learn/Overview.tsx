@@ -122,7 +122,7 @@ const mainStyle = css`
 const headerStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 24px;
 `;
 
 const backButtonStyle = (theme: Theme) => css`
@@ -150,8 +150,35 @@ const titleStyle = (theme: Theme) => css`
 const contentStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};
   border-radius: 16px;
-  padding: 20px;
+  padding: 32px;
   min-height: 320px;
+  max-height: calc(100vh - 14rem);
+  overflow-y: hidden;
+
+  &:hover {
+    padding: 32px 16px;
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+  }
+
+  &::-webkit-scrollbar {
+    width: 16px;
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border: none;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #b2b2b2;
+    border-radius: 10px;
+    border: 5px solid transparent;
+
+    /* Clips the background so it doesn't bleed into the border area */
+    background-clip: padding-box;
+  }
 `;
 
 const loadingStyle = css`

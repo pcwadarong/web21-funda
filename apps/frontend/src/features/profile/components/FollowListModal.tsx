@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { useMemo, useState } from 'react';
 
+import { Avatar } from '@/components/Avatar';
 import type { ProfileFollowUser } from '@/features/profile/types';
 import type { Theme } from '@/styles/theme';
 
@@ -62,15 +63,13 @@ export const FollowListModal = ({
               onClick={() => onUserClick(member.userId)}
             >
               <div css={listItemStyle(theme)}>
-                {member.profileImageUrl ? (
-                  <img
-                    src={member.profileImageUrl}
-                    alt={`${member.displayName} 프로필`}
-                    css={avatarStyle(theme)}
-                  />
-                ) : (
-                  <div css={avatarStyle(theme)} />
-                )}
+                <Avatar
+                  src={member.profileImageUrl}
+                  name={member.displayName}
+                  size="sm"
+                  css={avatarStyle(theme)}
+                  alt={`${member.displayName} 프로필`}
+                />
                 <div css={textStyle}>
                   <strong css={nameStyle(theme)}>{member.displayName}</strong>
                   <span css={subStyle(theme)}>
@@ -155,11 +154,7 @@ const listItemButtonStyle = (theme: Theme) => css`
 `;
 
 const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
   background: ${theme.colors.primary.surface};
-  object-fit: cover;
 `;
 
 const textStyle = css`

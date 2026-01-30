@@ -1,13 +1,11 @@
 import { css, useTheme } from '@emotion/react';
-import { memo, useMemo, useState, useRef } from 'react';
-import { formatDate } from '@/utils/formatDate';
+import { memo, useMemo, useRef, useState } from 'react';
+
 import { Popover } from '@/components/Popover';
 import type { ProfileStreakDay } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
+import { formatDateDisplayName, formatDateKeyUtc, normalizeDateKey } from '@/utils/formatDate';
 
-/**
- * 히트맵 섹션 Props
- */
 interface HeatmapSectionProps {
   /** 표시할 월 수 (기본값: 12개월) */
   months?: number;
@@ -15,11 +13,6 @@ interface HeatmapSectionProps {
   streaks?: ProfileStreakDay[];
 }
 
-/**
- * 히트맵 섹션 (Placeholder)
- *
- * 연간 학습 활동을 히트맵 형태로 표시하는 섹션입니다.
- */
 const monthLabels = [
   'Jan',
   'Feb',
@@ -38,19 +31,12 @@ const monthLabels = [
 const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
 
 const msPerDay = 24 * 60 * 60 * 1000;
-const formatDateKeyUtc = (date: Date) =>
-  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
-    date.getUTCDate(),
-  ).padStart(2, '0')}`;
 
-const normalizeDateKey = (value: string) => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value.slice(0, 10);
-  }
-  return formatDateKeyUtc(parsed);
-};
-
+/**
+ * 문제 풀이 수에 따라 레벨을 결정하는 함수
+ * @param count 문제 풀이 수
+ * @returns 레벨
+ */
 const resolveLevel = (count: number) => {
   if (count <= 0) return 0;
   if (count <= 5) return 1;
@@ -66,19 +52,27 @@ interface HoveredCell {
   y: number;
 }
 
+/**
+ * 히트맵 섹션 컴포넌트
+ * @param months 표시할 월 수 (기본값: 12개월)
+ * @param streaks 스트릭 데이터
+ * @returns 히트맵 섹션 컴포넌트
+ */
 export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectionProps) => {
   const theme = useTheme();
   const [hoveredCell, setHoveredCell] = useState<HoveredCell | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 연도 계산
   const year = useMemo(() => {
-    if (streaks.length === 0) {
-      return new Date().getFullYear();
-    }
+    if (streaks.length === 0) return new Date().getFullYear();
+
+    // 첫 번째 스트릭 데이터의 연도를 추출
     const parsedYear = Number(streaks[0]?.date?.slice(0, 4));
     return Number.isFinite(parsedYear) ? parsedYear : new Date().getFullYear();
   }, [streaks]);
 
+  // 스트릭 데이터를 맵으로 변환
   const streakMap = useMemo(() => {
     const map = new Map<string, number>();
     streaks.forEach(item => {
@@ -87,17 +81,22 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
     return map;
   }, [streaks]);
 
+  // 연도의 시작 날짜 계산
   const startOfYear = useMemo(() => new Date(Date.UTC(year, 0, 1)), [year]);
+  // 연도의 마지막 날짜 계산
   const endDate = useMemo(() => new Date(Date.UTC(year, months, 0)), [year, months]);
   const totalDays = useMemo(
     () => Math.floor((endDate.getTime() - startOfYear.getTime()) / msPerDay) + 1,
     [endDate, startOfYear],
   );
+  // 연도의 첫 번째 날짜의 요일 인덱스 계산
   const firstDayIndex = useMemo(() => new Date(year, 0, 1).getDay(), [year]);
+  // 총 셀 수 계산
   const totalCells = useMemo(
     () => Math.ceil((totalDays + firstDayIndex) / 7) * 7,
     [firstDayIndex, totalDays],
   );
+  // 주 단위 열 수 계산
   const weekColumns = useMemo(() => totalCells / 7, [totalCells]);
 
   const handleCellMouseEnter = (
@@ -176,7 +175,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 {hoveredCell && (
                   <>
                     <p>
-                      {formatDate(hoveredCell.date)} {hoveredCell.solvedCount}개
+                      {formatDateDisplayName(hoveredCell.date)} {hoveredCell.solvedCount}개
                     </p>
                   </>
                 )}
@@ -272,7 +271,7 @@ const heatmapCellStyle = (theme: Theme, level: number, isEmpty = false) => {
     width: 0.8rem;
     height: 0.8rem;
     border-radius: 2px;
-    background: ${isEmpty ? '#82828d1a' : palette[level]};
+    background: ${isEmpty ? 'transparent' : palette[level]};
   `;
 };
 

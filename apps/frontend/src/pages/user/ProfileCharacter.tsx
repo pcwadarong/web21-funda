@@ -1,6 +1,9 @@
+import { css } from '@emotion/react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { Modal } from '@/comp/Modal';
+import { Button } from '@/components/Button';
 import { ProfileCharacterContainer } from '@/feat/user/components/profile-character/ProfileCharacterContainer';
 import {
   useProfileCharacterApply,
@@ -22,13 +25,15 @@ export const ProfileCharacter = () => {
   const purchaseMutation = useProfileCharacterPurchase();
   const applyMutation = useProfileCharacterApply();
   const clearMutation = useProfileCharacterClear();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null | undefined>(undefined);
+  const [pendingPurchaseId, setPendingPurchaseId] = useState<number | null>(null);
 
   const characters = useMemo(() => data?.characters ?? [], [data?.characters]);
-  const selectedCharacterId = selectedId ?? data?.selectedCharacterId ?? null;
+  const selectedCharacterId =
+    selectedId !== undefined ? selectedId : (data?.selectedCharacterId ?? null);
 
   useEffect(() => {
-    if (selectedId !== null) {
+    if (selectedId !== undefined) {
       return;
     }
 
@@ -50,10 +55,19 @@ export const ProfileCharacter = () => {
     setSelectedId(prevSelected => (prevSelected === characterId ? null : characterId));
   };
 
-  const handlePurchase = async (characterId: number) => {
+  const handlePurchaseRequest = (characterId: number) => {
+    setPendingPurchaseId(characterId);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (pendingPurchaseId === null) {
+      return;
+    }
+
     try {
-      await purchaseMutation.mutateAsync(characterId);
+      await purchaseMutation.mutateAsync(pendingPurchaseId);
       showToast('캐릭터를 구매했습니다.');
+      setPendingPurchaseId(null);
     } catch (purchaseError) {
       showToast((purchaseError as Error).message);
     }
@@ -87,15 +101,46 @@ export const ProfileCharacter = () => {
   }, [error, showToast]);
 
   return (
-    <ProfileCharacterContainer
-      characters={characters}
-      selectedCharacterId={selectedCharacterId}
-      isLoading={isLoading}
-      onSelect={handleSelect}
-      onPurchase={handlePurchase}
-      onApply={handleApply}
-      onClear={handleClear}
-      onBack={handleBack}
-    />
+    <>
+      <ProfileCharacterContainer
+        characters={characters}
+        selectedCharacterId={selectedCharacterId}
+        isLoading={isLoading}
+        onSelect={handleSelect}
+        onPurchase={handlePurchaseRequest}
+        onApply={handleApply}
+        onClear={handleClear}
+        onBack={handleBack}
+      />
+      {pendingPurchaseId !== null && (
+        <Modal
+          title="캐릭터 구매"
+          content={
+            <div css={modalContentStyle}>
+              <div css={modalMessageStyle}>선택한 캐릭터를 구매하시겠습니까?</div>
+              <Button type="button" onClick={handleConfirmPurchase} fullWidth>
+                구매하기
+              </Button>
+            </div>
+          }
+          onClose={() => setPendingPurchaseId(null)}
+          maxWidth={480}
+        />
+      )}
+    </>
   );
 };
+
+const modalContentStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem 0.25rem 0.75rem;
+  align-items: center;
+  text-align: center;
+`;
+
+const modalMessageStyle = css`
+  font-size: 1rem;
+  line-height: 1.5;
+`;

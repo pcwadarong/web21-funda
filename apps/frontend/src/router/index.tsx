@@ -25,6 +25,9 @@ const AdminUnitOverviewUpload = lazy(() =>
 const AdminLeaderboard = lazy(() =>
   import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
 );
+const AdminProfileCharacters = lazy(() =>
+  import('@/pages/admin/ProfileCharacters').then(m => ({ default: m.AdminProfileCharacters })),
+);
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 
 const Leaderboard = lazy(() =>
@@ -168,6 +171,7 @@ export const router = createBrowserRouter([
                   { path: 'quizzes/upload', element: <AdminQuizUpload /> },
                   { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
                   { path: 'quizzes/reports', element: <Reports /> },
+                  { path: 'profile-characters', element: <AdminProfileCharacters /> },
                 ],
               },
             ],

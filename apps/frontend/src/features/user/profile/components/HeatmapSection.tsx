@@ -35,6 +35,8 @@ const monthLabels = [
   'Dec',
 ];
 
+const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+
 const msPerDay = 24 * 60 * 60 * 1000;
 const formatDateKeyUtc = (date: Date) =>
   `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
@@ -121,21 +123,28 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>연간 학습</h2>
-      <div css={heatmapContainerStyle} ref={containerRef}>
+      <div css={heatmapContainerStyle}>
         <div css={heatmapLayoutStyle}>
-          <div>
-            <div css={monthLabelRowStyle(weekColumns)}>
-              {monthLabels.slice(0, months).map((label, monthIndex) => {
-                const dayOffset = (Date.UTC(year, monthIndex, 1) - Date.UTC(year, 0, 1)) / msPerDay;
-                const column = Math.floor((firstDayIndex + dayOffset) / 7);
-                return (
-                  <span key={label} css={monthLabelStyle(theme, column)}>
-                    {label}
-                  </span>
-                );
-              })}
+          <div css={monthLabelRowStyle(weekColumns)}>
+            {monthLabels.slice(0, months).map((label, monthIndex) => {
+              const dayOffset = (Date.UTC(year, monthIndex, 1) - Date.UTC(year, 0, 1)) / msPerDay;
+              const column = Math.floor((firstDayIndex + dayOffset) / 7);
+              return (
+                <span key={label} css={monthLabelStyle(theme, column)}>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+          <div css={heatmapGridContainerStyle}>
+            <div css={weekDayLabelRowStyle}>
+              {weekDays.map(day => (
+                <span key={day} css={weekDayLabelStyle(theme)}>
+                  {day}
+                </span>
+              ))}
             </div>
-            <div css={heatmapGridStyle(weekColumns)}>
+            <div css={heatmapGridStyle(weekColumns)} ref={containerRef}>
               {Array.from({ length: totalCells }).map((_, index) => {
                 const dayNumber = index - firstDayIndex + 1;
                 const isPlaceholder = dayNumber <= 0 || dayNumber > totalDays;
@@ -157,33 +166,33 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                   />
                 );
               })}
+              <Popover
+                x={hoveredCell?.x ?? 0}
+                y={hoveredCell?.y ?? 0}
+                isVisible={hoveredCell !== null}
+                onMouseEnter={() => hoveredCell && setHoveredCell(hoveredCell)}
+                onMouseLeave={handleCellMouseLeave}
+              >
+                {hoveredCell && (
+                  <>
+                    <p>
+                      {formatDate(hoveredCell.date)} {hoveredCell.solvedCount}개
+                    </p>
+                  </>
+                )}
+              </Popover>
             </div>
           </div>
         </div>
-        <div css={legendStyle(theme)}>
-          <span>Less</span>
-          <div css={legendDotsStyle}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <span key={index} css={legendDotStyle(theme, index)} />
-            ))}
-          </div>
-          <span>More</span>
+      </div>
+      <div css={legendStyle(theme)}>
+        <span>Less</span>
+        <div css={legendDotsStyle}>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <span key={index} css={legendDotStyle(theme, index)} />
+          ))}
         </div>
-        <Popover
-          x={hoveredCell?.x ?? 0}
-          y={hoveredCell?.y ?? 0}
-          isVisible={hoveredCell !== null}
-          onMouseEnter={() => hoveredCell && setHoveredCell(hoveredCell)}
-          onMouseLeave={handleCellMouseLeave}
-        >
-          {hoveredCell && (
-            <>
-              <p>
-                {formatDate(hoveredCell.date)} {hoveredCell.solvedCount}개
-              </p>
-            </>
-          )}
-        </Popover>
+        <span>More</span>
       </div>
     </section>
   );
@@ -208,7 +217,6 @@ const sectionTitleStyle = (theme: Theme) => css`
 `;
 
 const heatmapContainerStyle = css`
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -216,7 +224,7 @@ const heatmapContainerStyle = css`
 
 const heatmapLayoutStyle = css`
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 0.7rem;
   overflow-x: auto;
 `;
@@ -225,8 +233,7 @@ const monthLabelRowStyle = (columns: number) => css`
   display: grid;
   grid-template-columns: repeat(${columns}, 0.7rem);
   gap: 0.3rem;
-  height: 1rem;
-  margin-bottom: 0.4rem;
+  margin-left: 1rem;
 `;
 
 const monthLabelStyle = (theme: Theme, column: number) => css`
@@ -239,10 +246,16 @@ const monthLabelStyle = (theme: Theme, column: number) => css`
 `;
 
 const heatmapGridStyle = (columns: number) => css`
+  position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-template-rows: repeat(7, 0.8rem);
   grid-template-columns: repeat(${columns}, 0.7rem);
+  gap: 0.3rem;
+`;
+
+const heatmapGridContainerStyle = css`
+  display: flex;
   gap: 0.3rem;
 `;
 
@@ -262,6 +275,20 @@ const heatmapCellStyle = (theme: Theme, level: number, isEmpty = false) => {
     background: ${isEmpty ? '#82828d1a' : palette[level]};
   `;
 };
+
+const weekDayLabelRowStyle = css`
+  display: flex;
+  flex-direction: column;
+  margin-top: -0.2rem;
+`;
+
+const weekDayLabelStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Medium'].fontSize};
+  color: ${theme.colors.text.weak};
+  text-align: left;
+  white-space: nowrap;
+  word-break: keep-all;
+`;
 
 const legendStyle = (theme: Theme) => css`
   display: flex;

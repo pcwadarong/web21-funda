@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { Loading } from '@/components/Loading';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { Participant } from '@/feat/battle/types';
 import { BattleSetupContainer } from '@/features/battle/components/setup/BattleSetupContainer';
@@ -19,6 +20,7 @@ function hashString(str: string): number {
 export const BattleSetupPage = () => {
   const { inviteToken } = useParams<{ inviteToken: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
 
   if (!inviteToken) {
@@ -26,7 +28,7 @@ export const BattleSetupPage = () => {
   }
 
   // 방 참가 가능 여부 확인
-  const { data } = useJoinBattleRoomQuery(inviteToken);
+  const { data, isLoading, isError, error } = useJoinBattleRoomQuery(inviteToken);
   const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } =
     useBattleSocket();
   const { roomId, status, participants: battleParticipants, settings } = battleState;
@@ -47,13 +49,34 @@ export const BattleSetupPage = () => {
     });
   }, [data, inviteToken, joinBattle, navigate]);
 
+  useEffect(() => {
+    if (!isError) {
+      return;
+    }
+
+    const message = error instanceof Error ? error.message : '방 정보를 불러오지 못했습니다.';
+    showToast(message);
+    navigate('/battle');
+  }, [isError, error, navigate, showToast]);
+
   const unmountedRef = useRef(false);
+  const latestPathRef = useRef(location.pathname);
+
+  useEffect(() => {
+    latestPathRef.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(
     () => () => {
       if (!roomId || unmountedRef.current) return;
 
       if (status === 'in_progress' || status === 'finished') return;
+
+      const nextPath = latestPathRef.current;
+      const isBattleFlowPath = nextPath === '/battle' || nextPath.startsWith('/battle/');
+      if (isBattleFlowPath) {
+        return;
+      }
 
       unmountedRef.current = true;
       leaveBattle(roomId);
@@ -76,6 +99,10 @@ export const BattleSetupPage = () => {
       showToast('링크 복사에 실패했습니다. 주소창의 링크를 직접 복사해주세요.');
     }
   }, [showToast]);
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <BattleSetupContainer

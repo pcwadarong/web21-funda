@@ -56,6 +56,7 @@ interface BattleState {
     ) => void;
     setQuestionStatus: (index: number, status: QuestionStatus) => void;
     reset: () => void;
+    resetForRestart: () => void;
   };
 }
 /**
@@ -143,5 +144,26 @@ export const useBattleStore = create<BattleState>(set => ({
         quizSolutions: [],
         questionStatuses: [],
       }),
+    resetForRestart: () =>
+      set(state => ({
+        roomId: state.roomId,
+        inviteToken: state.inviteToken,
+        settings: state.settings,
+        hostParticipantId: state.hostParticipantId,
+        status: 'waiting',
+        participants: state.participants,
+        rankings: [],
+        rewards: [],
+        currentQuizIndex: 0,
+        totalQuizzes: state.totalQuizzes,
+        remainingSeconds: 0,
+        currentQuiz: null,
+        currentQuizId: 0,
+        quizEndsAt: 0,
+        resultEndsAt: 0,
+        selectedAnswers: [],
+        quizSolutions: [],
+        questionStatuses: [],
+      })),
   },
 }));

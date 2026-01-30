@@ -64,7 +64,6 @@ export const BattleSetupPage = () => {
   const participants: Participant[] = battleParticipants.map(p => ({
     id: p.userId ?? hashString(p.participantId),
     name: p.displayName,
-    avatar: '🧸',
     participantId: p.participantId,
     profileImageUrl: p.avatar,
   }));

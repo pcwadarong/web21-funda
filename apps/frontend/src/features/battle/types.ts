@@ -65,7 +65,7 @@ export interface BattleRoomSettings {
 export interface Participant {
   id: number;
   name: string;
-  avatar: string;
+  avatar?: string;
   participantId: string;
   profileImageUrl?: string; // 로그인 사용자 프로필 이미지
 }

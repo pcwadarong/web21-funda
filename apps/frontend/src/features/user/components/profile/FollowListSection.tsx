@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { useMemo, useState } from 'react';
 
+import { Avatar } from '@/components/Avatar';
 import { Modal } from '@/components/Modal';
 import { FollowListModal } from '@/features/profile/components/FollowListModal';
 import type { ProfileFollowUser } from '@/features/profile/types';
@@ -146,15 +147,13 @@ interface FollowListItemProps {
 const FollowListItem = ({ member, rank, onClick, theme }: FollowListItemProps) => (
   <button type="button" css={listItemButtonStyle(theme)} onClick={onClick}>
     <div css={listItemStyle(theme)}>
-      {member.profileImageUrl ? (
-        <img
-          src={member.profileImageUrl}
-          alt={`${member.displayName} 프로필`}
-          css={listAvatarStyle(theme)}
-        />
-      ) : (
-        <div css={listAvatarStyle(theme)} />
-      )}
+      <Avatar
+        src={member.profileImageUrl}
+        name={member.displayName}
+        size="sm"
+        css={listAvatarStyle(theme)}
+        alt={`${member.displayName} 프로필`}
+      />
       <div css={listTextStyle}>
         <strong css={listNameStyle(theme)}>{member.displayName}</strong>
         <span css={listSubStyle(theme)}>
@@ -259,13 +258,7 @@ const listItemButtonStyle = (theme: Theme) => css`
 `;
 
 const listAvatarStyle = (theme: Theme) => css`
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
   background: ${theme.colors.primary.surface};
-  object-fit: cover;
-  overflow: hidden;
-  flex-shrink: 0;
 `;
 
 const listTextStyle = css`

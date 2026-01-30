@@ -12,11 +12,28 @@ interface SidebarLayoutProps {
 export const SidebarSuspenseLayout = ({ children }: SidebarLayoutProps) => (
   <div css={containerStyle}>
     <Sidebar />
-    <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>
+    <main css={mainContentStyle}>
+      <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>
+    </main>
   </div>
 );
 
 const containerStyle = css`
   display: flex;
-  min-height: 100vh;
+  height: 100dvh;
+  flex-direction: row;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+const mainContentStyle = css`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 `;

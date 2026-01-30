@@ -1,5 +1,6 @@
 import { css, useTheme } from '@emotion/react';
 
+import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
@@ -10,11 +11,6 @@ import type { RankingMember } from '../types';
 interface RankingRowProps {
   member: RankingMember;
 }
-
-const getAvatarLabel = (displayName: string) => {
-  const trimmedName = displayName.trim();
-  return trimmedName ? trimmedName.slice(0, 2).toUpperCase() : '??';
-};
 
 export const RankingRow = ({ member }: RankingRowProps) => {
   const theme = useTheme();
@@ -62,13 +58,13 @@ export const RankingRow = ({ member }: RankingRowProps) => {
     <li css={rankingRowStyle(theme, isMe, isDarkMode)}>
       <span css={rankNumberStyle(theme, activeColor)}>{rank}</span>
 
-      <div css={avatarStyle(theme)}>
-        {profileImageUrl ? (
-          <img src={profileImageUrl} alt={`${displayName} 프로필`} css={avatarImageStyle} />
-        ) : (
-          <span css={avatarTextStyle(theme)}>{getAvatarLabel(displayName)}</span>
-        )}
-      </div>
+      <Avatar
+        src={profileImageUrl}
+        name={displayName}
+        size="sm"
+        css={avatarStyle(theme)}
+        alt={`${displayName} 프로필`}
+      />
 
       <div css={nameBlockStyle}>
         <span css={memberNameStyle(theme, isMe, isDarkMode)}>{displayName}</span>
@@ -120,30 +116,13 @@ const rankNumberStyle = (theme: Theme, color: string) => css`
 `;
 
 const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
   border-radius: ${theme.borderRadius.large};
   background: ${theme.colors.surface.default};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
 
   @media (max-width: 768px) {
     width: 36px;
     height: 36px;
   }
-`;
-
-const avatarImageStyle = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
-
-const avatarTextStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Bold'].fontSize};
-  color: ${theme.colors.primary.dark};
 `;
 
 const nameBlockStyle = css`

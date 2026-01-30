@@ -62,6 +62,9 @@ const QuizResultError = lazy(() =>
   import('@/pages/quiz/QuizResultError').then(m => ({ default: m.QuizResultError })),
 );
 const Profile = lazy(() => import('@/pages/user/Profile').then(m => ({ default: m.Profile })));
+const ProfileCharacter = lazy(() =>
+  import('@/pages/user/ProfileCharacter').then(m => ({ default: m.ProfileCharacter })),
+);
 const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: m.Setting })));
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
@@ -96,6 +99,7 @@ export const router = createBrowserRouter([
           { path: 'learn/roadmap', element: <Roadmap /> },
           { path: 'learn/overview/:unitId', element: <Overview /> },
           { path: 'profile/:userId?', element: <Profile /> },
+          { path: 'profile/characters', element: <ProfileCharacter /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'animation', element: <Animation /> },
@@ -149,6 +153,7 @@ export const router = createBrowserRouter([
               },
               { path: 'leaderboard', element: <Leaderboard /> },
               { path: 'profile/:userId?', element: <Profile /> },
+              { path: 'profile/characters', element: <ProfileCharacter /> },
             ],
           },
           // 관리자 전용 (이중 보호)

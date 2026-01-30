@@ -27,6 +27,8 @@ interface ProfileContainerProps {
   diamondCount: number;
   /** 사용자 클릭 핸들러 */
   onUserClick: (userId: number) => void;
+  /** 프로필 이미지 변경 클릭 핸들러 */
+  onProfileImageClick?: () => void;
 }
 
 /**
@@ -43,6 +45,7 @@ export const ProfileContainer = ({
   isFollowersLoading,
   diamondCount,
   onUserClick,
+  onProfileImageClick,
 }: ProfileContainerProps) => {
   const theme = useTheme();
 
@@ -55,7 +58,11 @@ export const ProfileContainer = ({
           <h1 css={pageTitleStyle(theme)}>PROFILE</h1>
         </header>
 
-        <ProfileHeader profileSummary={profileSummary} diamondCount={diamondCount} />
+        <ProfileHeader
+          profileSummary={profileSummary}
+          diamondCount={diamondCount}
+          onProfileImageClick={onProfileImageClick}
+        />
 
         <div css={twoColumnGridStyle}>
           <FollowListSection

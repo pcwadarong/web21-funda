@@ -49,6 +49,10 @@ export const Profile = () => {
     navigate(`/profile/${targetUserId}`);
   };
 
+  const handleProfileImageClick = () => {
+    navigate('/profile/characters');
+  };
+
   // TODO: 실제 다이아몬드 개수는 프로필 API에서 가져와야 함
   const diamondCount = 0;
 
@@ -61,6 +65,7 @@ export const Profile = () => {
       isFollowersLoading={isFollowersLoading}
       diamondCount={diamondCount}
       onUserClick={handleUserClick}
+      onProfileImageClick={handleProfileImageClick}
     />
   );
 };

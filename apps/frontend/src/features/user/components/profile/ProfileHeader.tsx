@@ -14,6 +14,8 @@ interface ProfileHeaderProps {
   profileSummary: ProfileSummaryResult | null;
   /** 다이아몬드 개수 */
   diamondCount: number;
+  /** 프로필 이미지 영역 클릭 핸들러 */
+  onProfileImageClick?: () => void;
 }
 
 /**
@@ -21,7 +23,11 @@ interface ProfileHeaderProps {
  *
  * 그라데이션 배경의 헤더 영역으로, 프로필 이미지, 사용자 이름, 티어, XP, 다이아몬드 정보를 표시합니다.
  */
-export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderProps) => {
+export const ProfileHeader = ({
+  profileSummary,
+  diamondCount,
+  onProfileImageClick,
+}: ProfileHeaderProps) => {
   const theme = useTheme();
 
   const displayName = profileSummary?.displayName ?? '사용자';
@@ -32,13 +38,20 @@ export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderPro
   return (
     <section css={headerCardStyle(theme)}>
       <div css={headerLeftWrapperStyle}>
-        <Avatar
-          src={profileImageUrl}
-          name={displayName}
-          size="md"
-          css={avatarStyle(theme)}
-          alt={`${displayName} 프로필`}
-        />
+        <button
+          type="button"
+          css={avatarButtonStyle}
+          onClick={onProfileImageClick}
+          aria-label="프로필 이미지 변경"
+        >
+          <Avatar
+            src={profileImageUrl}
+            name={displayName}
+            size="md"
+            css={avatarStyle(theme)}
+            alt={`${displayName} 프로필`}
+          />
+        </button>
         <div css={headerInfoWrapperStyle}>
           <div css={nameRowWrapperStyle}>
             <h1 css={nameStyle(theme)}>{displayName}</h1>
@@ -59,7 +72,7 @@ export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderPro
           </div>
         </div>
       </div>
-      <button type="button" css={editButtonStyle(theme)} disabled>
+      <button type="button" css={editButtonStyle(theme)} onClick={onProfileImageClick}>
         프로필 이미지 수정하기
       </button>
     </section>
@@ -89,6 +102,13 @@ const headerLeftWrapperStyle = css`
 
 const avatarStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.light};
+`;
+
+const avatarButtonStyle = css`
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
 `;
 
 const headerInfoWrapperStyle = css`
@@ -139,6 +159,6 @@ const editButtonStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${palette.grayscale[50]};
-  cursor: not-allowed;
-  opacity: 0.8;
+  cursor: pointer;
+  opacity: 0.95;
 `;

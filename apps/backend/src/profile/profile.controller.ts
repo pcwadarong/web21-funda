@@ -106,4 +106,76 @@ export class ProfileController {
       message: '언팔로우했습니다.',
     };
   }
+
+  @Get('me/characters')
+  @ApiOperation({
+    summary: '내 프로필 캐릭터 목록 조회',
+    description: '사용 가능한 캐릭터 목록과 구매/적용 정보를 반환한다.',
+  })
+  @ApiOkResponse({ description: '캐릭터 목록 조회 성공' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAccessGuard)
+  async getMyProfileCharacters(@Req() req: Request & { user?: JwtPayload }) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const result = await this.profileService.getProfileCharacters(userId);
+
+    return {
+      result,
+      message: '프로필 캐릭터 목록을 조회했습니다.',
+    };
+  }
+
+  @Post('me/characters/:characterId/purchase')
+  @ApiOperation({
+    summary: '프로필 캐릭터 구매',
+    description: '선택한 캐릭터를 구매한다.',
+  })
+  @ApiOkResponse({ description: '캐릭터 구매 성공' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAccessGuard)
+  async purchaseCharacter(
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Req() req: Request & { user?: JwtPayload },
+  ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const result = await this.profileService.purchaseProfileCharacter(userId, characterId);
+
+    return {
+      result,
+      message: '프로필 캐릭터를 구매했습니다.',
+    };
+  }
+
+  @Post('me/characters/:characterId/apply')
+  @ApiOperation({
+    summary: '프로필 캐릭터 적용',
+    description: '구매한 캐릭터를 프로필에 적용한다.',
+  })
+  @ApiOkResponse({ description: '캐릭터 적용 성공' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAccessGuard)
+  async applyCharacter(
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Req() req: Request & { user?: JwtPayload },
+  ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const result = await this.profileService.applyProfileCharacter(userId, characterId);
+
+    return {
+      result,
+      message: '프로필 캐릭터를 적용했습니다.',
+    };
+  }
 }

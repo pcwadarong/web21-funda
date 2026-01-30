@@ -1,163 +1,110 @@
 import { css, useTheme } from '@emotion/react';
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
+import type { ProfileCharacterItem } from '@/features/profile-character/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 
-type CharacterItem = {
-  id: number;
-  imageUrl: string;
-  priceDiamonds: number;
-  isOwned: boolean;
-};
-
 interface ProfileCharacterContainerProps {
-  characters?: CharacterItem[];
+  characters: ProfileCharacterItem[];
+  selectedCharacterId: number | null;
+  isLoading?: boolean;
+  onSelect: (characterId: number) => void;
+  onPurchase: (characterId: number) => void;
+  onApply: (characterId: number) => void;
+  onBack: () => void;
 }
 
 /**
  * 프로필 캐릭터 구매/적용 컨테이너
  */
-export const ProfileCharacterContainer = ({ characters }: ProfileCharacterContainerProps) => {
+export const ProfileCharacterContainer = ({
+  characters,
+  selectedCharacterId,
+  isLoading = false,
+  onSelect,
+  onPurchase,
+  onApply,
+  onBack,
+}: ProfileCharacterContainerProps) => {
   const theme = useTheme();
-  const navigate = useNavigate();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  const characterItems = useMemo(() => characters ?? defaultCharacters, [characters]);
-
-  const handleBackClick = () => {
-    navigate(-1);
-  };
-
-  const handleCardClick = (characterId: number) => {
-    setSelectedId(characterId);
-  };
-
-  const selectedCharacter = characterItems.find(item => item.id === selectedId) ?? null;
 
   return (
-    <main css={pageStyle}>
+    <main css={pageStyle(theme)}>
       <div css={contentStyle}>
         <header css={headerStyle}>
-          <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
+          <button type="button" css={backButtonStyle(theme)} onClick={onBack}>
             <SVGIcon icon="ArrowLeft" size="sm" />내 프로필로 돌아가기
           </button>
           <h1 css={titleStyle(theme)}>캐릭터 프로필 설정하기</h1>
         </header>
 
         <section css={gridStyle}>
-          {characterItems.map(item => {
-            const isSelected = item.id === selectedId;
-            const shouldShowAction = isSelected && selectedCharacter;
-            const actionLabel = item.isOwned ? '적용하기' : '구매하기';
+          {isLoading ? (
+            <div css={loadingStyle(theme)}>캐릭터 목록을 불러오는 중입니다.</div>
+          ) : (
+            characters.map(item => {
+              const isSelected = item.id === selectedCharacterId;
+              const shouldShowAction = isSelected;
+              const actionLabel = item.isOwned ? '적용하기' : '구매하기';
 
-            return (
-              <div key={item.id} css={cardWrapperStyle}>
-                <button
-                  type="button"
-                  css={cardStyle(theme, isSelected)}
-                  onClick={() => handleCardClick(item.id)}
-                  aria-label={`캐릭터 ${item.id} 선택`}
-                >
-                  <div css={imageWrapperStyle}>
-                    <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
-                  </div>
-                  <div css={priceStyle(theme)}>
-                    {item.priceDiamonds === 0 ? (
-                      <span css={freeLabelStyle}>FREE</span>
-                    ) : (
-                      <>
-                        <SVGIcon icon="Diamond" size="xs" />
-                        <span>{item.priceDiamonds}</span>
-                      </>
-                    )}
-                  </div>
-                </button>
-                {shouldShowAction && (
-                  <div css={actionWrapperStyle}>
-                    <button type="button" css={actionCardStyle(theme)}>
-                      {actionLabel}
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              const handleActionClick = () => {
+                if (item.isOwned) {
+                  onApply(item.id);
+                  return;
+                }
+
+                onPurchase(item.id);
+              };
+
+              return (
+                <div key={item.id} css={cardWrapperStyle}>
+                  <button
+                    type="button"
+                    css={cardStyle(theme, isSelected)}
+                    onClick={() => onSelect(item.id)}
+                    aria-label={`캐릭터 ${item.id} 선택`}
+                  >
+                    <div css={imageWrapperStyle}>
+                      <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
+                    </div>
+                    <div css={priceStyle(theme)}>
+                      {item.priceDiamonds === 0 ? (
+                        <span css={freeLabelStyle}>FREE</span>
+                      ) : (
+                        <>
+                          <SVGIcon icon="Diamond" size="xs" />
+                          <span>{item.priceDiamonds}</span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  {shouldShowAction && (
+                    <div css={actionWrapperStyle}>
+                      <button
+                        type="button"
+                        css={actionCardStyle(theme)}
+                        onClick={handleActionClick}
+                      >
+                        {actionLabel}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </section>
       </div>
     </main>
   );
 };
 
-const defaultCharacters: CharacterItem[] = [
-  {
-    id: 1,
-    imageUrl: 'https://placehold.co/140x140?text=01',
-    priceDiamonds: 1,
-    isOwned: true,
-  },
-  {
-    id: 2,
-    imageUrl: 'https://placehold.co/140x140?text=02',
-    priceDiamonds: 5,
-    isOwned: false,
-  },
-  {
-    id: 3,
-    imageUrl: 'https://placehold.co/140x140?text=03',
-    priceDiamonds: 0,
-    isOwned: false,
-  },
-  {
-    id: 4,
-    imageUrl: 'https://placehold.co/140x140?text=04',
-    priceDiamonds: 1,
-    isOwned: false,
-  },
-  {
-    id: 5,
-    imageUrl: 'https://placehold.co/140x140?text=05',
-    priceDiamonds: 1,
-    isOwned: true,
-  },
-  {
-    id: 6,
-    imageUrl: 'https://placehold.co/140x140?text=06',
-    priceDiamonds: 1,
-    isOwned: false,
-  },
-  {
-    id: 7,
-    imageUrl: 'https://placehold.co/140x140?text=07',
-    priceDiamonds: 1,
-    isOwned: true,
-  },
-  {
-    id: 8,
-    imageUrl: 'https://placehold.co/140x140?text=08',
-    priceDiamonds: 1,
-    isOwned: false,
-  },
-  {
-    id: 9,
-    imageUrl: 'https://placehold.co/140x140?text=09',
-    priceDiamonds: 25,
-    isOwned: false,
-  },
-  {
-    id: 10,
-    imageUrl: 'https://placehold.co/140x140?text=10',
-    priceDiamonds: 1,
-    isOwned: false,
-  },
-];
-
-const pageStyle = css`
+const pageStyle = (theme: Theme) => css`
   flex: 1;
   min-height: 100vh;
   padding: 2rem 1.5rem 7.5rem;
+  background: ${theme.colors.surface.default};
 `;
 
 const contentStyle = css`
@@ -196,20 +143,32 @@ const backButtonStyle = (theme: Theme) => css`
 
 const gridStyle = css`
   display: grid;
-  grid-template-columns: repeat(5, minmax(140px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(5, 160px);
+  row-gap: 1.5rem;
+  column-gap: 1.5rem;
+  justify-content: center;
+  padding-bottom: 5rem;
 
   @media (max-width: 64rem) {
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
+    grid-template-columns: repeat(4, 160px);
   }
 
   @media (max-width: 52rem) {
-    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, 160px);
   }
 
   @media (max-width: 38rem) {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 160px);
   }
+`;
+
+const loadingStyle = (theme: Theme) => css`
+  grid-column: 1 / -1;
+  padding: 1.5rem;
+  border-radius: ${theme.borderRadius.medium};
+  background: ${theme.colors.surface.default};
+  color: ${theme.colors.text.weak};
+  text-align: center;
 `;
 
 const cardWrapperStyle = css`
@@ -221,8 +180,10 @@ const cardWrapperStyle = css`
 
 const cardStyle = (theme: Theme, isSelected: boolean) => css`
   width: 100%;
+  max-width: 160px;
+  aspect-ratio: 1 / 1.05;
   border-radius: 24px;
-  padding: 1.1rem 1rem 0.85rem;
+  padding: 0.85rem 0.8rem 0.6rem;
   border: 2px solid ${isSelected ? theme.colors.primary.main : palette.grayscale[200]};
   background: ${palette.grayscale[100]};
   display: flex;
@@ -242,7 +203,7 @@ const imageWrapperStyle = css`
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 18px;
-  background: ${palette.grayscale[50]};
+  background: ${palette.grayscale[100]};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -250,8 +211,8 @@ const imageWrapperStyle = css`
 `;
 
 const imageStyle = css`
-  width: 70%;
-  height: 70%;
+  width: 56%;
+  height: 56%;
   object-fit: contain;
 `;
 
@@ -274,6 +235,7 @@ const actionWrapperStyle = css`
   width: 100%;
   display: flex;
   justify-content: center;
+  position: relative;
 `;
 
 const actionCardStyle = (theme: Theme) => css`
@@ -292,6 +254,20 @@ const actionCardStyle = (theme: Theme) => css`
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(101, 89, 234, 0.25);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 10px solid ${theme.colors.primary.main};
+  }
 
   &:hover {
     background: ${theme.colors.primary.dark};

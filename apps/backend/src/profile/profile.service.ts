@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
@@ -12,7 +12,14 @@ import type {
   ProfileSummaryResult,
   ProfileTierSummary,
 } from './dto/profile.dto';
+import type {
+  ProfileCharacterApplyResult,
+  ProfileCharacterListResult,
+  ProfileCharacterPurchaseResult,
+} from './dto/profile-character.dto';
+import { ProfileCharacter } from './entities/profile-character.entity';
 import { UserFollow } from './entities/user-follow.entity';
+import { UserProfileCharacter } from './entities/user-profile-character.entity';
 
 interface SolveStatsResult {
   totalStudyTimeSeconds: number;
@@ -28,6 +35,8 @@ interface SolveStatsRawResult {
 @Injectable()
 export class ProfileService {
   constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(SolveLog)
@@ -36,6 +45,10 @@ export class ProfileService {
     private readonly stepAttemptRepository: Repository<UserStepAttempt>,
     @InjectRepository(UserFollow)
     private readonly followRepository: Repository<UserFollow>,
+    @InjectRepository(ProfileCharacter)
+    private readonly profileCharacterRepository: Repository<ProfileCharacter>,
+    @InjectRepository(UserProfileCharacter)
+    private readonly userProfileCharacterRepository: Repository<UserProfileCharacter>,
   ) {}
 
   /**
@@ -47,7 +60,7 @@ export class ProfileService {
   async getProfileSummary(userId: number): Promise<ProfileSummaryResult> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: { currentTier: true },
+      relations: { currentTier: true, profileCharacter: true },
     });
 
     if (!user) {
@@ -68,7 +81,7 @@ export class ProfileService {
     return {
       userId: user.id,
       displayName: user.displayName,
-      profileImageUrl: user.profileImageUrl ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       experience: user.experience,
       currentStreak: user.currentStreak,
       tier: tierSummary,
@@ -78,6 +91,141 @@ export class ProfileService {
       totalStudyTimeMinutes: solveStats.totalStudyTimeMinutes,
       solvedQuizzesCount: solveStats.solvedQuizzesCount,
     };
+  }
+
+  /**
+   * 프로필 캐릭터 목록을 반환한다.
+   */
+  async getProfileCharacters(userId: number): Promise<ProfileCharacterListResult> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+    }
+
+    const ownedRows = await this.userProfileCharacterRepository.find({
+      where: { userId },
+      select: ['characterId'],
+    });
+    const ownedIds = ownedRows.map(row => row.characterId);
+    const ownedSet = new Set(ownedIds);
+
+    const whereClause =
+      ownedIds.length > 0 ? [{ isActive: true }, { id: In(ownedIds) }] : [{ isActive: true }];
+
+    const characters = await this.profileCharacterRepository.find({
+      where: whereClause,
+      order: { id: 'ASC' },
+    });
+
+    return {
+      selectedCharacterId: user.profileCharacterId ?? null,
+      diamondCount: user.diamondCount,
+      characters: characters.map(character => ({
+        id: character.id,
+        imageUrl: character.imageUrl,
+        priceDiamonds: character.priceDiamonds,
+        description: character.description ?? null,
+        isActive: character.isActive,
+        isOwned: ownedSet.has(character.id),
+      })),
+    };
+  }
+
+  /**
+   * 프로필 캐릭터를 구매한다.
+   */
+  async purchaseProfileCharacter(
+    userId: number,
+    characterId: number,
+  ): Promise<ProfileCharacterPurchaseResult> {
+    return this.dataSource.transaction(async manager => {
+      const userRepository = manager.getRepository(User);
+      const characterRepository = manager.getRepository(ProfileCharacter);
+      const ownershipRepository = manager.getRepository(UserProfileCharacter);
+
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+      }
+
+      const character = await characterRepository.findOne({ where: { id: characterId } });
+      if (!character) {
+        throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
+      }
+
+      if (!character.isActive) {
+        throw new BadRequestException('판매 중인 캐릭터가 아닙니다.');
+      }
+
+      const existingOwnership = await ownershipRepository.findOne({
+        where: { userId, characterId },
+      });
+      if (existingOwnership) {
+        return {
+          characterId,
+          purchased: false,
+          diamondCount: user.diamondCount,
+        };
+      }
+
+      if (user.diamondCount < character.priceDiamonds) {
+        throw new BadRequestException('다이아가 부족합니다.');
+      }
+
+      user.diamondCount -= character.priceDiamonds;
+      await userRepository.save(user);
+
+      const ownership = ownershipRepository.create({
+        userId,
+        characterId,
+      });
+      await ownershipRepository.save(ownership);
+
+      return {
+        characterId,
+        purchased: true,
+        diamondCount: user.diamondCount,
+      };
+    });
+  }
+
+  /**
+   * 구매한 프로필 캐릭터를 적용한다.
+   */
+  async applyProfileCharacter(
+    userId: number,
+    characterId: number,
+  ): Promise<ProfileCharacterApplyResult> {
+    return this.dataSource.transaction(async manager => {
+      const userRepository = manager.getRepository(User);
+      const characterRepository = manager.getRepository(ProfileCharacter);
+      const ownershipRepository = manager.getRepository(UserProfileCharacter);
+
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+      }
+
+      const character = await characterRepository.findOne({ where: { id: characterId } });
+      if (!character) {
+        throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
+      }
+
+      const ownership = await ownershipRepository.findOne({
+        where: { userId, characterId },
+      });
+      if (!ownership) {
+        throw new BadRequestException('구매한 캐릭터만 적용할 수 있습니다.');
+      }
+
+      user.profileCharacterId = characterId;
+      await userRepository.save(user);
+
+      return {
+        characterId,
+        applied: true,
+      };
+    });
   }
 
   /**

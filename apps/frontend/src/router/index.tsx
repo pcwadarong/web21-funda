@@ -102,7 +102,6 @@ export const router = createBrowserRouter([
           { path: 'learn/roadmap', element: <Roadmap /> },
           { path: 'learn/overview/:unitId', element: <Overview /> },
           { path: 'profile/:userId?', element: <Profile /> },
-          { path: 'profile/characters', element: <ProfileCharacter /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'animation', element: <Animation /> },

@@ -35,6 +35,8 @@ export const ProfileHeader = ({
   const experience = profileSummary?.experience ?? 0;
   const profileImageUrl = profileSummary?.profileImageUrl ?? null;
 
+  const isEditable = Boolean(onProfileImageClick);
+
   return (
     <section css={headerCardStyle(theme)}>
       <div css={headerLeftWrapperStyle}>
@@ -42,6 +44,7 @@ export const ProfileHeader = ({
           type="button"
           css={avatarButtonStyle}
           onClick={onProfileImageClick}
+          disabled={!isEditable}
           aria-label="프로필 이미지 변경"
         >
           <Avatar
@@ -72,7 +75,12 @@ export const ProfileHeader = ({
           </div>
         </div>
       </div>
-      <button type="button" css={editButtonStyle(theme)} onClick={onProfileImageClick}>
+      <button
+        type="button"
+        css={editButtonStyle(theme, !isEditable)}
+        onClick={onProfileImageClick}
+        disabled={!isEditable}
+      >
         프로필 이미지 수정하기
       </button>
     </section>
@@ -109,6 +117,10 @@ const avatarButtonStyle = css`
   padding: 0;
   background: transparent;
   cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 `;
 
 const headerInfoWrapperStyle = css`
@@ -151,7 +163,7 @@ const metaItemStyle = css`
   gap: 0.375rem;
 `;
 
-const editButtonStyle = (theme: Theme) => css`
+const editButtonStyle = (theme: Theme, isDisabled: boolean) => css`
   padding: 0.625rem 1rem;
   border-radius: ${theme.borderRadius.medium};
   border: none;
@@ -159,6 +171,6 @@ const editButtonStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${palette.grayscale[50]};
-  cursor: pointer;
-  opacity: 0.95;
+  cursor: ${isDisabled ? 'not-allowed' : 'pointer'};
+  opacity: ${isDisabled ? 0.6 : 0.95};
 `;

@@ -49,9 +49,8 @@ export const Profile = () => {
     navigate(`/profile/${targetUserId}`);
   };
 
-  const handleProfileImageClick = () => {
-    navigate('/profile/characters');
-  };
+  const isMyProfile = user?.id !== undefined && profileSummary?.userId === user.id;
+  const handleProfileImageClick = isMyProfile ? () => navigate('/profile/characters') : undefined;
 
   // TODO: 실제 다이아몬드 개수는 프로필 API에서 가져와야 함
   const diamondCount = 0;

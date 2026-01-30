@@ -89,10 +89,24 @@ export function useBattleSocket(): UseBattleSocketReturn {
     setQuestionStatus,
     setSelectedAnswer,
     reset,
+    resetForRestart,
   } = useBattleStore(state => state.actions);
 
   // ready 중복 요청 방지를 위한 ref
   const readySentRef = useRef(false);
+  // 소켓/인증 준비 전에 들어온 join 요청을 보류했다가 재시도하기 위한 ref
+  const pendingJoinRef = useRef<{
+    roomId: string;
+    userData?: {
+      userId?: number | null;
+      displayName?: string;
+      profileImageUrl?: string;
+    };
+    options?: {
+      inviteToken?: string;
+      settings?: BattleRoomSettings;
+    };
+  } | null>(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -263,16 +277,31 @@ export function useBattleSocket(): UseBattleSocketReturn {
         settings?: BattleRoomSettings;
       },
     ) => {
-      // 인증 준비 상태 확인
-      if (!isAuthReady || !socket) return;
+      const pendingJoin = { roomId, userData, options };
 
-      // 연결이 끊겼다면 연결 시도 후 리턴
-      if (socketStatus === 'disconnected') {
+      // 인증 준비 상태 확인
+      if (!isAuthReady) {
+        pendingJoinRef.current = pendingJoin;
+        return;
+      }
+
+      if (!socket) {
+        pendingJoinRef.current = pendingJoin;
         connect();
         return;
       }
 
-      if (socketStatus !== 'connected') return;
+      // 연결이 끊겼다면 연결 시도 후 리턴
+      if (socketStatus === 'disconnected') {
+        pendingJoinRef.current = pendingJoin;
+        connect();
+        return;
+      }
+
+      if (socketStatus !== 'connected') {
+        pendingJoinRef.current = pendingJoin;
+        return;
+      }
 
       // 현재 방 정보 확인
       const currentStore = useBattleStore.getState();
@@ -303,6 +332,16 @@ export function useBattleSocket(): UseBattleSocketReturn {
     },
     [isAuthReady, socketStatus, connect, socket, setBattleState, isLoggedIn, user, reset],
   );
+
+  useEffect(() => {
+    if (!pendingJoinRef.current) return;
+    if (!isAuthReady || !socket) return;
+    if (socketStatus !== 'connected') return;
+
+    const pendingJoin = pendingJoinRef.current;
+    pendingJoinRef.current = null;
+    joinBattle(pendingJoin.roomId, pendingJoin.userData, pendingJoin.options);
+  }, [isAuthReady, socketStatus, socket, joinBattle]);
 
   /**
    * 방 설정 변경 요청을 보냅니다.
@@ -410,9 +449,9 @@ export function useBattleSocket(): UseBattleSocketReturn {
       if (!socket) return;
 
       socket.emit('battle:restart', { roomId });
-      reset();
+      resetForRestart();
     },
-    [socket, reset],
+    [socket, resetForRestart],
   );
 
   return {

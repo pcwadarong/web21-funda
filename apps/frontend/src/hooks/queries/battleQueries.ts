@@ -1,4 +1,4 @@
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 import type { BattleRoomSettings } from '@/feat/battle/types';
@@ -10,7 +10,7 @@ import { useToast } from '@/store/toastStore';
  * 배틀 방 참가 가능 여부 확인을 위한 쿼리
  */
 export const useJoinBattleRoomQuery = (inviteToken: string) =>
-  useSuspenseQuery<{
+  useQuery<{
     roomId: string;
     canJoin: boolean;
     settings: BattleRoomSettings;

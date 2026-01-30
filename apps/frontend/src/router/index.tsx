@@ -120,7 +120,7 @@ export const router = createBrowserRouter([
           {
             element: <PageSuspenseLayout />,
             children: [
-              { path: 'battle/play', element: <BattlePlay /> },
+              { path: 'battle/quiz', element: <BattlePlay /> },
               { path: 'battle/result', element: <BattleResult /> },
             ],
           },

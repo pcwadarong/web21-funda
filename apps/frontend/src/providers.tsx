@@ -62,7 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           <ErrorBoundary fallback={<ErrorView {...APP_ERROR_FALLBACK} />}>
             <Suspense fallback={<Loading />}>
               <AuthProvider>
-                <SocketProvider>
+                <SocketProvider namespace="/battle">
                   <ToastProvider>
                     <ModalProvider>{children}</ModalProvider>
                   </ToastProvider>

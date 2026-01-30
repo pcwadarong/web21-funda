@@ -41,7 +41,7 @@ export const MarkdownRenderer = ({ text, customCss, allowHtml = true }: Markdown
   const { isDarkMode } = useThemeStore();
 
   return (
-    <div css={[markdownContainerStyle, customCss]}>
+    <div css={[markdownContainerStyle(theme), customCss]}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={allowHtml ? [rehypeRaw, [rehypeSanitize, defaultSchema]] : []}
@@ -86,7 +86,7 @@ export const MarkdownRenderer = ({ text, customCss, allowHtml = true }: Markdown
   );
 };
 
-const markdownContainerStyle = css`
+const markdownContainerStyle = (theme: Theme) => css`
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -113,6 +113,45 @@ const markdownContainerStyle = css`
     list-style-type: disc !important;
     margin: 8px 0 0 0;
   }
+
+  & blockquote {
+    margin: 0px 0px 0.5rem 0px;
+    position: relative;
+    padding: 40px 55px 40px;
+    background: ${theme.colors.grayscale['100']};
+    border-radius: 16px;
+  }
+
+  & blockquote:after {
+    content: '\\201C';
+    font-size: 76px;
+    position: absolute;
+    top: 5px;
+    left: 15px;
+    color: ${theme.colors.primary.light};
+    font-family: georgia;
+  }
+
+  & blockquote:before {
+    content: '\u2014 Fundy';
+    font-size: 16px;
+    position: absolute;
+    bottom: 20px;
+    left: 55px;
+    font-family: georgia;
+    font-style: italic;
+    color: ${theme.colors.text.weak};
+  }
+
+  & blockquote p {
+    max-width: 100%;
+    padding: 0;
+    margin: 0 0 15px;
+    font-size: 20px;
+    line-height: 32px;
+    word-break: keep-all;
+    color: ${theme.colors.text.default};
+  }
 `;
 
 const markdownParagraphStyle = (theme: Theme) => css`
@@ -124,7 +163,7 @@ const markdownParagraphStyle = (theme: Theme) => css`
 
 const markdownListStyle = (theme: Theme) => css`
   margin: 0;
-  padding-left: 20px;
+  padding-left: 32px;
   list-style-type: disc !important;
   list-style-position: outside !important;
   color: ${theme.colors.text.default};

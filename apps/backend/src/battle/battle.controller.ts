@@ -25,6 +25,7 @@ export class BattleController {
   createRoom(@Body() body: CreateBattleRoomRequest): CreateBattleRoomResponse {
     const roomId = this.createRoomId();
     const inviteToken = this.createInviteToken();
+    const totalQuizzes = 10;
 
     const fieldSlug = body.fieldSlug ?? 'fe';
     const maxPlayers = body.maxPlayers ?? 5;
@@ -40,7 +41,7 @@ export class BattleController {
         timeLimitSeconds: this.getTimeLimitSeconds(timeLimitType),
       },
       inviteToken,
-      totalQuizzes: 10,
+      totalQuizzes,
     });
 
     this.battleService.saveRoom(roomState);

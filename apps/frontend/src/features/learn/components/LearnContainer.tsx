@@ -17,6 +17,7 @@ interface LearnContainerProps {
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
   onStepClick: (stepId: stepType) => void;
   onStepHover?: (stepId: number) => void;
+  onOverviewClick: (unitId: number) => void;
   fieldSlug: string;
   setFieldSlug: (slug: string) => void;
 }
@@ -30,6 +31,7 @@ export const LearnContainer = ({
   registerUnitRef,
   onStepClick,
   onStepHover,
+  onOverviewClick,
   fieldSlug,
   setFieldSlug,
 }: LearnContainerProps) => {
@@ -57,7 +59,11 @@ export const LearnContainer = ({
                   </span>
                 </div>
               </div>
-              <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
+              <Link
+                to={`overview/${activeUnit.id}`}
+                onClick={() => onOverviewClick(activeUnit.id)}
+                css={overviewButtonStyle(theme)}
+              >
                 학습 개요
               </Link>
             </div>
@@ -145,10 +151,6 @@ const mainStyle = css`
   overflow: visible;
   height: 100vh;
   min-height: 0;
-
-  @media (max-width: 768px) {
-    padding-bottom: 80px;
-  }
 `;
 
 const centerSectionStyle = css`

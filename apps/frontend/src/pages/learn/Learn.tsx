@@ -126,6 +126,18 @@ export const Learn = () => {
     [navigate, showInProgressToast, updateUIState, units, isLoggedIn, user, progress],
   );
 
+  const handleOverviewClick = useCallback(
+    (unitId: number) => {
+      updateUIState({
+        last_viewed: {
+          field_slug: storageUtil.get().ui_state.last_viewed.field_slug,
+          unit_id: unitId,
+        },
+      });
+    },
+    [updateUIState],
+  );
+
   return (
     <>
       {showHeartModal && (
@@ -143,6 +155,7 @@ export const Learn = () => {
         headerRef={headerRef}
         registerUnitRef={registerUnitRef}
         onStepClick={handleStepClick}
+        onOverviewClick={handleOverviewClick}
         onStepHover={handleStepHover}
         fieldSlug={fieldSlug}
         setFieldSlug={setFieldSlug}

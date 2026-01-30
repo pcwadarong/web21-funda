@@ -99,6 +99,7 @@ const renderContainer = (props: Partial<React.ComponentProps<typeof LearnContain
     headerRef: mockHeaderRef,
     registerUnitRef: vi.fn(() => () => {}),
     onStepClick: vi.fn(),
+    onOverviewClick: vi.fn(),
     fieldSlug: 'FE',
     setFieldSlug: vi.fn(),
     ...props,

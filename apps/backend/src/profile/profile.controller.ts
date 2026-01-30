@@ -72,6 +72,36 @@ export class ProfileController {
     };
   }
 
+  @Get(':userId/daily-stats')
+  @ApiOperation({
+    summary: '최근 7일간 일일 통계 조회',
+    description: '최근 7일간의 날짜별 학습 시간을 반환한다.',
+  })
+  @ApiOkResponse({ description: '최근 7일간 일일 통계 조회 성공' })
+  async getDailyStats(@Param('userId', ParseIntPipe) userId: number) {
+    const result = await this.profileService.getDailyStats(userId);
+
+    return {
+      result,
+      message: '최근 7일간 일일 통계를 조회했습니다.',
+    };
+  }
+
+  @Get(':userId/field-daily-stats')
+  @ApiOperation({
+    summary: '최근 7일간 필드별 문제 풀이 통계 조회',
+    description: '최근 7일간 필드(로드맵)별 문제 풀이 수를 날짜별로 반환한다.',
+  })
+  @ApiOkResponse({ description: '최근 7일간 필드별 문제 풀이 통계 조회 성공' })
+  async getFieldDailyStats(@Param('userId', ParseIntPipe) userId: number) {
+    const result = await this.profileService.getFieldDailyStats(userId);
+
+    return {
+      result,
+      message: '최근 7일간 필드별 문제 풀이 통계를 조회했습니다.',
+    };
+  }
+
   @Post(':userId/follow')
   @ApiOperation({
     summary: '팔로우',

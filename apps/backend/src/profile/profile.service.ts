@@ -4,9 +4,13 @@ import { Repository } from 'typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
+import { Field } from '../roadmap/entities/field.entity';
 import { User } from '../users/entities/user.entity';
 
 import type {
+  DailyStatsResult,
+  FieldDailyStatsItem,
+  FieldDailyStatsResult,
   FollowStateResult,
   ProfileFollowUser,
   ProfileStreakDay,
@@ -14,6 +18,7 @@ import type {
   ProfileTierSummary,
 } from './dto/profile.dto';
 import { UserFollow } from './entities/user-follow.entity';
+import { getDateRange, getLast7Days } from './utils/date.utils';
 
 interface SolveStatsResult {
   totalStudyTimeSeconds: number;
@@ -35,6 +40,8 @@ export class ProfileService {
     private readonly solveLogRepository: Repository<SolveLog>,
     @InjectRepository(UserStepAttempt)
     private readonly stepAttemptRepository: Repository<UserStepAttempt>,
+    @InjectRepository(Field)
+    private readonly fieldRepository: Repository<Field>,
     @InjectRepository(UserFollow)
     private readonly followRepository: Repository<UserFollow>,
   ) {}
@@ -165,6 +172,175 @@ export class ProfileService {
       date: row.date,
       solvedCount: Number(row.solvedCount),
     }));
+  }
+
+  /**
+   * 최근 7일간의 날짜별 학습 시간을 조회한다.
+   *
+   * @param {number} userId 조회 대상 사용자 ID
+   * @returns {Promise<DailyStatsResult>} 최근 7일간 일일 통계 데이터
+   */
+  async getDailyStats(userId: number): Promise<DailyStatsResult> {
+    await this.ensureUserExists(userId);
+
+    const allDates = getLast7Days();
+    const { startDate, endDate } = getDateRange(allDates);
+
+    // stepAttemptRepository에서 최근 7일간의 학습 시간 조회
+    const studyTimeRows = await this.stepAttemptRepository
+      .createQueryBuilder('stepAttempt')
+      .select('DATE(stepAttempt.finishedAt)', 'date')
+      .addSelect(
+        'COALESCE(SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)), 0)',
+        'studySeconds',
+      )
+      .where('stepAttempt.userId = :userId', { userId })
+      .andWhere('stepAttempt.status = :status', { status: StepAttemptStatus.COMPLETED })
+      .andWhere('stepAttempt.finishedAt IS NOT NULL')
+      .andWhere('DATE(stepAttempt.finishedAt) >= :startDate', { startDate })
+      .andWhere('DATE(stepAttempt.finishedAt) <= :endDate', { endDate })
+      .groupBy('DATE(stepAttempt.finishedAt)')
+      .orderBy('DATE(stepAttempt.finishedAt)', 'ASC')
+      .getRawMany<{ date: string; studySeconds: string | number }>();
+
+    // 날짜별로 맵 생성
+    const studyTimeMap = new Map<string, number>();
+    studyTimeRows.forEach(row => {
+      studyTimeMap.set(row.date, Number(row.studySeconds));
+    });
+
+    // 모든 날짜에 대해 데이터 생성
+    const dailyData = allDates.map(date => ({
+      date,
+      studySeconds: studyTimeMap.get(date) ?? 0,
+    }));
+
+    // 최대 학습 시간 계산
+    const periodMaxSeconds = Math.max(...dailyData.map(d => d.studySeconds), 0);
+
+    // 평균 학습 시간 계산
+    const totalSeconds = dailyData.reduce((sum, d) => sum + d.studySeconds, 0);
+    const periodAverageSeconds =
+      dailyData.length > 0 ? Math.floor(totalSeconds / dailyData.length) : 0;
+
+    return {
+      dailyData,
+      periodMaxSeconds,
+      periodAverageSeconds,
+    };
+  }
+
+  /**
+   * 최근 7일간 필드(로드맵)별 문제 풀이 수를 조회한다.
+   *
+   * @param {number} userId 조회 대상 사용자 ID
+   * @returns {Promise<FieldDailyStatsResult>} 필드별 최근 7일 통계
+   */
+  async getFieldDailyStats(userId: number): Promise<FieldDailyStatsResult> {
+    await this.ensureUserExists(userId);
+
+    const allDates = getLast7Days();
+    const { startDate, endDate } = getDateRange(allDates);
+
+    const roadmapFields = await this.fieldRepository.find({
+      select: ['id', 'name', 'slug'],
+      order: { id: 'ASC' },
+    });
+
+    // solveLog 테이블에서 최근 7일간의 필드별 문제 풀이 수를 조회한다.
+    const rows = await this.solveLogRepository
+      .createQueryBuilder('solveLog')
+      .innerJoin('solveLog.quiz', 'quiz')
+      .innerJoin('quiz.step', 'step')
+      .innerJoin('step.unit', 'unit')
+      .innerJoin('unit.field', 'field')
+      .select('field.id', 'fieldId')
+      .addSelect('field.name', 'fieldName')
+      .addSelect('field.slug', 'fieldSlug')
+      .addSelect('DATE(solveLog.solvedAt)', 'date')
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN solveLog.isCorrect = true THEN 1 ELSE 0 END), 0)',
+        'solvedCount',
+      )
+      .where('solveLog.userId = :userId', { userId })
+      .andWhere('DATE(solveLog.solvedAt) >= :startDate', { startDate })
+      .andWhere('DATE(solveLog.solvedAt) <= :endDate', { endDate })
+      .groupBy('field.id')
+      .addGroupBy('DATE(solveLog.solvedAt)')
+      .orderBy('field.id', 'ASC')
+      .addOrderBy('DATE(solveLog.solvedAt)', 'ASC')
+      .getRawMany<{
+        fieldId: string | number;
+        fieldName: string;
+        fieldSlug: string;
+        date: string;
+        solvedCount: string | number;
+      }>();
+
+    const fieldMap = new Map<number, FieldDailyStatsItem>();
+
+    // roadmapFields 목록을 순회하며 필드별 데이터를 초기화한다.
+    roadmapFields.forEach(field => {
+      fieldMap.set(field.id, {
+        fieldId: field.id,
+        fieldName: field.name,
+        fieldSlug: field.slug,
+        dailyData: allDates.map(date => ({ date, solvedCount: 0 })),
+        periodMaxSolvedCount: 0,
+        periodAverageSolvedCount: 0,
+        totalSolvedCount: 0,
+      });
+    });
+
+    // rows 목록을 순회하며 필드별 데이터를 업데이트한다.
+    rows.forEach(row => {
+      const fieldId = Number(row.fieldId);
+      const solvedCount = Number(row.solvedCount);
+      let fieldEntry = fieldMap.get(fieldId);
+
+      if (!fieldEntry) {
+        fieldEntry = {
+          fieldId,
+          fieldName: row.fieldName,
+          fieldSlug: row.fieldSlug,
+          dailyData: allDates.map(date => ({ date, solvedCount: 0 })),
+          periodMaxSolvedCount: 0,
+          periodAverageSolvedCount: 0,
+          totalSolvedCount: 0,
+        };
+        fieldMap.set(fieldId, fieldEntry);
+      }
+
+      const dailyItem = fieldEntry.dailyData.find(item => item.date === row.date);
+      if (dailyItem) {
+        dailyItem.solvedCount = solvedCount;
+      }
+    });
+
+    // fieldMap 목록을 순회하며 필드별 데이터를 계산한다.
+    const fields = Array.from(fieldMap.values()).map(fieldEntry => {
+      const totalSolvedCount = fieldEntry.dailyData.reduce(
+        (sum, item) => sum + item.solvedCount,
+        0,
+      );
+      const periodMaxSolvedCount = Math.max(
+        ...fieldEntry.dailyData.map(item => item.solvedCount),
+        0,
+      );
+      const periodAverageSolvedCount =
+        fieldEntry.dailyData.length > 0
+          ? Math.floor(totalSolvedCount / fieldEntry.dailyData.length)
+          : 0;
+
+      return {
+        ...fieldEntry,
+        totalSolvedCount,
+        periodMaxSolvedCount,
+        periodAverageSolvedCount,
+      };
+    });
+
+    return { fields };
   }
 
   /**

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
+import type { ProfileFollowUser, ProfileSummaryResult } from '@/feat/user/profile/types';
 import { profileService } from '@/services/profileService';
 
 export const profileKeys = {

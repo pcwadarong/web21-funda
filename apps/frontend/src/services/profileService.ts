@@ -1,4 +1,4 @@
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
+import type { ProfileFollowUser, ProfileSummaryResult } from '@/feat/user/profile/types';
 
 import { apiFetch } from './api';
 

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { ErrorView } from '@/features/error/components/ErrorView';
-import { ProfileContainer } from '@/features/user/components/profile/ProfileContainer';
+import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
   useProfileFollowers,

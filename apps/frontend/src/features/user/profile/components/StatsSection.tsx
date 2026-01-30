@@ -2,7 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { memo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
-import type { ProfileSummaryResult } from '@/features/profile/types';
+import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 /**

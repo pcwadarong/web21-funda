@@ -3,7 +3,7 @@ import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Avatar } from '@/components/Avatar';
-import type { ProfileSummaryResult } from '@/features/profile/types';
+import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 

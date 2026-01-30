@@ -1,7 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { memo, useMemo } from 'react';
 
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
+import type { ProfileFollowUser, ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 import { ChartSection } from './ChartSection';

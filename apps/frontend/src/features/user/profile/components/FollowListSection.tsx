@@ -3,8 +3,8 @@ import { memo, useMemo, useState } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import { Modal } from '@/components/Modal';
-import { FollowListModal } from '@/features/profile/components/FollowListModal';
-import type { ProfileFollowUser } from '@/features/profile/types';
+import { FollowListModal } from '@/feat/user/profile/components/FollowListModal';
+import type { ProfileFollowUser } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 /**

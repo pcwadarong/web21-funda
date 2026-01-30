@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { UnsubscribeContainer } from '@/features/user/components/subscribe/UnsubscribeContainer';
+import { UnsubscribeContainer } from '@/feat/user/subscribe/UnsubscribeContainer';
 import { useUnsubscribeMutation } from '@/hooks/queries/userQueries';
 import { useToast } from '@/store/toastStore';
 

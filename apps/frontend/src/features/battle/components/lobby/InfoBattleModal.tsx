@@ -2,7 +2,7 @@ import { css } from '@emotion/react';
 
 import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
 
-import { battleInfoContent } from '../utils/battleInfo';
+import { battleInfoContent } from '../../utils/battleInfo';
 
 export const InfoBattleModal = () => (
   <section css={containerStyle} tabIndex={0} role="region" aria-label="실시간 배틀 정보">

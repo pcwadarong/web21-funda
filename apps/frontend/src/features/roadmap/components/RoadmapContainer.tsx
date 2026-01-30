@@ -23,64 +23,51 @@ export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapConta
   const progressPercent = totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
 
   return (
-    <div css={containerStyle}>
-      <main css={mainStyle}>
-        <header css={headerStyle}>
-          <Link to="/learn/select-field" css={backLinkStyle(theme)}>
-            <SVGIcon icon="ArrowLeft" size="sm" />
-            분야 선택으로 돌아가기
-          </Link>
+    <div css={contentWrapperStyle}>
+      <header css={headerStyle}>
+        <Link to="/learn/select-field" css={backLinkStyle(theme)}>
+          <SVGIcon icon="ArrowLeft" size="sm" />
+          분야 선택으로 돌아가기
+        </Link>
 
-          <div css={heroStyle}>
-            <div css={heroTitleStyle}>
-              <h1 css={heroLabelStyle(theme)}>{fieldName} 로드맵</h1>
-              <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
-            </div>
-            {isLoggedIn && (
-              <div css={progressSummaryStyle(theme)}>
-                <span css={progressValueStyle(theme)}>{progressPercent}%</span>
-                <span css={progressMetaStyle(theme)}>
-                  {completedUnits}/{totalUnits} 완료
-                </span>
-              </div>
-            )}
+        <div css={heroStyle}>
+          <div css={heroTitleStyle}>
+            <h1 css={heroLabelStyle(theme)}>{fieldName} 로드맵</h1>
+            <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
           </div>
-        </header>
-        <section css={gridStyle}>
-          {units.map(unit => (
-            <UnitCard
-              key={unit.id}
-              unit={unit}
-              isLoggedIn={isLoggedIn}
-              onClick={() => onUnitClick(unit.id)}
-            />
-          ))}
-        </section>
-      </main>
+          {isLoggedIn && (
+            <div css={progressSummaryStyle(theme)}>
+              <span css={progressValueStyle(theme)}>{progressPercent}%</span>
+              <span css={progressMetaStyle(theme)}>
+                {completedUnits}/{totalUnits} 완료
+              </span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <section css={gridStyle}>
+        {units.map(unit => (
+          <UnitCard
+            key={unit.id}
+            unit={unit}
+            isLoggedIn={isLoggedIn}
+            onClick={() => onUnitClick(unit.id)}
+          />
+        ))}
+      </section>
     </div>
   );
 };
 
-const containerStyle = css`
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-`;
-
-const mainStyle = css`
-  position: relative;
+const contentWrapperStyle = css`
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1.5rem 0;
-  overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
-
-  @media (max-width: 768px) {
-    padding: 32px 20px 80px;
-  }
+  width: 100%;
+  padding: 40px 30px;
 `;
 
 const headerStyle = css`
@@ -161,16 +148,8 @@ const gridStyle = css`
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
-  padding: 10px 0 30px;
+  padding: 10px 0;
   min-height: 0;
-
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, minmax(240px, 1fr));

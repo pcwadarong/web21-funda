@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
@@ -9,14 +10,14 @@ import type { Theme } from '@/styles/theme';
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
-  { id: 'battle', label: '실시간 배틀', icon: 'Battle', path: '/battle' },
+  { id: 'battle', label: '퀴즈배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
 const ADMIN_NAV_ITEM = {
   id: 'admin',
-  label: '관리자 도구',
+  label: '관리자',
   icon: 'Data',
   path: '/admin',
 } as const;
@@ -82,13 +83,12 @@ export const Sidebar = () => {
 
       {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
-          <div css={avatarStyle(theme)}>
-            {user.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt={user.displayName} css={avatarImageStyle} />
-            ) : (
-              <SVGIcon icon="Profile" size="md" />
-            )}
-          </div>
+          <Avatar
+            src={user.profileImageUrl}
+            name={user.displayName}
+            size="sm"
+            alt={user.displayName}
+          />
           <div css={userInfoStyle}>
             <div css={userNameStyle(theme)}>{user.displayName}</div>
             <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
@@ -118,18 +118,19 @@ const sidebarStyle = (theme: Theme) => css`
   }
 
   @media (max-width: 768px) {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    order: 2;
+
     width: 100%;
-    height: auto;
+    height: 96px;
+    flex-shrink: 0;
+
     flex-direction: row;
-    justify-content: space-around;
     padding: 12px;
-    border-right: none;
+    background: ${theme.colors.surface.strong};
     border-top: 1px solid ${theme.colors.border.default};
-    z-index: 100;
+    align-items: center;
+    justify-content: space-around;
   }
 `;
 
@@ -161,7 +162,6 @@ const logoTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   color: ${theme.colors.primary.main};
-
   @media (max-width: 1024px) {
     display: none;
   }
@@ -191,6 +191,7 @@ const navItemStyle = (theme: Theme) => css`
   text-decoration: none;
   color: ${theme.colors.text.default};
   transition: background-color 150ms ease;
+  text-align: center;
 
   &:hover {
     background: ${theme.colors.surface.default};
@@ -258,29 +259,6 @@ const userSectionStyle = (theme: Theme) => css`
   @media (max-width: 768px) {
     display: none;
   }
-`;
-
-const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: ${theme.colors.primary.surface};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-
-  @media (max-width: 1024px) {
-    width: 32px;
-    height: 32px;
-  }
-`;
-
-const avatarImageStyle = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 `;
 
 const userInfoStyle = css`

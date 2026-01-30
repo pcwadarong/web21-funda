@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
-import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
+import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
-import { useBattleStore } from '@/store/battleStore';
 import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {
@@ -30,11 +29,11 @@ export const QuizHeader = ({
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const { leaveRoom, disconnect } = useBattleSocket();
-  const roomId = useBattleStore(state => (isBattleMode ? state.roomId : null));
-  const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
-  const resultEndsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
-  const quizEndsAt = useBattleStore(state => (isBattleMode ? state.quizEndsAt : 0));
+  const { battleState, leaveBattle, disconnect } = useBattleSocket();
+  const roomId = isBattleMode ? battleState.roomId : null;
+  const remainingSeconds = isBattleMode ? battleState.remainingSeconds : 0;
+  const resultEndsAt = isBattleMode ? battleState.resultEndsAt : null;
+  const quizEndsAt = isBattleMode ? battleState.quizEndsAt : 0;
   const endsAt = resultEndsAt ?? quizEndsAt;
 
   const handleCloseClick = useCallback(() => {
@@ -53,14 +52,14 @@ export const QuizHeader = ({
   const handleExit = useCallback(() => {
     if (isBattleMode) {
       if (roomId) {
-        leaveRoom(roomId);
+        leaveBattle(roomId);
         disconnect();
         navigate('/battle');
       }
     } else {
       navigate('/learn');
     }
-  }, [navigate, leaveRoom, roomId]);
+  }, [navigate, leaveBattle, disconnect, roomId, isBattleMode]);
 
   const progress = (completedSteps / totalSteps) * 100;
 

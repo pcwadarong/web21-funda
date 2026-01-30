@@ -42,13 +42,7 @@ export const ProfileHeader = memo(({ profileSummary, diamondCount }: ProfileHead
   return (
     <section css={headerCardStyle(theme)}>
       <div css={headerLeftWrapperStyle}>
-        <Avatar
-          src={profileImageUrl}
-          name={displayName}
-          size="md"
-          css={avatarStyle(theme)}
-          alt={`${displayName} 프로필`}
-        />
+        <Avatar src={profileImageUrl} name={displayName} size="md" alt={`${displayName} 프로필`} />
         <div css={headerInfoWrapperStyle}>
           <div css={nameRowWrapperStyle}>
             <h1 css={nameStyle(theme)}>{displayName}</h1>
@@ -99,10 +93,6 @@ const headerLeftWrapperStyle = css`
   gap: 1.25rem;
 `;
 
-const avatarStyle = (theme: Theme) => css`
-  background: ${theme.colors.primary.light};
-`;
-
 const headerInfoWrapperStyle = css`
   display: flex;
   flex-direction: column;
@@ -143,10 +133,9 @@ const editButtonStyle = (theme: Theme) => css`
   padding: 0.625rem 1rem;
   border-radius: ${theme.borderRadius.medium};
   border: none;
-  background: ${theme.colors.primary.light};
+  background: ${theme.colors.primary.surface};
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${palette.grayscale[50]};
-  cursor: not-allowed;
   opacity: 0.8;
 `;

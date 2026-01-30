@@ -28,6 +28,12 @@ export interface ProfileFollowUser {
   tier: ProfileTierSummary | null;
 }
 
+export interface ProfileStreakDay {
+  userId: number;
+  date: string;
+  solvedCount: number;
+}
+
 export interface FollowStateResult {
   isFollowing: boolean;
 }

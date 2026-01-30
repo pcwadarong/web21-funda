@@ -1,33 +1,134 @@
 import { css, useTheme } from '@emotion/react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
+import type { ProfileStreakDay } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 /**
  * 히트맵 섹션 Props
  */
 interface HeatmapSectionProps {
-  /** 표시할 주 수 (기본값: 12주 = 84일) */
-  weeks?: number;
+  /** 표시할 월 수 (기본값: 12개월) */
+  months?: number;
+  /** 스트릭 데이터 */
+  streaks?: ProfileStreakDay[];
 }
 
 /**
  * 히트맵 섹션 (Placeholder)
  *
  * 연간 학습 활동을 히트맵 형태로 표시하는 섹션입니다.
- * 현재는 디자인 규격에 맞는 placeholder만 구현되어 있습니다.
  */
-export const HeatmapSection = memo(({ weeks = 12 }: HeatmapSectionProps) => {
+const monthLabels = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'July',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+const msPerDay = 24 * 60 * 60 * 1000;
+const formatDateKeyUtc = (date: Date) =>
+  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
+    date.getUTCDate(),
+  ).padStart(2, '0')}`;
+
+const normalizeDateKey = (value: string) => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value.slice(0, 10);
+  }
+  return formatDateKeyUtc(parsed);
+};
+
+const resolveLevel = (count: number) => {
+  if (count <= 0) return 0;
+  if (count <= 5) return 1;
+  if (count <= 10) return 2;
+  if (count <= 15) return 3;
+  return 4;
+};
+
+export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectionProps) => {
   const theme = useTheme();
-  const totalDays = weeks * 7; // 12주 = 84일
+  const year = useMemo(() => {
+    if (streaks.length === 0) {
+      return new Date().getFullYear();
+    }
+    const parsedYear = Number(streaks[0]?.date?.slice(0, 4));
+    return Number.isFinite(parsedYear) ? parsedYear : new Date().getFullYear();
+  }, [streaks]);
+
+  const streakMap = useMemo(() => {
+    const map = new Map<string, number>();
+    streaks.forEach(item => {
+      map.set(normalizeDateKey(item.date), item.solvedCount);
+    });
+    return map;
+  }, [streaks]);
+
+  const startOfYear = useMemo(() => new Date(Date.UTC(year, 0, 1)), [year]);
+  const endDate = useMemo(() => new Date(Date.UTC(year, months, 0)), [year, months]);
+  const totalDays = useMemo(
+    () => Math.floor((endDate.getTime() - startOfYear.getTime()) / msPerDay) + 1,
+    [endDate, startOfYear],
+  );
+  const firstDayIndex = useMemo(() => new Date(year, 0, 1).getDay(), [year]);
+  const totalCells = useMemo(
+    () => Math.ceil((totalDays + firstDayIndex) / 7) * 7,
+    [firstDayIndex, totalDays],
+  );
+  const weekColumns = useMemo(() => totalCells / 7, [totalCells]);
 
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>연간 학습</h2>
-      <div css={heatmapStyle}>
-        {Array.from({ length: totalDays }).map((_, index) => (
-          <span key={index} css={heatmapCellStyle(theme)} />
-        ))}
+      <div css={heatmapContainerStyle}>
+        <div css={heatmapLayoutStyle}>
+          <div>
+            <div css={monthLabelRowStyle(weekColumns)}>
+              {monthLabels.slice(0, months).map((label, monthIndex) => {
+                const dayOffset = (Date.UTC(year, monthIndex, 1) - Date.UTC(year, 0, 1)) / msPerDay;
+                const column = Math.floor((firstDayIndex + dayOffset) / 7);
+                return (
+                  <span key={label} css={monthLabelStyle(theme, column)}>
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+            <div css={heatmapGridStyle(weekColumns)}>
+              {Array.from({ length: totalCells }).map((_, index) => {
+                const dayNumber = index - firstDayIndex + 1;
+                const isPlaceholder = dayNumber <= 0 || dayNumber > totalDays;
+                const dayDate = new Date(startOfYear.getTime() + (dayNumber - 1) * msPerDay);
+                const dateKey = isPlaceholder ? '' : formatDateKeyUtc(dayDate);
+                const solvedCount = isPlaceholder ? 0 : (streakMap.get(dateKey) ?? 0);
+                const level = resolveLevel(solvedCount);
+
+                return (
+                  <span key={`cell-${index}`} css={heatmapCellStyle(theme, level, isPlaceholder)} />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        <div css={legendStyle(theme)}>
+          <span>Less</span>
+          <div css={legendDotsStyle}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <span key={index} css={legendDotStyle(theme, index)} />
+            ))}
+          </div>
+          <span>More</span>
+        </div>
       </div>
     </section>
   );
@@ -51,15 +152,84 @@ const sectionTitleStyle = (theme: Theme) => css`
   color: ${theme.colors.primary.main};
 `;
 
-const heatmapStyle = css`
-  display: grid;
-  grid-template-columns: repeat(14, 1fr);
-  gap: 0.375rem;
+const heatmapContainerStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
 `;
 
-const heatmapCellStyle = (theme: Theme) => css`
-  width: 100%;
-  padding-top: 100%;
-  border-radius: 0.375rem;
-  background: ${theme.colors.surface.bold};
+const heatmapLayoutStyle = css`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  overflow-x: auto;
+`;
+
+const monthLabelRowStyle = (columns: number) => css`
+  display: grid;
+  grid-template-columns: repeat(${columns}, 0.7rem);
+  gap: 0.35rem;
+  height: 1rem;
+  margin-bottom: 0.4rem;
+`;
+
+const monthLabelStyle = (theme: Theme, column: number) => css`
+  grid-column: ${column + 1};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  color: ${theme.colors.text.weak};
+  text-align: left;
+  white-space: nowrap;
+  word-break: keep-all;
+`;
+
+const heatmapGridStyle = (columns: number) => css`
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 0.8rem);
+  grid-template-columns: repeat(${columns}, 0.7rem);
+  gap: 0.35rem;
+`;
+
+const heatmapCellStyle = (theme: Theme, level: number, isEmpty = false) => {
+  const palette = [
+    theme.colors.surface.bold,
+    theme.colors.primary.surface,
+    theme.colors.primary.semilight,
+    theme.colors.primary.light,
+    theme.colors.primary.main,
+  ];
+
+  return css`
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 999px;
+    background: ${isEmpty ? theme.colors.surface.bold : palette[level]};
+  `;
+};
+
+const legendStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: ${theme.typography['12Medium'].fontSize};
+  color: ${theme.colors.text.weak};
+`;
+
+const legendDotsStyle = css`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+`;
+
+const legendDotStyle = (theme: Theme, level: number) => css`
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: ${[
+    theme.colors.surface.bold,
+    theme.colors.primary.surface,
+    theme.colors.primary.semilight,
+    theme.colors.primary.light,
+    theme.colors.primary.main,
+  ][level]};
 `;

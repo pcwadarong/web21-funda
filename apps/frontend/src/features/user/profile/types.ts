@@ -25,3 +25,9 @@ export interface ProfileFollowUser {
   experience: number;
   tier: ProfileTierSummary | null;
 }
+
+export interface ProfileStreakDay {
+  userId: number;
+  date: string;
+  solvedCount: number;
+}

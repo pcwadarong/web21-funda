@@ -57,6 +57,21 @@ export class ProfileController {
     };
   }
 
+  @Get(':userId/streaks')
+  @ApiOperation({
+    summary: '프로필 스트릭 데이터 조회',
+    description: '해당 사용자의 기간별 스트릭 데이터를 반환한다.',
+  })
+  @ApiOkResponse({ description: '프로필 스트릭 데이터 조회 성공' })
+  async getStreaks(@Param('userId', ParseIntPipe) userId: number) {
+    const result = await this.profileService.getStreaks(userId);
+
+    return {
+      result,
+      message: '프로필 스트릭 데이터를 조회했습니다.',
+    };
+  }
+
   @Post(':userId/follow')
   @ApiOperation({
     summary: '팔로우',

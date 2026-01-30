@@ -1,14 +1,15 @@
 import { useCallback } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
-import { ErrorView } from '@/features/error/components/ErrorView';
 import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
+import { ErrorView } from '@/features/error/components/ErrorView';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
   useProfileFollowers,
   useProfileFollowing,
   useProfileSummary,
 } from '@/hooks/queries/profileQueries';
+import { useProfileStreaks } from '@/hooks/queries/userQueries';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 
 /**
@@ -35,6 +36,7 @@ export const Profile = () => {
 
   const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
   const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
+  const { data: streaks } = useProfileStreaks(shouldFetch);
 
   // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
@@ -68,6 +70,7 @@ export const Profile = () => {
       followers={followers ?? []}
       isFollowingLoading={isFollowingLoading}
       isFollowersLoading={isFollowersLoading}
+      streaks={streaks ?? []}
       diamondCount={diamondCount}
       onUserClick={handleUserClick}
     />

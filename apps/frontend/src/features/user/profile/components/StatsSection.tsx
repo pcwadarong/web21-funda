@@ -61,17 +61,17 @@ export const StatsSection = memo(({ profileSummary, displayName }: StatsSectionP
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>{displayName}의 통계</h2>
-      <div css={statListStyle}>
+      <ul css={statListStyle}>
         {STATS_CONFIG.map((stat, index) => (
-          <div key={index} css={statItemStyle(theme)}>
+          <li key={index} css={statItemStyle(theme)}>
             <SVGIcon icon={stat.icon} />
             <div>
               <span css={statLabelStyle(theme)}>{stat.label}</span>
               <p css={statValueStyle(theme)}>{stat.getValue(profileSummary)}</p>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 });
@@ -98,6 +98,10 @@ const statListStyle = css`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+
+  li:nth-child(2) {
+    background: #eeecff;
+  }
 `;
 
 const statItemStyle = (theme: Theme) => css`

@@ -1,7 +1,11 @@
 import { css, useTheme } from '@emotion/react';
 import { memo, useMemo } from 'react';
 
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/feat/user/profile/types';
+import type {
+  ProfileFollowUser,
+  ProfileStreakDay,
+  ProfileSummaryResult,
+} from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 import { ChartSection } from './ChartSection';
@@ -20,6 +24,8 @@ interface ProfileContainerProps {
   following: ProfileFollowUser[];
   /** 팔로워 목록 */
   followers: ProfileFollowUser[];
+  /** 스트릭 데이터 */
+  streaks: ProfileStreakDay[];
   /** 팔로잉 로딩 상태 */
   isFollowingLoading: boolean;
   /** 팔로워 로딩 상태 */
@@ -41,6 +47,7 @@ export const ProfileContainer = memo(
     profileSummary,
     following,
     followers,
+    streaks,
     isFollowingLoading,
     isFollowersLoading,
     diamondCount,
@@ -70,13 +77,13 @@ export const ProfileContainer = memo(
               isFollowersLoading={isFollowersLoading}
               onUserClick={onUserClick}
             />
-
             <StatsSection profileSummary={profileSummary} displayName={displayName} />
           </div>
 
-          <div css={twoColumnGridStyle}>
-            <HeatmapSection />
+          <HeatmapSection streaks={streaks} />
 
+          <div css={twoColumnGridStyle}>
+            <ChartSection />
             <ChartSection />
           </div>
         </div>

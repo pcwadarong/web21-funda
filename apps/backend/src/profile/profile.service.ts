@@ -9,6 +9,7 @@ import { User } from '../users/entities/user.entity';
 import type {
   FollowStateResult,
   ProfileFollowUser,
+  ProfileStreakDay,
   ProfileSummaryResult,
   ProfileTierSummary,
 } from './dto/profile.dto';
@@ -134,6 +135,36 @@ export class ProfileService {
     }
 
     return this.sortFollowUsersByName(followingUsers);
+  }
+
+  /**
+   * 기간별 스트릭 데이터를 조회한다.
+   *
+   * @param {number} userId 조회 대상 사용자 ID
+   * @returns {Promise<ProfileStreakDay[]>} 스트릭 일자별 데이터
+   */
+  async getStreaks(userId: number): Promise<ProfileStreakDay[]> {
+    await this.ensureUserExists(userId);
+
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const rawRows = await this.solveLogRepository
+      .createQueryBuilder('solve')
+      .select('DATE(solve.solvedAt)', 'date')
+      .addSelect('COUNT(*)', 'solvedCount')
+      .where('solve.userId = :userId', { userId })
+      .andWhere('solve.solvedAt >= :startOfYear', { startOfYear })
+      .andWhere('solve.solvedAt <= :now', { now })
+      .groupBy('DATE(solve.solvedAt)')
+      .orderBy('DATE(solve.solvedAt)', 'ASC')
+      .getRawMany<{ date: string; solvedCount: string }>();
+
+    return rawRows.map(row => ({
+      userId,
+      date: row.date,
+      solvedCount: Number(row.solvedCount),
+    }));
   }
 
   /**

@@ -1,3 +1,5 @@
+import type { ProfileStreakDay } from '@/feat/user/profile/types';
+
 import { apiFetch } from './api';
 
 interface UnsubscribeRequest {
@@ -9,6 +11,15 @@ interface UnsubscribeResponse {
   success: boolean;
   message: string;
 }
+
+export const userService = {
+  /**
+   * 프로필 스트릭 데이터를 가져옵니다.
+   */
+  async getProfileStreaks(userId: number): Promise<ProfileStreakDay[]> {
+    return apiFetch.get<ProfileStreakDay[]>(`/profiles/${userId}/streaks`);
+  },
+};
 
 export const notificationService = {
   /**

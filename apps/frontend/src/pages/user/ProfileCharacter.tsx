@@ -8,6 +8,7 @@ import {
   useProfileCharacterPurchase,
   useProfileCharacters,
 } from '@/hooks/queries/profileCharacterQueries';
+import { useAuthUser } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 /**
@@ -16,6 +17,7 @@ import { useToast } from '@/store/toastStore';
 export const ProfileCharacter = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const authUser = useAuthUser();
   const { data, isLoading, error } = useProfileCharacters();
   const purchaseMutation = useProfileCharacterPurchase();
   const applyMutation = useProfileCharacterApply();
@@ -36,6 +38,11 @@ export const ProfileCharacter = () => {
   }, [data?.selectedCharacterId, selectedId]);
 
   const handleBack = () => {
+    if (authUser?.id) {
+      navigate(`/profile/${authUser.id}`, { state: { refetch: true } });
+      return;
+    }
+
     navigate(-1);
   };
 

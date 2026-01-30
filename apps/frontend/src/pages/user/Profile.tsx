@@ -1,4 +1,5 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ErrorView } from '@/features/error/components/ErrorView';
 import { ProfileContainer } from '@/features/user/components/profile/ProfileContainer';
@@ -19,6 +20,7 @@ export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const numericUserId = userId ? Number(userId) : null;
   const shouldFetch = Number.isFinite(numericUserId ?? NaN) ? numericUserId : null;
@@ -27,6 +29,7 @@ export const Profile = () => {
     data: profileSummary,
     error: profileSummaryError,
     isLoading: isProfileLoading,
+    refetch: refetchProfileSummary,
   } = useProfileSummary(shouldFetch);
   const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
   const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
@@ -48,6 +51,17 @@ export const Profile = () => {
   const handleUserClick = (targetUserId: number) => {
     navigate(`/profile/${targetUserId}`);
   };
+
+  const shouldRefetch = Boolean((location.state as { refetch?: boolean } | null)?.refetch);
+
+  useEffect(() => {
+    if (!shouldRefetch) {
+      return;
+    }
+
+    void refetchProfileSummary();
+    navigate(location.pathname, { replace: true, state: null });
+  }, [navigate, location.pathname, refetchProfileSummary, shouldRefetch]);
 
   const isMyProfile = user?.id !== undefined && profileSummary?.userId === user.id;
   const handleProfileImageClick = isMyProfile ? () => navigate('/profile/characters') : undefined;

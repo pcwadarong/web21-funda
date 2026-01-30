@@ -4,6 +4,7 @@ import { memo } from 'react';
 import SVGIcon from '@/comp/SVGIcon';
 import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
+import { palette } from '@/styles/token';
 
 /**
  * 통계 아이템 설정 타입
@@ -61,7 +62,7 @@ export const StatsSection = memo(({ profileSummary, displayName }: StatsSectionP
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>{displayName}의 통계</h2>
-      <ul css={statListStyle}>
+      <ul css={statListStyle(theme)}>
         {STATS_CONFIG.map((stat, index) => (
           <li key={index} css={statItemStyle(theme)}>
             <SVGIcon icon={stat.icon} />
@@ -94,13 +95,18 @@ const sectionTitleStyle = (theme: Theme) => css`
   color: ${theme.colors.primary.main};
 `;
 
-const statListStyle = css`
+const statListStyle = (theme: Theme) => css`
+  display: flex;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  color: ${palette.grayscale[800]};
 
+  li {
+    background: ${theme.colors.primary.surface};
+  }
   li:nth-child(2) {
-    background: #eeecff;
+    background: #ede9ff;
   }
 `;
 
@@ -110,12 +116,11 @@ const statItemStyle = (theme: Theme) => css`
   align-items: center;
   padding: 1rem 0.875rem;
   border-radius: ${theme.borderRadius.medium};
-  background: ${theme.colors.primary.surface};
 `;
 
 const statLabelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.light};
+  color: ${palette.grayscale[800]}
   display: block;
   margin-bottom: 0.25rem;
 `;
@@ -123,6 +128,6 @@ const statLabelStyle = (theme: Theme) => css`
 const statValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Medium'].fontSize};
   font-weight: ${theme.typography['20Medium'].fontWeight};
-  color: ${theme.colors.text.default};
+  color: ${palette.grayscale[800]}
   margin: 0;
 `;

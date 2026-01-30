@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
-import { memo, useMemo } from 'react';
-
+import { memo, useMemo, useState, useRef } from 'react';
+import { formatDate } from '@/utils/formatDate';
+import { Popover } from '@/components/Popover';
 import type { ProfileStreakDay } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
@@ -56,8 +57,18 @@ const resolveLevel = (count: number) => {
   return 4;
 };
 
+interface HoveredCell {
+  date: Date;
+  solvedCount: number;
+  x: number;
+  y: number;
+}
+
 export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectionProps) => {
   const theme = useTheme();
+  const [hoveredCell, setHoveredCell] = useState<HoveredCell | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const year = useMemo(() => {
     if (streaks.length === 0) {
       return new Date().getFullYear();
@@ -87,10 +98,30 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
   );
   const weekColumns = useMemo(() => totalCells / 7, [totalCells]);
 
+  const handleCellMouseEnter = (
+    event: React.MouseEvent<HTMLSpanElement>,
+    dayDate: Date,
+    solvedCount: number,
+  ) => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setHoveredCell({
+        date: dayDate,
+        solvedCount,
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      });
+    }
+  };
+
+  const handleCellMouseLeave = () => {
+    setHoveredCell(null);
+  };
+
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>연간 학습</h2>
-      <div css={heatmapContainerStyle}>
+      <div css={heatmapContainerStyle} ref={containerRef}>
         <div css={heatmapLayoutStyle}>
           <div>
             <div css={monthLabelRowStyle(weekColumns)}>
@@ -114,7 +145,16 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 const level = resolveLevel(solvedCount);
 
                 return (
-                  <span key={`cell-${index}`} css={heatmapCellStyle(theme, level, isPlaceholder)} />
+                  <span
+                    key={`cell-${index}`}
+                    css={heatmapCellStyle(theme, level, isPlaceholder)}
+                    onMouseEnter={e =>
+                      !isPlaceholder &&
+                      solvedCount > 0 &&
+                      handleCellMouseEnter(e, dayDate, solvedCount)
+                    }
+                    onMouseLeave={handleCellMouseLeave}
+                  />
                 );
               })}
             </div>
@@ -129,6 +169,21 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
           </div>
           <span>More</span>
         </div>
+        <Popover
+          x={hoveredCell?.x ?? 0}
+          y={hoveredCell?.y ?? 0}
+          isVisible={hoveredCell !== null}
+          onMouseEnter={() => hoveredCell && setHoveredCell(hoveredCell)}
+          onMouseLeave={handleCellMouseLeave}
+        >
+          {hoveredCell && (
+            <>
+              <p>
+                {formatDate(hoveredCell.date)} {hoveredCell.solvedCount}개
+              </p>
+            </>
+          )}
+        </Popover>
       </div>
     </section>
   );
@@ -153,6 +208,7 @@ const sectionTitleStyle = (theme: Theme) => css`
 `;
 
 const heatmapContainerStyle = css`
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -168,7 +224,7 @@ const heatmapLayoutStyle = css`
 const monthLabelRowStyle = (columns: number) => css`
   display: grid;
   grid-template-columns: repeat(${columns}, 0.7rem);
-  gap: 0.35rem;
+  gap: 0.3rem;
   height: 1rem;
   margin-bottom: 0.4rem;
 `;
@@ -187,12 +243,12 @@ const heatmapGridStyle = (columns: number) => css`
   grid-auto-flow: column;
   grid-template-rows: repeat(7, 0.8rem);
   grid-template-columns: repeat(${columns}, 0.7rem);
-  gap: 0.35rem;
+  gap: 0.3rem;
 `;
 
 const heatmapCellStyle = (theme: Theme, level: number, isEmpty = false) => {
   const palette = [
-    theme.colors.surface.bold,
+    '#82828d1a',
     theme.colors.primary.surface,
     theme.colors.primary.semilight,
     theme.colors.primary.light,
@@ -202,8 +258,8 @@ const heatmapCellStyle = (theme: Theme, level: number, isEmpty = false) => {
   return css`
     width: 0.8rem;
     height: 0.8rem;
-    border-radius: 999px;
-    background: ${isEmpty ? theme.colors.surface.bold : palette[level]};
+    border-radius: 2px;
+    background: ${isEmpty ? '#82828d1a' : palette[level]};
   `;
 };
 
@@ -218,7 +274,7 @@ const legendStyle = (theme: Theme) => css`
 const legendDotsStyle = css`
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
 `;
 
 const legendDotStyle = (theme: Theme, level: number) => css`
@@ -226,7 +282,7 @@ const legendDotStyle = (theme: Theme, level: number) => css`
   height: 0.6rem;
   border-radius: 999px;
   background: ${[
-    theme.colors.surface.bold,
+    '#82828d1a',
     theme.colors.primary.surface,
     theme.colors.primary.semilight,
     theme.colors.primary.light,

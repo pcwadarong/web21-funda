@@ -18,21 +18,23 @@ import type {
   ProfileTierSummary,
 } from './dto/profile.dto';
 import { UserFollow } from './entities/user-follow.entity';
-import { getDateRange, getLast7Days } from './utils/date.utils';
+import { getDateRange, getLast7Days, toDateString } from './utils/date.utils';
 
+/**
+ * 통계 계산용 인터페이스
+ */
 interface SolveStatsResult {
   totalStudyTimeSeconds: number;
   totalStudyTimeMinutes: number;
   solvedQuizzesCount: number;
 }
 
-interface SolveStatsRawResult {
-  totalDurationSeconds: string | number | null;
-  solvedCount: string | number | null;
-}
-
 @Injectable()
 export class ProfileService {
+  // 정렬을 위한 Collator 객체는 매번 생성하지 않도록 상수로 관리 (성능 최적화)
+  private static readonly COLLATOR_EN = new Intl.Collator('en', { sensitivity: 'base' });
+  private static readonly COLLATOR_KO = new Intl.Collator('ko', { sensitivity: 'base' });
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -47,31 +49,26 @@ export class ProfileService {
   ) {}
 
   /**
+   * 사용자의 존재 여부를 확인하고 유저 객체를 반환한다.
+   * 서비스 내에서 중복되는 NotFoundException 처리를 통합한다.
+   */
+  private async findUserOrThrow(userId: number, relations: object = {}): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId }, relations });
+    if (!user) throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+    return user;
+  }
+
+  /**
    * 프로필 요약 정보를 반환한다.
-   *
-   * @param {number} userId 조회 대상 사용자 ID
-   * @returns {Promise<ProfileSummaryResult>} 프로필 요약 결과
+   * Promise.all을 통해 독립적인 쿼리들을 병렬 처리하여 성능을 최적화한다.
    */
   async getProfileSummary(userId: number): Promise<ProfileSummaryResult> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: { currentTier: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
-    }
-
-    const followerCount = await this.followRepository.count({
-      where: { followingId: userId },
-    });
-
-    const followingCount = await this.followRepository.count({
-      where: { followerId: userId },
-    });
-
-    const solveStats = await this.calculateSolveStats(userId);
-    const tierSummary = this.buildTierSummary(user.currentTier ?? null);
+    const [user, followerCount, followingCount, solveStats] = await Promise.all([
+      this.findUserOrThrow(userId, { currentTier: true }),
+      this.followRepository.countBy({ followingId: userId }),
+      this.followRepository.countBy({ followerId: userId }),
+      this.calculateSolveStats(userId),
+    ]);
 
     return {
       userId: user.id,
@@ -79,329 +76,154 @@ export class ProfileService {
       profileImageUrl: user.profileImageUrl ?? null,
       experience: user.experience,
       currentStreak: user.currentStreak,
-      tier: tierSummary,
+      tier: this.buildTierSummary(user.currentTier),
       followerCount,
       followingCount,
-      totalStudyTimeSeconds: solveStats.totalStudyTimeSeconds,
-      totalStudyTimeMinutes: solveStats.totalStudyTimeMinutes,
-      solvedQuizzesCount: solveStats.solvedQuizzesCount,
+      ...solveStats,
     };
   }
 
   /**
    * 팔로워 목록을 조회한다.
-   *
-   * @param {number} userId 조회 대상 사용자 ID
-   * @returns {Promise<ProfileFollowUser[]>} 팔로워 목록
    */
   async getFollowers(userId: number): Promise<ProfileFollowUser[]> {
-    await this.ensureUserExists(userId);
+    await this.findUserOrThrow(userId);
 
     const follows = await this.followRepository.find({
       where: { followingId: userId },
       relations: { follower: { currentTier: true } },
     });
 
-    const followers: ProfileFollowUser[] = [];
-
-    for (const follow of follows) {
-      const followerUser = follow.follower;
-      if (!followerUser) {
-        continue;
-      }
-
-      followers.push(this.buildFollowUserSummary(followerUser));
-    }
+    const followers = follows
+      .filter(f => f.follower)
+      .map(f => this.buildFollowUserSummary(f.follower));
 
     return this.sortFollowUsersByName(followers);
   }
 
   /**
    * 팔로잉 목록을 조회한다.
-   *
-   * @param {number} userId 조회 대상 사용자 ID
-   * @returns {Promise<ProfileFollowUser[]>} 팔로잉 목록
    */
   async getFollowing(userId: number): Promise<ProfileFollowUser[]> {
-    await this.ensureUserExists(userId);
+    await this.findUserOrThrow(userId);
 
     const follows = await this.followRepository.find({
       where: { followerId: userId },
       relations: { following: { currentTier: true } },
     });
 
-    const followingUsers: ProfileFollowUser[] = [];
-
-    for (const follow of follows) {
-      const followingUser = follow.following;
-      if (!followingUser) {
-        continue;
-      }
-
-      followingUsers.push(this.buildFollowUserSummary(followingUser));
-    }
+    const followingUsers = follows
+      .filter(f => f.following)
+      .map(f => this.buildFollowUserSummary(f.following));
 
     return this.sortFollowUsersByName(followingUsers);
   }
 
   /**
-   * 기간별 스트릭 데이터를 조회한다.
-   *
-   * @param {number} userId 조회 대상 사용자 ID
-   * @returns {Promise<ProfileStreakDay[]>} 스트릭 일자별 데이터
-   */
-  async getStreaks(userId: number): Promise<ProfileStreakDay[]> {
-    await this.ensureUserExists(userId);
-
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    const rawRows = await this.solveLogRepository
-      .createQueryBuilder('solve')
-      .select('DATE(solve.solvedAt)', 'date')
-      .addSelect('COUNT(*)', 'solvedCount')
-      .where('solve.userId = :userId', { userId })
-      .andWhere('solve.solvedAt >= :startOfYear', { startOfYear })
-      .andWhere('solve.solvedAt <= :now', { now })
-      .groupBy('DATE(solve.solvedAt)')
-      .orderBy('DATE(solve.solvedAt)', 'ASC')
-      .getRawMany<{ date: string; solvedCount: string }>();
-
-    return rawRows.map(row => ({
-      userId,
-      date: row.date,
-      solvedCount: Number(row.solvedCount),
-    }));
-  }
-
-  /**
-   * 최근 7일간의 날짜별 학습 시간을 조회한다.
-   *
-   * @param {number} userId 조회 대상 사용자 ID
-   * @returns {Promise<DailyStatsResult>} 최근 7일간 일일 통계 데이터
-   */
-  async getDailyStats(userId: number): Promise<DailyStatsResult> {
-    await this.ensureUserExists(userId);
-
-    const allDates = getLast7Days();
-    const { startDate, endDate } = getDateRange(allDates);
-
-    // stepAttemptRepository에서 최근 7일간의 학습 시간 조회
-    const studyTimeRows = await this.stepAttemptRepository
-      .createQueryBuilder('stepAttempt')
-      .select('DATE(stepAttempt.finishedAt)', 'date')
-      .addSelect(
-        'COALESCE(SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)), 0)',
-        'studySeconds',
-      )
-      .where('stepAttempt.userId = :userId', { userId })
-      .andWhere('stepAttempt.status = :status', { status: StepAttemptStatus.COMPLETED })
-      .andWhere('stepAttempt.finishedAt IS NOT NULL')
-      .andWhere('DATE(stepAttempt.finishedAt) >= :startDate', { startDate })
-      .andWhere('DATE(stepAttempt.finishedAt) <= :endDate', { endDate })
-      .groupBy('DATE(stepAttempt.finishedAt)')
-      .orderBy('DATE(stepAttempt.finishedAt)', 'ASC')
-      .getRawMany<{ date: string; studySeconds: string | number }>();
-
-    // 날짜별로 맵 생성
-    const studyTimeMap = new Map<string, number>();
-    studyTimeRows.forEach(row => {
-      studyTimeMap.set(row.date, Number(row.studySeconds));
-    });
-
-    // 모든 날짜에 대해 데이터 생성
-    const dailyData = allDates.map(date => ({
-      date,
-      studySeconds: studyTimeMap.get(date) ?? 0,
-    }));
-
-    // 최대 학습 시간 계산
-    const periodMaxSeconds = Math.max(...dailyData.map(d => d.studySeconds), 0);
-
-    // 평균 학습 시간 계산
-    const totalSeconds = dailyData.reduce((sum, d) => sum + d.studySeconds, 0);
-    const periodAverageSeconds =
-      dailyData.length > 0 ? Math.floor(totalSeconds / dailyData.length) : 0;
-
-    return {
-      dailyData,
-      periodMaxSeconds,
-      periodAverageSeconds,
-    };
-  }
-
-  /**
-   * 최근 7일간 필드(로드맵)별 문제 풀이 수를 조회한다.
-   *
-   * @param {number} userId 조회 대상 사용자 ID
-   * @returns {Promise<FieldDailyStatsResult>} 필드별 최근 7일 통계
-   */
-  async getFieldDailyStats(userId: number): Promise<FieldDailyStatsResult> {
-    await this.ensureUserExists(userId);
-
-    const allDates = getLast7Days();
-    const { startDate, endDate } = getDateRange(allDates);
-
-    const roadmapFields = await this.fieldRepository.find({
-      select: ['id', 'name', 'slug'],
-      order: { id: 'ASC' },
-    });
-
-    // solveLog 테이블에서 최근 7일간의 필드별 문제 풀이 수를 조회한다.
-    const rows = await this.solveLogRepository
-      .createQueryBuilder('solveLog')
-      .innerJoin('solveLog.quiz', 'quiz')
-      .innerJoin('quiz.step', 'step')
-      .innerJoin('step.unit', 'unit')
-      .innerJoin('unit.field', 'field')
-      .select('field.id', 'fieldId')
-      .addSelect('field.name', 'fieldName')
-      .addSelect('field.slug', 'fieldSlug')
-      .addSelect('DATE(solveLog.solvedAt)', 'date')
-      .addSelect(
-        'COALESCE(SUM(CASE WHEN solveLog.isCorrect = true THEN 1 ELSE 0 END), 0)',
-        'solvedCount',
-      )
-      .where('solveLog.userId = :userId', { userId })
-      .andWhere('DATE(solveLog.solvedAt) >= :startDate', { startDate })
-      .andWhere('DATE(solveLog.solvedAt) <= :endDate', { endDate })
-      .groupBy('field.id')
-      .addGroupBy('DATE(solveLog.solvedAt)')
-      .orderBy('field.id', 'ASC')
-      .addOrderBy('DATE(solveLog.solvedAt)', 'ASC')
-      .getRawMany<{
-        fieldId: string | number;
-        fieldName: string;
-        fieldSlug: string;
-        date: string;
-        solvedCount: string | number;
-      }>();
-
-    const fieldMap = new Map<number, FieldDailyStatsItem>();
-
-    // roadmapFields 목록을 순회하며 필드별 데이터를 초기화한다.
-    roadmapFields.forEach(field => {
-      fieldMap.set(field.id, {
-        fieldId: field.id,
-        fieldName: field.name,
-        fieldSlug: field.slug,
-        dailyData: allDates.map(date => ({ date, solvedCount: 0 })),
-        periodMaxSolvedCount: 0,
-        periodAverageSolvedCount: 0,
-        totalSolvedCount: 0,
-      });
-    });
-
-    // rows 목록을 순회하며 필드별 데이터를 업데이트한다.
-    rows.forEach(row => {
-      const fieldId = Number(row.fieldId);
-      const solvedCount = Number(row.solvedCount);
-      let fieldEntry = fieldMap.get(fieldId);
-
-      if (!fieldEntry) {
-        fieldEntry = {
-          fieldId,
-          fieldName: row.fieldName,
-          fieldSlug: row.fieldSlug,
-          dailyData: allDates.map(date => ({ date, solvedCount: 0 })),
-          periodMaxSolvedCount: 0,
-          periodAverageSolvedCount: 0,
-          totalSolvedCount: 0,
-        };
-        fieldMap.set(fieldId, fieldEntry);
-      }
-
-      const dailyItem = fieldEntry.dailyData.find(item => item.date === row.date);
-      if (dailyItem) {
-        dailyItem.solvedCount = solvedCount;
-      }
-    });
-
-    // fieldMap 목록을 순회하며 필드별 데이터를 계산한다.
-    const fields = Array.from(fieldMap.values()).map(fieldEntry => {
-      const totalSolvedCount = fieldEntry.dailyData.reduce(
-        (sum, item) => sum + item.solvedCount,
-        0,
-      );
-      const periodMaxSolvedCount = Math.max(
-        ...fieldEntry.dailyData.map(item => item.solvedCount),
-        0,
-      );
-      const periodAverageSolvedCount =
-        fieldEntry.dailyData.length > 0
-          ? Math.floor(totalSolvedCount / fieldEntry.dailyData.length)
-          : 0;
-
-      return {
-        ...fieldEntry,
-        totalSolvedCount,
-        periodMaxSolvedCount,
-        periodAverageSolvedCount,
-      };
-    });
-
-    return { fields };
-  }
-
-  /**
    * 특정 사용자를 팔로우한다.
-   *
-   * @param {number} targetUserId 팔로우 대상 사용자 ID
-   * @param {number} followerUserId 팔로우를 요청한 사용자 ID
-   * @returns {Promise<FollowStateResult>} 팔로우 상태
    */
   async followUser(targetUserId: number, followerUserId: number): Promise<FollowStateResult> {
     this.ensureNotSelfFollow(targetUserId, followerUserId);
-    await this.ensureUserExists(targetUserId);
+    await this.findUserOrThrow(targetUserId);
 
-    const existingFollow = await this.followRepository.findOne({
-      where: { followerId: followerUserId, followingId: targetUserId },
-    });
-
-    if (existingFollow) {
-      return { isFollowing: true };
-    }
-
-    const follow = this.followRepository.create({
+    const existingFollow = await this.followRepository.findOneBy({
       followerId: followerUserId,
       followingId: targetUserId,
     });
 
-    await this.followRepository.save(follow);
+    if (!existingFollow) {
+      await this.followRepository.save(
+        this.followRepository.create({ followerId: followerUserId, followingId: targetUserId }),
+      );
+    }
 
     return { isFollowing: true };
   }
 
   /**
    * 특정 사용자를 언팔로우한다.
-   *
-   * @param {number} targetUserId 언팔로우 대상 사용자 ID
-   * @param {number} followerUserId 언팔로우를 요청한 사용자 ID
-   * @returns {Promise<FollowStateResult>} 팔로우 상태
    */
   async unfollowUser(targetUserId: number, followerUserId: number): Promise<FollowStateResult> {
     this.ensureNotSelfFollow(targetUserId, followerUserId);
 
-    const existingFollow = await this.followRepository.findOne({
-      where: { followerId: followerUserId, followingId: targetUserId },
+    const existingFollow = await this.followRepository.findOneBy({
+      followerId: followerUserId,
+      followingId: targetUserId,
     });
 
-    if (!existingFollow) {
-      return { isFollowing: false };
-    }
-
-    await this.followRepository.remove(existingFollow);
+    if (existingFollow) await this.followRepository.remove(existingFollow);
 
     return { isFollowing: false };
   }
 
-  private async ensureUserExists(userId: number): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  /**
+   * 기간별 스트릭 데이터를 조회한다. (올해 1월 1일부터 현재까지)
+   */
+  async getStreaks(userId: number): Promise<ProfileStreakDay[]> {
+    await this.findUserOrThrow(userId);
 
-    if (!user) {
-      throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
-    }
+    const now = new Date();
+    const startDate = toDateString(new Date(now.getFullYear(), 0, 1));
+    const endDate = toDateString(now);
+
+    const rawRows = await this.fetchSolvedCountsByDateRange(userId, startDate, endDate);
+
+    return rawRows.map(row => ({
+      userId,
+      date: row.date,
+      solvedCount: row.solvedCount,
+    }));
   }
+
+  /**
+   * 최근 7일간의 학습 시간 통계를 조회한다.
+   */
+  async getDailyStats(userId: number): Promise<DailyStatsResult> {
+    await this.findUserOrThrow(userId);
+
+    const allDates = getLast7Days();
+    const { startDate, endDate } = getDateRange(allDates);
+
+    const studyTimeMap = await this.fetchStudySecondsByDateRange(userId, startDate, endDate);
+
+    // 빈 날짜를 0으로 채움
+    const dailyData = allDates.map(date => ({
+      date,
+      studySeconds: studyTimeMap.get(date) ?? 0,
+    }));
+
+    const studySecondsList = dailyData.map(d => d.studySeconds);
+    const totalSeconds = studySecondsList.reduce((sum, s) => sum + s, 0);
+
+    return {
+      dailyData,
+      periodMaxSeconds: Math.max(...studySecondsList, 0),
+      periodAverageSeconds: dailyData.length > 0 ? Math.floor(totalSeconds / dailyData.length) : 0,
+    };
+  }
+
+  /**
+   * 최근 7일간 필드(로드맵)별 문제 풀이 통계를 조회한다.
+   */
+  async getFieldDailyStats(userId: number): Promise<FieldDailyStatsResult> {
+    await this.findUserOrThrow(userId);
+
+    const allDates = getLast7Days();
+    const { startDate, endDate } = getDateRange(allDates);
+
+    // 병렬 실행: 필드 목록 조회와 실제 풀이 로그 조회를 동시에 수행
+    const [roadmapFields, rows] = await Promise.all([
+      this.fetchAllFields(),
+      this.fetchFieldSolvedCountsByDateRange(userId, startDate, endDate),
+    ]);
+
+    const fieldMap = this.initializeFieldStats(roadmapFields, allDates);
+    this.applyFieldSolvedCounts(fieldMap, rows);
+
+    return { fields: this.calculateFieldStatsSummary(fieldMap) };
+  }
+
+  // --- Private Helper Methods ---
 
   private ensureNotSelfFollow(targetUserId: number, followerUserId: number): void {
     if (targetUserId === followerUserId) {
@@ -410,15 +232,7 @@ export class ProfileService {
   }
 
   private buildTierSummary(tier: User['currentTier']): ProfileTierSummary | null {
-    if (!tier) {
-      return null;
-    }
-
-    return {
-      id: tier.id,
-      name: tier.name,
-      orderIndex: tier.orderIndex,
-    };
+    return tier ? { id: tier.id, name: tier.name, orderIndex: tier.orderIndex } : null;
   }
 
   private buildFollowUserSummary(user: User): ProfileFollowUser {
@@ -427,102 +241,191 @@ export class ProfileService {
       displayName: user.displayName,
       profileImageUrl: user.profileImageUrl ?? null,
       experience: user.experience,
-      tier: this.buildTierSummary(user.currentTier ?? null),
+      tier: this.buildTierSummary(user.currentTier),
     };
   }
 
   /**
-   * 팔로우 목록을 이름 기준으로 정렬한다.
-   *
-   * - 영문 이름은 알파벳 순으로 먼저 배치한다.
-   * - 한글 이름은 영문 다음 순서로 배치한다.
-   * - 그 외 문자는 가장 마지막에 배치한다.
-   *
-   * @param {ProfileFollowUser[]} users 정렬할 사용자 목록
-   * @returns {ProfileFollowUser[]} 정렬된 사용자 목록
+   * 이름 기준 정렬 (영어 > 한글 > 기타 순서)
    */
   private sortFollowUsersByName(users: ProfileFollowUser[]): ProfileFollowUser[] {
-    const collatorEnglish = new Intl.Collator('en', { sensitivity: 'base' });
-    const collatorKorean = new Intl.Collator('ko', { sensitivity: 'base' });
-    const sortedUsers = [...users];
+    return [...users].sort((left, right) => {
+      const leftGroup = this.getDisplayNameGroup(left.displayName);
+      const rightGroup = this.getDisplayNameGroup(right.displayName);
 
-    sortedUsers.sort((leftUser, rightUser) => {
-      const leftGroup = this.getDisplayNameGroup(leftUser.displayName);
-      const rightGroup = this.getDisplayNameGroup(rightUser.displayName);
+      if (leftGroup !== rightGroup) return leftGroup - rightGroup;
 
-      if (leftGroup !== rightGroup) {
-        return leftGroup - rightGroup;
-      }
-
-      if (leftGroup === 0) {
-        return collatorEnglish.compare(leftUser.displayName, rightUser.displayName);
-      }
-
-      if (leftGroup === 1) {
-        return collatorKorean.compare(leftUser.displayName, rightUser.displayName);
-      }
-
-      return leftUser.displayName.localeCompare(rightUser.displayName);
+      if (leftGroup === 0)
+        return ProfileService.COLLATOR_EN.compare(left.displayName, right.displayName);
+      if (leftGroup === 1)
+        return ProfileService.COLLATOR_KO.compare(left.displayName, right.displayName);
+      return left.displayName.localeCompare(right.displayName);
     });
-
-    return sortedUsers;
   }
 
   private getDisplayNameGroup(displayName: string): number {
     const firstChar = displayName.trim().charAt(0);
-
-    if (!firstChar) {
-      return 2;
-    }
-
-    if (this.isEnglishCharacter(firstChar)) {
-      return 0;
-    }
-
-    if (this.isKoreanCharacter(firstChar)) {
-      return 1;
-    }
-
+    if (!firstChar) return 2;
+    if (/[A-Za-z]/.test(firstChar)) return 0;
+    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(firstChar)) return 1;
     return 2;
   }
 
-  private isEnglishCharacter(character: string): boolean {
-    return /[A-Za-z]/.test(character);
-  }
-
-  private isKoreanCharacter(character: string): boolean {
-    return /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(character);
-  }
-
+  /**
+   * 전체 누적 학습 시간 및 문제 풀이 수 계산
+   */
   private async calculateSolveStats(userId: number): Promise<SolveStatsResult> {
-    const rawStats = await this.solveLogRepository
-      .createQueryBuilder('solveLog')
-      .select(
-        'COALESCE(SUM(CASE WHEN solveLog.isCorrect = true THEN 1 ELSE 0 END), 0)',
-        'solvedCount',
-      )
-      .where('solveLog.userId = :userId', { userId })
-      .getRawOne<SolveStatsRawResult>();
+    const [quizResult, durationResult] = await Promise.all([
+      this.solveLogRepository
+        .createQueryBuilder('solveLog')
+        .select('COUNT(*)', 'solvedCount')
+        .where('solveLog.userId = :userId AND solveLog.isCorrect = true', { userId })
+        .getRawOne(),
+      this.stepAttemptRepository
+        .createQueryBuilder('stepAttempt')
+        .select(
+          'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt))',
+          'totalSeconds',
+        )
+        .where('stepAttempt.userId = :userId AND stepAttempt.status = :status', {
+          userId,
+          status: StepAttemptStatus.COMPLETED,
+        })
+        .andWhere('stepAttempt.finishedAt IS NOT NULL')
+        .getRawOne(),
+    ]);
 
-    const rawDuration = await this.stepAttemptRepository
-      .createQueryBuilder('stepAttempt')
-      .select(
-        'COALESCE(SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)), 0)',
-        'totalDurationSeconds',
-      )
-      .where('stepAttempt.userId = :userId', { userId })
-      .andWhere('stepAttempt.status = :status', { status: StepAttemptStatus.COMPLETED })
-      .andWhere('stepAttempt.finishedAt IS NOT NULL')
-      .getRawOne<SolveStatsRawResult>();
-
-    const totalStudyTimeSeconds = Number(rawDuration?.totalDurationSeconds ?? 0);
-    const solvedQuizzesCount = Number(rawStats?.solvedCount ?? 0);
-    const totalStudyTimeMinutes = Math.floor(totalStudyTimeSeconds / 60);
-
+    const totalStudyTimeSeconds = Number(durationResult?.totalSeconds ?? 0);
     return {
       totalStudyTimeSeconds,
-      totalStudyTimeMinutes,
-      solvedQuizzesCount,
+      totalStudyTimeMinutes: Math.floor(totalStudyTimeSeconds / 60),
+      solvedQuizzesCount: Number(quizResult?.solvedCount ?? 0),
     };
+  }
+
+  /**
+   * 날짜별 학습 시간(초) 조회
+   */
+  private async fetchStudySecondsByDateRange(
+    userId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<Map<string, number>> {
+    const rows = await this.stepAttemptRepository
+      .createQueryBuilder('stepAttempt')
+      .select('DATE(stepAttempt.finishedAt)', 'date')
+      .addSelect(
+        'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt))',
+        'seconds',
+      )
+      .where('stepAttempt.userId = :userId AND stepAttempt.status = :status', {
+        userId,
+        status: StepAttemptStatus.COMPLETED,
+      })
+      .andWhere('DATE(stepAttempt.finishedAt) BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .groupBy('DATE(stepAttempt.finishedAt)')
+      .getRawMany();
+
+    return new Map(rows.map(r => [r.date, Number(r.seconds)]));
+  }
+
+  /**
+   * 날짜별 문제 풀이 수 조회
+   */
+  private async fetchSolvedCountsByDateRange(userId: number, startDate: string, endDate: string) {
+    const rows = await this.solveLogRepository
+      .createQueryBuilder('solve')
+      .select('DATE(solve.solvedAt)', 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('solve.userId = :userId')
+      .andWhere('DATE(solve.solvedAt) BETWEEN :startDate AND :endDate', {
+        userId,
+        startDate,
+        endDate,
+      })
+      .groupBy('DATE(solve.solvedAt)')
+      .orderBy('date', 'ASC')
+      .getRawMany();
+
+    return rows.map(r => ({ date: r.date, solvedCount: Number(r.count) }));
+  }
+
+  private async fetchAllFields() {
+    return this.fieldRepository.find({ select: ['id', 'name', 'slug'], order: { id: 'ASC' } });
+  }
+
+  private initializeFieldStats(fields: any[], dates: string[]): Map<number, FieldDailyStatsItem> {
+    const fieldMap = new Map();
+    fields.forEach(f => {
+      fieldMap.set(f.id, {
+        fieldId: f.id,
+        fieldName: f.name,
+        fieldSlug: f.slug,
+        dailyData: dates.map(date => ({ date, solvedCount: 0 })),
+        periodMaxSolvedCount: 0,
+        periodAverageSolvedCount: 0,
+        totalSolvedCount: 0,
+      });
+    });
+    return fieldMap;
+  }
+
+  /**
+   * 필드별 풀이 수 쿼리
+   */
+  private async fetchFieldSolvedCountsByDateRange(
+    userId: number,
+    startDate: string,
+    endDate: string,
+  ) {
+    return this.solveLogRepository
+      .createQueryBuilder('solveLog')
+      .innerJoin('solveLog.quiz', 'quiz')
+      .innerJoin('quiz.step', 'step')
+      .innerJoin('step.unit', 'unit')
+      .innerJoin('unit.field', 'field')
+      .select([
+        'field.id AS fieldId',
+        'field.name AS fieldName',
+        'field.slug AS fieldSlug',
+        'DATE(solveLog.solvedAt) AS date',
+      ])
+      .addSelect('COUNT(solveLog.id)', 'solvedCount')
+      .where('solveLog.userId = :userId', { userId })
+      .andWhere('DATE(solveLog.solvedAt) BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy('field.id, date')
+      .getRawMany();
+  }
+
+  private applyFieldSolvedCounts(fieldMap: Map<number, FieldDailyStatsItem>, rows: any[]): void {
+    rows.forEach(row => {
+      const fieldEntry = fieldMap.get(Number(row.fieldId));
+      if (fieldEntry) {
+        const dailyItem = fieldEntry.dailyData.find(d => d.date === row.date);
+        if (dailyItem) dailyItem.solvedCount = Number(row.solvedCount);
+      }
+    });
+  }
+
+  /**
+   * 필드별 통계 데이터의 최종 요약본(평균, 최대값)을 계산한다.
+   */
+  private calculateFieldStatsSummary(
+    fieldMap: Map<number, FieldDailyStatsItem>,
+  ): FieldDailyStatsItem[] {
+    return Array.from(fieldMap.values()).map(entry => {
+      const solvedCounts = entry.dailyData.map(d => d.solvedCount);
+      const total = solvedCounts.reduce((a, b) => a + b, 0);
+      return {
+        ...entry,
+        totalSolvedCount: total,
+        periodMaxSolvedCount: Math.max(...solvedCounts, 0),
+        periodAverageSolvedCount:
+          entry.dailyData.length > 0 ? Math.floor(total / entry.dailyData.length) : 0,
+      };
+    });
   }
 }

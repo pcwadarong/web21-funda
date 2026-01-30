@@ -5,6 +5,8 @@ import { ProfileContainer } from '@/feat/user/profile/components/ProfileContaine
 import { ErrorView } from '@/features/error/components/ErrorView';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
+  useProfileDailyStats,
+  useProfileFieldDailyStats,
   useProfileFollowers,
   useProfileFollowing,
   useProfileSummary,
@@ -37,6 +39,8 @@ export const Profile = () => {
   const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
   const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
   const { data: streaks } = useProfileStreaks(shouldFetch);
+  const { data: dailyStats } = useProfileDailyStats(shouldFetch);
+  const { data: fieldDailyStats } = useProfileFieldDailyStats(shouldFetch);
 
   // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
@@ -71,6 +75,8 @@ export const Profile = () => {
       isFollowingLoading={isFollowingLoading}
       isFollowersLoading={isFollowersLoading}
       streaks={streaks ?? []}
+      dailyStats={dailyStats ?? null}
+      fieldDailyStats={fieldDailyStats ?? null}
       diamondCount={diamondCount}
       onUserClick={handleUserClick}
     />

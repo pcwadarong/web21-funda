@@ -31,3 +31,34 @@ export interface ProfileStreakDay {
   date: string;
   solvedCount: number;
 }
+
+export interface DailyStatsData {
+  date: string;
+  studySeconds: number;
+  solvedCount: number;
+}
+
+export interface DailyStatsResult {
+  dailyData: DailyStatsData[];
+  periodMaxSeconds: number;
+  periodAverageSeconds: number;
+}
+
+export interface FieldDailyStatsData {
+  date: string;
+  solvedCount: number;
+}
+
+export interface FieldDailyStatsItem {
+  fieldId: number;
+  fieldName: string;
+  fieldSlug: string;
+  dailyData: FieldDailyStatsData[];
+  periodMaxSolvedCount: number;
+  periodAverageSolvedCount: number;
+  totalSolvedCount: number;
+}
+
+export interface FieldDailyStatsResult {
+  fields: FieldDailyStatsItem[];
+}

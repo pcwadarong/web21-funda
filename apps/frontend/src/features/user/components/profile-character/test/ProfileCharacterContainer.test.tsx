@@ -37,6 +37,7 @@ const TestWrapper = () => {
         onSelect={setSelectedId}
         onPurchase={vi.fn()}
         onApply={vi.fn()}
+        onClear={vi.fn()}
         onBack={vi.fn()}
       />
     </ThemeProvider>

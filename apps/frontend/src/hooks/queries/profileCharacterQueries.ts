@@ -39,3 +39,14 @@ export const useProfileCharacterApply = () => {
     },
   });
 };
+
+export const useProfileCharacterClear = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<ProfileCharacterApplyResult, Error, void>({
+    mutationFn: () => profileCharacterService.clearCharacter(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileCharacterKeys.list() });
+    },
+  });
+};

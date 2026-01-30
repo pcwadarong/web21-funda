@@ -31,4 +31,11 @@ export const profileCharacterService = {
       `/profiles/me/characters/${characterId}/apply`,
     );
   },
+
+  /**
+   * 프로필 캐릭터 적용을 해제합니다.
+   */
+  async clearCharacter(): Promise<ProfileCharacterApplyResult> {
+    return apiFetch.post<ProfileCharacterApplyResult>('/profiles/me/characters/clear');
+  },
 };

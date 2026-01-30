@@ -229,6 +229,28 @@ export class ProfileService {
   }
 
   /**
+   * 프로필 캐릭터 적용을 해제한다.
+   */
+  async clearProfileCharacter(userId: number): Promise<ProfileCharacterApplyResult> {
+    return this.dataSource.transaction(async manager => {
+      const userRepository = manager.getRepository(User);
+
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+      }
+
+      user.profileCharacterId = null;
+      await userRepository.save(user);
+
+      return {
+        characterId: 0,
+        applied: false,
+      };
+    });
+  }
+
+  /**
    * 팔로워 목록을 조회한다.
    *
    * @param {number} userId 조회 대상 사용자 ID

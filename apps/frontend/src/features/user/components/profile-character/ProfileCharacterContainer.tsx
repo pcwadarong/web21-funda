@@ -12,6 +12,7 @@ interface ProfileCharacterContainerProps {
   onSelect: (characterId: number) => void;
   onPurchase: (characterId: number) => void;
   onApply: (characterId: number) => void;
+  onClear: () => void;
   onBack: () => void;
 }
 
@@ -25,6 +26,7 @@ export const ProfileCharacterContainer = ({
   onSelect,
   onPurchase,
   onApply,
+  onClear,
   onBack,
 }: ProfileCharacterContainerProps) => {
   const theme = useTheme();
@@ -33,9 +35,14 @@ export const ProfileCharacterContainer = ({
     <main css={pageStyle(theme)}>
       <div css={contentStyle}>
         <header css={headerStyle}>
-          <button type="button" css={backButtonStyle(theme)} onClick={onBack}>
-            <SVGIcon icon="ArrowLeft" size="sm" />내 프로필로 돌아가기
-          </button>
+          <div css={headerTopRowStyle}>
+            <button type="button" css={backButtonStyle(theme)} onClick={onBack}>
+              <SVGIcon icon="ArrowLeft" size="sm" />내 프로필로 돌아가기
+            </button>
+            <button type="button" css={clearButtonStyle(theme)} onClick={onClear}>
+              기본 프로필로 되돌리기
+            </button>
+          </div>
           <h1 css={titleStyle(theme)}>캐릭터 프로필 설정하기</h1>
         </header>
 
@@ -122,6 +129,14 @@ const headerStyle = css`
   gap: 0.75rem;
 `;
 
+const headerTopRowStyle = css`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+`;
+
 const titleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   line-height: ${theme.typography['20Bold'].lineHeight};
@@ -139,6 +154,22 @@ const backButtonStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   cursor: pointer;
+`;
+
+const clearButtonStyle = (theme: Theme) => css`
+  padding: 0.6rem 1rem;
+  border-radius: ${theme.borderRadius.medium};
+  border: 1px solid ${theme.colors.border.default};
+  background: ${theme.colors.surface.default};
+  color: ${theme.colors.text.default};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${theme.colors.primary.main};
+    color: ${theme.colors.primary.main};
+  }
 `;
 
 const gridStyle = css`
@@ -184,8 +215,8 @@ const cardStyle = (theme: Theme, isSelected: boolean) => css`
   aspect-ratio: 1 / 1.05;
   border-radius: 24px;
   padding: 0.85rem 0.8rem 0.6rem;
-  border: 2px solid ${isSelected ? theme.colors.primary.main : palette.grayscale[200]};
-  background: ${palette.grayscale[100]};
+  border: 2px solid ${isSelected ? theme.colors.primary.main : theme.colors.border.default};
+  background: ${palette.grayscale[50]};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -203,7 +234,7 @@ const imageWrapperStyle = css`
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 18px;
-  background: ${palette.grayscale[100]};
+  background: ${palette.grayscale[50]};
   display: flex;
   align-items: center;
   justify-content: center;

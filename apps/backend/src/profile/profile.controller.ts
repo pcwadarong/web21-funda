@@ -178,4 +178,26 @@ export class ProfileController {
       message: '프로필 캐릭터를 적용했습니다.',
     };
   }
+
+  @Post('me/characters/clear')
+  @ApiOperation({
+    summary: '프로필 캐릭터 적용 해제',
+    description: '프로필 캐릭터 적용을 해제하고 기본 프로필로 되돌린다.',
+  })
+  @ApiOkResponse({ description: '캐릭터 적용 해제 성공' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAccessGuard)
+  async clearCharacter(@Req() req: Request & { user?: JwtPayload }) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const result = await this.profileService.clearProfileCharacter(userId);
+
+    return {
+      result,
+      message: '프로필 캐릭터 적용을 해제했습니다.',
+    };
+  }
 }

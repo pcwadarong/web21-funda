@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProfileCharacterContainer } from '@/feat/user/components/profile-character/ProfileCharacterContainer';
 import {
   useProfileCharacterApply,
+  useProfileCharacterClear,
   useProfileCharacterPurchase,
   useProfileCharacters,
 } from '@/hooks/queries/profileCharacterQueries';
@@ -18,6 +19,7 @@ export const ProfileCharacter = () => {
   const { data, isLoading, error } = useProfileCharacters();
   const purchaseMutation = useProfileCharacterPurchase();
   const applyMutation = useProfileCharacterApply();
+  const clearMutation = useProfileCharacterClear();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const characters = useMemo(() => data?.characters ?? [], [data?.characters]);
@@ -59,6 +61,16 @@ export const ProfileCharacter = () => {
     }
   };
 
+  const handleClear = async () => {
+    try {
+      await clearMutation.mutateAsync();
+      setSelectedId(null);
+      showToast('기본 프로필로 되돌렸습니다.');
+    } catch (clearError) {
+      showToast((clearError as Error).message);
+    }
+  };
+
   useEffect(() => {
     if (!error) {
       return;
@@ -75,6 +87,7 @@ export const ProfileCharacter = () => {
       onSelect={handleSelect}
       onPurchase={handlePurchase}
       onApply={handleApply}
+      onClear={handleClear}
       onBack={handleBack}
     />
   );

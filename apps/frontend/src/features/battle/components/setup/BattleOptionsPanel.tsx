@@ -41,6 +41,7 @@ export interface BattleOptionsPanelProps {
   isHost: boolean;
   roomId: string | null;
   settings: BattleRoomSettings | null;
+  participantCount: number;
   onUpdateRoom: (roomId: string, settings: BattleRoomSettings) => void;
   onStartBattle: (roomId: string) => void;
   onCopyLink: () => void;
@@ -50,12 +51,19 @@ export const BattleOptionsPanel = ({
   isHost,
   roomId,
   settings,
+  participantCount,
   onUpdateRoom,
   onStartBattle,
   onCopyLink,
 }: BattleOptionsPanelProps) => {
   const theme = useTheme();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const canStartBattle = isHost && participantCount > 1;
+  const startButtonLabel = !isHost
+    ? '호스트 대기 중'
+    : canStartBattle
+      ? '게임 시작'
+      : '참가자 대기 중';
 
   return (
     <div css={containerStyle}>
@@ -76,21 +84,31 @@ export const BattleOptionsPanel = ({
             <section key={key} css={sectionStyle}>
               <div css={sectionLabelStyle(theme)}>{config.label}</div>
               <div css={buttonGroupStyle}>
-                {config.options.map(opt => (
-                  <button
-                    key={opt.value}
-                    css={pillButtonStyle(
-                      theme,
-                      settings?.[key as keyof typeof settings] === opt.value,
-                    )}
-                    disabled={!isHost}
-                    onClick={() =>
-                      roomId && settings && onUpdateRoom(roomId, { ...settings, [key]: opt.value })
-                    }
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                {config.options.map(opt => {
+                  const isMaxPlayers = key === 'maxPlayers';
+                  const isLowerThanCurrent =
+                    isMaxPlayers && typeof opt.value === 'number' && participantCount > opt.value;
+                  const isDisabled = !isHost || isLowerThanCurrent;
+
+                  return (
+                    <button
+                      key={opt.value}
+                      css={pillButtonStyle(
+                        theme,
+                        settings?.[key as keyof typeof settings] === opt.value,
+                      )}
+                      disabled={isDisabled}
+                      onClick={() =>
+                        roomId &&
+                        settings &&
+                        !isDisabled &&
+                        onUpdateRoom(roomId, { ...settings, [key]: opt.value })
+                      }
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           ))}
@@ -105,11 +123,11 @@ export const BattleOptionsPanel = ({
         <Button
           variant="primary"
           fullWidth
-          disabled={!isHost}
+          disabled={!canStartBattle}
           onClick={() => roomId && onStartBattle(roomId)}
           css={flexBtn}
         >
-          {isHost ? '게임 시작' : '호스트 대기 중'}
+          {startButtonLabel}
         </Button>
       </div>
     </div>
@@ -200,7 +218,7 @@ const sectionLabelStyle = (theme: Theme) => css`
 
 const buttonGroupStyle = css`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 `;
 

@@ -152,7 +152,7 @@ const contentStyle = (theme: Theme) => css`
   border-radius: 16px;
   padding: 32px;
   min-height: 320px;
-  max-height: calc(100vh - 15rem);
+  max-height: calc(100vh - 14rem);
   overflow-y: hidden;
 
   &:hover {

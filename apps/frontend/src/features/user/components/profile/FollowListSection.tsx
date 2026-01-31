@@ -1,21 +1,11 @@
 import { css, useTheme } from '@emotion/react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import { Modal } from '@/components/Modal';
 import { FollowListModal } from '@/features/profile/components/FollowListModal';
-import { UserSearchModal } from '@/features/profile/components/UserSearchModal';
 import type { ProfileFollowUser } from '@/features/profile/types';
-import {
-  profileKeys,
-  useFollowUserMutation,
-  useProfileSearchUsers,
-  useUnfollowUserMutation,
-} from '@/hooks/queries/profileQueries';
-import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
-import { palette } from '@/styles/token';
 
 /**
  * 팔로우 리스트 섹션 Props
@@ -31,10 +21,6 @@ interface FollowListSectionProps {
   isFollowersLoading: boolean;
   /** 사용자 클릭 핸들러 */
   onUserClick: (userId: number) => void;
-  /** 프로필 주인 ID */
-  profileUserId: number | null;
-  /** 내 프로필 여부 */
-  isMyProfile: boolean;
 }
 
 /**
@@ -49,22 +35,10 @@ export const FollowListSection = ({
   isFollowingLoading,
   isFollowersLoading,
   onUserClick,
-  profileUserId,
-  isMyProfile,
 }: FollowListSectionProps) => {
   const theme = useTheme();
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'following' | 'followers'>('following');
   const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [debouncedKeyword, setDebouncedKeyword] = useState('');
-  const [followOverrides, setFollowOverrides] = useState<Record<number, boolean>>({});
-  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
-
-  const followMutation = useFollowUserMutation();
-  const unfollowMutation = useUnfollowUserMutation();
 
   const followingCount = following.length;
   const followerCount = followers.length;
@@ -78,74 +52,9 @@ export const FollowListSection = ({
 
   const isListLoading = activeTab === 'following' ? isFollowingLoading : isFollowersLoading;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedKeyword(searchKeyword.trim());
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchKeyword]);
-
-  useEffect(() => {
-    setFollowOverrides({});
-  }, [debouncedKeyword]);
-
-  const shouldSearch = isSearchModalOpen && debouncedKeyword.length >= 2;
-  const { data: searchUsers = [], isLoading: isSearchLoading } = useProfileSearchUsers(
-    debouncedKeyword,
-    shouldSearch,
-  );
-
-  const resolvedSearchUsers = useMemo(
-    () =>
-      searchUsers.map(user => ({
-        ...user,
-        isFollowing: followOverrides[user.userId] ?? user.isFollowing,
-      })),
-    [searchUsers, followOverrides],
-  );
-  const visibleSearchUsers = shouldSearch ? resolvedSearchUsers : [];
-
   const handleMoveToProfile = (targetUserId: number) => {
     onUserClick(targetUserId);
     setIsFollowModalOpen(false);
-    setIsSearchModalOpen(false);
-    setSearchKeyword('');
-  };
-
-  const handleCloseSearchModal = () => {
-    setIsSearchModalOpen(false);
-    setSearchKeyword('');
-    setDebouncedKeyword('');
-    setFollowOverrides({});
-    setPendingUserId(null);
-  };
-
-  const handleFollowToggle = async (targetUserId: number, isFollowing: boolean) => {
-    if (pendingUserId !== null) {
-      return;
-    }
-
-    setPendingUserId(targetUserId);
-    setFollowOverrides(prev => ({ ...prev, [targetUserId]: !isFollowing }));
-
-    try {
-      if (isFollowing) {
-        await unfollowMutation.mutateAsync(targetUserId);
-      } else {
-        await followMutation.mutateAsync(targetUserId);
-      }
-
-      if (profileUserId !== null) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.following(profileUserId) });
-        queryClient.invalidateQueries({ queryKey: profileKeys.summary(profileUserId) });
-      }
-    } catch (followError) {
-      setFollowOverrides(prev => ({ ...prev, [targetUserId]: isFollowing }));
-      showToast((followError as Error).message);
-    } finally {
-      setPendingUserId(null);
-    }
   };
 
   return (
@@ -184,26 +93,15 @@ export const FollowListSection = ({
                 />
               ))}
           </div>
-          {(isMyProfile || activeList.length > 3) && (
+          {activeList.length > 3 && (
             <div css={actionRowStyle}>
-              {isMyProfile && (
-                <button
-                  type="button"
-                  css={searchButtonStyle(theme)}
-                  onClick={() => setIsSearchModalOpen(true)}
-                >
-                  사용자 찾기
-                </button>
-              )}
-              {activeList.length > 3 && (
-                <button
-                  type="button"
-                  css={moreButtonStyle(theme)}
-                  onClick={() => setIsFollowModalOpen(true)}
-                >
-                  {activeList.length - 3}명 더보기 &gt;
-                </button>
-              )}
+              <button
+                type="button"
+                css={moreButtonStyle(theme)}
+                onClick={() => setIsFollowModalOpen(true)}
+              >
+                {activeList.length - 3}명 더보기 &gt;
+              </button>
             </div>
           )}
         </div>
@@ -225,25 +123,6 @@ export const FollowListSection = ({
           }
           onClose={() => setIsFollowModalOpen(false)}
           maxWidth={720}
-        />
-      )}
-
-      {isSearchModalOpen && (
-        <Modal
-          title="친구 추가"
-          content={
-            <UserSearchModal
-              keyword={searchKeyword}
-              users={visibleSearchUsers}
-              isLoading={shouldSearch && isSearchLoading}
-              pendingUserId={pendingUserId}
-              onKeywordChange={setSearchKeyword}
-              onUserClick={handleMoveToProfile}
-              onFollowToggle={handleFollowToggle}
-            />
-          }
-          onClose={handleCloseSearchModal}
-          maxWidth={560}
         />
       )}
     </>
@@ -418,21 +297,6 @@ const actionRowStyle = css`
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-`;
-
-const searchButtonStyle = (theme: Theme) => css`
-  border: none;
-  background: ${theme.colors.primary.main};
-  color: ${palette.grayscale[50]};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  padding: 0.45rem 0.9rem;
-  border-radius: 999px;
-  cursor: pointer;
-
-  &:hover {
-    background: ${theme.colors.primary.dark};
-  }
 `;
 
 const moreButtonStyle = (theme: Theme) => css`

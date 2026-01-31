@@ -329,6 +329,9 @@ describe('ProfileService', () => {
 
   describe('getFieldDailyStats', () => {
     it('최근 7일간 필드별 문제 풀이 수를 반환한다', async () => {
+      // 고정된 시간 설정 (2024년 1월 15일 오후 3시 KST 기준)
+      jest.useFakeTimers().setSystemTime(new Date('2024-01-15T06:00:00.000Z')); // UTC 06:00 = KST 15:00
+
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
       const mockDates = getLast7Days();
@@ -399,9 +402,14 @@ describe('ProfileService', () => {
       expect(backendField.totalSolvedCount).toBe(3);
       expect(backendField.periodMaxSolvedCount).toBe(3);
       expect(backendField.periodAverageSolvedCount).toBe(0); // 3 / 7 = 0.42... -> 0
+
+      jest.useRealTimers();
     });
 
     it('필드별 데이터가 없는 경우 모든 날짜가 0으로 채워진다', async () => {
+      // 고정된 시간 설정 (2024년 1월 15일 오후 3시 KST 기준)
+      jest.useFakeTimers().setSystemTime(new Date('2024-01-15T06:00:00.000Z')); // UTC 06:00 = KST 15:00
+
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
       fieldFindMock.mockResolvedValue([{ id: 1, name: '프론트엔드', slug: 'frontend' }]);
@@ -422,6 +430,8 @@ describe('ProfileService', () => {
       expect(field.totalSolvedCount).toBe(0);
       expect(field.periodMaxSolvedCount).toBe(0);
       expect(field.periodAverageSolvedCount).toBe(0);
+
+      jest.useRealTimers();
     });
   });
 });

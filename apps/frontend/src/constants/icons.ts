@@ -30,7 +30,6 @@ import Sheet from '@/assets/sheet.svg?react';
 import Battle from '@/assets/sidebar-icons/battle.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
-import Fire from '@/assets/sidebar-icons/fire.svg?react';
 import Heart from '@/assets/sidebar-icons/heart.svg?react';
 import Learn from '@/assets/sidebar-icons/learn.svg?react';
 import Profile from '@/assets/sidebar-icons/profile.svg?react';
@@ -71,7 +70,6 @@ export const IconMap = {
   Sheet,
   Book,
   Diamond,
-  Fire,
   Heart,
   Learn,
   Profile,

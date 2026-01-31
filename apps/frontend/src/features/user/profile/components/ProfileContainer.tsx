@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 
 import type {
   DailyStatsResult,
@@ -63,10 +63,7 @@ export const ProfileContainer = memo(
   }: ProfileContainerProps) => {
     const theme = useTheme();
 
-    const displayName = useMemo(
-      () => profileSummary?.displayName ?? '사용자',
-      [profileSummary?.displayName],
-    );
+    const displayName = profileSummary?.displayName ?? '사용자';
 
     return (
       <div css={pageContentStyle}>

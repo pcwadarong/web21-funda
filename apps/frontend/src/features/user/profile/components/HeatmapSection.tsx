@@ -39,9 +39,9 @@ const msPerDay = 24 * 60 * 60 * 1000;
  */
 const resolveLevel = (count: number) => {
   if (count <= 0) return 0;
-  if (count <= 5) return 1;
-  if (count <= 10) return 2;
-  if (count <= 15) return 3;
+  if (count <= 10) return 1;
+  if (count <= 30) return 2;
+  if (count <= 60) return 3;
   return 4;
 };
 

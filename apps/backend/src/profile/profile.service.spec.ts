@@ -240,9 +240,9 @@ describe('ProfileService', () => {
 
       // stepAttemptRepository 모킹
       stepAttemptQueryBuilderMock.getRawMany.mockResolvedValue([
-        { date: mockDates[1], studySeconds: '3600' }, // 1시간
-        { date: mockDates[3], studySeconds: '7200' }, // 2시간
-        { date: mockDates[5], studySeconds: '1800' }, // 30분
+        { date: mockDates[1], seconds: '3600' }, // 1시간
+        { date: mockDates[3], seconds: '7200' }, // 2시간
+        { date: mockDates[5], seconds: '1800' }, // 30분
       ]);
 
       const result = await service.getDailyStats(1);

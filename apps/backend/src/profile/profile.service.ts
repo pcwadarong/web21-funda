@@ -35,6 +35,20 @@ export class ProfileService {
   private static readonly COLLATOR_EN = new Intl.Collator('en', { sensitivity: 'base' });
   private static readonly COLLATOR_KO = new Intl.Collator('ko', { sensitivity: 'base' });
 
+  /**
+   * KST (UTC+9) 타임존 변환 SQL 프래그먼트
+   * UTC를 KST로 변환하는 CONVERT_TZ 표현식을 재사용한다.
+   */
+  private static readonly KST_CONVERT = (column: string): string =>
+    `CONVERT_TZ(${column}, '+00:00', '+09:00')`;
+
+  /**
+   * KST 기준 날짜 포맷 SQL 프래그먼트
+   * KST로 변환한 후 YYYY-MM-DD 형식으로 포맷한다.
+   */
+  private static readonly KST_DATE_FORMAT = (column: string): string =>
+    `DATE_FORMAT(${ProfileService.KST_CONVERT(column)}, '%Y-%m-%d')`;
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -216,10 +230,8 @@ export class ProfileService {
       this.fetchAllFields(),
       this.fetchFieldSolvedCountsByDateRange(userId, startDate, endDate),
     ]);
-
     const fieldMap = this.initializeFieldStats(roadmapFields, allDates);
     this.applyFieldSolvedCounts(fieldMap, rows);
-
     return { fields: this.calculateFieldStatsSummary(fieldMap) };
   }
 
@@ -272,26 +284,34 @@ export class ProfileService {
   }
 
   /**
+   * 학습 시간 계산을 위한 재사용 가능한 쿼리 빌더를 생성한다.
+   * TIMESTAMPDIFF와 COMPLETED 상태 필터가 이미 적용된 SelectQueryBuilder를 반환한다.
+   *
+   * @param {number} userId 사용자 ID
+   * @returns {SelectQueryBuilder} 부분적으로 구성된 쿼리 빌더
+   */
+  private createStudyTimeQueryBuilder(userId: number) {
+    return this.stepAttemptRepository
+      .createQueryBuilder('stepAttempt')
+      .where('stepAttempt.userId = :userId', { userId })
+      .andWhere('stepAttempt.status = :status', { status: StepAttemptStatus.COMPLETED })
+      .andWhere('stepAttempt.finishedAt IS NOT NULL');
+  }
+
+  /**
    * 전체 누적 학습 시간 및 문제 풀이 수 계산
    */
   private async calculateSolveStats(userId: number): Promise<SolveStatsResult> {
     const [quizResult, durationResult] = await Promise.all([
       this.solveLogRepository
         .createQueryBuilder('solveLog')
-        .select('COUNT(*)', 'solvedCount')
+        .select(['COUNT(*) AS solvedCount'])
         .where('solveLog.userId = :userId AND solveLog.isCorrect = true', { userId })
         .getRawOne(),
-      this.stepAttemptRepository
-        .createQueryBuilder('stepAttempt')
-        .select(
-          'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt))',
-          'totalSeconds',
-        )
-        .where('stepAttempt.userId = :userId AND stepAttempt.status = :status', {
-          userId,
-          status: StepAttemptStatus.COMPLETED,
-        })
-        .andWhere('stepAttempt.finishedAt IS NOT NULL')
+      this.createStudyTimeQueryBuilder(userId)
+        .select([
+          'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)) AS totalSeconds',
+        ])
         .getRawOne(),
     ]);
 
@@ -305,52 +325,53 @@ export class ProfileService {
 
   /**
    * 날짜별 학습 시간(초) 조회
+   * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchStudySecondsByDateRange(
     userId: number,
     startDate: string,
     endDate: string,
   ): Promise<Map<string, number>> {
-    const rows = await this.stepAttemptRepository
-      .createQueryBuilder('stepAttempt')
-      .select('DATE(stepAttempt.finishedAt)', 'date')
-      .addSelect(
-        'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt))',
-        'seconds',
-      )
-      .where('stepAttempt.userId = :userId AND stepAttempt.status = :status', {
-        userId,
-        status: StepAttemptStatus.COMPLETED,
+    const dateFormatExpr = ProfileService.KST_DATE_FORMAT('stepAttempt.finishedAt');
+    const kstConvertExpr = ProfileService.KST_CONVERT('stepAttempt.finishedAt');
+
+    const rows = await this.createStudyTimeQueryBuilder(userId)
+      .select([
+        `${dateFormatExpr} AS date`,
+        'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)) AS seconds',
+      ])
+      .andWhere(`${kstConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
+        startDateTime: `${startDate} 00:00:00`,
+        endDateTime: `${endDate} 23:59:59`,
       })
-      .andWhere('DATE(stepAttempt.finishedAt) BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
-      .groupBy('DATE(stepAttempt.finishedAt)')
+      .groupBy(dateFormatExpr)
+      .orderBy('date', 'ASC')
       .getRawMany();
 
-    return new Map(rows.map(r => [r.date, Number(r.seconds)]));
+    return new Map(rows.map(r => [r.date, Number(r.seconds ?? 0)]));
   }
 
   /**
    * 날짜별 문제 풀이 수 조회
+   * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchSolvedCountsByDateRange(userId: number, startDate: string, endDate: string) {
+    const dateFormatExpr = ProfileService.KST_DATE_FORMAT('solve.solvedAt');
+    const kstConvertExpr = ProfileService.KST_CONVERT('solve.solvedAt');
+
     const rows = await this.solveLogRepository
       .createQueryBuilder('solve')
-      .select('DATE(solve.solvedAt)', 'date')
-      .addSelect('COUNT(*)', 'count')
-      .where('solve.userId = :userId')
-      .andWhere('DATE(solve.solvedAt) BETWEEN :startDate AND :endDate', {
-        userId,
-        startDate,
-        endDate,
+      .select([`${dateFormatExpr} AS date`, 'COUNT(*) AS count'])
+      .where('solve.userId = :userId', { userId })
+      .andWhere(`${kstConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
+        startDateTime: `${startDate} 00:00:00`,
+        endDateTime: `${endDate} 23:59:59`,
       })
-      .groupBy('DATE(solve.solvedAt)')
+      .groupBy(dateFormatExpr)
       .orderBy('date', 'ASC')
       .getRawMany();
 
-    return rows.map(r => ({ date: r.date, solvedCount: Number(r.count) }));
+    return rows.map(r => ({ date: r.date, solvedCount: Number(r.count ?? 0) }));
   }
 
   private async fetchAllFields() {
@@ -375,12 +396,16 @@ export class ProfileService {
 
   /**
    * 필드별 풀이 수 쿼리
+   * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchFieldSolvedCountsByDateRange(
     userId: number,
     startDate: string,
     endDate: string,
   ) {
+    const dateFormatExpr = ProfileService.KST_DATE_FORMAT('solveLog.solvedAt');
+    const kstConvertExpr = ProfileService.KST_CONVERT('solveLog.solvedAt');
+
     return this.solveLogRepository
       .createQueryBuilder('solveLog')
       .innerJoin('solveLog.quiz', 'quiz')
@@ -391,12 +416,18 @@ export class ProfileService {
         'field.id AS fieldId',
         'field.name AS fieldName',
         'field.slug AS fieldSlug',
-        'DATE(solveLog.solvedAt) AS date',
+        `${dateFormatExpr} AS date`,
+        'COUNT(solveLog.id) AS solvedCount',
       ])
-      .addSelect('COUNT(solveLog.id)', 'solvedCount')
       .where('solveLog.userId = :userId', { userId })
-      .andWhere('DATE(solveLog.solvedAt) BETWEEN :startDate AND :endDate', { startDate, endDate })
-      .groupBy('field.id, date')
+      .andWhere(`${kstConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
+        startDateTime: `${startDate} 00:00:00`,
+        endDateTime: `${endDate} 23:59:59`,
+      })
+      .groupBy('field.id')
+      .addGroupBy(dateFormatExpr)
+      .orderBy('field.id', 'ASC')
+      .addOrderBy('date', 'ASC')
       .getRawMany();
   }
 

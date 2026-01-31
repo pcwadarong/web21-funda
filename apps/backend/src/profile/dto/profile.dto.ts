@@ -41,6 +41,7 @@ export interface FollowStateResult {
 export interface DailyStatsData {
   date: string;
   studySeconds: number;
+  solvedCount: number;
 }
 
 export interface DailyStatsResult {

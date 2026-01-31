@@ -18,7 +18,7 @@ import type {
   ProfileTierSummary,
 } from './dto/profile.dto';
 import { UserFollow } from './entities/user-follow.entity';
-import { getDateRange, getLast7Days, toDateString } from './utils/date.utils';
+import { getDateRange, getLast7Days, toKstDateString } from './utils/date.utils';
 
 /**
  * 통계 계산용 인터페이스
@@ -172,25 +172,27 @@ export class ProfileService {
 
   /**
    * 기간별 스트릭 데이터를 조회한다. (올해 1월 1일부터 현재까지)
+   * KST 기준으로 날짜를 계산하여 타임존 경계에서의 오프바이원 에러를 방지한다.
    */
   async getStreaks(userId: number): Promise<ProfileStreakDay[]> {
     await this.findUserOrThrow(userId);
 
     const now = new Date();
-    const startDate = toDateString(new Date(now.getFullYear(), 0, 1));
-    const endDate = toDateString(now);
+    // KST 기준으로 올해 1월 1일과 오늘 날짜 계산
+    const startDate = toKstDateString(new Date(now.getFullYear(), 0, 1));
+    const endDate = toKstDateString(now);
 
-    const rawRows = await this.fetchSolvedCountsByDateRange(userId, startDate, endDate);
+    const solvedCountMap = await this.fetchSolvedCountsByDateRange(userId, startDate, endDate);
 
-    return rawRows.map(row => ({
+    return Array.from(solvedCountMap.entries()).map(([date, solvedCount]) => ({
       userId,
-      date: row.date,
-      solvedCount: row.solvedCount,
+      date,
+      solvedCount,
     }));
   }
 
   /**
-   * 최근 7일간의 학습 시간 통계를 조회한다.
+   * 최근 7일간의 학습 시간 및 문제 풀이 통계를 조회한다.
    */
   async getDailyStats(userId: number): Promise<DailyStatsResult> {
     await this.findUserOrThrow(userId);
@@ -198,12 +200,17 @@ export class ProfileService {
     const allDates = getLast7Days();
     const { startDate, endDate } = getDateRange(allDates);
 
-    const studyTimeMap = await this.fetchStudySecondsByDateRange(userId, startDate, endDate);
+    // 병렬 실행: 학습 시간과 문제 풀이 수를 동시에 조회
+    const [studyTimeMap, solvedCountMap] = await Promise.all([
+      this.fetchStudySecondsByDateRange(userId, startDate, endDate),
+      this.fetchSolvedCountsByDateRange(userId, startDate, endDate),
+    ]);
 
     // 빈 날짜를 0으로 채움
     const dailyData = allDates.map(date => ({
       date,
       studySeconds: studyTimeMap.get(date) ?? 0,
+      solvedCount: solvedCountMap.get(date) ?? 0,
     }));
 
     const studySecondsList = dailyData.map(d => d.studySeconds);
@@ -354,8 +361,17 @@ export class ProfileService {
   /**
    * 날짜별 문제 풀이 수 조회
    * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
+   *
+   * @param {number} userId 사용자 ID
+   * @param {string} startDate 시작 날짜 (YYYY-MM-DD)
+   * @param {string} endDate 종료 날짜 (YYYY-MM-DD)
+   * @returns {Promise<Map<string, number>>} 날짜별 문제 풀이 수 맵
    */
-  private async fetchSolvedCountsByDateRange(userId: number, startDate: string, endDate: string) {
+  private async fetchSolvedCountsByDateRange(
+    userId: number,
+    startDate: string,
+    endDate: string,
+  ): Promise<Map<string, number>> {
     const dateFormatExpr = ProfileService.KST_DATE_FORMAT('solve.solvedAt');
     const kstConvertExpr = ProfileService.KST_CONVERT('solve.solvedAt');
 
@@ -371,15 +387,25 @@ export class ProfileService {
       .orderBy('date', 'ASC')
       .getRawMany();
 
-    return rows.map(r => ({ date: r.date, solvedCount: Number(r.count ?? 0) }));
+    return new Map(rows.map(r => [r.date, Number(r.count ?? 0)]));
   }
 
   private async fetchAllFields() {
     return this.fieldRepository.find({ select: ['id', 'name', 'slug'], order: { id: 'ASC' } });
   }
 
-  private initializeFieldStats(fields: any[], dates: string[]): Map<number, FieldDailyStatsItem> {
-    const fieldMap = new Map();
+  /**
+   * 필드별 통계 데이터를 초기화한다.
+   *
+   * @param {Array<{id: number, name: string, slug: string}>} fields 필드 목록
+   * @param {string[]} dates 날짜 배열
+   * @returns {Map<number, FieldDailyStatsItem>} 필드별 통계 맵
+   */
+  private initializeFieldStats(
+    fields: { id: number; name: string; slug: string }[],
+    dates: string[],
+  ): Map<number, FieldDailyStatsItem> {
+    const fieldMap = new Map<number, FieldDailyStatsItem>();
     fields.forEach(f => {
       fieldMap.set(f.id, {
         fieldId: f.id,

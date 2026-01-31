@@ -18,7 +18,7 @@ import type {
   ProfileTierSummary,
 } from './dto/profile.dto';
 import { UserFollow } from './entities/user-follow.entity';
-import { getDateRange, getLast7Days, toKstDateString } from './utils/date.utils';
+import { getDateRange, getLast7Days, toDateStringInTimeZone } from './utils/date.utils';
 
 /**
  * 통계 계산용 인터페이스
@@ -36,18 +36,18 @@ export class ProfileService {
   private static readonly COLLATOR_KO = new Intl.Collator('ko', { sensitivity: 'base' });
 
   /**
-   * KST (UTC+9) 타임존 변환 SQL 프래그먼트
-   * UTC를 KST로 변환하는 CONVERT_TZ 표현식을 재사용한다.
+   * 타임존 변환 SQL 프래그먼트
+   * UTC를 지정한 타임존으로 변환하는 CONVERT_TZ 표현식을 재사용한다.
    */
-  private static readonly KST_CONVERT = (column: string): string =>
-    `CONVERT_TZ(${column}, '+00:00', '+09:00')`;
+  private static readonly TZ_CONVERT = (column: string, timeZone: string): string =>
+    `CONVERT_TZ(${column}, '+00:00', '${timeZone}')`;
 
   /**
-   * KST 기준 날짜 포맷 SQL 프래그먼트
-   * KST로 변환한 후 YYYY-MM-DD 형식으로 포맷한다.
+   * 타임존 기준 날짜 포맷 SQL 프래그먼트
+   * 타임존으로 변환한 후 YYYY-MM-DD 형식으로 포맷한다.
    */
-  private static readonly KST_DATE_FORMAT = (column: string): string =>
-    `DATE_FORMAT(${ProfileService.KST_CONVERT(column)}, '%Y-%m-%d')`;
+  private static readonly TZ_DATE_FORMAT = (column: string, timeZone: string): string =>
+    `DATE_FORMAT(${ProfileService.TZ_CONVERT(column, timeZone)}, '%Y-%m-%d')`;
 
   constructor(
     @InjectRepository(User)
@@ -172,17 +172,24 @@ export class ProfileService {
 
   /**
    * 기간별 스트릭 데이터를 조회한다. (올해 1월 1일부터 현재까지)
-   * KST 기준으로 날짜를 계산하여 타임존 경계에서의 오프바이원 에러를 방지한다.
+   * 요청 타임존 기준으로 날짜를 계산하여 타임존 경계에서의 오프바이원 에러를 방지한다.
    */
-  async getStreaks(userId: number): Promise<ProfileStreakDay[]> {
+  async getStreaks(userId: number, timeZone = 'UTC'): Promise<ProfileStreakDay[]> {
     await this.findUserOrThrow(userId);
 
     const now = new Date();
-    // KST 기준으로 올해 1월 1일과 오늘 날짜 계산
-    const startDate = toKstDateString(new Date(now.getFullYear(), 0, 1));
-    const endDate = toKstDateString(now);
+    const normalizedTimeZone = this.normalizeTimeZone(timeZone);
+    // 타임존 기준으로 올해 1월 1일과 오늘 날짜 계산
+    const endDate = toDateStringInTimeZone(now, normalizedTimeZone);
+    const timeZoneYear = Number(endDate.slice(0, 4));
+    const startDate = `${timeZoneYear}-01-01`;
 
-    const solvedCountMap = await this.fetchSolvedCountsByDateRange(userId, startDate, endDate);
+    const solvedCountMap = await this.fetchSolvedCountsByDateRange(
+      userId,
+      startDate,
+      endDate,
+      normalizedTimeZone,
+    );
 
     return Array.from(solvedCountMap.entries()).map(([date, solvedCount]) => ({
       userId,
@@ -194,16 +201,17 @@ export class ProfileService {
   /**
    * 최근 7일간의 학습 시간 및 문제 풀이 통계를 조회한다.
    */
-  async getDailyStats(userId: number): Promise<DailyStatsResult> {
+  async getDailyStats(userId: number, timeZone = 'UTC'): Promise<DailyStatsResult> {
     await this.findUserOrThrow(userId);
 
-    const allDates = getLast7Days();
+    const normalizedTimeZone = this.normalizeTimeZone(timeZone);
+    const allDates = getLast7Days(normalizedTimeZone);
     const { startDate, endDate } = getDateRange(allDates);
 
     // 병렬 실행: 학습 시간과 문제 풀이 수를 동시에 조회
     const [studyTimeMap, solvedCountMap] = await Promise.all([
-      this.fetchStudySecondsByDateRange(userId, startDate, endDate),
-      this.fetchSolvedCountsByDateRange(userId, startDate, endDate),
+      this.fetchStudySecondsByDateRange(userId, startDate, endDate, normalizedTimeZone),
+      this.fetchSolvedCountsByDateRange(userId, startDate, endDate, normalizedTimeZone),
     ]);
 
     // 빈 날짜를 0으로 채움
@@ -226,16 +234,17 @@ export class ProfileService {
   /**
    * 최근 7일간 필드(로드맵)별 문제 풀이 통계를 조회한다.
    */
-  async getFieldDailyStats(userId: number): Promise<FieldDailyStatsResult> {
+  async getFieldDailyStats(userId: number, timeZone = 'UTC'): Promise<FieldDailyStatsResult> {
     await this.findUserOrThrow(userId);
 
-    const allDates = getLast7Days();
+    const normalizedTimeZone = this.normalizeTimeZone(timeZone);
+    const allDates = getLast7Days(normalizedTimeZone);
     const { startDate, endDate } = getDateRange(allDates);
 
     // 병렬 실행: 필드 목록 조회와 실제 풀이 로그 조회를 동시에 수행
     const [roadmapFields, rows] = await Promise.all([
       this.fetchAllFields(),
-      this.fetchFieldSolvedCountsByDateRange(userId, startDate, endDate),
+      this.fetchFieldSolvedCountsByDateRange(userId, startDate, endDate, normalizedTimeZone),
     ]);
     const fieldMap = this.initializeFieldStats(roadmapFields, allDates);
     this.applyFieldSolvedCounts(fieldMap, rows);
@@ -248,6 +257,19 @@ export class ProfileService {
     if (targetUserId === followerUserId) {
       throw new BadRequestException('자기 자신은 팔로우할 수 없습니다.');
     }
+  }
+
+  private normalizeTimeZone(timeZone?: string): string {
+    const normalized = (timeZone ?? 'UTC').trim();
+    if (!/^[A-Za-z0-9_+:/-]+$/.test(normalized)) {
+      throw new BadRequestException('유효하지 않은 타임존 형식입니다.');
+    }
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: normalized }).format(new Date());
+    } catch {
+      throw new BadRequestException('유효하지 않은 타임존입니다.');
+    }
+    return normalized;
   }
 
   private buildTierSummary(tier: User['currentTier']): ProfileTierSummary | null {
@@ -332,22 +354,23 @@ export class ProfileService {
 
   /**
    * 날짜별 학습 시간(초) 조회
-   * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
+   * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchStudySecondsByDateRange(
     userId: number,
     startDate: string,
     endDate: string,
+    timeZone: string,
   ): Promise<Map<string, number>> {
-    const dateFormatExpr = ProfileService.KST_DATE_FORMAT('stepAttempt.finishedAt');
-    const kstConvertExpr = ProfileService.KST_CONVERT('stepAttempt.finishedAt');
+    const dateFormatExpr = ProfileService.TZ_DATE_FORMAT('stepAttempt.finishedAt', timeZone);
+    const tzConvertExpr = ProfileService.TZ_CONVERT('stepAttempt.finishedAt', timeZone);
 
     const rows = await this.createStudyTimeQueryBuilder(userId)
       .select([
         `${dateFormatExpr} AS date`,
         'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)) AS seconds',
       ])
-      .andWhere(`${kstConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
+      .andWhere(`${tzConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
         startDateTime: `${startDate} 00:00:00`,
         endDateTime: `${endDate} 23:59:59`,
       })
@@ -360,7 +383,7 @@ export class ProfileService {
 
   /**
    * 날짜별 문제 풀이 수 조회
-   * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
+   * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    *
    * @param {number} userId 사용자 ID
    * @param {string} startDate 시작 날짜 (YYYY-MM-DD)
@@ -371,15 +394,16 @@ export class ProfileService {
     userId: number,
     startDate: string,
     endDate: string,
+    timeZone: string,
   ): Promise<Map<string, number>> {
-    const dateFormatExpr = ProfileService.KST_DATE_FORMAT('solve.solvedAt');
-    const kstConvertExpr = ProfileService.KST_CONVERT('solve.solvedAt');
+    const dateFormatExpr = ProfileService.TZ_DATE_FORMAT('solve.solvedAt', timeZone);
+    const tzConvertExpr = ProfileService.TZ_CONVERT('solve.solvedAt', timeZone);
 
     const rows = await this.solveLogRepository
       .createQueryBuilder('solve')
       .select([`${dateFormatExpr} AS date`, 'COUNT(*) AS count'])
       .where('solve.userId = :userId', { userId })
-      .andWhere(`${kstConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
+      .andWhere(`${tzConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
         startDateTime: `${startDate} 00:00:00`,
         endDateTime: `${endDate} 23:59:59`,
       })
@@ -422,15 +446,16 @@ export class ProfileService {
 
   /**
    * 필드별 풀이 수 쿼리
-   * KST 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
+   * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchFieldSolvedCountsByDateRange(
     userId: number,
     startDate: string,
     endDate: string,
+    timeZone: string,
   ) {
-    const dateFormatExpr = ProfileService.KST_DATE_FORMAT('solveLog.solvedAt');
-    const kstConvertExpr = ProfileService.KST_CONVERT('solveLog.solvedAt');
+    const dateFormatExpr = ProfileService.TZ_DATE_FORMAT('solveLog.solvedAt', timeZone);
+    const tzConvertExpr = ProfileService.TZ_CONVERT('solveLog.solvedAt', timeZone);
 
     return this.solveLogRepository
       .createQueryBuilder('solveLog')
@@ -446,7 +471,7 @@ export class ProfileService {
         'COUNT(solveLog.id) AS solvedCount',
       ])
       .where('solveLog.userId = :userId', { userId })
-      .andWhere(`${kstConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
+      .andWhere(`${tzConvertExpr} BETWEEN :startDateTime AND :endDateTime`, {
         startDateTime: `${startDate} 00:00:00`,
         endDateTime: `${endDate} 23:59:59`,
       })

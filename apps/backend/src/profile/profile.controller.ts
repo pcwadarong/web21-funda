@@ -1,4 +1,14 @@
-import { Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 
@@ -63,8 +73,11 @@ export class ProfileController {
     description: '해당 사용자의 기간별 스트릭 데이터를 반환한다.',
   })
   @ApiOkResponse({ description: '프로필 스트릭 데이터 조회 성공' })
-  async getStreaks(@Param('userId', ParseIntPipe) userId: number) {
-    const result = await this.profileService.getStreaks(userId);
+  async getStreaks(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Headers('x-time-zone') timeZone?: string,
+  ) {
+    const result = await this.profileService.getStreaks(userId, timeZone);
 
     return {
       result,
@@ -78,8 +91,11 @@ export class ProfileController {
     description: '최근 7일간의 날짜별 학습 시간을 반환한다.',
   })
   @ApiOkResponse({ description: '최근 7일간 일일 통계 조회 성공' })
-  async getDailyStats(@Param('userId', ParseIntPipe) userId: number) {
-    const result = await this.profileService.getDailyStats(userId);
+  async getDailyStats(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Headers('x-time-zone') timeZone?: string,
+  ) {
+    const result = await this.profileService.getDailyStats(userId, timeZone);
 
     return {
       result,
@@ -93,8 +109,11 @@ export class ProfileController {
     description: '최근 7일간 필드(로드맵)별 문제 풀이 수를 날짜별로 반환한다.',
   })
   @ApiOkResponse({ description: '최근 7일간 필드별 문제 풀이 통계 조회 성공' })
-  async getFieldDailyStats(@Param('userId', ParseIntPipe) userId: number) {
-    const result = await this.profileService.getFieldDailyStats(userId);
+  async getFieldDailyStats(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Headers('x-time-zone') timeZone?: string,
+  ) {
+    const result = await this.profileService.getFieldDailyStats(userId, timeZone);
 
     return {
       result,

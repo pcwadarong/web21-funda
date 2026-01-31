@@ -9,9 +9,9 @@ import {
   useProfileFieldDailyStats,
   useProfileFollowers,
   useProfileFollowing,
+  useProfileStreaks,
   useProfileSummary,
-} from '@/hooks/queries/profileQueries';
-import { useProfileStreaks } from '@/hooks/queries/userQueries';
+} from '@/hooks/queries/userQueries';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 
 /**

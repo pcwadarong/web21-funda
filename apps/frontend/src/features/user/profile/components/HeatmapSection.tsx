@@ -4,7 +4,11 @@ import { memo, useMemo, useRef, useState } from 'react';
 import { Popover } from '@/components/Popover';
 import type { ProfileStreakDay } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
-import { formatDateDisplayName, formatDateKeyUtc, normalizeDateKey } from '@/utils/formatDate';
+import {
+  formatDateDisplayNameLocal,
+  formatDateKeyLocal,
+  normalizeDateKey,
+} from '@/utils/formatDate';
 
 interface HeatmapSectionProps {
   /** 표시할 월 수 (기본값: 12개월) */
@@ -82,15 +86,15 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
   }, [streaks]);
 
   // 연도의 시작 날짜 계산
-  const startOfYear = useMemo(() => new Date(Date.UTC(year, 0, 1)), [year]);
+  const startOfYear = useMemo(() => new Date(year, 0, 1, 0, 0, 0, 0), [year]);
   // 연도의 마지막 날짜 계산
-  const endDate = useMemo(() => new Date(Date.UTC(year, months, 0)), [year, months]);
-  const totalDays = useMemo(
-    () => Math.floor((endDate.getTime() - startOfYear.getTime()) / msPerDay) + 1,
-    [endDate, startOfYear],
-  );
+  const endDate = useMemo(() => new Date(year, months, 0, 23, 59, 59, 999), [year, months]);
+  const totalDays = useMemo(() => {
+    const diff = endDate.getTime() - startOfYear.getTime();
+    return Math.floor(diff / msPerDay) + 1;
+  }, [endDate, startOfYear]);
   // 연도의 첫 번째 날짜의 요일 인덱스 계산
-  const firstDayIndex = useMemo(() => new Date(year, 0, 1).getDay(), [year]);
+  const firstDayIndex = useMemo(() => startOfYear.getDay(), [startOfYear]);
   // 총 셀 수 계산
   const totalCells = useMemo(
     () => Math.ceil((totalDays + firstDayIndex) / 7) * 7,
@@ -126,8 +130,11 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
         <div css={heatmapLayoutStyle}>
           <div css={monthLabelRowStyle(weekColumns)}>
             {monthLabels.slice(0, months).map((label, monthIndex) => {
-              const dayOffset = (Date.UTC(year, monthIndex, 1) - Date.UTC(year, 0, 1)) / msPerDay;
-              const column = Math.floor((firstDayIndex + dayOffset) / 7);
+              const firstDayOfMonth = new Date(year, monthIndex, 1);
+              const daysDiff = Math.floor(
+                (firstDayOfMonth.getTime() - startOfYear.getTime()) / msPerDay,
+              );
+              const column = Math.floor((firstDayIndex + daysDiff) / 7);
               return (
                 <span key={label} css={monthLabelStyle(theme, column)}>
                   {label}
@@ -145,10 +152,11 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
             </div>
             <div css={heatmapGridStyle(weekColumns)} ref={containerRef}>
               {Array.from({ length: totalCells }).map((_, index) => {
-                const dayNumber = index - firstDayIndex + 1;
-                const isPlaceholder = dayNumber <= 0 || dayNumber > totalDays;
-                const dayDate = new Date(startOfYear.getTime() + (dayNumber - 1) * msPerDay);
-                const dateKey = isPlaceholder ? '' : formatDateKeyUtc(dayDate);
+                const dayOffset = index - firstDayIndex;
+                const isPlaceholder = dayOffset < 0 || dayOffset >= totalDays;
+
+                const dayDate = new Date(startOfYear.getTime() + dayOffset * msPerDay);
+                const dateKey = isPlaceholder ? '' : formatDateKeyLocal(dayDate);
                 const solvedCount = isPlaceholder ? 0 : (streakMap.get(dateKey) ?? 0);
                 const level = resolveLevel(solvedCount);
 
@@ -195,7 +203,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                     tabIndex={!isPlaceholder && solvedCount > 0 ? 0 : undefined}
                     aria-label={
                       !isPlaceholder && solvedCount > 0
-                        ? `${formatDateDisplayName(dayDate)} ${solvedCount}개`
+                        ? `${formatDateDisplayNameLocal(dayDate)} ${solvedCount}개`
                         : undefined
                     }
                     onMouseEnter={e =>
@@ -220,7 +228,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 {hoveredCell && (
                   <>
                     <p>
-                      {formatDateDisplayName(hoveredCell.date)} {hoveredCell.solvedCount}개
+                      {formatDateDisplayNameLocal(hoveredCell.date)} {hoveredCell.solvedCount}개
                     </p>
                   </>
                 )}

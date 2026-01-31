@@ -247,7 +247,7 @@ describe('ProfileService', () => {
 
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
-      const mockDates = getLast7Days();
+      const mockDates = getLast7Days('UTC');
 
       // stepAttemptRepository 모킹 (학습 시간)
       stepAttemptQueryBuilderMock.getRawMany.mockResolvedValue([
@@ -263,7 +263,7 @@ describe('ProfileService', () => {
         { date: mockDates[5], count: '3' },
       ]);
 
-      const result = await service.getDailyStats(1);
+      const result = await service.getDailyStats(1, 'UTC');
 
       expect(result.dailyData).toHaveLength(7);
       const day0 = result.dailyData[0];
@@ -314,7 +314,7 @@ describe('ProfileService', () => {
       stepAttemptQueryBuilderMock.getRawMany.mockResolvedValue([]);
       solveLogQueryBuilderMock.getRawMany.mockResolvedValue([]);
 
-      const result = await service.getDailyStats(1);
+      const result = await service.getDailyStats(1, 'UTC');
 
       expect(result.dailyData).toHaveLength(7);
       result.dailyData.forEach(day => {
@@ -325,16 +325,44 @@ describe('ProfileService', () => {
       expect(result.periodMaxSeconds).toBe(0);
       expect(result.periodAverageSeconds).toBe(0);
     });
-  });
 
-  describe('getFieldDailyStats', () => {
-    it('최근 7일간 필드별 문제 풀이 수를 반환한다', async () => {
-      // 고정된 시간 설정 (2024년 1월 15일 오후 3시 KST 기준)
-      jest.useFakeTimers().setSystemTime(new Date('2024-01-15T06:00:00.000Z')); // UTC 06:00 = KST 15:00
+    it('타임존이 다른 경우 날짜 범위가 해당 타임존 기준으로 계산된다', async () => {
+      // UTC 기준 2024-01-15 12:00:00, KST 기준 2024-01-15 21:00:00
+      jest.setSystemTime(new Date('2024-01-15T12:00:00Z'));
 
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
-      const mockDates = getLast7Days();
+      const mockDates = getLast7Days('Asia/Seoul');
+
+      stepAttemptQueryBuilderMock.getRawMany.mockResolvedValue([
+        { date: mockDates[0], seconds: '600' },
+      ]);
+      solveLogQueryBuilderMock.getRawMany.mockResolvedValue([{ date: mockDates[0], count: '2' }]);
+
+      const result = await service.getDailyStats(1, 'Asia/Seoul');
+
+      expect(result.dailyData[0]?.date).toBe(mockDates[0]);
+      expect(result.dailyData[0]?.studySeconds).toBe(600);
+      expect(result.dailyData[0]?.solvedCount).toBe(2);
+    });
+  });
+
+  describe('getFieldDailyStats', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('최근 7일간 필드별 문제 풀이 수를 반환한다', async () => {
+      // 고정된 시간 설정 (2024년 1월 15일 오후 3시 KST 기준)
+      jest.setSystemTime(new Date('2024-01-15T06:00:00.000Z')); // UTC 06:00 = KST 15:00
+
+      userFindOneMock.mockResolvedValue({ id: 1 } as User);
+
+      const mockDates = getLast7Days('Asia/Seoul');
 
       fieldFindMock.mockResolvedValue([
         { id: 1, name: '프론트엔드', slug: 'frontend' },
@@ -365,7 +393,7 @@ describe('ProfileService', () => {
         },
       ]);
 
-      const result = await service.getFieldDailyStats(1);
+      const result = await service.getFieldDailyStats(1, 'Asia/Seoul');
 
       expect(result.fields).toHaveLength(2);
 
@@ -402,13 +430,11 @@ describe('ProfileService', () => {
       expect(backendField.totalSolvedCount).toBe(3);
       expect(backendField.periodMaxSolvedCount).toBe(3);
       expect(backendField.periodAverageSolvedCount).toBe(0); // 3 / 7 = 0.42... -> 0
-
-      jest.useRealTimers();
     });
 
     it('필드별 데이터가 없는 경우 모든 날짜가 0으로 채워진다', async () => {
       // 고정된 시간 설정 (2024년 1월 15일 오후 3시 KST 기준)
-      jest.useFakeTimers().setSystemTime(new Date('2024-01-15T06:00:00.000Z')); // UTC 06:00 = KST 15:00
+      jest.setSystemTime(new Date('2024-01-15T06:00:00.000Z')); // UTC 06:00 = KST 15:00
 
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
@@ -416,7 +442,7 @@ describe('ProfileService', () => {
 
       solveLogQueryBuilderMock.getRawMany.mockResolvedValue([]);
 
-      const result = await service.getFieldDailyStats(1);
+      const result = await service.getFieldDailyStats(1, 'Asia/Seoul');
 
       expect(result.fields).toHaveLength(1);
       const field = result.fields[0];
@@ -430,8 +456,36 @@ describe('ProfileService', () => {
       expect(field.totalSolvedCount).toBe(0);
       expect(field.periodMaxSolvedCount).toBe(0);
       expect(field.periodAverageSolvedCount).toBe(0);
+    });
 
-      jest.useRealTimers();
+    it('타임존이 다른 경우 필드별 날짜가 해당 타임존 기준으로 계산된다', async () => {
+      // UTC 기준 2024-01-15 12:00:00, KST 기준 2024-01-15 21:00:00
+      jest.setSystemTime(new Date('2024-01-15T12:00:00Z'));
+
+      userFindOneMock.mockResolvedValue({ id: 1 } as User);
+
+      const mockDates = getLast7Days('Asia/Seoul');
+
+      fieldFindMock.mockResolvedValue([{ id: 1, name: '프론트엔드', slug: 'frontend' }]);
+
+      solveLogQueryBuilderMock.getRawMany.mockResolvedValue([
+        {
+          fieldId: 1,
+          fieldName: '프론트엔드',
+          fieldSlug: 'frontend',
+          date: mockDates[0],
+          solvedCount: '4',
+        },
+      ]);
+
+      const result = await service.getFieldDailyStats(1, 'Asia/Seoul');
+
+      const frontendField = result.fields.find(f => f.fieldId === 1);
+      if (!frontendField) {
+        throw new Error('frontendField is undefined');
+      }
+      expect(frontendField.dailyData[0]?.date).toBe(mockDates[0]);
+      expect(frontendField.dailyData[0]?.solvedCount).toBe(4);
     });
   });
 });

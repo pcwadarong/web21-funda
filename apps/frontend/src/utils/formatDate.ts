@@ -9,24 +9,10 @@
  * @param {Date} date Date 객체
  * @returns {string} YYYY-MM-DD 형식의 날짜 문자열
  */
-export const formatDateKeyUtc = (date: Date): string =>
+const formatDateKeyUtc = (date: Date): string =>
   `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
     date.getUTCDate(),
   ).padStart(2, '0')}`;
-
-/**
- * UI 화면 표시용 날짜 포맷 (YYYY년 MM월 DD일)
- * UTC 기준으로 날짜를 변환한다.
- *
- * @param {Date} date Date 객체
- * @returns {string} YYYY년 MM월 DD일 형식의 날짜 문자열
- */
-export const formatDateDisplayName = (date: Date): string => {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth() + 1;
-  const day = date.getUTCDate();
-  return `${year}년 ${month}월 ${day}일`;
-};
 
 /**
  * 날짜 문자열을 안전하게 UTC 키로 변환한다.
@@ -65,4 +51,28 @@ export const formatSeconds = (seconds: number): string => {
   const minutes = Math.floor(intSeconds / 60);
   const remainingSeconds = intSeconds % 60;
   return `${minutes}분 ${remainingSeconds}초`;
+};
+
+/**
+ * 날짜 문자열을 로컬 키로 변환한다.
+ *
+ * @param {Date} date Date 객체
+ * @returns {string} YYYY-MM-DD 형식의 날짜 문자열
+ */
+export const formatDateKeyLocal = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
+
+/**
+ * 날짜 문자열을 로컬 표시용 포맷으로 변환한다.
+ *
+ * @param {Date} date Date 객체
+ * @returns {string} YYYY년 MM월 DD일 형식의 날짜 문자열
+ */
+export const formatDateDisplayNameLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}년 ${month}월 ${day}일`;
 };

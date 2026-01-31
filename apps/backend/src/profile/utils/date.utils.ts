@@ -41,15 +41,15 @@ export function getLast7Days(): string[] {
   const now = new Date();
   const { year, month, day } = getKstDateTimeParts(now);
 
-  // KST 기준 오늘 날짜 생성
-  const todayKst = new Date(year, month - 1, day);
+  // KST 기준 오늘 날짜를 UTC로 생성
+  const todayKst = new Date(Date.UTC(year, month - 1, day));
   const sevenDaysAgo = new Date(todayKst);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // 최근 7일 (오늘 포함)
+  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6); // 최근 7일 (오늘 포함)
 
   const allDates: string[] = [];
   for (let i = 0; i < 7; i++) {
     const date = new Date(sevenDaysAgo);
-    date.setDate(date.getDate() + i);
+    date.setUTCDate(date.getUTCDate() + i);
     allDates.push(toKstDateString(date));
   }
 

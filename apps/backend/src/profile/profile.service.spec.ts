@@ -233,16 +233,34 @@ describe('ProfileService', () => {
   });
 
   describe('getDailyStats', () => {
-    it('최근 7일간의 날짜별 학습 시간을 반환한다', async () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('최근 7일간의 날짜별 학습 시간과 문제 풀이 수를 반환한다', async () => {
+      // 고정된 날짜로 설정: 2024년 1월 15일 (월요일)
+      jest.setSystemTime(new Date('2024-01-15T12:00:00Z'));
+
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
       const mockDates = getLast7Days();
 
-      // stepAttemptRepository 모킹
+      // stepAttemptRepository 모킹 (학습 시간)
       stepAttemptQueryBuilderMock.getRawMany.mockResolvedValue([
         { date: mockDates[1], seconds: '3600' }, // 1시간
         { date: mockDates[3], seconds: '7200' }, // 2시간
         { date: mockDates[5], seconds: '1800' }, // 30분
+      ]);
+
+      // solveLogRepository 모킹 (문제 풀이 수)
+      solveLogQueryBuilderMock.getRawMany.mockResolvedValue([
+        { date: mockDates[1], count: '5' },
+        { date: mockDates[3], count: '10' },
+        { date: mockDates[5], count: '3' },
       ]);
 
       const result = await service.getDailyStats(1);
@@ -254,6 +272,7 @@ describe('ProfileService', () => {
       }
       expect(day0.date).toBe(mockDates[0]);
       expect(day0.studySeconds).toBe(0);
+      expect(day0.solvedCount).toBe(0);
 
       const day1 = result.dailyData[1];
       if (!day1) {
@@ -261,6 +280,7 @@ describe('ProfileService', () => {
       }
       expect(day1.date).toBe(mockDates[1]);
       expect(day1.studySeconds).toBe(3600);
+      expect(day1.solvedCount).toBe(5);
 
       const day2 = result.dailyData[2];
       if (!day2) {
@@ -268,6 +288,7 @@ describe('ProfileService', () => {
       }
       expect(day2.date).toBe(mockDates[2]);
       expect(day2.studySeconds).toBe(0);
+      expect(day2.solvedCount).toBe(0);
 
       const day3 = result.dailyData[3];
       if (!day3) {
@@ -275,6 +296,7 @@ describe('ProfileService', () => {
       }
       expect(day3.date).toBe(mockDates[3]);
       expect(day3.studySeconds).toBe(7200);
+      expect(day3.solvedCount).toBe(10);
 
       // 최대 학습 시간 확인
       expect(result.periodMaxSeconds).toBe(7200);
@@ -284,15 +306,20 @@ describe('ProfileService', () => {
     });
 
     it('데이터가 없는 경우 모든 날짜가 0으로 채워진다', async () => {
+      // 고정된 날짜로 설정: 2024년 1월 15일 (월요일)
+      jest.setSystemTime(new Date('2024-01-15T12:00:00Z'));
+
       userFindOneMock.mockResolvedValue({ id: 1 } as User);
 
       stepAttemptQueryBuilderMock.getRawMany.mockResolvedValue([]);
+      solveLogQueryBuilderMock.getRawMany.mockResolvedValue([]);
 
       const result = await service.getDailyStats(1);
 
       expect(result.dailyData).toHaveLength(7);
       result.dailyData.forEach(day => {
         expect(day.studySeconds).toBe(0);
+        expect(day.solvedCount).toBe(0);
       });
 
       expect(result.periodMaxSeconds).toBe(0);

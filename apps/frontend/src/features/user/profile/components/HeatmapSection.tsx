@@ -159,11 +159,12 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 const dateKey = isPlaceholder ? '' : formatDateKeyLocal(dayDate);
                 const solvedCount = isPlaceholder ? 0 : (streakMap.get(dateKey) ?? 0);
                 const level = resolveLevel(solvedCount);
+                const isInteractive = !isPlaceholder && solvedCount > 0;
 
                 const handleCellInteraction = (
                   event: React.MouseEvent<HTMLSpanElement> | React.FocusEvent<HTMLSpanElement>,
                 ) => {
-                  if (!isPlaceholder && solvedCount > 0) {
+                  if (isInteractive) {
                     if ('clientX' in event && 'clientY' in event) {
                       handleCellMouseEnter(
                         event as React.MouseEvent<HTMLSpanElement>,
@@ -187,7 +188,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 const handleCellKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    if (!isPlaceholder && solvedCount > 0) {
+                    if (isInteractive) {
                       handleCellInteraction(event as any);
                     }
                   } else if (event.key === 'Escape') {
@@ -199,22 +200,20 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                   <span
                     key={`cell-${index}`}
                     css={heatmapCellStyle(theme, level, isPlaceholder)}
-                    role={!isPlaceholder && solvedCount > 0 ? 'button' : undefined}
-                    tabIndex={!isPlaceholder && solvedCount > 0 ? 0 : undefined}
+                    role={isInteractive ? 'button' : undefined}
+                    tabIndex={isInteractive ? 0 : undefined}
                     aria-label={
-                      !isPlaceholder && solvedCount > 0
+                      isInteractive
                         ? `${formatDateDisplayNameLocal(dayDate)} ${solvedCount}개`
                         : undefined
                     }
-                    onMouseEnter={e =>
-                      !isPlaceholder &&
-                      solvedCount > 0 &&
-                      handleCellMouseEnter(e, dayDate, solvedCount)
+                    onMouseEnter={
+                      isInteractive ? e => handleCellMouseEnter(e, dayDate, solvedCount) : undefined
                     }
-                    onMouseLeave={handleCellMouseLeave}
-                    onFocus={!isPlaceholder && solvedCount > 0 ? handleCellInteraction : undefined}
-                    onBlur={!isPlaceholder && solvedCount > 0 ? handleCellMouseLeave : undefined}
-                    onKeyDown={!isPlaceholder && solvedCount > 0 ? handleCellKeyDown : undefined}
+                    onMouseLeave={isInteractive ? handleCellMouseLeave : undefined}
+                    onFocus={isInteractive ? handleCellInteraction : undefined}
+                    onBlur={isInteractive ? handleCellMouseLeave : undefined}
+                    onKeyDown={isInteractive ? handleCellKeyDown : undefined}
                   />
                 );
               })}

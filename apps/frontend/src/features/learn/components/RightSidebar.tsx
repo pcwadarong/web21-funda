@@ -295,7 +295,7 @@ export const LearnRightSidebar = ({
 
       {isSearchModalOpen && (
         <Modal
-          title="사용자 찾기"
+          title="친구 추가"
           content={
             <UserSearchModal
               keyword={searchKeyword}

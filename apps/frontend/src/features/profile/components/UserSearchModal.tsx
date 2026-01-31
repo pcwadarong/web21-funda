@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 
 import { Avatar } from '@/components/Avatar';
+import SVGIcon from '@/components/SVGIcon';
 import type { ProfileSearchUser } from '@/features/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
@@ -37,6 +38,9 @@ export const UserSearchModal = ({
   return (
     <div css={containerStyle(theme)}>
       <div css={searchInputWrapperStyle(theme)}>
+        <span css={searchIconStyle(theme)}>
+          <SVGIcon icon="Search" size="sm" />
+        </span>
         <input
           value={keyword}
           onChange={event => onKeywordChange(event.target.value)}
@@ -90,7 +94,7 @@ export const UserSearchModal = ({
       </div>
 
       <p css={guideTextStyle(theme)}>
-        친구를 추가하면 서로의 진행 상황을 확인하고 경쟁할 수 있습니다.
+        친구를 추가하면 서로의 진행 상황과 프로필을 확인할 수 있습니다.
       </p>
     </div>
   );
@@ -100,7 +104,7 @@ const containerStyle = (theme: Theme) => css`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-height: 420px;
+  min-height: 480px;
   color: ${theme.colors.text.default};
 `;
 
@@ -108,9 +112,17 @@ const searchInputWrapperStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   border: 1px solid ${theme.colors.border.default};
-  border-radius: ${theme.borderRadius.large};
+  border-radius: ${theme.borderRadius.small};
   padding: 0 0.75rem;
   background: ${theme.colors.surface.default};
+`;
+
+const searchIconStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${theme.colors.text.light};
+  margin-right: 0.5rem;
 `;
 
 const searchInputStyle = (theme: Theme) => css`
@@ -201,6 +213,10 @@ const followButtonStyle = (theme: Theme, isFollowing: boolean) => css`
 const emptyTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.light};
+  text-align: center;
+  padding: 1rem;
+  border-radius: ${theme.borderRadius.medium};
+  background: ${theme.colors.surface.bold};
 `;
 
 const guideTextStyle = (theme: Theme) => css`

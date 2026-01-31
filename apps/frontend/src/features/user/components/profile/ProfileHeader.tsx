@@ -40,13 +40,7 @@ export const ProfileHeader = ({
   return (
     <section css={headerCardStyle(theme)}>
       <div css={headerLeftWrapperStyle}>
-        <button
-          type="button"
-          css={avatarButtonStyle}
-          onClick={onProfileImageClick}
-          disabled={!isEditable}
-          aria-label="프로필 이미지 변경"
-        >
+        <div css={avatarWrapperStyle}>
           <Avatar
             src={profileImageUrl}
             name={displayName}
@@ -54,13 +48,19 @@ export const ProfileHeader = ({
             css={avatarStyle(theme)}
             alt={`${displayName} 프로필`}
           />
-        </button>
+          <button
+            type="button"
+            css={avatarEditButtonStyle(theme, !isEditable)}
+            onClick={onProfileImageClick}
+            disabled={!isEditable}
+            aria-label="프로필 이미지 변경"
+          >
+            <SVGIcon icon="Edit" size="sm" />
+          </button>
+        </div>
         <div css={headerInfoWrapperStyle}>
           <div css={nameRowWrapperStyle}>
             <h1 css={nameStyle(theme)}>{displayName}</h1>
-            <button type="button" aria-label="사용자 이름 수정">
-              <SVGIcon icon="Edit" size="lg" />
-            </button>
           </div>
           <span css={tierBadgeStyle}>{tierName}</span>
           <div css={metaRowWrapperStyle}>
@@ -75,14 +75,7 @@ export const ProfileHeader = ({
           </div>
         </div>
       </div>
-      <button
-        type="button"
-        css={editButtonStyle(theme, !isEditable)}
-        onClick={onProfileImageClick}
-        disabled={!isEditable}
-      >
-        프로필 이미지 수정하기
-      </button>
+      <div />
     </section>
   );
 };
@@ -108,19 +101,13 @@ const headerLeftWrapperStyle = css`
   gap: 1.25rem;
 `;
 
-const avatarStyle = (theme: Theme) => css`
-  background: ${theme.colors.primary.light};
+const avatarWrapperStyle = css`
+  position: relative;
+  display: inline-flex;
 `;
 
-const avatarButtonStyle = css`
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-
-  &:disabled {
-    cursor: not-allowed;
-  }
+const avatarStyle = (theme: Theme) => css`
+  background: ${theme.colors.primary.light};
 `;
 
 const headerInfoWrapperStyle = css`
@@ -163,14 +150,23 @@ const metaItemStyle = css`
   gap: 0.375rem;
 `;
 
-const editButtonStyle = (theme: Theme, isDisabled: boolean) => css`
-  padding: 0.625rem 1rem;
-  border-radius: ${theme.borderRadius.medium};
-  border: none;
-  background: ${theme.colors.primary.light};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${palette.grayscale[50]};
+const avatarEditButtonStyle = (theme: Theme, isDisabled: boolean) => css`
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid ${palette.grayscale[50]};
+  background: ${palette.grayscale[50]};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${theme.colors.primary.main};
   cursor: ${isDisabled ? 'not-allowed' : 'pointer'};
-  opacity: ${isDisabled ? 0.6 : 0.95};
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+
+  &:hover {
+    background: ${palette.grayscale[100]};
+  }
 `;

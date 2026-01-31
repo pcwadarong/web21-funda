@@ -61,7 +61,8 @@ export const normalizeDateKey = (value: string): string => {
  */
 export const formatSeconds = (seconds: number): string => {
   const safeSeconds = Math.max(seconds, 0);
-  const minutes = Math.floor(safeSeconds / 60);
-  const remainingSeconds = safeSeconds % 60;
+  const intSeconds = Math.floor(safeSeconds);
+  const minutes = Math.floor(intSeconds / 60);
+  const remainingSeconds = intSeconds % 60;
   return `${minutes}분 ${remainingSeconds}초`;
 };

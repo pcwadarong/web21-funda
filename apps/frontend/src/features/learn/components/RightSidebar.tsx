@@ -8,6 +8,7 @@ import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { Modal } from '@/components/Modal';
 import { UserSearchModal } from '@/features/profile/components/UserSearchModal';
+import type { ProfileSearchUser } from '@/features/profile/types';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
@@ -171,7 +172,7 @@ export const LearnRightSidebar = ({
 
   const handleSearchUserClick = (targetUserId: number) => {
     handleCloseSearchModal();
-    navigate(`/profile/${targetUserId}`);
+    navigate(`/profile/${targetUserId}`, { state: { refetch: true } });
   };
 
   const handleFollowToggle = async (targetUserId: number, isFollowing: boolean) => {
@@ -183,11 +184,30 @@ export const LearnRightSidebar = ({
     setFollowOverrides(prev => ({ ...prev, [targetUserId]: !isFollowing }));
 
     try {
+      let nextIsFollowing = !isFollowing;
       if (isFollowing) {
-        await unfollowMutation.mutateAsync(targetUserId);
+        const result = await unfollowMutation.mutateAsync(targetUserId);
+        nextIsFollowing = result.isFollowing;
       } else {
-        await followMutation.mutateAsync(targetUserId);
+        const result = await followMutation.mutateAsync(targetUserId);
+        nextIsFollowing = result.isFollowing;
       }
+
+      setFollowOverrides(prev => ({ ...prev, [targetUserId]: nextIsFollowing }));
+      queryClient.setQueryData<ProfileSearchUser[]>(
+        profileKeys.search(debouncedKeyword),
+        previousData => {
+          if (!previousData) {
+            return previousData;
+          }
+
+          return previousData.map(userData =>
+            userData.userId === targetUserId
+              ? { ...userData, isFollowing: nextIsFollowing }
+              : userData,
+          );
+        },
+      );
 
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: profileKeys.following(user.id) });

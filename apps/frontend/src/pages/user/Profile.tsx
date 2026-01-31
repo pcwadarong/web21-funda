@@ -60,8 +60,26 @@ export const Profile = () => {
     }
 
     void refetchProfileSummary();
+    void refetchFollowers();
+    void refetchFollowing();
     navigate(location.pathname, { replace: true, state: null });
-  }, [navigate, location.pathname, refetchProfileSummary, shouldRefetch]);
+  }, [
+    navigate,
+    location.pathname,
+    refetchFollowers,
+    refetchFollowing,
+    refetchProfileSummary,
+    shouldRefetch,
+  ]);
+
+  useEffect(() => {
+    if (shouldFetch === null) {
+      return;
+    }
+
+    void refetchFollowers();
+    void refetchFollowing();
+  }, [refetchFollowers, refetchFollowing, shouldFetch]);
 
   const isMyProfile = user?.id !== undefined && profileSummary?.userId === user.id;
   const handleProfileImageClick = isMyProfile ? () => navigate('/profile/characters') : undefined;

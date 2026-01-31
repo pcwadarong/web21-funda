@@ -2,7 +2,8 @@
  * 특정 타임존 기준으로 Date 객체의 년/월/일 부분을 추출한다.
  *
  * @param {Date} date Date 객체
- * @returns {{year: number, month: number, day: number}} KST 기준 년/월/일
+ * @param {string} timeZone 타임존 (예: "Asia/Seoul")
+ * @returns {{year: number, month: number, day: number}} 지정한 타임존 기준 년/월/일
  */
 function getDateTimePartsInTimeZone(
   date: Date,
@@ -47,9 +48,10 @@ export function toDateStringInTimeZone(date: Date, timeZone: string): string {
 
 /**
  * 최근 7일간의 날짜 목록을 생성한다.
- * 오늘을 포함하여 과거 6일까지 총 7일의 날짜를 KST 기준으로 반환한다.
+ * 오늘을 포함하여 과거 6일까지 총 7일의 날짜를 지정한 타임존 기준으로 반환한다.
  *
- * @returns {string[]} YYYY-MM-DD 형식의 날짜 문자열 배열 (7개, KST 기준)
+ * @param {string} timeZone 타임존 (예: "Asia/Seoul")
+ * @returns {string[]} YYYY-MM-DD 형식의 날짜 문자열 배열 (7개, 타임존 기준)
  */
 export function getLast7Days(timeZone = 'UTC'): string[] {
   const now = new Date();
@@ -77,6 +79,8 @@ export function getLast7Days(timeZone = 'UTC'): string[] {
  * @returns {{ startDate: string; endDate: string }} 시작일과 종료일
  */
 export function getDateRange(dates: string[]): { startDate: string; endDate: string } {
+  if (dates.length === 0) throw new Error('날짜 배열이 비어있습니다.');
+
   return {
     startDate: dates[0] ?? '',
     endDate: dates[dates.length - 1] ?? '',

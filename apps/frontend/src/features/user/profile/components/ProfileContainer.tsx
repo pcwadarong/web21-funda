@@ -69,46 +69,39 @@ export const ProfileContainer = memo(
     );
 
     return (
-      <main css={pageStyle}>
-        <div css={pageContentStyle}>
-          <header css={headerStyle}>
-            <h1 css={pageTitleStyle(theme)}>PROFILE</h1>
-          </header>
+      <div css={pageContentStyle}>
+        <header css={headerStyle}>
+          <h1 css={pageTitleStyle(theme)}>PROFILE</h1>
+        </header>
 
-          <ProfileHeader profileSummary={profileSummary} diamondCount={diamondCount} />
+        <ProfileHeader profileSummary={profileSummary} diamondCount={diamondCount} />
 
-          <div css={twoColumnGridStyle}>
-            <FollowListSection
-              following={following}
-              followers={followers}
-              isFollowingLoading={isFollowingLoading}
-              isFollowersLoading={isFollowersLoading}
-              onUserClick={onUserClick}
-            />
-            <StatsSection profileSummary={profileSummary} displayName={displayName} />
-          </div>
-
-          <HeatmapSection streaks={streaks} />
-
-          <div css={twoColumnGridStyle}>
-            <ChartSection dailyStats={dailyStats} fieldDailyStats={fieldDailyStats} />
-          </div>
+        <div css={twoColumnGridStyle}>
+          <FollowListSection
+            following={following}
+            followers={followers}
+            isFollowingLoading={isFollowingLoading}
+            isFollowersLoading={isFollowersLoading}
+            onUserClick={onUserClick}
+          />
+          <StatsSection profileSummary={profileSummary} displayName={displayName} />
         </div>
-      </main>
+
+        <HeatmapSection streaks={streaks} />
+
+        <div css={twoColumnGridStyle}>
+          <ChartSection dailyStats={dailyStats} fieldDailyStats={fieldDailyStats} />
+        </div>
+      </div>
     );
   },
 );
 
 ProfileContainer.displayName = 'ProfileContainer';
 
-const pageStyle = css`
-  flex: 1;
-  min-height: 100vh;
-  padding: 2rem 1.5rem;
-`;
-
 const pageContentStyle = css`
   width: 100%;
+  padding: 2rem 1.5rem;
   max-width: 60rem;
   margin: 0 auto;
   display: flex;

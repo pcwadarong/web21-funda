@@ -15,7 +15,7 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
   if (loading) {
     return (
       <div css={statusBoxStyle(theme)}>
-        <p css={loadingStyle(theme)}>로딩 중...</p>
+        <p css={statusTextStyle(theme)}>로딩 중...</p>
       </div>
     );
   }
@@ -23,7 +23,7 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
   if (error) {
     return (
       <div css={statusBoxStyle(theme)}>
-        <p css={errorStyle(theme)}>에러: {error}</p>
+        <p css={statusTextStyle(theme)}>에러: {error}</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
         </div>
         {reports.length === 0 ? (
           <div css={emptyRowStyle(theme)} role="row">
-            <div css={emptyCellStyle}>신고가 없습니다.</div>
+            신고가 없습니다.
           </div>
         ) : (
           reports.map(report => (
@@ -153,8 +153,6 @@ const emptyRowStyle = (theme: Theme) => css`
   grid-column: 1 / -1;
 `;
 
-const emptyCellStyle = css``;
-
 const statusBoxStyle = (theme: Theme) => css`
   flex: 1;
   display: flex;
@@ -165,12 +163,7 @@ const statusBoxStyle = (theme: Theme) => css`
   color: ${theme.colors.text.weak};
 `;
 
-const loadingStyle = (theme: Theme) => css`
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['16Medium'].fontSize};
-`;
-
-const errorStyle = (theme: Theme) => css`
+const statusTextStyle = (theme: Theme) => css`
   color: ${theme.colors.text.default};
   font-size: ${theme.typography['16Medium'].fontSize};
 `;

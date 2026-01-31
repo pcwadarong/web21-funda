@@ -58,13 +58,13 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
         ) : (
           reports.map(report => (
             <div key={report.id} css={gridRowStyle(theme)} role="row">
-              <div css={idCellStyle(theme)} role="cell">
+              <div css={cellStyle(theme)} role="cell">
                 {report.id}
               </div>
-              <div css={quizIdCellStyle(theme)} role="cell">
+              <div css={cellStyle(theme)} role="cell">
                 {report.quizId}
               </div>
-              <div css={questionCellStyle(theme)} role="cell">
+              <div css={cellStyle(theme)} role="cell">
                 {report.question ?? '-'}
               </div>
               <div css={cellStyle(theme)} role="cell">
@@ -74,7 +74,7 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
                     : report.userDisplayName
                   : '게스트'}
               </div>
-              <div css={reportContentCellStyle(theme)} role="cell">
+              <div css={cellStyle(theme)} role="cell">
                 {report.report_description}
               </div>
               <div css={cellStyle(theme)} role="cell">
@@ -94,7 +94,6 @@ const tableWrapperStyle = css`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   width: 100%;
-  overflow-x: auto;
   display: block;
   background: white;
 `;
@@ -143,22 +142,6 @@ const headerCellStyle = (theme: Theme) => css`
   color: ${theme.colors.text.strong};
 `;
 
-const reportContentCellStyle = (theme: Theme) => css`
-  ${cellStyle(theme)};
-`;
-
-const questionCellStyle = (theme: Theme) => css`
-  ${cellStyle(theme)};
-`;
-
-const idCellStyle = (theme: Theme) => css`
-  ${cellStyle(theme)};
-`;
-
-const quizIdCellStyle = (theme: Theme) => css`
-  ${cellStyle(theme)};
-`;
-
 const emptyStyle = (theme: Theme) => css`
   text-align: center;
   color: ${theme.colors.text.weak};
@@ -170,9 +153,7 @@ const emptyRowStyle = (theme: Theme) => css`
   grid-column: 1 / -1;
 `;
 
-const emptyCellStyle = css`
-  grid-column: 1 / -1;
-`;
+const emptyCellStyle = css``;
 
 const statusBoxStyle = (theme: Theme) => css`
   flex: 1;

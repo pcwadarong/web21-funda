@@ -25,17 +25,17 @@ export const useUnsubscribeMutation = () =>
   });
 
 export const userKeys = {
-  summary: (userId: number) => ['profile', 'summary', userId] as const,
-  followers: (userId: number) => ['profile', 'followers', userId] as const,
-  following: (userId: number) => ['profile', 'following', userId] as const,
-  dailyStats: (userId: number) => ['profile', 'daily-stats', userId] as const,
-  fieldDailyStats: (userId: number) => ['profile', 'field-daily-stats', userId] as const,
+  summary: (userId: number) => ['user', 'summary', userId] as const,
+  followers: (userId: number) => ['user', 'followers', userId] as const,
+  following: (userId: number) => ['user', 'following', userId] as const,
+  dailyStats: (userId: number) => ['user', 'daily-stats', userId] as const,
+  fieldDailyStats: (userId: number) => ['user', 'field-daily-stats', userId] as const,
   streaks: (userId: number) => ['user', 'streaks', userId] as const,
 };
 
 export const useProfileSummary = (userId: number | null) =>
   useQuery<ProfileSummaryResult, Error>({
-    queryKey: userId ? userKeys.summary(userId) : ['profile', 'summary', 'empty'],
+    queryKey: userId ? userKeys.summary(userId) : ['user', 'summary', 'empty'],
     queryFn: () => {
       if (userId === null) throw new Error('사용자 ID가 필요합니다.');
       return userService.getProfileSummary(userId);
@@ -47,7 +47,7 @@ export const useProfileSummary = (userId: number | null) =>
 
 export const useProfileFollowers = (userId: number | null) =>
   useQuery<ProfileFollowUser[], Error>({
-    queryKey: userId ? userKeys.followers(userId) : ['profile', 'followers', 'empty'],
+    queryKey: userId ? userKeys.followers(userId) : ['user', 'followers', 'empty'],
     queryFn: () => {
       if (userId === null) throw new Error('사용자 ID가 필요합니다.');
       return userService.getFollowers(userId);
@@ -58,7 +58,7 @@ export const useProfileFollowers = (userId: number | null) =>
 
 export const useProfileFollowing = (userId: number | null) =>
   useQuery<ProfileFollowUser[], Error>({
-    queryKey: userId ? userKeys.following(userId) : ['profile', 'following', 'empty'],
+    queryKey: userId ? userKeys.following(userId) : ['user', 'following', 'empty'],
     queryFn: () => {
       if (userId === null) throw new Error('사용자 ID가 필요합니다.');
       return userService.getFollowing(userId);
@@ -69,7 +69,7 @@ export const useProfileFollowing = (userId: number | null) =>
 
 export const useProfileDailyStats = (userId: number | null) =>
   useQuery<DailyStatsResult, Error>({
-    queryKey: userId ? userKeys.dailyStats(userId) : ['profile', 'daily-stats', 'empty'],
+    queryKey: userId ? userKeys.dailyStats(userId) : ['user', 'daily-stats', 'empty'],
     queryFn: () => {
       if (userId === null) throw new Error('사용자 ID가 필요합니다.');
       return userService.getDailyStats(userId);
@@ -80,7 +80,7 @@ export const useProfileDailyStats = (userId: number | null) =>
 
 export const useProfileFieldDailyStats = (userId: number | null) =>
   useQuery<FieldDailyStatsResult, Error>({
-    queryKey: userId ? userKeys.fieldDailyStats(userId) : ['profile', 'field-daily-stats', 'empty'],
+    queryKey: userId ? userKeys.fieldDailyStats(userId) : ['user', 'field-daily-stats', 'empty'],
     queryFn: () => {
       if (userId === null) throw new Error('사용자 ID가 필요합니다.');
       return userService.getFieldDailyStats(userId);

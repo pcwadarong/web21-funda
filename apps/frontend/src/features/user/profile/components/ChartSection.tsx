@@ -90,7 +90,7 @@ const buildScale = (
 const buildTimeScale = (maxSeconds: number): { yMax: number; ticks: number[] } => {
   const minMax = Math.max(maxSeconds, 1200);
   const step = minMax <= 1200 ? 300 : 600; // 5분 또는 10분 단위
-  const tickCount = Math.max(4, Math.min(5, Math.ceil(minMax / step)));
+  const tickCount = Math.max(4, Math.ceil(minMax / step));
   const yMax = step * tickCount;
   const ticks = Array.from({ length: tickCount + 1 }, (_, index) => index * step);
   return { yMax, ticks };

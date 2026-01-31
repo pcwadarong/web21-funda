@@ -27,5 +27,7 @@ const getPalette = (theme: Theme): string[] => [
  */
 export const getFieldColorByIndex = (index: number, theme: Theme): string => {
   const palette = getPalette(theme);
-  return palette[index % palette.length];
+  const colorIndex = index % palette.length;
+  const color = palette[colorIndex];
+  return color ?? palette[0] ?? '#000000';
 };

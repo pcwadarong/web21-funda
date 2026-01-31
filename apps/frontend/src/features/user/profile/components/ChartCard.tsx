@@ -64,7 +64,9 @@ interface ChartCardProps {
  */
 const createSmoothPath = (points: { x: number; y: number }[]): string => {
   if (points.length === 0) return '';
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  const firstPoint = points[0];
+  if (!firstPoint) return '';
+  if (points.length === 1) return `M ${firstPoint.x} ${firstPoint.y}`;
 
   const smoothing = 0.2;
 
@@ -101,8 +103,10 @@ const createSmoothPath = (points: { x: number; y: number }[]): string => {
     if (index === 0) return `M ${point.x} ${point.y}`;
 
     const previous = array[index - 1];
+    if (!previous) return acc;
     const next = array[index + 1];
-    const cp1 = controlPoint(previous, array[index - 2], point, false);
+    const prevPrev = array[index - 2];
+    const cp1 = controlPoint(previous, prevPrev, point, false);
     const cp2 = controlPoint(point, previous, next, true);
     return `${acc} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${point.x} ${point.y}`;
   }, '');
@@ -124,6 +128,7 @@ const createAreaPath = (points: { x: number; y: number }[], baseline: number): s
   const linePath = createSmoothPath(points);
   const last = points[points.length - 1];
   const first = points[0];
+  if (!last || !first) return linePath;
   return `${linePath} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
 };
 

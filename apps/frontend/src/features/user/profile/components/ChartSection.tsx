@@ -23,8 +23,17 @@ const buildScale = (
   minTicks: number,
   maxTicks: number,
 ): { yMax: number; ticks: number[] } => {
-  const safeMax = Math.max(maxValue, stepCandidates[0]);
-  let chosenStep = stepCandidates[0];
+  if (stepCandidates.length === 0) {
+    return { yMax: maxValue || 1, ticks: [0, maxValue || 1] };
+  }
+
+  const firstStep = stepCandidates[0];
+  if (firstStep === undefined) {
+    return { yMax: maxValue || 1, ticks: [0, maxValue || 1] };
+  }
+
+  const safeMax = Math.max(maxValue, firstStep);
+  let chosenStep = firstStep;
   let chosenTicks = Math.ceil(safeMax / chosenStep);
 
   for (const step of stepCandidates) {

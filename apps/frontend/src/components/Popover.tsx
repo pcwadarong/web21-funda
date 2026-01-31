@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import type { Theme } from '@/styles/theme';
 

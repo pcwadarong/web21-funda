@@ -30,17 +30,27 @@ export const formatDateDisplayName = (date: Date): string => {
 
 /**
  * 날짜 문자열을 안전하게 UTC 키로 변환한다.
- * 파싱에 실패하면 원본 문자열의 처음 10자리를 반환한다.
+ * 파싱에 실패하거나 유효하지 않은 날짜인 경우 원본 문자열의 처음 10자리를 반환한다.
  *
  * @param {string} value 날짜 문자열
  * @returns {string} YYYY-MM-DD 형식의 날짜 문자열
  */
 export const normalizeDateKey = (value: string): string => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value.slice(0, 10);
+  // YYYY-MM-DD 형식 검증
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const datePart = value.slice(0, 10);
+  if (!dateRegex.test(datePart)) {
+    return datePart;
   }
-  return formatDateKeyUtc(parsed);
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return datePart;
+
+  // 포맷된 결과가 원본과 일치하는지 확인 (자동 보정 방지)
+  const formatted = formatDateKeyUtc(parsed);
+  if (formatted !== datePart) return datePart;
+
+  return formatted;
 };
 
 /**

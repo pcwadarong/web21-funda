@@ -19,7 +19,7 @@ export interface PopoverProps {
   onMouseEnter?: () => void;
   /** 마우스가 Popover를 벗어날 때 호출되는 함수 */
   onMouseLeave?: () => void;
-  /** Y 오프셋 (기본값: -60px) */
+  /** Y 오프셋 (기본값: -50px) */
   offsetY?: number;
 }
 
@@ -44,7 +44,12 @@ export const Popover = ({
   }
 
   return (
-    <div css={popoverStyle(x, y, offsetY)} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+    <div
+      css={popoverStyle(x, y, offsetY)}
+      role="tooltip"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <div css={popoverContentStyle(theme)}>{children}</div>
     </div>
   );

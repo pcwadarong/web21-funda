@@ -120,7 +120,7 @@ const statItemStyle = (theme: Theme) => css`
 
 const statLabelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${palette.grayscale[800]}
+  color: ${palette.grayscale[800]};
   display: block;
   margin-bottom: 0.25rem;
 `;
@@ -128,6 +128,6 @@ const statLabelStyle = (theme: Theme) => css`
 const statValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Medium'].fontSize};
   font-weight: ${theme.typography['20Medium'].fontWeight};
-  color: ${palette.grayscale[800]}
+  color: ${palette.grayscale[800]};
   margin: 0;
 `;

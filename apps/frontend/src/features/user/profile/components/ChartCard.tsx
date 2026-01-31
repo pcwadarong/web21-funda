@@ -194,7 +194,9 @@ export const ChartCard = ({
     const count = dates.length;
 
     return series.map(seriesItem => {
-      const points = seriesItem.values.map((value, index) => {
+      // dates 배열을 기준으로 포인트 생성하여 길이 불일치 문제 해결
+      const points = dates.map((_, index) => {
+        const value = seriesItem.values[index] ?? 0;
         const ratio = count > 1 ? index / (count - 1) : 0;
         const x = CHART_PADDING.left + plotWidth * ratio;
         const y =
@@ -218,9 +220,10 @@ export const ChartCard = ({
         areaPath: createAreaPath(points, CHART_HEIGHT - CHART_PADDING.bottom),
       };
     });
-  }, [dates.length, series, yScale.yMax]);
+  }, [dates, series, yScale.yMax]);
   const rawGradientId = useId();
   const gradientId = useMemo(() => rawGradientId.replace(/:/g, '-'), [rawGradientId]);
+  const titleId = useMemo(() => `chart-title-${gradientId}`, [gradientId]);
 
   const popoverPosition = useMemo(() => {
     if (!activePoint) return null;
@@ -247,7 +250,12 @@ export const ChartCard = ({
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           preserveAspectRatio="xMidYMid meet"
           css={chartSvgStyle}
+          role="img"
+          aria-labelledby={titleId}
         >
+          <title id={titleId}>
+            {title} 차트: {caption}
+          </title>
           <defs>
             {pointGroups.map((group, index) => {
               const seriesGradientId = `${gradientId}-${index}`;
@@ -268,10 +276,11 @@ export const ChartCard = ({
           </defs>
 
           {yScale.ticks.map(tick => {
+            const safeYMax = Math.max(yScale.yMax, 1);
             const y =
               CHART_HEIGHT -
               CHART_PADDING.bottom -
-              (tick / yScale.yMax) * (CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom);
+              (tick / safeYMax) * (CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom);
             return (
               <g key={`y-${tick}`}>
                 <line
@@ -328,29 +337,53 @@ export const ChartCard = ({
           ))}
 
           {pointGroups.map(group =>
-            group.points.map((point, index) => (
-              <g key={`point-${group.id}-${index}`}>
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r="4.5"
-                  fill={point.color}
-                  stroke={theme.colors.surface.strong}
-                  strokeWidth="2"
-                />
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r="10"
-                  fill="transparent"
-                  onMouseEnter={() => {
-                    if (point.disableZeroTooltip && point.value === 0) return;
-                    setActivePoint(point);
-                  }}
-                  onMouseLeave={() => setActivePoint(null)}
-                />
-              </g>
-            )),
+            group.points.map((point, index) => {
+              const handlePointInteraction = () => {
+                if (point.disableZeroTooltip && point.value === 0) return;
+                setActivePoint(point);
+              };
+
+              const handlePointLeave = () => {
+                setActivePoint(null);
+              };
+
+              const handleKeyDown = (event: React.KeyboardEvent<SVGCircleElement>) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handlePointInteraction();
+                } else if (event.key === 'Escape') {
+                  handlePointLeave();
+                }
+              };
+
+              return (
+                <g key={`point-${group.id}-${index}`}>
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="4.5"
+                    fill={point.color}
+                    stroke={theme.colors.surface.strong}
+                    strokeWidth="2"
+                  />
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="10"
+                    fill="transparent"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${point.label ? `${point.label}: ` : ''}${point.tooltipFormatter(point.value)}`}
+                    onMouseEnter={handlePointInteraction}
+                    onMouseLeave={handlePointLeave}
+                    onFocus={handlePointInteraction}
+                    onBlur={handlePointLeave}
+                    onKeyDown={handleKeyDown}
+                    css={focusablePointStyle}
+                  />
+                </g>
+              );
+            }),
           )}
         </svg>
         {popoverPosition && activePoint && (
@@ -441,4 +474,14 @@ const legendDotStyle = (color: string) => css`
   height: 0.6rem;
   border-radius: 999px;
   background: ${color};
+`;
+
+const focusablePointStyle = css`
+  cursor: pointer;
+  outline: none;
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
 `;

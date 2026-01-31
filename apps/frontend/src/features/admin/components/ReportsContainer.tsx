@@ -30,30 +30,56 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
 
   return (
     <div css={tableWrapperStyle}>
-      <div css={gridStyle(theme)}>
-        <div css={headerRowStyle(theme)}>
-          <div css={headerCellStyle(theme)}>ID</div>
-          <div css={headerCellStyle(theme)}>Quiz ID</div>
-          <div css={headerCellStyle(theme)}>문제</div>
-          <div css={headerCellStyle(theme)}>유저</div>
-          <div css={headerCellStyle(theme)}>신고 내용</div>
-          <div css={headerCellStyle(theme)}>날짜</div>
+      <div css={gridStyle(theme)} role="table" aria-label="신고 목록">
+        <div css={headerRowStyle(theme)} role="row">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="ID">
+            ID
+          </div>
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="Quiz ID">
+            Quiz ID
+          </div>
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="문제">
+            문제
+          </div>
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저">
+            유저
+          </div>
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="신고 내용">
+            신고 내용
+          </div>
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜">
+            날짜
+          </div>
         </div>
         {reports.length === 0 ? (
-          <div css={emptyRowStyle(theme)}>신고가 없습니다.</div>
+          <div css={emptyRowStyle(theme)} role="row">
+            <div css={emptyCellStyle}>신고가 없습니다.</div>
+          </div>
         ) : (
           reports.map(report => (
-            <div key={report.id} css={gridRowStyle(theme)}>
-              <div css={idCellStyle(theme)}>{report.id}</div>
-              <div css={quizIdCellStyle(theme)}>{report.quizId}</div>
-              <div css={questionCellStyle(theme)}>{report.question ?? '-'}</div>
-              <div css={cellStyle(theme)}>
+            <div key={report.id} css={gridRowStyle(theme)} role="row">
+              <div css={idCellStyle(theme)} role="cell">
+                {report.id}
+              </div>
+              <div css={quizIdCellStyle(theme)} role="cell">
+                {report.quizId}
+              </div>
+              <div css={questionCellStyle(theme)} role="cell">
+                {report.question ?? '-'}
+              </div>
+              <div css={cellStyle(theme)} role="cell">
                 {report.userDisplayName
-                  ? `${report.userDisplayName} (#${report.userId})`
+                  ? report.userId
+                    ? `${report.userDisplayName} (#${report.userId})`
+                    : report.userDisplayName
                   : '게스트'}
               </div>
-              <div css={reportContentCellStyle(theme)}>{report.report_description}</div>
-              <div css={cellStyle(theme)}>{new Date(report.createdAt).toLocaleString('ko-KR')}</div>
+              <div css={reportContentCellStyle(theme)} role="cell">
+                {report.report_description}
+              </div>
+              <div css={cellStyle(theme)} role="cell">
+                {new Date(report.createdAt).toLocaleString('ko-KR')}
+              </div>
             </div>
           ))
         )}
@@ -141,6 +167,11 @@ const emptyStyle = (theme: Theme) => css`
 const emptyRowStyle = (theme: Theme) => css`
   ${emptyStyle(theme)};
   padding: 32px 16px;
+  grid-column: 1 / -1;
+`;
+
+const emptyCellStyle = css`
+  grid-column: 1 / -1;
 `;
 
 const statusBoxStyle = (theme: Theme) => css`

@@ -52,7 +52,24 @@ const buildScale = (
   }
 
   const rawTickCount = Math.ceil(safeMax / chosenStep);
-  const tickCount = Math.max(minTicks, rawTickCount);
+  let tickCount = Math.max(minTicks, rawTickCount);
+
+  // tickCount가 maxTicks를 초과하는 경우 더 큰 step을 선택하여 조정
+  if (tickCount > maxTicks) {
+    for (const step of stepCandidates) {
+      const candidateTickCount = Math.ceil(safeMax / step);
+      if (candidateTickCount >= minTicks && candidateTickCount <= maxTicks) {
+        chosenStep = step;
+        tickCount = candidateTickCount;
+        break;
+      }
+    }
+    // 여전히 maxTicks를 초과하면 maxTicks로 제한
+    if (tickCount > maxTicks) {
+      tickCount = maxTicks;
+    }
+  }
+
   const yMax = chosenStep * tickCount;
   const ticks = Array.from({ length: tickCount + 1 }, (_, index) => index * chosenStep);
 
@@ -120,17 +137,32 @@ export const ChartSection = memo(({ dailyStats, fieldDailyStats }: ChartSectionP
   // 최근 7일간의 날짜 목록 (폴백용)
   const fallbackDates = useMemo(() => getDateRange(7), []);
 
-  // 학습 시간 데이터 준비
-  const timeData = dailyStats?.dailyData?.length
-    ? dailyStats.dailyData.map(item => ({ date: item.date, value: item.studySeconds }))
-    : fallbackDates.map(date => ({ date, value: 0 }));
+  // chartDates는 fieldDailyStats를 우선적으로 사용, 없으면 dailyStats, 둘 다 없으면 fallbackDates
+  const chartDates = useMemo(() => {
+    if (fieldDailyStats?.fields?.[0]?.dailyData?.length) {
+      return fieldDailyStats.fields[0].dailyData.map(item => item.date);
+    }
+    if (dailyStats?.dailyData?.length) {
+      return dailyStats.dailyData.map(item => item.date);
+    }
+    return fallbackDates;
+  }, [dailyStats, fieldDailyStats, fallbackDates]);
+
+  // 학습 시간 데이터 준비 - chartDates를 기준으로 매칭
+  const timeData = useMemo(() => {
+    const dailyStatsMap = dailyStats?.dailyData
+      ? new Map(dailyStats.dailyData.map(item => [item.date, item.studySeconds]))
+      : new Map();
+    return chartDates.map(date => ({
+      date,
+      value: dailyStatsMap.get(date) ?? 0,
+    }));
+  }, [chartDates, dailyStats]);
 
   const timeScale = buildTimeScale(dailyStats?.periodMaxSeconds ?? 0);
   const timeCaption = `최근 한 주 하루 평균 학습 시간은 ${formatSeconds(
     dailyStats?.periodAverageSeconds ?? 0,
   )}예요.`;
-
-  const chartDates = timeData.map(item => item.date);
 
   // 필드별 시리즈 데이터 준비
   const fieldSeries = (fieldDailyStats?.fields ?? []).map((field, index) => {

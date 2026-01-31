@@ -152,16 +152,61 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 const solvedCount = isPlaceholder ? 0 : (streakMap.get(dateKey) ?? 0);
                 const level = resolveLevel(solvedCount);
 
+                const handleCellInteraction = (
+                  event: React.MouseEvent<HTMLSpanElement> | React.FocusEvent<HTMLSpanElement>,
+                ) => {
+                  if (!isPlaceholder && solvedCount > 0) {
+                    if ('clientX' in event && 'clientY' in event) {
+                      handleCellMouseEnter(
+                        event as React.MouseEvent<HTMLSpanElement>,
+                        dayDate,
+                        solvedCount,
+                      );
+                    } else {
+                      // Focus 이벤트의 경우 기본 위치 사용
+                      if (containerRef.current) {
+                        const rect = containerRef.current.getBoundingClientRect();
+                        const syntheticEvent = {
+                          clientX: rect.left + rect.width / 2,
+                          clientY: rect.top + rect.height / 2,
+                        } as React.MouseEvent<HTMLSpanElement>;
+                        handleCellMouseEnter(syntheticEvent, dayDate, solvedCount);
+                      }
+                    }
+                  }
+                };
+
+                const handleCellKeyDown = (event: React.KeyboardEvent<HTMLSpanElement>) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    if (!isPlaceholder && solvedCount > 0) {
+                      handleCellInteraction(event as any);
+                    }
+                  } else if (event.key === 'Escape') {
+                    handleCellMouseLeave();
+                  }
+                };
+
                 return (
                   <span
                     key={`cell-${index}`}
                     css={heatmapCellStyle(theme, level, isPlaceholder)}
+                    role={!isPlaceholder && solvedCount > 0 ? 'button' : undefined}
+                    tabIndex={!isPlaceholder && solvedCount > 0 ? 0 : undefined}
+                    aria-label={
+                      !isPlaceholder && solvedCount > 0
+                        ? `${formatDateDisplayName(dayDate)} ${solvedCount}개`
+                        : undefined
+                    }
                     onMouseEnter={e =>
                       !isPlaceholder &&
                       solvedCount > 0 &&
                       handleCellMouseEnter(e, dayDate, solvedCount)
                     }
                     onMouseLeave={handleCellMouseLeave}
+                    onFocus={!isPlaceholder && solvedCount > 0 ? handleCellInteraction : undefined}
+                    onBlur={!isPlaceholder && solvedCount > 0 ? handleCellMouseLeave : undefined}
+                    onKeyDown={!isPlaceholder && solvedCount > 0 ? handleCellKeyDown : undefined}
                   />
                 );
               })}

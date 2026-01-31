@@ -14,144 +14,133 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
 
   if (loading) {
     return (
-      <div css={cardStyle(theme)}>
-        <div css={statusBoxStyle(theme)}>
-          <p css={loadingStyle(theme)}>로딩 중...</p>
-        </div>
+      <div css={statusBoxStyle(theme)}>
+        <p css={loadingStyle(theme)}>로딩 중...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div css={cardStyle(theme)}>
-        <div css={statusBoxStyle(theme)}>
-          <p css={errorStyle(theme)}>에러: {error}</p>
-        </div>
+      <div css={statusBoxStyle(theme)}>
+        <p css={errorStyle(theme)}>에러: {error}</p>
       </div>
     );
   }
 
   return (
     <div css={tableWrapperStyle}>
-      <table css={tableStyle(theme)}>
-        <thead>
-          <tr css={headerRowStyle(theme)}>
-            <th css={idCellStyle(theme)}>ID</th>
-            <th css={quizIdCellStyle(theme)}>Quiz ID</th>
-            <th css={questionCellStyle(theme)}>문제</th>
-            <th css={cellStyle(theme)}>유저</th>
-            <th css={reportContentCellStyle(theme)}>신고 내용</th>
-            <th css={cellStyle(theme)}>날짜</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 ? (
-            <tr>
-              <td colSpan={6} css={emptyStyle(theme)}>
-                신고가 없습니다.
-              </td>
-            </tr>
-          ) : (
-            reports.map(report => (
-              <tr key={report.id}>
-                <td css={idCellStyle(theme)}>{report.id}</td>
-                <td css={quizIdCellStyle(theme)}>{report.quizId}</td>
-                <td css={questionCellStyle(theme)}>{report.question ?? '-'}</td>
-                <td css={cellStyle(theme)}>
-                  {report.userDisplayName
-                    ? `${report.userDisplayName} (#${report.userId})`
-                    : '게스트'}
-                </td>
-                <td css={reportContentCellStyle(theme)}>{report.report_description}</td>
-                <td css={cellStyle(theme)}>{new Date(report.createdAt).toLocaleString('ko-KR')}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <div css={gridStyle(theme)}>
+        <div css={headerRowStyle(theme)}>
+          <div css={headerCellStyle(theme)}>ID</div>
+          <div css={headerCellStyle(theme)}>Quiz ID</div>
+          <div css={headerCellStyle(theme)}>문제</div>
+          <div css={headerCellStyle(theme)}>유저</div>
+          <div css={headerCellStyle(theme)}>신고 내용</div>
+          <div css={headerCellStyle(theme)}>날짜</div>
+        </div>
+        {reports.length === 0 ? (
+          <div css={emptyRowStyle(theme)}>신고가 없습니다.</div>
+        ) : (
+          reports.map(report => (
+            <div key={report.id} css={gridRowStyle(theme)}>
+              <div css={idCellStyle(theme)}>{report.id}</div>
+              <div css={quizIdCellStyle(theme)}>{report.quizId}</div>
+              <div css={questionCellStyle(theme)}>{report.question ?? '-'}</div>
+              <div css={cellStyle(theme)}>
+                {report.userDisplayName
+                  ? `${report.userDisplayName} (#${report.userId})`
+                  : '게스트'}
+              </div>
+              <div css={reportContentCellStyle(theme)}>{report.report_description}</div>
+              <div css={cellStyle(theme)}>{new Date(report.createdAt).toLocaleString('ko-KR')}</div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
 
-const cardStyle = (theme: Theme) => css`
-  width: 100%;
-  background: ${theme.colors.surface.strong};
-  padding: 24px;
-  border-radius: ${theme.borderRadius.large};
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-  border: 1px solid ${theme.colors.border.default};
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  height: calc(100vh - 200px);
-  overflow: hidden;
-
-  @media (max-width: 768px) {
-    height: calc(100vh - 120px);
-    padding: 20px;
-  }
-`;
-
 const tableWrapperStyle = css`
-  flex: 1;
-  overflow: auto;
   border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+  background: white;
 `;
 
-const tableStyle = (theme: Theme) => css`
-  width: 100%;
+const gridStyle = (theme: Theme) => css`
+  min-width: 860px;
   background: ${theme.colors.surface.strong};
-  border-collapse: collapse;
-  table-layout: fixed;
+  display: grid;
+  grid-auto-rows: minmax(52px, auto);
 `;
 
 const headerRowStyle = (theme: Theme) => css`
+  display: grid;
+  grid-template-columns:
+    80px 90px minmax(180px, 2fr) minmax(160px, 1.3fr) minmax(220px, 2.2fr)
+    160px;
   background-color: ${theme.colors.surface.bold};
   position: sticky;
   top: 0;
   z-index: 1;
+  border-bottom: 1px solid ${theme.colors.border.default};
+`;
+
+const gridRowStyle = (theme: Theme) => css`
+  display: grid;
+  grid-template-columns:
+    80px 90px minmax(180px, 2fr) minmax(160px, 1.3fr) minmax(220px, 2.2fr)
+    160px;
+  border-bottom: 1px solid ${theme.colors.border.default};
 `;
 
 const cellStyle = (theme: Theme) => css`
   padding: 12px 16px;
-  border: 1px solid ${theme.colors.border.default};
   color: ${theme.colors.text.default};
   font-size: ${theme.typography['16Medium'].fontSize};
   text-align: left;
   word-break: break-word;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+`;
 
-  th {
-    font-weight: 700;
-    color: ${theme.colors.text.strong};
-  }
+const headerCellStyle = (theme: Theme) => css`
+  ${cellStyle(theme)};
+  font-weight: 700;
+  color: ${theme.colors.text.strong};
 `;
 
 const reportContentCellStyle = (theme: Theme) => css`
   ${cellStyle(theme)};
-  width: 34%;
 `;
 
 const questionCellStyle = (theme: Theme) => css`
   ${cellStyle(theme)};
-  width: 26%;
 `;
 
 const idCellStyle = (theme: Theme) => css`
   ${cellStyle(theme)};
-  width: 6%;
-  min-width: 60px;
 `;
 
 const quizIdCellStyle = (theme: Theme) => css`
   ${cellStyle(theme)};
-  width: 8%;
-  min-width: 80px;
 `;
 
 const emptyStyle = (theme: Theme) => css`
   text-align: center;
   color: ${theme.colors.text.weak};
+`;
+
+const emptyRowStyle = (theme: Theme) => css`
+  ${emptyStyle(theme)};
+  padding: 32px 16px;
 `;
 
 const statusBoxStyle = (theme: Theme) => css`
@@ -160,6 +149,7 @@ const statusBoxStyle = (theme: Theme) => css`
   align-items: center;
   justify-content: center;
   min-height: 240px;
+  padding: 24px;
   color: ${theme.colors.text.weak};
 `;
 

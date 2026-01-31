@@ -42,6 +42,17 @@ export const Profile = () => {
   const { data: dailyStats } = useProfileDailyStats(shouldFetch);
   const { data: fieldDailyStats } = useProfileFieldDailyStats(shouldFetch);
 
+  const shouldFetchRanking = isLoggedIn && isAuthReady && !!user;
+  const { data: rankingMe } = useRankingMe(shouldFetchRanking);
+  const diamondCount = rankingMe?.diamondCount ?? 0;
+
+  const handleUserClick = useCallback(
+    (targetUserId: number) => {
+      navigate(`/profile/${targetUserId}`);
+    },
+    [navigate],
+  );
+
   // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
   if (!userId && !user) return <Navigate to="/login" replace />;
@@ -55,17 +66,6 @@ export const Profile = () => {
       />
     );
   }
-
-  const { data: rankingMe } = useRankingMe(isLoggedIn && isAuthReady && !!user);
-
-  const diamondCount = rankingMe?.diamondCount ?? 0;
-
-  const handleUserClick = useCallback(
-    (targetUserId: number) => {
-      navigate(`/profile/${targetUserId}`);
-    },
-    [navigate],
-  );
 
   return (
     <ProfileContainer

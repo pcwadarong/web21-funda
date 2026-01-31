@@ -97,7 +97,6 @@ const sectionTitleStyle = (theme: Theme) => css`
 
 const statListStyle = (theme: Theme) => css`
   display: flex;
-  display: flex;
   flex-direction: column;
   gap: 0.75rem;
   color: ${palette.grayscale[800]};

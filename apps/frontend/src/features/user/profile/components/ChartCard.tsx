@@ -19,6 +19,8 @@ interface ChartSeries {
   color: string;
   /** 툴팁 포맷터 함수 */
   tooltipFormatter: (value: number) => string;
+  /** 0값일 때 툴팁 표시를 막을지 여부 */
+  disableZeroTooltip?: boolean;
 }
 
 /** 차트 너비 (SVG viewBox 기준) */
@@ -152,6 +154,7 @@ export const ChartCard = ({
     label: string;
     tooltipFormatter: (value: number) => string;
     color: string;
+    disableZeroTooltip?: boolean;
   } | null>(null);
 
   /**
@@ -198,6 +201,7 @@ export const ChartCard = ({
           label: seriesItem.label,
           tooltipFormatter: seriesItem.tooltipFormatter,
           color: seriesItem.color,
+          disableZeroTooltip: seriesItem.disableZeroTooltip,
         };
       });
 
@@ -236,7 +240,7 @@ export const ChartCard = ({
           width="100%"
           height="100%"
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
           css={chartSvgStyle}
         >
           <defs>
@@ -334,7 +338,10 @@ export const ChartCard = ({
                   cy={point.y}
                   r="10"
                   fill="transparent"
-                  onMouseEnter={() => setActivePoint(point)}
+                  onMouseEnter={() => {
+                    if (point.disableZeroTooltip && point.value === 0) return;
+                    setActivePoint(point);
+                  }}
                   onMouseLeave={() => setActivePoint(null)}
                 />
               </g>
@@ -384,7 +391,7 @@ const sectionTitleStyle = (theme: Theme) => css`
 `;
 
 const chartCaptionStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
+  font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.light};
   margin: 0;
 `;
@@ -417,6 +424,11 @@ const legendItemStyle = (theme: Theme) => css`
   gap: 0.4rem;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.light};
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `;
 
 const legendDotStyle = (color: string) => css`

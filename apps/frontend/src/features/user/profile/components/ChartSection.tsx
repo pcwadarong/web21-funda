@@ -52,14 +52,14 @@ const buildScale = (
 
 /**
  * 학습 시간용 Y축 스케일을 계산한다.
- * 최소 30분(1800초)을 기준으로 5분 또는 10분 단위로 스케일을 설정한다.
+ * 최소 20분(1200초)을 기준으로 5분 또는 10분 단위로 스케일을 설정한다.
  *
  * @param {number} maxSeconds 최대 학습 시간 (초)
  * @returns {{yMax: number, ticks: number[]}} Y축 스케일 정보
  */
 const buildTimeScale = (maxSeconds: number): { yMax: number; ticks: number[] } => {
-  const minMax = Math.max(maxSeconds, 1800);
-  const step = minMax <= 1500 ? 300 : 600; // 5분 또는 10분 단위
+  const minMax = Math.max(maxSeconds, 1200);
+  const step = minMax <= 1200 ? 300 : 600; // 5분 또는 10분 단위
   const tickCount = Math.max(4, Math.min(5, Math.ceil(minMax / step)));
   const yMax = step * tickCount;
   const ticks = Array.from({ length: tickCount + 1 }, (_, index) => index * step);
@@ -117,7 +117,7 @@ export const ChartSection = memo(({ dailyStats, fieldDailyStats }: ChartSectionP
     : fallbackDates.map(date => ({ date, value: 0 }));
 
   const timeScale = buildTimeScale(dailyStats?.periodMaxSeconds ?? 0);
-  const timeCaption = `최근 한 주, 하루 평균 학습 시간은 ${formatSeconds(
+  const timeCaption = `최근 한 주 하루 평균 학습 시간은 ${formatSeconds(
     dailyStats?.periodAverageSeconds ?? 0,
   )}예요.`;
 
@@ -133,13 +133,14 @@ export const ChartSection = memo(({ dailyStats, fieldDailyStats }: ChartSectionP
       values,
       color: getFieldColorByIndex(index, theme),
       tooltipFormatter: formatSolvedCount,
+      disableZeroTooltip: true,
     };
   });
 
   const fieldAverage = fieldDailyStats?.fields?.length
     ? Math.floor(fieldDailyStats.fields.reduce((sum, field) => sum + field.totalSolvedCount, 0) / 7)
     : 0;
-  const fieldCaption = `최근 한 주, 하루 평균 학습 문제 수는 ${fieldAverage}문제예요.`;
+  const fieldCaption = `최근 한 주 하루 평균 학습 문제 수는 ${fieldAverage}문제예요.`;
   const fieldMaxValue = Math.max(1, ...fieldSeries.flatMap(series => series.values));
   const fieldScale = buildScale(fieldMaxValue, [1, 2, 5, 10], 4, 5);
 
@@ -178,6 +179,7 @@ export const ChartSection = memo(({ dailyStats, fieldDailyStats }: ChartSectionP
                   values: chartDates.map(() => 0),
                   color: theme.colors.primary.main,
                   tooltipFormatter: formatSolvedCount,
+                  disableZeroTooltip: true,
                 },
               ]
         }

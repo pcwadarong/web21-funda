@@ -104,7 +104,7 @@ ProfileContainer.displayName = 'ProfileContainer';
 const pageStyle = css`
   flex: 1;
   min-height: 100vh;
-  padding: 2rem 1.5rem 7.5rem;
+  padding: 2rem 1.5rem;
 `;
 
 const pageContentStyle = css`

@@ -1,4 +1,8 @@
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
+import type {
+  ProfileFollowUser,
+  ProfileSearchUser,
+  ProfileSummaryResult,
+} from '@/features/profile/types';
 
 import { apiFetch } from './api';
 
@@ -36,5 +40,14 @@ export const profileService = {
    */
   async unfollowUser(userId: number): Promise<{ isFollowing: boolean }> {
     return apiFetch.delete<{ isFollowing: boolean }>(`/profiles/${userId}/follow`);
+  },
+
+  /**
+   * 사용자 검색 결과를 가져옵니다.
+   */
+  async searchUsers(keyword: string): Promise<ProfileSearchUser[]> {
+    const query = new URLSearchParams();
+    query.set('keyword', keyword);
+    return apiFetch.get<ProfileSearchUser[]>(`/profiles/search?${query.toString()}`);
   },
 };

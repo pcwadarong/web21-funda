@@ -25,3 +25,13 @@ export interface ProfileFollowUser {
   experience: number;
   tier: ProfileTierSummary | null;
 }
+
+export interface ProfileSearchUser {
+  userId: number;
+  displayName: string;
+  email: string | null;
+  profileImageUrl: string | null;
+  experience: number;
+  tier: ProfileTierSummary | null;
+  isFollowing: boolean;
+}

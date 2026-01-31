@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
+import type {
+  ProfileFollowUser,
+  ProfileSearchUser,
+  ProfileSummaryResult,
+} from '@/features/profile/types';
 import { profileService } from '@/services/profileService';
 
 export const profileKeys = {
   summary: (userId: number) => ['profile', 'summary', userId] as const,
   followers: (userId: number) => ['profile', 'followers', userId] as const,
   following: (userId: number) => ['profile', 'following', userId] as const,
+  search: (keyword: string) => ['profile', 'search', keyword] as const,
 };
 
 export const useProfileSummary = (userId: number | null) =>
@@ -47,6 +52,14 @@ export const useProfileFollowing = (userId: number | null) =>
     },
     enabled: userId !== null,
     staleTime: 1000 * 60,
+  });
+
+export const useProfileSearchUsers = (keyword: string, enabled: boolean) =>
+  useQuery<ProfileSearchUser[], Error>({
+    queryKey: profileKeys.search(keyword),
+    queryFn: () => profileService.searchUsers(keyword),
+    enabled,
+    staleTime: 1000 * 30,
   });
 
 export const useFollowUserMutation = () => {

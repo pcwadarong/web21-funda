@@ -1,4 +1,14 @@
-import { Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 
@@ -11,6 +21,31 @@ import { ProfileService } from './profile.service';
 @Controller('profiles')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+
+  @Get('search')
+  @ApiOperation({
+    summary: '사용자 검색',
+    description: '사용자 이름 또는 이메일로 사용자를 검색한다.',
+  })
+  @ApiOkResponse({ description: '사용자 검색 성공' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAccessGuard)
+  async searchUsers(
+    @Query('keyword') keyword: string | undefined,
+    @Req() req: Request & { user?: JwtPayload },
+  ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const result = await this.profileService.searchUsers(keyword ?? '', userId);
+
+    return {
+      result,
+      message: '사용자 검색 결과를 조회했습니다.',
+    };
+  }
 
   @Get(':userId')
   @ApiOperation({

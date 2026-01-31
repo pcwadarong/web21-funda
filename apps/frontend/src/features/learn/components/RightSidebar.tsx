@@ -1,23 +1,26 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
+import { Modal } from '@/components/Modal';
+import { UserSearchModal } from '@/features/profile/components/UserSearchModal';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
+import {
+  profileKeys,
+  useFollowUserMutation,
+  useProfileSearchUsers,
+  useUnfollowUserMutation,
+} from '@/hooks/queries/profileQueries';
 import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
-
-// TODO: 오늘의 목표 추가
-const TODAY_GOALS = [
-  { id: 'xp', label: '10 XP 획득하기', current: 20, target: 50 },
-  { id: 'lessons', label: '2개의 완벽한 레슨 끝내기', current: 2, target: 2 },
-] as const;
 
 export const LearnRightSidebar = ({
   fieldSlug,
@@ -28,6 +31,7 @@ export const LearnRightSidebar = ({
 }) => {
   const reviewBatchSize = 10;
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const user = useAuthUser();
   const { progress, updateUIState } = useStorage();
   const navigate = useNavigate();
@@ -52,6 +56,14 @@ export const LearnRightSidebar = ({
 
   const { showToast } = useToast();
   const [isNavigatingReview, setIsNavigatingReview] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [followOverrides, setFollowOverrides] = useState<Record<number, boolean>>({});
+  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
+
+  const followMutation = useFollowUserMutation();
+  const unfollowMutation = useUnfollowUserMutation();
 
   const selectedField = useMemo(
     () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
@@ -112,6 +124,82 @@ export const LearnRightSidebar = ({
       },
     });
   }, [fieldSlug, isLoggedIn, navigate, refetchReviewQueue, reviewQueueData, showToast]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(searchKeyword.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  useEffect(() => {
+    setFollowOverrides({});
+  }, [debouncedKeyword]);
+
+  const shouldSearch = isSearchModalOpen && isLoggedIn && debouncedKeyword.length >= 2;
+  const { data: searchUsers = [], isLoading: isSearchLoading } = useProfileSearchUsers(
+    debouncedKeyword,
+    shouldSearch,
+  );
+
+  const resolvedSearchUsers = useMemo(
+    () =>
+      searchUsers.map(userData => ({
+        ...userData,
+        isFollowing: followOverrides[userData.userId] ?? userData.isFollowing,
+      })),
+    [searchUsers, followOverrides],
+  );
+
+  const handleOpenSearchModal = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+
+    setIsSearchModalOpen(true);
+  };
+
+  const handleCloseSearchModal = () => {
+    setIsSearchModalOpen(false);
+    setSearchKeyword('');
+    setDebouncedKeyword('');
+    setFollowOverrides({});
+    setPendingUserId(null);
+  };
+
+  const handleSearchUserClick = (targetUserId: number) => {
+    handleCloseSearchModal();
+    navigate(`/profile/${targetUserId}`);
+  };
+
+  const handleFollowToggle = async (targetUserId: number, isFollowing: boolean) => {
+    if (pendingUserId !== null) {
+      return;
+    }
+
+    setPendingUserId(targetUserId);
+    setFollowOverrides(prev => ({ ...prev, [targetUserId]: !isFollowing }));
+
+    try {
+      if (isFollowing) {
+        await unfollowMutation.mutateAsync(targetUserId);
+      } else {
+        await followMutation.mutateAsync(targetUserId);
+      }
+
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: profileKeys.following(user.id) });
+        queryClient.invalidateQueries({ queryKey: profileKeys.summary(user.id) });
+      }
+    } catch (followError) {
+      setFollowOverrides(prev => ({ ...prev, [targetUserId]: isFollowing }));
+      showToast((followError as Error).message);
+    } finally {
+      setPendingUserId(null);
+    }
+  };
 
   if (!isAuthReady) return null;
   if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
@@ -190,35 +278,39 @@ export const LearnRightSidebar = ({
       <div css={cardStyle(theme)}>
         <div css={cardHeaderStyle}>
           <span css={cardIconStyle}>
-            <SVGIcon icon="Fire" size="md" />
+            <SVGIcon icon="Search" size="md" />
           </span>
-          <span css={cardTitleStyle(theme)}>오늘의 목표</span>
+          <span css={cardTitleStyle(theme)}>친구 추가</span>
         </div>
         {isLoggedIn ? (
-          <div css={goalsContentStyle}>
-            {TODAY_GOALS.map(goal => (
-              <div key={goal.id} css={goalItemStyle}>
-                <div css={goalLabelContainerStyle}>
-                  <span css={goalLabelStyle(theme)}>{goal.label}</span>
-                  <span css={goalLabelStyle(theme)}>
-                    {goal.current}/{goal.target}
-                  </span>
-                </div>
-                <div css={progressBarContainerStyle(theme)}>
-                  <div
-                    css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
-                    role="progressbar"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <button css={reviewBadgeStyle(theme)} onClick={handleOpenSearchModal}>
+            친구 추가하기
+          </button>
         ) : (
           <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 진도를 저장해보세요!</div>
+            <div css={reviewBadgeStyle(theme)}>로그인 후 친구를 추가해보세요!</div>
           </Link>
         )}
       </div>
+
+      {isSearchModalOpen && (
+        <Modal
+          title="사용자 찾기"
+          content={
+            <UserSearchModal
+              keyword={searchKeyword}
+              users={shouldSearch ? resolvedSearchUsers : []}
+              isLoading={shouldSearch && isSearchLoading}
+              pendingUserId={pendingUserId}
+              onKeywordChange={setSearchKeyword}
+              onUserClick={handleSearchUserClick}
+              onFollowToggle={handleFollowToggle}
+            />
+          }
+          onClose={handleCloseSearchModal}
+          maxWidth={560}
+        />
+      )}
     </aside>
   );
 };
@@ -352,44 +444,4 @@ const reviewBadgeStyle = (theme: Theme) => css`
     cursor: not-allowed;
     box-shadow: none;
   }
-`;
-
-const goalsContentStyle = css`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const goalItemStyle = css`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const goalLabelContainerStyle = css`
-  display: flex;
-  justify-content: space-between;
-`;
-
-const goalLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${theme.colors.text.default};
-`;
-
-const progressBarContainerStyle = (theme: Theme) => css`
-  width: 100%;
-  height: 8px;
-  background: ${theme.colors.surface.default};
-  border-radius: ${theme.borderRadius.small};
-  overflow: hidden;
-`;
-
-const progressBarStyle = (theme: Theme, percentage: number) => css`
-  width: ${percentage}%;
-  height: 100%;
-  background: ${theme.colors.primary.main};
-  border-radius: ${theme.borderRadius.small};
-  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
 `;

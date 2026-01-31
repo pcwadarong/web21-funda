@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, Like, Repository } from 'typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
@@ -9,6 +9,7 @@ import { User } from '../users/entities/user.entity';
 import type {
   FollowStateResult,
   ProfileFollowUser,
+  ProfileSearchUser,
   ProfileSummaryResult,
   ProfileTierSummary,
 } from './dto/profile.dto';
@@ -307,6 +308,52 @@ export class ProfileService {
   }
 
   /**
+   * 사용자를 검색한다.
+   *
+   * @param {string} keyword 검색 키워드
+   * @param {number} requesterUserId 검색을 요청한 사용자 ID
+   * @returns {Promise<ProfileSearchUser[]>} 사용자 검색 결과
+   */
+  async searchUsers(keyword: string, requesterUserId: number): Promise<ProfileSearchUser[]> {
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword.length < 2) {
+      return [];
+    }
+
+    const searchKeyword = `%${trimmedKeyword}%`;
+
+    const matchedUsers = await this.userRepository.find({
+      where: [{ displayName: Like(searchKeyword) }, { email: Like(searchKeyword) }],
+      relations: { currentTier: true, profileCharacter: true },
+      take: 20,
+    });
+
+    const filteredUsers = matchedUsers.filter(user => user.id !== requesterUserId);
+    const userIds = filteredUsers.map(user => user.id);
+
+    const followRows =
+      userIds.length > 0
+        ? await this.followRepository.find({
+            where: { followerId: requesterUserId, followingId: In(userIds) },
+          })
+        : [];
+
+    const followingSet = new Set(followRows.map(row => row.followingId));
+
+    const results: ProfileSearchUser[] = filteredUsers.map(user => ({
+      userId: user.id,
+      displayName: user.displayName,
+      email: user.email ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
+      experience: user.experience,
+      tier: this.buildTierSummary(user.currentTier ?? null),
+      isFollowing: followingSet.has(user.id),
+    }));
+
+    return this.sortSearchUsersByName(results);
+  }
+
+  /**
    * 특정 사용자를 팔로우한다.
    *
    * @param {number} targetUserId 팔로우 대상 사용자 ID
@@ -392,6 +439,39 @@ export class ProfileService {
       experience: user.experience,
       tier: this.buildTierSummary(user.currentTier ?? null),
     };
+  }
+
+  /**
+   * 검색 결과 사용자 목록을 이름 기준으로 정렬한다.
+   *
+   * @param {ProfileSearchUser[]} users 정렬할 사용자 목록
+   * @returns {ProfileSearchUser[]} 정렬된 사용자 목록
+   */
+  private sortSearchUsersByName(users: ProfileSearchUser[]): ProfileSearchUser[] {
+    const collatorEnglish = new Intl.Collator('en', { sensitivity: 'base' });
+    const collatorKorean = new Intl.Collator('ko', { sensitivity: 'base' });
+    const sortedUsers = [...users];
+
+    sortedUsers.sort((leftUser, rightUser) => {
+      const leftGroup = this.getDisplayNameGroup(leftUser.displayName);
+      const rightGroup = this.getDisplayNameGroup(rightUser.displayName);
+
+      if (leftGroup !== rightGroup) {
+        return leftGroup - rightGroup;
+      }
+
+      if (leftGroup === 0) {
+        return collatorEnglish.compare(leftUser.displayName, rightUser.displayName);
+      }
+
+      if (leftGroup === 1) {
+        return collatorKorean.compare(leftUser.displayName, rightUser.displayName);
+      }
+
+      return leftUser.displayName.localeCompare(rightUser.displayName);
+    });
+
+    return sortedUsers;
   }
 
   /**

@@ -83,6 +83,8 @@ export const ProfileContainer = ({
             isFollowingLoading={isFollowingLoading}
             isFollowersLoading={isFollowersLoading}
             onUserClick={onUserClick}
+            profileUserId={profileSummary?.userId ?? null}
+            isMyProfile={isMyProfile}
           />
 
           <StatsSection profileSummary={profileSummary} displayName={displayName} />

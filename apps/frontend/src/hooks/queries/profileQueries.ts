@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
 import { profileService } from '@/services/profileService';
@@ -48,3 +48,29 @@ export const useProfileFollowing = (userId: number | null) =>
     enabled: userId !== null,
     staleTime: 1000 * 60,
   });
+
+export const useFollowUserMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: number) => profileService.followUser(userId),
+    onSuccess: (_, userId) => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.summary(userId) });
+      queryClient.invalidateQueries({ queryKey: profileKeys.followers(userId) });
+      queryClient.invalidateQueries({ queryKey: profileKeys.following(userId) });
+    },
+  });
+};
+
+export const useUnfollowUserMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: number) => profileService.unfollowUser(userId),
+    onSuccess: (_, userId) => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.summary(userId) });
+      queryClient.invalidateQueries({ queryKey: profileKeys.followers(userId) });
+      queryClient.invalidateQueries({ queryKey: profileKeys.following(userId) });
+    },
+  });
+};

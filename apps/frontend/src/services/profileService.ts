@@ -23,4 +23,18 @@ export const profileService = {
   async getFollowing(userId: number): Promise<ProfileFollowUser[]> {
     return apiFetch.get<ProfileFollowUser[]>(`/profiles/${userId}/following`);
   },
+
+  /**
+   * 대상 사용자를 팔로우합니다.
+   */
+  async followUser(userId: number): Promise<{ isFollowing: boolean }> {
+    return apiFetch.post<{ isFollowing: boolean }>(`/profiles/${userId}/follow`);
+  },
+
+  /**
+   * 대상 사용자를 언팔로우합니다.
+   */
+  async unfollowUser(userId: number): Promise<{ isFollowing: boolean }> {
+    return apiFetch.delete<{ isFollowing: boolean }>(`/profiles/${userId}/follow`);
+  },
 };

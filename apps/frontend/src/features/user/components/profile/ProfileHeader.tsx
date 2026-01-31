@@ -16,6 +16,12 @@ interface ProfileHeaderProps {
   diamondCount: number;
   /** 프로필 이미지 영역 클릭 핸들러 */
   onProfileImageClick?: () => void;
+  /** 내 프로필 여부 */
+  isMyProfile: boolean;
+  /** 팔로우 상태 */
+  isFollowing: boolean;
+  /** 팔로우 토글 핸들러 */
+  onFollowToggle?: () => void;
 }
 
 /**
@@ -27,6 +33,9 @@ export const ProfileHeader = ({
   profileSummary,
   diamondCount,
   onProfileImageClick,
+  isMyProfile,
+  isFollowing,
+  onFollowToggle,
 }: ProfileHeaderProps) => {
   const theme = useTheme();
 
@@ -35,7 +44,8 @@ export const ProfileHeader = ({
   const experience = profileSummary?.experience ?? 0;
   const profileImageUrl = profileSummary?.profileImageUrl ?? null;
 
-  const isEditable = Boolean(onProfileImageClick);
+  const isEditable = Boolean(onProfileImageClick) && isMyProfile;
+  const shouldShowFollow = !isMyProfile && Boolean(onFollowToggle);
 
   return (
     <section css={headerCardStyle(theme)}>
@@ -48,15 +58,16 @@ export const ProfileHeader = ({
             css={avatarStyle(theme)}
             alt={`${displayName} 프로필`}
           />
-          <button
-            type="button"
-            css={avatarEditButtonStyle(theme, !isEditable)}
-            onClick={onProfileImageClick}
-            disabled={!isEditable}
-            aria-label="프로필 이미지 변경"
-          >
-            <SVGIcon icon="Edit" size="sm" />
-          </button>
+          {isEditable && (
+            <button
+              type="button"
+              css={avatarEditButtonStyle(theme, false)}
+              onClick={onProfileImageClick}
+              aria-label="프로필 이미지 변경"
+            >
+              <SVGIcon icon="Edit" size="sm" />
+            </button>
+          )}
         </div>
         <div css={headerInfoWrapperStyle}>
           <div css={nameRowWrapperStyle}>
@@ -75,7 +86,15 @@ export const ProfileHeader = ({
           </div>
         </div>
       </div>
-      <div />
+      {isMyProfile ? (
+        <div />
+      ) : shouldShowFollow ? (
+        <button type="button" css={rightActionButtonStyle(theme)} onClick={onFollowToggle}>
+          {isFollowing ? '언팔로우하기' : '팔로우하기'}
+        </button>
+      ) : (
+        <div />
+      )}
     </section>
   );
 };
@@ -136,6 +155,7 @@ const nameStyle = (theme: Theme) => css`
 const tierBadgeStyle = css`
   letter-spacing: 0.05em;
   font-size: 0.875rem;
+  padding-left: 2px;
 `;
 
 const metaRowWrapperStyle = css`
@@ -150,12 +170,12 @@ const metaItemStyle = css`
   gap: 0.375rem;
 `;
 
-const avatarEditButtonStyle = (theme: Theme, isDisabled: boolean) => css`
+const avatarEditButtonStyle = (theme: Theme, _isDisabled: boolean) => css`
   position: absolute;
   right: -4px;
   bottom: -4px;
-  width: 34px;
-  height: 34px;
+  width: 27px;
+  height: 27px;
   border-radius: 50%;
   border: 2px solid ${palette.grayscale[50]};
   background: ${palette.grayscale[50]};
@@ -163,10 +183,22 @@ const avatarEditButtonStyle = (theme: Theme, isDisabled: boolean) => css`
   align-items: center;
   justify-content: center;
   color: ${theme.colors.primary.main};
-  cursor: ${isDisabled ? 'not-allowed' : 'pointer'};
+  cursor: pointer;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
 
   &:hover {
     background: ${palette.grayscale[100]};
   }
+`;
+
+const rightActionButtonStyle = (theme: Theme) => css`
+  padding: 0.625rem 1rem;
+  border-radius: ${theme.borderRadius.medium};
+  border: none;
+  background: ${theme.colors.primary.light};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  font-weight: ${theme.typography['12Medium'].fontWeight};
+  color: ${palette.grayscale[50]};
+  cursor: pointer;
+  opacity: 0.95;
 `;

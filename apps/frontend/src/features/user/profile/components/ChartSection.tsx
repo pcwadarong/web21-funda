@@ -56,18 +56,22 @@ const buildScale = (
 
   // tickCount가 maxTicks를 초과하는 경우 더 큰 step을 선택하여 조정
   if (tickCount > maxTicks) {
+    // maxTicks를 만족하는 가장 작은 step 찾기
+    let foundStep = false;
     for (const step of stepCandidates) {
-      const candidateTickCount = Math.ceil(safeMax / step);
-      if (candidateTickCount >= minTicks && candidateTickCount <= maxTicks) {
+      if (step * maxTicks >= safeMax) {
         chosenStep = step;
-        tickCount = candidateTickCount;
+        foundStep = true;
         break;
       }
     }
-    // 여전히 maxTicks를 초과하면 maxTicks로 제한
-    if (tickCount > maxTicks) {
-      tickCount = maxTicks;
+    // 적합한 step을 찾지 못한 경우 fallback
+    if (!foundStep) {
+      chosenStep = Math.ceil(safeMax / maxTicks);
     }
+    // chosenStep을 기준으로 tickCount 재계산
+    tickCount = Math.ceil(safeMax / chosenStep);
+    tickCount = Math.max(minTicks, Math.min(maxTicks, tickCount));
   }
 
   const yMax = chosenStep * tickCount;

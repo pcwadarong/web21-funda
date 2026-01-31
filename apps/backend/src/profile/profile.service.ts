@@ -316,7 +316,7 @@ export class ProfileService {
    */
   async searchUsers(keyword: string, requesterUserId: number): Promise<ProfileSearchUser[]> {
     const trimmedKeyword = keyword.trim();
-    if (trimmedKeyword.length < 2) {
+    if (trimmedKeyword.length < 1) {
       return [];
     }
 

@@ -137,7 +137,7 @@ export const LearnRightSidebar = ({
     setFollowOverrides({});
   }, [debouncedKeyword]);
 
-  const shouldSearch = isSearchModalOpen && isLoggedIn && debouncedKeyword.length >= 2;
+  const shouldSearch = isSearchModalOpen && isLoggedIn && debouncedKeyword.length >= 1;
   const { data: searchUsers = [], isLoading: isSearchLoading } = useProfileSearchUsers(
     debouncedKeyword,
     shouldSearch,

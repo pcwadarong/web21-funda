@@ -27,10 +27,10 @@ export const UserSearchModal = ({
 }: UserSearchModalProps) => {
   const theme = useTheme();
   const trimmedKeyword = keyword.trim();
-  const shouldSearch = trimmedKeyword.length >= 2;
+  const shouldSearch = trimmedKeyword.length >= 1;
 
   const emptyMessage = !shouldSearch
-    ? '사용자 이름 또는 이메일을 입력해주세요.'
+    ? '친구를 추가하면 서로의 진행 상황과 프로필을 확인할 수 있습니다.'
     : users.length === 0 && !isLoading
       ? '검색 결과가 없습니다.'
       : null;
@@ -92,10 +92,6 @@ export const UserSearchModal = ({
             );
           })}
       </div>
-
-      <p css={guideTextStyle(theme)}>
-        친구를 추가하면 서로의 진행 상황과 프로필을 확인할 수 있습니다.
-      </p>
     </div>
   );
 };
@@ -214,13 +210,4 @@ const emptyTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.light};
   text-align: center;
-  padding: 1rem;
-  border-radius: ${theme.borderRadius.medium};
-  background: ${theme.colors.surface.bold};
-`;
-
-const guideTextStyle = (theme: Theme) => css`
-  margin-top: auto;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  color: ${theme.colors.text.weak};
 `;

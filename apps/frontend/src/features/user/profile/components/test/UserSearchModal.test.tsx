@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type React from 'react';
 import { vi } from 'vitest';
 
-import type { ProfileSearchUser } from '@/features/profile/types';
+import type { ProfileSearchUser } from '@/features/user/profile/types';
 import { lightTheme } from '@/styles/theme';
 
 import { UserSearchModal } from '../UserSearchModal';

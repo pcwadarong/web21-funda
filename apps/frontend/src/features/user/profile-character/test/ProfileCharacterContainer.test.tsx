@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ProfileCharacterContainer } from '@/feat/user/components/profile-character/ProfileCharacterContainer';
+import { ProfileCharacterContainer } from '@/feat/user/profile-character/ProfileCharacterContainer';
 import { lightTheme } from '@/styles/theme';
 
 vi.mock('@/comp/SVGIcon', () => ({

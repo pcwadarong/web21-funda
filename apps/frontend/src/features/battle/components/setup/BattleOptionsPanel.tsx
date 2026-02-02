@@ -1,8 +1,10 @@
 import { css, useTheme } from '@emotion/react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Button } from '@/components/Button';
 import SVGIcon from '@/components/SVGIcon';
+import { BattleStartCountdown } from '@/feat/battle/components/play/BattleStartCountdown';
+import { useBattleStartCountdown } from '@/feat/battle/hooks/useBattleStartCountdown';
 import type { BattleRoomSettings } from '@/feat/battle/types';
 import type { Theme } from '@/styles/theme';
 
@@ -58,6 +60,7 @@ export const BattleOptionsPanel = ({
 }: BattleOptionsPanelProps) => {
   const theme = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isStartCountdownActive, setIsStartCountdownActive] = useState(false);
   const canStartBattle = isHost && participantCount > 1;
   const startButtonLabel = !isHost
     ? '호스트 대기 중'
@@ -65,8 +68,33 @@ export const BattleOptionsPanel = ({
       ? '게임 시작'
       : '참가자 대기 중';
 
+  const handleStartCountdownComplete = useCallback(() => {
+    if (!roomId) {
+      setIsStartCountdownActive(false);
+      return;
+    }
+
+    onStartBattle(roomId);
+    setIsStartCountdownActive(false);
+  }, [onStartBattle, roomId]);
+
+  const { isVisible: isStartCountdownVisible, label: startCountdownLabel } =
+    useBattleStartCountdown({
+      isActive: isStartCountdownActive,
+      onComplete: handleStartCountdownComplete,
+    });
+
+  const handleStartBattleClick = useCallback(() => {
+    if (!roomId || !canStartBattle || isStartCountdownActive) {
+      return;
+    }
+
+    setIsStartCountdownActive(true);
+  }, [canStartBattle, isStartCountdownActive, roomId]);
+
   return (
     <div css={containerStyle}>
+      <BattleStartCountdown isVisible={isStartCountdownVisible} label={startCountdownLabel} />
       <div css={headerWrapper}>
         <h2 css={titleStyle(theme)}>SETTING</h2>
         <button css={toggleButtonStyle(theme)} onClick={() => setIsExpanded(!isExpanded)}>
@@ -123,8 +151,8 @@ export const BattleOptionsPanel = ({
         <Button
           variant="primary"
           fullWidth
-          disabled={!canStartBattle}
-          onClick={() => roomId && onStartBattle(roomId)}
+          disabled={!canStartBattle || isStartCountdownActive}
+          onClick={handleStartBattleClick}
           css={flexBtn}
         >
           {startButtonLabel}

@@ -76,7 +76,9 @@ export const ProfileCharacterContainer = ({
                       <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
                     </div>
                     <div css={priceStyle(theme)}>
-                      {item.priceDiamonds === 0 ? (
+                      {item.isOwned ? (
+                        <span css={purchasedLabelStyle(theme)}>구매함</span>
+                      ) : item.priceDiamonds === 0 ? (
                         <span css={freeLabelStyle}>FREE</span>
                       ) : (
                         <>
@@ -260,6 +262,11 @@ const freeLabelStyle = css`
   color: ${palette.grayscale[600]};
   letter-spacing: 0.05em;
   font-weight: 700;
+`;
+
+const purchasedLabelStyle = (theme: Theme) => css`
+  color: ${theme.colors.success.main};
+  font-weight: ${theme.typography['12Bold'].fontWeight};
 `;
 
 const actionWrapperStyle = css`

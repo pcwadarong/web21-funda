@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@emotion/react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -53,5 +53,14 @@ describe('ProfileCharacterContainer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '캐릭터 2 선택' }));
     expect(screen.getByRole('button', { name: '적용하기' })).toBeInTheDocument();
+  });
+
+  it('구매한 캐릭터는 카드 하단에 구매함 문구가 표시된다', () => {
+    render(<TestWrapper />);
+
+    const ownedCharacterCard = screen.getByRole('button', { name: '캐릭터 2 선택' });
+
+    expect(within(ownedCharacterCard).getByText('구매함')).toBeInTheDocument();
+    expect(within(ownedCharacterCard).queryByText('1')).not.toBeInTheDocument();
   });
 });

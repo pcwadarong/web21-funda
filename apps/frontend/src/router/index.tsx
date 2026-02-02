@@ -8,6 +8,7 @@ import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
 // import { ServicePreparation } from '@/pages/common/ServicePreparation';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
+import { LoginCallback } from '@/pages/auth/LoginCallback';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
 import { AdminGuard } from '@/router/guards/AdminGuard';
@@ -145,6 +146,7 @@ export const router = createBrowserRouter([
         element: <LoginGuard />,
         loader: protectedLoader,
         children: [
+          { path: 'login/callback', element: <LoginCallback /> },
           // 사이드바가 있는 페이지 그룹
           {
             element: <SidebarSuspenseLayout />,

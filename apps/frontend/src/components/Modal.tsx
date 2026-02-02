@@ -8,15 +8,25 @@ interface ModalProps {
   onClose: () => void;
   maxWidth?: number;
   padding?: boolean;
+  verticalAlign?: 'center' | 'top';
+  closeOnBackdropClick?: boolean;
 }
 
-export const Modal = ({ title, content, onClose, maxWidth = 500, padding = true }: ModalProps) => {
+export const Modal = ({
+  title,
+  content,
+  onClose,
+  maxWidth = 500,
+  padding = true,
+  verticalAlign = 'center',
+  closeOnBackdropClick = true,
+}: ModalProps) => {
   const theme = useTheme();
 
   return (
     <div
-      css={modalOverlayStyle}
-      onClick={onClose}
+      css={modalOverlayStyle(verticalAlign)}
+      onClick={() => closeOnBackdropClick && onClose()}
       role="button"
       tabIndex={0}
       onKeyDown={event => {
@@ -45,7 +55,7 @@ export const Modal = ({ title, content, onClose, maxWidth = 500, padding = true 
   );
 };
 
-const modalOverlayStyle = css`
+const modalOverlayStyle = (verticalAlign: 'center' | 'top') => css`
   position: fixed;
   top: 0;
   left: 0;
@@ -53,9 +63,11 @@ const modalOverlayStyle = css`
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
   justify-content: center;
   z-index: 1000;
+
+  align-items: ${verticalAlign === 'top' ? 'flex-start' : 'center'};
+  padding-top: ${verticalAlign === 'top' ? '10vh' : 0};
 `;
 
 const modalContentStyle = (theme: Theme, maxWidth: number, padding: boolean) => css`

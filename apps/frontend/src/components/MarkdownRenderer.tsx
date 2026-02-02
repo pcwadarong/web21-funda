@@ -117,8 +117,8 @@ const markdownContainerStyle = (theme: Theme) => css`
   & blockquote {
     margin: 0px 0px 0.5rem 0px;
     position: relative;
-    padding: 40px 20px 40px 45px;
-    background: ${theme.colors.grayscale['100']};
+    padding: 40px 55px 40px;
+    background: ${theme.colors.surface.default};
     border-radius: 16px;
   }
 

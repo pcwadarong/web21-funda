@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { Loading } from '@/comp/Loading';
 import { SettingContainer } from '@/feat/user/setting/SettingContainer';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { useAuthActions } from '@/store/authStore';
+import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
 
@@ -12,8 +13,8 @@ export const Setting = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
-  const { clearAuth } = useAuthActions();
   const { soundVolume, setSoundVolume } = useStorage();
+  const { confirm } = useModal();
 
   const logoutMutation = useLogoutMutation();
 
@@ -41,25 +42,31 @@ export const Setting = () => {
    * 로그아웃 핸들러
    */
   const handleLogout = useCallback(async () => {
-    const isConfirmed = window.confirm('정말 로그아웃 하시겠습니까?');
+    const isConfirmed = await confirm({
+      title: '로그아웃',
+      content: '정말 로그아웃 하시겠습니까?',
+      confirmText: '로그아웃',
+    });
     if (!isConfirmed) return;
 
     try {
-      await logoutMutation.mutateAsync();
-      clearAuth();
       navigate('/learn', { replace: true });
+      await logoutMutation.mutateAsync();
     } catch {
       showToast('로그아웃 중 오류가 발생했습니다.');
     }
-  }, [navigate, showToast, clearAuth]);
+  }, [navigate, showToast, confirm, logoutMutation]);
 
   return (
-    <SettingContainer
-      isDarkMode={isDarkMode}
-      onDarkModeToggle={handleDarkModeToggle}
-      soundVolume={soundVolume}
-      onSoundVolumeChange={handleSoundVolumeChange}
-      onLogout={handleLogout}
-    />
+    <>
+      {logoutMutation.isPending && <Loading />}
+      <SettingContainer
+        isDarkMode={isDarkMode}
+        onDarkModeToggle={handleDarkModeToggle}
+        soundVolume={soundVolume}
+        onSoundVolumeChange={handleSoundVolumeChange}
+        onLogout={handleLogout}
+      />
+    </>
   );
 };

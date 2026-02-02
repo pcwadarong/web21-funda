@@ -1,10 +1,16 @@
 import { css, useTheme } from '@emotion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Avatar } from '@/components/Avatar';
+import { Dropdown } from '@/components/Dropdown';
+import { Loading } from '@/components/Loading';
 import SVGIcon from '@/components/SVGIcon';
+import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useModal } from '@/store/modalStore';
+import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
@@ -27,10 +33,36 @@ export const Sidebar = () => {
   const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
+  const navigate = useNavigate();
+
+  const { showToast } = useToast();
+
+  const logoutMutation = useLogoutMutation();
 
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
+
+  // 로그아웃 함수
+  const { confirm } = useModal();
+  const handleLogout = useCallback(async () => {
+    const isConfirmed = await confirm({
+      title: '로그아웃',
+      content: '정말 로그아웃 하시겠습니까?',
+      confirmText: '로그아웃',
+    });
+    if (!isConfirmed) return;
+
+    try {
+      navigate('/learn', { replace: true });
+      await logoutMutation.mutateAsync();
+    } catch {
+      showToast('로그아웃 중 오류가 발생했습니다.');
+    }
+  }, [confirm, logoutMutation, showToast, navigate]);
+
+  // 드롭다운 옵션 정의
+  const dropdownOptions = [{ value: 'logout', label: '로그아웃' }];
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -52,54 +84,102 @@ export const Sidebar = () => {
 
   const activeItemId = getActiveItemId();
 
+  const handleLinkClick = async (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    itemId: string,
+    targetPath: string,
+  ) => {
+    e.preventDefault();
+
+    if (!isLoggedIn && !user && (itemId === 'ranking' || itemId === 'profile')) {
+      const isConfirmed = await confirm({
+        title: '로그인 필요',
+        content: (
+          <>
+            해당 페이지는 로그인 하셔야 확인하실 수 있습니다.
+            <br />
+            로그인 하시겠습니까?
+          </>
+        ),
+        confirmText: '로그인',
+      });
+
+      if (!isConfirmed) return;
+
+      try {
+        sessionStorage.setItem('loginRedirectPath', targetPath);
+        navigate('/login');
+      } catch {
+        showToast('오류가 발생했습니다.');
+      }
+
+      return;
+    }
+
+    navigate(targetPath);
+  };
+
   return (
-    <aside css={sidebarStyle(theme)}>
-      <Link to="/learn" css={logoSectionStyle}>
-        <span css={logoIconStyle}>
-          <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
-        </span>
-        <span css={logoTextStyle(theme)}>Funda</span>
-      </Link>
+    <>
+      {logoutMutation.isPending && <Loading />}
+      <aside css={sidebarStyle(theme)}>
+        <Link to="/learn" css={logoSectionStyle}>
+          <span css={logoIconStyle}>
+            <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
+          </span>
+          <span css={logoTextStyle(theme)}>Funda</span>
+        </Link>
 
-      <nav css={navStyle}>
-        {allNavItems.map(item => {
-          // 프로필의 경우 유저 ID를 포함한 경로로 설정
-          const targetPath = item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
+        <nav css={navStyle}>
+          {allNavItems.map(item => {
+            // 프로필의 경우 유저 ID를 포함한 경로로 설정
+            const targetPath =
+              item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
 
-          return (
-            <Link
-              key={item.id}
-              to={targetPath}
-              css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
-            >
-              <span css={navIconStyle}>
-                <SVGIcon icon={`${item.icon}`} size="md" />
-              </span>
-              <span css={navLabelStyle(theme)}>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+            return (
+              <Link
+                key={item.id}
+                onClick={e => handleLinkClick(e, item.id, targetPath)}
+                to={targetPath}
+                css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
+              >
+                <span css={navIconStyle}>
+                  <SVGIcon icon={`${item.icon}`} size="md" />
+                </span>
+                <span css={navLabelStyle(theme)}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
-      {isLoggedIn && user && (
-        <div css={userSectionStyle(theme)}>
-          <Avatar
-            src={user.profileImageUrl}
-            name={user.displayName}
-            size="sm"
-            alt={user.displayName}
+        {isLoggedIn && user && (
+          <Dropdown
+            options={dropdownOptions}
+            onChange={handleLogout}
+            variant="plain"
+            placement="top"
+            triggerCss={userSectionTriggerStyle}
+            triggerContent={
+              <div css={userSectionStyle(theme)}>
+                <Avatar
+                  src={user.profileImageUrl}
+                  name={user.displayName}
+                  size="sm"
+                  alt={user.displayName}
+                />
+                <div css={userInfoStyle}>
+                  <div css={userNameStyle(theme)}>{user.displayName}</div>
+                  <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
+                </div>
+              </div>
+            }
+            triggerAction="click"
           />
-          <div css={userInfoStyle}>
-            <div css={userNameStyle(theme)}>{user.displayName}</div>
-            <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
-          </div>
-        </div>
-      )}
-    </aside>
+        )}
+      </aside>
+    </>
   );
 };
-
-// --- 스타일 정의 (기존과 동일하되 가독성을 위해 유지) ---
 
 const sidebarStyle = (theme: Theme) => css`
   display: flex;
@@ -279,12 +359,31 @@ const userNameStyle = (theme: Theme) => css`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
 `;
 
 const userLevelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
+  text-align: left;
 `;
 
 const buildTierLabel = (tierName: string | null) =>
   tierName ? `${tierName} 티어` : '티어 정보 없음';
+
+const userSectionTriggerStyle = css`
+  width: 100%;
+  padding: 0 !important;
+  border: none !important;
+
+  & > div {
+    width: 100%;
+    transition: background-color 150ms ease;
+    cursor: pointer;
+
+    :hover {
+      filter: brightness(0.97);
+    }
+  }
+  }
+`;

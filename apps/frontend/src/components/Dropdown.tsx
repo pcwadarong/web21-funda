@@ -23,6 +23,8 @@ interface DropdownProps {
   triggerCss?: CSSObject;
   renderOption?: (option: DropdownOption, isSelected: boolean) => React.ReactNode;
   renderTrigger?: (selectedOption?: DropdownOption) => React.ReactNode;
+  placement?: 'top' | 'bottom';
+  triggerAction?: 'hover' | 'click';
 }
 
 export const Dropdown = ({
@@ -38,6 +40,8 @@ export const Dropdown = ({
   triggerCss,
   renderOption,
   renderTrigger,
+  placement = 'bottom',
+  triggerAction = 'hover',
 }: DropdownProps) => {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -94,13 +98,16 @@ export const Dropdown = ({
     setIsOpen(false);
   };
 
+  const hoverHandlers =
+    triggerAction === 'hover'
+      ? {
+          onMouseEnter: handleMouseEnter,
+          onMouseLeave: handleMouseLeave,
+        }
+      : {};
+
   return (
-    <div
-      ref={rootRef}
-      css={wrapperStyle}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div ref={rootRef} css={wrapperStyle(placement)} {...hoverHandlers}>
       <button
         type="button"
         css={[
@@ -123,7 +130,7 @@ export const Dropdown = ({
       </button>
 
       {isOpen && (
-        <div css={menuStyle(theme)} role="listbox" aria-label="dropdown options">
+        <div css={menuStyle(theme, placement)} role="listbox" aria-label="dropdown options">
           {options.map(option => (
             <button
               key={option.value}
@@ -142,9 +149,19 @@ export const Dropdown = ({
   );
 };
 
-const wrapperStyle = css`
+const wrapperStyle = (placement: 'top' | 'bottom') => css`
   position: relative;
   display: inline-flex;
+
+  ${placement === 'bottom' &&
+  css`
+    padding-bottom: 8px;
+  `}
+
+  ${placement === 'top' &&
+  css`
+    padding-top: 8px;
+  `}
 `;
 
 const triggerStyle = (
@@ -211,9 +228,8 @@ const caretStyle = (isOpen: boolean) => css`
   transform: rotate(${isOpen ? '180deg' : '0deg'});
 `;
 
-const menuStyle = (theme: Theme) => css`
+const menuStyle = (theme: Theme, placement: 'top' | 'bottom') => css`
   position: absolute;
-  top: 100%;
   left: 50%;
   transform: translateX(-50%);
   min-width: 100%;
@@ -224,6 +240,14 @@ const menuStyle = (theme: Theme) => css`
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
   padding: 8px;
   z-index: 10;
+
+  ${placement === 'top'
+    ? css`
+        bottom: 100%;
+      `
+    : css`
+        top: 100%;
+      `}
 `;
 
 const optionStyle = (theme: Theme, isSelected: boolean) => css`

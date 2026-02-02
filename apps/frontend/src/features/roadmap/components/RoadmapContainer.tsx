@@ -27,7 +27,7 @@ export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapConta
       <header css={headerStyle}>
         <Link to="/learn/select-field" css={backLinkStyle(theme)}>
           <SVGIcon icon="ArrowLeft" size="sm" />
-          분야 선택으로 돌아가기
+          전체 학습 분야
         </Link>
 
         <div css={heroStyle}>
@@ -82,13 +82,17 @@ const headerStyle = css`
 const backLinkStyle = (theme: Theme) => css`
   color: ${theme.colors.text.light};
   text-decoration: none;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
+  font-size: ${theme.typography['14Medium'].fontSize};
+  line-height: ${theme.typography['14Medium'].lineHeight};
+  font-weight: ${theme.typography['14Medium'].fontWeight};
   display: flex;
   align-items: center;
   gap: 6px;
   width: fit-content;
+
+  &:hover {
+    filter: brightness(150%);
+  }
 `;
 
 const heroStyle = css`

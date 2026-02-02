@@ -130,6 +130,7 @@ describe('ProfileService', () => {
       displayName: '펀다',
       profileImageUrl: null,
       experience: 120,
+      diamondCount: 42,
       currentStreak: 7,
       currentTier: { id: 2, name: 'BRONZE', orderIndex: 1 },
     } as User);
@@ -160,6 +161,7 @@ describe('ProfileService', () => {
     expect(result.totalStudyTimeSeconds).toBe(3600);
     expect(result.totalStudyTimeMinutes).toBe(60);
     expect(result.solvedQuizzesCount).toBe(12);
+    expect(result.diamondCount).toBe(42);
     expect(result.tier?.name).toBe('BRONZE');
     expect(stepAttemptQueryBuilderMock.andWhere).toHaveBeenCalledWith(
       'stepAttempt.status = :status',

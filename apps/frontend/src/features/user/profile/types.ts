@@ -9,6 +9,7 @@ export interface ProfileSummaryResult {
   displayName: string;
   profileImageUrl: string | null;
   experience: number;
+  diamondCount: number;
   currentStreak: number;
   tier: ProfileTierSummary | null;
   followerCount: number;

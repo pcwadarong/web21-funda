@@ -195,6 +195,7 @@ export class AuthController {
             heartCount: 5,
             maxHeartCount: 5,
             experience: 0,
+            diamondCount: 0,
             currentStreak: 0,
             provider: 'github',
           },

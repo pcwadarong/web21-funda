@@ -32,6 +32,8 @@ export const useAuthStore = create<AuthState>(set => ({
 }));
 
 export const useAuthUser = () => useAuthStore(state => state.user);
+export const useAuthProfileImageUrl = () =>
+  useAuthStore(state => state.user?.profileImageUrl ?? null);
 export const useIsLoggedIn = () => useAuthStore(state => state.isLoggedIn);
 export const useIsAuthReady = () => useAuthStore(state => state.isAuthReady);
 export const useAuthActions = () => useAuthStore(state => state.actions);

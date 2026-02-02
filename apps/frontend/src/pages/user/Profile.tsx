@@ -13,7 +13,12 @@ import {
   useProfileSummary,
   useUnfollowUserMutation,
 } from '@/hooks/queries/userQueries';
-import { useAuthUser } from '@/store/authStore';
+import {
+  useAuthProfileImageUrl,
+  useAuthUser,
+  useIsAuthReady,
+  useIsLoggedIn,
+} from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 /**
@@ -25,6 +30,7 @@ import { useToast } from '@/store/toastStore';
 export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
+  const authProfileImageUrl = useAuthProfileImageUrl();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -104,9 +110,14 @@ export const Profile = () => {
     );
   }
 
+  const resolvedProfileSummary =
+    isMyProfile && profileSummary
+      ? { ...profileSummary, profileImageUrl: authProfileImageUrl }
+      : profileSummary;
+
   return (
     <ProfileContainer
-      profileSummary={profileSummary ?? null}
+      profileSummary={resolvedProfileSummary ?? null}
       following={following ?? []}
       followers={followers ?? []}
       isFollowingLoading={isFollowingLoading}

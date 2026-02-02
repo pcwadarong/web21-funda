@@ -313,7 +313,7 @@ const freeLabelStyle = css`
 `;
 
 const purchasedLabelStyle = (theme: Theme) => css`
-  color: ${theme.colors.success.main};
+  color: ${theme.colors.text.weak};
   font-weight: ${theme.typography['12Bold'].fontWeight};
 `;
 

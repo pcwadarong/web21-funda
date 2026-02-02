@@ -8,8 +8,7 @@ import { Loading } from '@/components/Loading';
 import SVGIcon from '@/components/SVGIcon';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
-import { useProfileSummary } from '@/hooks/queries/userQueries';
-import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
@@ -35,7 +34,7 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
-  const userId = user?.id ?? null;
+  const profileImageUrl = useAuthProfileImageUrl();
 
   const { showToast } = useToast();
   const { confirm } = useModal();
@@ -44,8 +43,6 @@ export const Sidebar = () => {
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
-  const { data: profileSummary } = useProfileSummary(userId);
-  const profileImageUrl = profileSummary?.profileImageUrl ?? user?.profileImageUrl ?? null;
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';

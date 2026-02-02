@@ -6,6 +6,7 @@ import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { Participant } from '@/feat/battle/types';
 import { BattleSetupContainer } from '@/features/battle/components/setup/BattleSetupContainer';
 import { useJoinBattleRoomQuery } from '@/hooks/queries/battleQueries';
+import { useAuthProfileImageUrl, useAuthUser } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 function hashString(str: string): number {
@@ -22,6 +23,8 @@ export const BattleSetupPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
+  const authUser = useAuthUser();
+  const battleProfileImageUrl = useAuthProfileImageUrl() ?? undefined;
 
   if (!inviteToken) {
     throw new Error('inviteToken is required');
@@ -43,11 +46,21 @@ export const BattleSetupPage = () => {
       return;
     }
 
-    joinBattle(data.roomId, undefined, {
-      inviteToken,
-      settings: data.settings,
-    });
-  }, [data, inviteToken, joinBattle, navigate]);
+    joinBattle(
+      data.roomId,
+      authUser
+        ? {
+            userId: authUser.id,
+            displayName: authUser.displayName,
+            profileImageUrl: battleProfileImageUrl,
+          }
+        : undefined,
+      {
+        inviteToken,
+        settings: data.settings,
+      },
+    );
+  }, [authUser, battleProfileImageUrl, data, inviteToken, joinBattle, navigate]);
 
   useEffect(() => {
     if (!isError) {

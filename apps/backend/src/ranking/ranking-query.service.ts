@@ -119,7 +119,7 @@ export class RankingQueryService {
 
     const groupMembers = await this.memberRepository.find({
       where: { groupId: member.groupId },
-      relations: { user: true },
+      relations: { user: { profileCharacter: true } },
     });
     const memberIds = groupMembers.map(groupMember => groupMember.userId);
     const weeklyXpList = await this.weeklyXpRepository.find({
@@ -135,7 +135,8 @@ export class RankingQueryService {
       return {
         userId: groupMember.userId,
         displayName: groupMember.user?.displayName ?? '알 수 없음',
-        profileImageUrl: groupMember.user?.profileImageUrl ?? null,
+        profileImageUrl:
+          groupMember.user?.profileCharacter?.imageUrl ?? groupMember.user?.profileImageUrl ?? null,
         xp: weeklyXp?.xp ?? 0,
         lastSolvedAt,
       };
@@ -241,7 +242,7 @@ export class RankingQueryService {
 
     const groupMembers = await this.memberRepository.find({
       where: { groupId: group.id },
-      relations: { user: true },
+      relations: { user: { profileCharacter: true } },
     });
 
     if (groupMembers.length === 0) {
@@ -270,7 +271,8 @@ export class RankingQueryService {
       return {
         userId: groupMember.userId,
         displayName: groupMember.user?.displayName ?? '알 수 없음',
-        profileImageUrl: groupMember.user?.profileImageUrl ?? null,
+        profileImageUrl:
+          groupMember.user?.profileCharacter?.imageUrl ?? groupMember.user?.profileImageUrl ?? null,
         xp: weeklyXp?.xp ?? 0,
         lastSolvedAt,
       };

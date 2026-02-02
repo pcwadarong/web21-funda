@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
+import { useProfileSummary } from '@/hooks/queries/userQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
@@ -27,10 +28,13 @@ export const Sidebar = () => {
   const location = useLocation();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
+  const userId = user?.id ?? null;
 
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
+  const { data: profileSummary } = useProfileSummary(userId);
+  const profileImageUrl = profileSummary?.profileImageUrl ?? user?.profileImageUrl ?? null;
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -83,12 +87,7 @@ export const Sidebar = () => {
 
       {isLoggedIn && user && (
         <div css={userSectionStyle(theme)}>
-          <Avatar
-            src={user.profileImageUrl}
-            name={user.displayName}
-            size="sm"
-            alt={user.displayName}
-          />
+          <Avatar src={profileImageUrl} name={user.displayName} size="sm" alt={user.displayName} />
           <div css={userInfoStyle}>
             <div css={userNameStyle(theme)}>{user.displayName}</div>
             <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>

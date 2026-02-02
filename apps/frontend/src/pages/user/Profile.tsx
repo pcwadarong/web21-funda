@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
 import { ErrorView } from '@/features/error/components/ErrorView';
-import { ProfileContainer } from '@/features/user/components/profile/ProfileContainer';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
   useFollowUserMutation,
+  useProfileDailyStats,
+  useProfileFieldDailyStats,
   useProfileFollowers,
   useProfileFollowing,
+  useProfileStreaks,
   useProfileSummary,
   useUnfollowUserMutation,
-} from '@/hooks/queries/profileQueries';
-import { useAuthUser } from '@/store/authStore';
+} from '@/hooks/queries/userQueries';
+import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 /**
@@ -23,6 +27,8 @@ export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
   const navigate = useNavigate();
+  const isLoggedIn = useIsLoggedIn();
+  const isAuthReady = useIsAuthReady();
   const location = useLocation();
   const { showToast } = useToast();
 
@@ -35,6 +41,7 @@ export const Profile = () => {
     isLoading: isProfileLoading,
     refetch: refetchProfileSummary,
   } = useProfileSummary(shouldFetch);
+
   const {
     data: followers,
     isLoading: isFollowersLoading,
@@ -80,6 +87,12 @@ export const Profile = () => {
     void refetchFollowers();
     void refetchFollowing();
   }, [refetchFollowers, refetchFollowing, shouldFetch]);
+  const { data: streaks } = useProfileStreaks(shouldFetch);
+  const { data: dailyStats } = useProfileDailyStats(shouldFetch);
+  const { data: fieldDailyStats } = useProfileFieldDailyStats(shouldFetch);
+
+  const shouldFetchRanking = isLoggedIn && isAuthReady && !!user;
+  const { data: rankingMe } = useRankingMe(shouldFetchRanking);
 
   const isMyProfile = user?.id !== undefined && profileSummary?.userId === user.id;
   const handleProfileImageClick = isMyProfile ? () => navigate('/profile/characters') : undefined;
@@ -117,8 +130,7 @@ export const Profile = () => {
     }
   };
 
-  // TODO: 실제 다이아몬드 개수는 프로필 API에서 가져와야 함
-  const diamondCount = 0;
+  const diamondCount = rankingMe?.diamondCount ?? 0;
 
   // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
@@ -141,6 +153,9 @@ export const Profile = () => {
       followers={followers ?? []}
       isFollowingLoading={isFollowingLoading}
       isFollowersLoading={isFollowersLoading}
+      streaks={streaks ?? []}
+      dailyStats={dailyStats ?? null}
+      fieldDailyStats={fieldDailyStats ?? null}
       diamondCount={diamondCount}
       onUserClick={handleUserClick}
       onProfileImageClick={handleProfileImageClick}

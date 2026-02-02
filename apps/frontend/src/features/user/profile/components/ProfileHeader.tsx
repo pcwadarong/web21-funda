@@ -1,8 +1,9 @@
 import { css, useTheme } from '@emotion/react';
+import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Avatar } from '@/components/Avatar';
-import type { ProfileSummaryResult } from '@/features/profile/types';
+import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 
@@ -29,75 +30,87 @@ interface ProfileHeaderProps {
  *
  * 그라데이션 배경의 헤더 영역으로, 프로필 이미지, 사용자 이름, 티어, XP, 다이아몬드 정보를 표시합니다.
  */
-export const ProfileHeader = ({
-  profileSummary,
-  diamondCount,
-  onProfileImageClick,
-  isMyProfile,
-  isFollowing,
-  onFollowToggle,
-}: ProfileHeaderProps) => {
-  const theme = useTheme();
+export const ProfileHeader = memo(
+  ({
+    profileSummary,
+    diamondCount,
+    onProfileImageClick,
+    isMyProfile,
+    isFollowing,
+    onFollowToggle,
+  }: ProfileHeaderProps) => {
+    const theme = useTheme();
 
-  const displayName = profileSummary?.displayName ?? '사용자';
-  const tierName = profileSummary?.tier?.name ?? 'BRONZE';
-  const experience = profileSummary?.experience ?? 0;
-  const profileImageUrl = profileSummary?.profileImageUrl ?? null;
+    const displayName = useMemo(
+      () => profileSummary?.displayName ?? '사용자',
+      [profileSummary?.displayName],
+    );
+    const tierName = useMemo(
+      () => profileSummary?.tier?.name ?? 'BRONZE',
+      [profileSummary?.tier?.name],
+    );
+    const experience = useMemo(() => profileSummary?.experience ?? 0, [profileSummary?.experience]);
+    const profileImageUrl = useMemo(
+      () => profileSummary?.profileImageUrl ?? null,
+      [profileSummary?.profileImageUrl],
+    );
+    const isEditable = Boolean(onProfileImageClick) && isMyProfile;
+    const shouldShowFollow = !isMyProfile && Boolean(onFollowToggle);
 
-  const isEditable = Boolean(onProfileImageClick) && isMyProfile;
-  const shouldShowFollow = !isMyProfile && Boolean(onFollowToggle);
-
-  return (
-    <section css={headerCardStyle(theme)}>
-      <div css={headerLeftWrapperStyle}>
-        <div css={avatarWrapperStyle}>
-          <Avatar
-            src={profileImageUrl}
-            name={displayName}
-            size="md"
-            css={avatarStyle(theme)}
-            alt={`${displayName} 프로필`}
-          />
-          {isEditable && (
-            <button
-              type="button"
-              css={avatarEditButtonStyle(theme, false)}
-              onClick={onProfileImageClick}
-              aria-label="프로필 이미지 변경"
-            >
-              <SVGIcon icon="Edit" size="sm" />
-            </button>
-          )}
-        </div>
-        <div css={headerInfoWrapperStyle}>
-          <div css={nameRowWrapperStyle}>
-            <h1 css={nameStyle(theme)}>{displayName}</h1>
+    return (
+      <section css={headerCardStyle(theme)}>
+        <div css={headerLeftWrapperStyle}>
+          <div css={avatarWrapperStyle}>
+            <Avatar
+              src={profileImageUrl}
+              name={displayName}
+              size="md"
+              css={avatarStyle(theme)}
+              alt={`${displayName} 프로필`}
+            />
+            {isEditable && (
+              <button
+                type="button"
+                css={avatarEditButtonStyle(theme, false)}
+                onClick={onProfileImageClick}
+                aria-label="프로필 이미지 변경"
+              >
+                <SVGIcon icon="Edit" size="sm" />
+              </button>
+            )}
           </div>
-          <span css={tierBadgeStyle}>{tierName}</span>
-          <div css={metaRowWrapperStyle}>
-            <div css={metaItemStyle}>
-              <SVGIcon icon="Xp" />
-              <span>{experience} XP</span>
+          <div css={headerInfoWrapperStyle}>
+            <div css={nameRowWrapperStyle}>
+              <h1 css={nameStyle(theme)}>{displayName}</h1>
             </div>
-            <div css={metaItemStyle}>
-              <SVGIcon icon="Diamond" />
-              <span>{diamondCount}</span>
+            <span css={tierBadgeStyle}>{tierName}</span>
+            <div css={metaRowWrapperStyle}>
+              <div css={metaItemStyle}>
+                <SVGIcon icon="Xp" />
+                <span>{experience} XP</span>
+              </div>
+              <div css={metaItemStyle}>
+                <SVGIcon icon="Diamond" />
+                <span>{diamondCount}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      {isMyProfile ? (
-        <div />
-      ) : shouldShowFollow ? (
-        <button type="button" css={rightActionButtonStyle(theme)} onClick={onFollowToggle}>
-          {isFollowing ? '언팔로우하기' : '팔로우하기'}
-        </button>
-      ) : (
-        <div />
-      )}
-    </section>
-  );
-};
+        {isMyProfile ? (
+          <div />
+        ) : shouldShowFollow ? (
+          <button type="button" css={rightActionButtonStyle(theme)} onClick={onFollowToggle}>
+            {isFollowing ? '언팔로우하기' : '팔로우하기'}
+          </button>
+        ) : (
+          <div />
+        )}
+      </section>
+    );
+  },
+);
+
+ProfileHeader.displayName = 'ProfileHeader';
 
 const headerCardStyle = (theme: Theme) => css`
   display: flex;
@@ -120,15 +133,6 @@ const headerLeftWrapperStyle = css`
   gap: 1.25rem;
 `;
 
-const avatarWrapperStyle = css`
-  position: relative;
-  display: inline-flex;
-`;
-
-const avatarStyle = (theme: Theme) => css`
-  background: ${theme.colors.primary.light};
-`;
-
 const headerInfoWrapperStyle = css`
   display: flex;
   flex-direction: column;
@@ -139,10 +143,6 @@ const nameRowWrapperStyle = css`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-
-  button {
-    margin-top: 9px;
-  }
 `;
 
 const nameStyle = (theme: Theme) => css`
@@ -168,6 +168,15 @@ const metaItemStyle = css`
   justify-content: center;
   align-items: center;
   gap: 0.375rem;
+`;
+
+const avatarWrapperStyle = css`
+  position: relative;
+  display: inline-flex;
+`;
+
+const avatarStyle = (theme: Theme) => css`
+  background: ${theme.colors.primary.light};
 `;
 
 const avatarEditButtonStyle = (theme: Theme, _isDisabled: boolean) => css`

@@ -37,86 +37,76 @@ export const Overview = () => {
 
   if (parsedUnitId === null) {
     return (
-      <div css={containerStyle}>
-        <main css={mainStyle}>
-          <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
-            <SVGIcon icon="ArrowLeft" size="sm" />
-            돌아가기
-          </button>
-          <div css={messageStyle(theme)}>유닛 정보를 찾지 못했습니다.</div>
-        </main>
+      <div css={mainStyle}>
+        <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
+          <SVGIcon icon="ArrowLeft" size="sm" />
+          돌아가기
+        </button>
+        <div css={messageStyle(theme)}>유닛 정보를 찾지 못했습니다.</div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div css={containerStyle}>
-        <main css={mainStyle}>
-          <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
-            <SVGIcon icon="ArrowLeft" size="sm" />
-            돌아가기
-          </button>
-          <div css={loadingStyle}>
-            <Loading text="학습 개요를 불러오는 중입니다." />
-          </div>
-        </main>
+      <div css={mainStyle}>
+        <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
+          <SVGIcon icon="ArrowLeft" size="sm" />
+          돌아가기
+        </button>
+        <div css={loadingStyle}>
+          <Loading text="학습 개요를 불러오는 중입니다." />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div css={containerStyle}>
-        <main css={mainStyle}>
-          <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
-            <SVGIcon icon="ArrowLeft" size="sm" />
-            돌아가기
-          </button>
-          <div css={messageStyle(theme)}>
-            학습 개요를 불러오지 못했습니다.
-            <span css={errorDetailStyle(theme)}>{error.message}</span>
-          </div>
-        </main>
+      <div css={mainStyle}>
+        <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
+          <SVGIcon icon="ArrowLeft" size="sm" />
+          돌아가기
+        </button>
+        <div css={messageStyle(theme)}>
+          학습 개요를 불러오지 못했습니다.
+          <span css={errorDetailStyle(theme)}>{error.message}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div css={containerStyle}>
-      <main css={mainStyle}>
-        <header css={headerStyle}>
-          <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
-            <SVGIcon icon="ArrowLeft" size="sm" />
-            돌아가기
-          </button>
-          <div css={titleStyle(theme)}>{data?.unit.title ?? '학습 개요'}</div>
-        </header>
-        <section css={contentStyle(theme)}>
-          {hasOverview ? (
-            <MarkdownRenderer text={overviewText} />
-          ) : (
-            <div css={messageStyle(theme)}>아직 작성된 학습 개요가 없습니다.</div>
-          )}
-        </section>
-      </main>
+    <div css={mainStyle}>
+      <header css={headerStyle}>
+        <button type="button" css={backButtonStyle(theme)} onClick={handleBackClick}>
+          <SVGIcon icon="ArrowLeft" size="sm" />
+          돌아가기
+        </button>
+        <div css={titleStyle(theme)}>{data?.unit.title ?? '학습 개요'}</div>
+      </header>
+      <section css={contentStyle(theme)}>
+        {hasOverview ? (
+          <MarkdownRenderer text={overviewText} />
+        ) : (
+          <div css={messageStyle(theme)}>아직 작성된 학습 개요가 없습니다.</div>
+        )}
+      </section>
     </div>
   );
 };
 
-const containerStyle = css`
-  width: 100%;
-  min-height: 100vh;
-  background: transparent;
-`;
-
 const mainStyle = css`
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: 24px 20px 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  @media (max-width: 768px) {
+    padding: 16px 12px 0;
+  }
 `;
 
 const headerStyle = css`
@@ -152,7 +142,7 @@ const contentStyle = (theme: Theme) => css`
   border-radius: 16px;
   padding: 32px;
   min-height: 320px;
-  max-height: calc(100vh - 14rem);
+  max-height: calc(100vh - 8rem);
   overflow-y: hidden;
 
   &:hover {
@@ -178,6 +168,10 @@ const contentStyle = (theme: Theme) => css`
 
     /* Clips the background so it doesn't bleed into the border area */
     background-clip: padding-box;
+  }
+
+  @media (max-width: 768px) {
+    max-height: calc(100vh - 14rem);
   }
 `;
 

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { SettingContainer } from '@/feat/user/components/setting/SettingContainer';
+import { SettingContainer } from '@/feat/user/setting/SettingContainer';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuthActions } from '@/store/authStore';

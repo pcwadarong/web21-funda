@@ -55,21 +55,26 @@ export const AdminSuspenseLayout = ({ children }: AdminLayoutProps) => {
 
 const containerStyle = css`
   display: flex;
-  width: 100vw;
   height: 100vh;
+  flex-direction: row;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 const mainContentStyle = css`
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 `;
 
 const headerStyle = (theme: Theme) => css`
-  flex-shrink: 0; // 헤더가 높이 싸움에서 밀리지 않도록 고정
+  flex-shrink: 0;
   padding: 32px 32px 0 32px;
   background: ${theme.colors.surface.strong};
   border-bottom: 1px solid ${theme.colors.border.default};
@@ -96,6 +101,10 @@ const tabItemStyle = (theme: Theme) => css`
 
   &:hover {
     color: ${theme.colors.primary.main};
+  }
+
+  @media (max-width: 768px) {
+    font-size: ${theme.typography['12Medium'].fontSize};
   }
 `;
 

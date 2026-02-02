@@ -7,17 +7,17 @@ import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { Modal } from '@/components/Modal';
-import { UserSearchModal } from '@/features/profile/components/UserSearchModal';
-import type { ProfileSearchUser } from '@/features/profile/types';
+import { UserSearchModal } from '@/feat/user/profile/components/UserSearchModal';
+import type { ProfileSearchUser } from '@/feat/user/profile/types';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
+import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import {
-  profileKeys,
   useFollowUserMutation,
   useProfileSearchUsers,
+  userKeys,
   useUnfollowUserMutation,
-} from '@/hooks/queries/profileQueries';
-import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
+} from '@/hooks/queries/userQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
@@ -195,7 +195,7 @@ export const LearnRightSidebar = ({
 
       setFollowOverrides(prev => ({ ...prev, [targetUserId]: nextIsFollowing }));
       queryClient.setQueryData<ProfileSearchUser[]>(
-        profileKeys.search(debouncedKeyword),
+        userKeys.search(debouncedKeyword),
         previousData => {
           if (!previousData) {
             return previousData;
@@ -210,8 +210,8 @@ export const LearnRightSidebar = ({
       );
 
       if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: profileKeys.following(user.id) });
-        queryClient.invalidateQueries({ queryKey: profileKeys.summary(user.id) });
+        queryClient.invalidateQueries({ queryKey: userKeys.following(user.id) });
+        queryClient.invalidateQueries({ queryKey: userKeys.summary(user.id) });
       }
     } catch (followError) {
       setFollowOverrides(prev => ({ ...prev, [targetUserId]: isFollowing }));

@@ -1,6 +1,13 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
 
-import type { ProfileFollowUser, ProfileSummaryResult } from '@/features/profile/types';
+import type {
+  DailyStatsResult,
+  FieldDailyStatsResult,
+  ProfileFollowUser,
+  ProfileStreakDay,
+  ProfileSummaryResult,
+} from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 import { ChartSection } from './ChartSection';
@@ -19,6 +26,12 @@ interface ProfileContainerProps {
   following: ProfileFollowUser[];
   /** 팔로워 목록 */
   followers: ProfileFollowUser[];
+  /** 스트릭 데이터 */
+  streaks: ProfileStreakDay[];
+  /** 일일 학습 통계 */
+  dailyStats: DailyStatsResult | null;
+  /** 필드별 일일 학습 통계 */
+  fieldDailyStats: FieldDailyStatsResult | null;
   /** 팔로잉 로딩 상태 */
   isFollowingLoading: boolean;
   /** 팔로워 로딩 상태 */
@@ -43,25 +56,28 @@ interface ProfileContainerProps {
  * 프로필 페이지의 메인 레이아웃을 구성하는 컨테이너 컴포넌트입니다.
  * 헤더, 팔로우 리스트, 통계, 차트, 히트맵 섹션을 포함합니다.
  */
-export const ProfileContainer = ({
-  profileSummary,
-  following,
-  followers,
-  isFollowingLoading,
-  isFollowersLoading,
-  diamondCount,
-  onUserClick,
-  onProfileImageClick,
-  isMyProfile,
-  isFollowing,
-  onFollowToggle,
-}: ProfileContainerProps) => {
-  const theme = useTheme();
+export const ProfileContainer = memo(
+  ({
+    profileSummary,
+    following,
+    followers,
+    streaks,
+    dailyStats,
+    fieldDailyStats,
+    isFollowingLoading,
+    isFollowersLoading,
+    diamondCount,
+    onUserClick,
+    onProfileImageClick,
+    isMyProfile,
+    isFollowing,
+    onFollowToggle,
+  }: ProfileContainerProps) => {
+    const theme = useTheme();
 
-  const displayName = profileSummary?.displayName ?? '사용자';
+    const displayName = profileSummary?.displayName ?? '사용자';
 
-  return (
-    <main css={pageStyle}>
+    return (
       <div css={pageContentStyle}>
         <header css={headerStyle}>
           <h1 css={pageTitleStyle(theme)}>PROFILE</h1>
@@ -84,28 +100,24 @@ export const ProfileContainer = ({
             isFollowersLoading={isFollowersLoading}
             onUserClick={onUserClick}
           />
-
           <StatsSection profileSummary={profileSummary} displayName={displayName} />
         </div>
 
-        <div css={twoColumnGridStyle}>
-          <HeatmapSection />
+        <HeatmapSection streaks={streaks} />
 
-          <ChartSection />
+        <div css={twoColumnGridStyle}>
+          <ChartSection dailyStats={dailyStats} fieldDailyStats={fieldDailyStats} />
         </div>
       </div>
-    </main>
-  );
-};
+    );
+  },
+);
 
-const pageStyle = css`
-  flex: 1;
-  min-height: 100vh;
-  padding: 2rem 1.5rem 7.5rem;
-`;
+ProfileContainer.displayName = 'ProfileContainer';
 
 const pageContentStyle = css`
   width: 100%;
+  padding: 2rem 1.5rem;
   max-width: 60rem;
   margin: 0 auto;
   display: flex;

@@ -1,8 +1,6 @@
-import type { RankingTierName } from '../../ranking/entities/ranking-tier.enum';
-
 export interface ProfileTierSummary {
   id: number;
-  name: RankingTierName;
+  name: string;
   orderIndex: number;
 }
 
@@ -44,10 +42,6 @@ export interface ProfileStreakDay {
   solvedCount: number;
 }
 
-export interface FollowStateResult {
-  isFollowing: boolean;
-}
-
 export interface DailyStatsData {
   date: string;
   studySeconds: number;
@@ -77,4 +71,14 @@ export interface FieldDailyStatsItem {
 
 export interface FieldDailyStatsResult {
   fields: FieldDailyStatsItem[];
+}
+
+export interface ProfileSearchUser {
+  userId: number;
+  displayName: string;
+  email: string | null;
+  profileImageUrl: string | null;
+  experience: number;
+  tier: ProfileTierSummary | null;
+  isFollowing: boolean;
 }

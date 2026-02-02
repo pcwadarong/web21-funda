@@ -2,7 +2,7 @@ import { css, useTheme } from '@emotion/react';
 
 import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
-import type { ProfileSearchUser } from '@/features/profile/types';
+import type { ProfileSearchUser } from '@/features/user/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 

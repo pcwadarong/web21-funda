@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { Modal } from '@/comp/Modal';
 import { Button } from '@/components/Button';
-import { ProfileCharacterContainer } from '@/feat/user/components/profile-character/ProfileCharacterContainer';
+import { ProfileCharacterContainer } from '@/feat/user/profile-character/ProfileCharacterContainer';
 import {
   useProfileCharacterApply,
   useProfileCharacterClear,

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
+import { Field } from '../roadmap/entities/field.entity';
 import { User } from '../users/entities/user.entity';
 
 import { ProfileCharacter } from './entities/profile-character.entity';
@@ -17,6 +18,7 @@ import { ProfileService } from './profile.service';
       User,
       SolveLog,
       UserStepAttempt,
+      Field,
       UserFollow,
       ProfileCharacter,
       UserProfileCharacter,

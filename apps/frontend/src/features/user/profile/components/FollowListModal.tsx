@@ -2,7 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { useMemo, useState } from 'react';
 
 import { Avatar } from '@/components/Avatar';
-import type { ProfileFollowUser } from '@/features/profile/types';
+import type { ProfileFollowUser } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 
 interface FollowListModalProps {

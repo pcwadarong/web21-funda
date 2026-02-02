@@ -30,18 +30,7 @@ const APP_ERROR_FALLBACK = {
 
 function GlobalStyles() {
   const { isDarkMode } = useThemeStore();
-  return (
-    <Global
-      styles={css`
-        body {
-          background: ${isDarkMode
-            ? '#1c1d2bff'
-            : 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)'};
-          transition: background 0.3s ease;
-        }
-      `}
-    />
-  );
+  return <Global styles={globalStyle(isDarkMode)} />;
 }
 
 function ThemeWrapper({ children }: { children: ReactNode }) {
@@ -75,3 +64,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     </QueryClientProvider>
   );
 }
+
+const globalStyle = (isDarkMode: boolean) => css`
+  body {
+    background: ${isDarkMode
+      ? '#1c1d2bff'
+      : 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)'};
+    transition: background 0.3s ease;
+  }
+
+  *::-webkit-scrollbar {
+    width: 18px;
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border: none;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #b2b2b2;
+    border-radius: 10px;
+    border: 5px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #8c8c8c;
+  }
+`;

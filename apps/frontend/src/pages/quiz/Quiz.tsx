@@ -223,22 +223,15 @@ export const Quiz = () => {
    * 퀴즈 데이터 가져오기
    */
   const fetchQuizzes = useCallback(() => {
-    if (!step_id && !isReviewMode) {
-      return;
-    }
-
-    if (!isAuthReady) {
-      return;
-    }
+    if (!step_id && !isReviewMode) return;
+    if (!isAuthReady) return;
 
     if (isReviewMode && !isLoggedIn) {
       navigate('/login');
       return;
     }
 
-    if (!quizzesData) {
-      return;
-    }
+    if (!quizzesData) return;
 
     if (quizzesData.length === 0) {
       setLoadError(true);
@@ -246,11 +239,20 @@ export const Quiz = () => {
     }
 
     setLoadError(false);
+
+    const shouldResetState =
+      quizzes.length === 0 ||
+      quizzesData.length !== quizzes.length ||
+      quizzesData.some((quiz, index) => quiz.id !== quizzes[index]?.id);
+
     setQuizzes(quizzesData);
-    setSelectedAnswers(new Array(quizzesData.length).fill(null));
-    setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
-    setQuizSolutions(new Array(quizzesData.length).fill(null));
-  }, [step_id, isLoggedIn, isAuthReady, isReviewMode, navigate, quizzesData]);
+
+    if (shouldResetState) {
+      setSelectedAnswers(new Array(quizzesData.length).fill(null));
+      setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
+      setQuizSolutions(new Array(quizzesData.length).fill(null));
+    }
+  }, [step_id, isLoggedIn, isAuthReady, isReviewMode, navigate, quizzesData, quizzes]);
 
   // -----------------------------------------------------------------------------
   // 네비게이션/이펙트

@@ -22,9 +22,19 @@ export const typography = {
     lineHeight: '32px',
     fontWeight: 700,
   },
+  '18Bold': {
+    fontSize: '18px',
+    lineHeight: '28px',
+    fontWeight: 700,
+  },
   '16Bold': {
     fontSize: '16px',
     lineHeight: '24px',
+    fontWeight: 700,
+  },
+  '14Bold': {
+    fontSize: '14px',
+    lineHeight: '20px',
     fontWeight: 700,
   },
   '12Bold': {
@@ -49,9 +59,19 @@ export const typography = {
     lineHeight: '32px',
     fontWeight: 500,
   },
+  '18Medium': {
+    fontSize: '18px',
+    lineHeight: '28px',
+    fontWeight: 500,
+  },
   '16Medium': {
     fontSize: '16px',
     lineHeight: '24px',
+    fontWeight: 500,
+  },
+  '14Medium': {
+    fontSize: '14px',
+    lineHeight: '20px',
     fontWeight: 500,
   },
   '12Medium': {

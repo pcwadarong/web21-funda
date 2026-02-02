@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { Button } from '@/comp/Button';
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
@@ -22,6 +23,12 @@ import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
+
+// TODO: 오늘의 목표 추가
+const TODAY_GOALS = [
+  { id: 'xp', label: '50 XP 획득하기', current: 0, target: 50 },
+  { id: 'lessons', label: '2개의 퀴즈 만점 받기', current: 0, target: 2 },
+] as const;
 
 export const LearnRightSidebar = ({
   fieldSlug,
@@ -284,39 +291,84 @@ export const LearnRightSidebar = ({
         </div>
       </div>
 
-      <div css={cardStyle(theme)}>
-        <div css={cardHeaderStyle}>
-          <span css={cardIconStyle}>
-            <SVGIcon icon="Book" size="md" />
-          </span>
-          <span css={cardTitleStyle(theme)}>복습 노트</span>
+      <div css={cardContainerStyle}>
+        <div css={cardStyle(theme)}>
+          <div css={cardHeaderStyle}>
+            <span css={cardIconStyle}>
+              <SVGIcon icon="Book" size="md" />
+            </span>
+            <span css={cardTitleStyle(theme)}>복습 노트</span>
+          </div>
+          <Button
+            variant="primary"
+            fullWidth={true}
+            onClick={handleReviewClick}
+            css={rightSidebarBtnStyle(theme)}
+            disabled={!isLoggedIn}
+          >
+            복습 시작하기
+          </Button>
         </div>
-        {isLoggedIn && user ? (
-          <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
-            복습 시작
-          </button>
-        ) : (
-          <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 복습 노트를 확인해보세요!</div>
-          </Link>
-        )}
-      </div>
 
-      <div css={cardStyle(theme)}>
-        <div css={cardHeaderStyle}>
-          <span css={cardIconStyle}>
-            <SVGIcon icon="Search" size="md" />
-          </span>
-          <span css={cardTitleStyle(theme)}>친구 추가</span>
+        <div css={cardStyle(theme)}>
+          <div css={cardHeaderStyle}>
+            <span css={cardIconStyle}>
+              <SVGIcon icon="Fire" size="md" />
+            </span>
+            <span css={cardTitleStyle(theme)}>오늘의 목표</span>
+          </div>
+          <div css={goalsContentStyle}>
+            {TODAY_GOALS.map(goal => (
+              <div key={goal.id} css={goalItemStyle}>
+                <div css={goalLabelContainerStyle}>
+                  <span css={goalLabelStyle(theme)}>{goal.label}</span>
+                  <span css={goalLabelStyle(theme)}>
+                    {goal.current}/{goal.target}
+                  </span>
+                </div>
+                <div css={progressBarContainerStyle(theme)}>
+                  <div
+                    css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
+                    role="progressbar"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        {isLoggedIn ? (
-          <button css={reviewBadgeStyle(theme)} onClick={handleOpenSearchModal}>
+
+        <div css={cardStyle(theme)}>
+          <div css={cardHeaderStyle}>
+            <span css={cardIconStyle}>
+              <SVGIcon icon="Search" size="md" />
+            </span>
+            <span css={cardTitleStyle(theme)}>친구 추가</span>
+          </div>
+          <Button
+            variant="primary"
+            fullWidth={true}
+            onClick={handleOpenSearchModal}
+            css={rightSidebarBtnStyle(theme)}
+            disabled={!isLoggedIn}
+          >
             친구 추가하기
-          </button>
-        ) : (
-          <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 친구를 추가해보세요!</div>
-          </Link>
+          </Button>
+        </div>
+
+        {!isLoggedIn && !user && (
+          <div css={overlayStyle(theme)}>
+            <div css={overlayHeaderStyle}>
+              <span css={overlayTitleStyle(theme)}>
+                로그인하여 학습 기록을 저장하고 친구 추가를 해보세요!
+              </span>
+            </div>
+
+            <Link to="/login" css={rightSidebarLinkStyle}>
+              <Button variant="primary" fullWidth={true} css={rightSidebarBtnStyle(theme)}>
+                로그인
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 
@@ -346,8 +398,8 @@ const rightSectionStyle = css`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 320px;
-  min-width: 320px;
+  width: 360px;
+  min-width: 360px;
   padding-right: 8px;
 
   @media (max-width: 1024px) {
@@ -356,9 +408,10 @@ const rightSectionStyle = css`
 `;
 
 const statsContainerStyle = (isLoggedIn: boolean) => css`
+  width: ${isLoggedIn ? '100%' : '40%'};
   display: flex;
-  align-items: center;
-  justify-content: ${isLoggedIn ? 'space-between' : 'flex-start'};
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
 `;
 
@@ -395,9 +448,27 @@ const rightSidebarLinkStyle = css`
   }
 `;
 
+const rightSidebarBtnStyle = (theme: Theme) => css`
+  margin-bottom: 0.5rem;
+
+  &:disabled {
+    background: ${theme.colors.grayscale[300]};
+    color: ${theme.colors.text.light};
+    box-shadow: 0 8px 0 ${theme.colors.grayscale[400]};
+    opacity: 0.3;
+  }
+`;
+
 const statValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
+`;
+
+const cardContainerStyle = css`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 `;
 
 const cardStyle = (theme: Theme) => css`
@@ -423,52 +494,88 @@ const cardIconStyle = css`
 
 const cardTitleStyle = (theme: Theme) => css`
   flex: 1;
-  font-size: ${theme.typography['16Bold'].fontSize};
-  line-height: ${theme.typography['16Bold'].lineHeight};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
+  font-size: ${theme.typography['18Bold'].fontSize};
+  line-height: ${theme.typography['18Bold'].lineHeight};
+  font-weight: ${theme.typography['18Bold'].fontWeight};
   color: ${theme.colors.text.strong};
 `;
 
-const reviewBadgeStyle = (theme: Theme) => css`
-  /* 레이아웃: 클릭 영역 확보를 위해 좌우 패딩을 넉넉히 */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
+const overlayStyle = (theme: Theme) => css`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  gap: 24px;
+  background: linear-gradient(
+    to bottom,
+    ${theme.colors.surface.strong},
+    ${theme.colors.surface.strong}F2,
+    ${theme.colors.surface.strong}F2,
+    ${theme.colors.surface.strong}F2,
+    ${theme.colors.surface.strong}E6,
+    ${theme.colors.surface.strong}E6,
+    ${theme.colors.surface.strong}E6,
+    ${theme.colors.surface.strong}B3,
+    ${theme.colors.surface.strong}80
+  );
 
-  /* 배경 및 컬러: 시스템의 Primary Main과 Grayscale 50 활용 */
-  background: ${theme.colors.primary.main};
-  color: ${theme.colors.grayscale[50]};
-
-  /* 테두리: 둥근 모서리(16px)로 버튼다움 강조 */
-  border: none;
   border-radius: ${theme.borderRadius.medium};
+  word-break: keep-all;
+`;
 
-  /* 타이포그래피: 가독성 높은 16Bold 적용 */
-  font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  line-height: ${theme.typography['16Bold'].lineHeight};
+const overlayHeaderStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
 
-  /* 인터랙션 및 피드백 */
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(101, 89, 234, 0.25);
+const overlayTitleStyle = (theme: Theme) => css`
+  text-align: center;
+  flex: 1;
+  font-size: ${theme.typography['20Medium'].fontSize};
+  line-height: ${theme.typography['20Medium'].lineHeight};
+  font-weight: ${theme.typography['20Medium'].fontWeight};
+  color: ${theme.colors.text.strong};
+`;
 
-  &:hover {
-    background: ${theme.colors.primary.dark};
-    transform: translateY(-2px); /* 부드럽게 떠오르는 효과 */
-    box-shadow: 0 6px 16px rgba(101, 89, 234, 0.35);
-  }
+const goalsContentStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
 
-  &:active {
-    transform: translateY(0);
-    filter: brightness(0.95);
-  }
+const goalItemStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
 
-  &:disabled {
-    background: ${theme.colors.grayscale[300]};
-    color: ${theme.colors.grayscale[500]};
-    cursor: not-allowed;
-    box-shadow: none;
-  }
+const goalLabelContainerStyle = css`
+  display: flex;
+  justify-content: space-between;
+`;
+
+const goalLabelStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  color: ${theme.colors.text.default};
+`;
+
+const progressBarContainerStyle = (theme: Theme) => css`
+  width: 100%;
+  height: 8px;
+  background: ${theme.colors.surface.default};
+  border-radius: ${theme.borderRadius.small};
+  overflow: hidden;
+`;
+
+const progressBarStyle = (theme: Theme, percentage: number) => css`
+  width: ${percentage}%;
+  height: 100%;
+  background: ${theme.colors.primary.main};
+  border-radius: ${theme.borderRadius.small};
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
 `;

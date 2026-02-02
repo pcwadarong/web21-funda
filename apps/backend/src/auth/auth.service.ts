@@ -141,7 +141,10 @@ export class AuthService {
     tokenRecord.lastUsedAt = new Date();
     await this.refreshTokens.save(tokenRecord);
 
-    const user = await this.users.findOneBy({ id: userId });
+    const user = await this.users.findOne({
+      where: { id: userId },
+      relations: { profileCharacter: true },
+    });
     if (!user) {
       throw new UnauthorizedException('유저 정보를 찾을 수 없습니다.');
     }
@@ -381,7 +384,10 @@ export class AuthService {
    * ID로 유저를 조회한다.
    */
   async getUserById(userId: number): Promise<User | null> {
-    return this.users.findOneBy({ id: userId });
+    return this.users.findOne({
+      where: { id: userId },
+      relations: { profileCharacter: true },
+    });
   }
 
   /**
@@ -426,7 +432,7 @@ export class AuthService {
       id: user.id,
       displayName: user.displayName,
       email: user.email ?? null,
-      profileImageUrl: user.profileImageUrl ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       role: user.role,
       heartCount: user.heartCount,
       maxHeartCount: user.maxHeartCount,

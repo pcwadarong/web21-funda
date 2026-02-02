@@ -7,6 +7,7 @@ export interface AuthUser {
   heartCount: number;
   maxHeartCount: number;
   experience: number;
+  diamondCount: number;
   currentStreak: number;
   provider: 'github' | 'google';
 }

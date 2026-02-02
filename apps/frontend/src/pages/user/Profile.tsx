@@ -3,7 +3,6 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
 import { ErrorView } from '@/features/error/components/ErrorView';
-import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
   useFollowUserMutation,
   useProfileDailyStats,
@@ -33,8 +32,6 @@ export const Profile = () => {
   const user = useAuthUser();
   const authProfileImageUrl = useAuthProfileImageUrl();
   const navigate = useNavigate();
-  const isLoggedIn = useIsLoggedIn();
-  const isAuthReady = useIsAuthReady();
   const { showToast } = useToast();
 
   const numericUserId = userId ? Number(userId) : null;
@@ -58,9 +55,6 @@ export const Profile = () => {
   const { data: streaks } = useProfileStreaks(shouldFetch);
   const { data: dailyStats } = useProfileDailyStats(shouldFetch);
   const { data: fieldDailyStats } = useProfileFieldDailyStats(shouldFetch);
-
-  const shouldFetchRanking = isLoggedIn && isAuthReady && !!user;
-  const { data: rankingMe } = useRankingMe(shouldFetchRanking);
 
   const isMyProfile = user?.id !== undefined && profileSummary?.userId === user.id;
   const handleProfileImageClick = isMyProfile ? () => navigate('/profile/characters') : undefined;
@@ -100,7 +94,7 @@ export const Profile = () => {
     }
   };
 
-  const diamondCount = rankingMe?.diamondCount ?? 0;
+  const diamondCount = profileSummary?.diamondCount ?? 0;
 
   // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;

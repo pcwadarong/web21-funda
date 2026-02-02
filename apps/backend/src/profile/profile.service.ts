@@ -111,6 +111,7 @@ export class ProfileService {
       displayName: user.displayName,
       profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       experience: user.experience,
+      diamondCount: user.diamondCount,
       currentStreak: user.currentStreak,
       tier: this.buildTierSummary(user.currentTier),
       followerCount,

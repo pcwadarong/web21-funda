@@ -34,6 +34,7 @@ export interface AuthUserProfile {
   heartCount: number;
   maxHeartCount: number;
   experience: number;
+  diamondCount: number;
   currentStreak: number;
   provider: AuthProvider;
 }
@@ -437,6 +438,7 @@ export class AuthService {
       heartCount: user.heartCount,
       maxHeartCount: user.maxHeartCount,
       experience: user.experience,
+      diamondCount: user.diamondCount,
       currentStreak: user.currentStreak,
       provider: user.provider,
     };

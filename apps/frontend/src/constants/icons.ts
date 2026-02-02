@@ -22,6 +22,7 @@ import Logo from '@/assets/logo.svg?react';
 import Logout from '@/assets/logout.svg?react';
 import Minus from '@/assets/minus.svg?react';
 import NextArrow from '@/assets/next-arrow.svg?react';
+import Notebook from '@/assets/notebook.svg?react';
 import Refresh from '@/assets/refresh.svg?react';
 import Report from '@/assets/report.svg?react';
 import RoundStar from '@/assets/round-star.svg?react';
@@ -30,6 +31,7 @@ import Sheet from '@/assets/sheet.svg?react';
 import Battle from '@/assets/sidebar-icons/battle.svg?react';
 import Book from '@/assets/sidebar-icons/book.svg?react';
 import Diamond from '@/assets/sidebar-icons/diamond.svg?react';
+import Fire from '@/assets/sidebar-icons/fire.svg?react';
 import Heart from '@/assets/sidebar-icons/heart.svg?react';
 import Learn from '@/assets/sidebar-icons/learn.svg?react';
 import Profile from '@/assets/sidebar-icons/profile.svg?react';
@@ -88,6 +90,8 @@ export const IconMap = {
   Battle,
   Xp,
   Copy,
+  Notebook,
+  Fire,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

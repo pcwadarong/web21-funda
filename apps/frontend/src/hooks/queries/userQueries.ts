@@ -164,20 +164,24 @@ export const useUnfollowUserMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (userId: number) => userService.unfollowUser(userId),
-    onSuccess: (result, userId) => {
+    mutationFn: (params: { targetUserId: number; myId: number }) =>
+      userService.unfollowUser(params.targetUserId),
+    onSuccess: (result, params) => {
+      const { targetUserId, myId } = params;
       const authUser = useAuthStore.getState().user;
       const isFollowingNow = result.isFollowing;
 
-      queryClient.setQueryData<ProfileSummaryResult>(userKeys.summary(userId), previousSummary =>
-        previousSummary
-          ? {
-              ...previousSummary,
-              followerCount:
-                result.targetFollowerCount ??
-                previousSummary.followerCount + (isFollowingNow ? 1 : -1),
-            }
-          : previousSummary,
+      queryClient.setQueryData<ProfileSummaryResult>(
+        userKeys.summary(targetUserId),
+        previousSummary =>
+          previousSummary
+            ? {
+                ...previousSummary,
+                followerCount:
+                  result.targetFollowerCount ??
+                  previousSummary.followerCount + (isFollowingNow ? 1 : -1),
+              }
+            : previousSummary,
       );
 
       if (authUser) {
@@ -196,13 +200,13 @@ export const useUnfollowUserMutation = () => {
       }
 
       queryClient.setQueryData<ProfileFollowUser[]>(
-        userKeys.followers(userId),
+        userKeys.followers(targetUserId),
         previousFollowers => {
           if (!previousFollowers || !authUser) {
             return previousFollowers;
           }
 
-          return previousFollowers.filter(follower => follower.userId !== authUser.id);
+          return previousFollowers.filter(follower => follower.userId !== myId);
         },
       );
 
@@ -214,14 +218,23 @@ export const useUnfollowUserMutation = () => {
               return previousFollowing;
             }
 
-            return previousFollowing.filter(followingUser => followingUser.userId !== userId);
+            return previousFollowing.filter(followingUser => followingUser.userId !== targetUserId);
           },
         );
       }
 
-      queryClient.invalidateQueries({ queryKey: userKeys.summary(userId), refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: userKeys.followers(userId), refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: userKeys.following(userId), refetchType: 'all' });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.summary(targetUserId),
+        refetchType: 'all',
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.followers(targetUserId),
+        refetchType: 'all',
+      });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.following(targetUserId),
+        refetchType: 'all',
+      });
       if (authUser) {
         queryClient.invalidateQueries({
           queryKey: userKeys.summary(authUser.id),

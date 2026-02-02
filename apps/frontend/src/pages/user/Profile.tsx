@@ -77,7 +77,10 @@ export const Profile = () => {
       setIsFollowingOverride(!isFollowing);
 
       if (isFollowing) {
-        const result = await unfollowMutation.mutateAsync(profileSummary.userId);
+        const result = await unfollowMutation.mutateAsync({
+          targetUserId: profileSummary.userId,
+          myId: user.id,
+        });
         setIsFollowingOverride(result.isFollowing);
         showToast('언팔로우했습니다.');
       } else {

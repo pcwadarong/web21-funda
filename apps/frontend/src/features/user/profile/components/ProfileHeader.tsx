@@ -82,9 +82,6 @@ export const ProfileHeader = memo(
           <div css={headerInfoWrapperStyle}>
             <div css={nameRowWrapperStyle}>
               <h1 css={nameStyle(theme)}>{displayName}</h1>
-              <button type="button" aria-label="사용자 이름 수정">
-                <SVGIcon icon="Edit" size="lg" />
-              </button>
             </div>
             <span css={tierBadgeStyle}>{tierName}</span>
             <div css={metaRowWrapperStyle}>

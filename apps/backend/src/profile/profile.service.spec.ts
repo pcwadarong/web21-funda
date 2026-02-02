@@ -14,6 +14,7 @@ import { ProfileService } from './profile.service';
 
 describe('ProfileService', () => {
   let service: ProfileService;
+  let dataSource: Partial<DataSource>;
   let userRepository: Partial<Repository<User>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;

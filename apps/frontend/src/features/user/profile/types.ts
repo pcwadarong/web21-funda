@@ -72,3 +72,13 @@ export interface FieldDailyStatsItem {
 export interface FieldDailyStatsResult {
   fields: FieldDailyStatsItem[];
 }
+
+export interface ProfileSearchUser {
+  userId: number;
+  displayName: string;
+  email: string | null;
+  profileImageUrl: string | null;
+  experience: number;
+  tier: ProfileTierSummary | null;
+  isFollowing: boolean;
+}

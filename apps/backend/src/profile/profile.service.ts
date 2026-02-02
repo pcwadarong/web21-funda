@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Like, Repository } from 'typeorm';
+import { DataSource, In, Like, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
@@ -35,6 +35,14 @@ interface SolveStatsResult {
   totalStudyTimeSeconds: number;
   totalStudyTimeMinutes: number;
   solvedQuizzesCount: number;
+}
+
+/**
+ * DB Raw 결과 매핑용 인터페이스
+ */
+interface SolveStatsRawResult {
+  totalSeconds?: string | number;
+  solvedCount?: string | number;
 }
 
 @Injectable()
@@ -315,10 +323,7 @@ export class ProfileService {
    * 프로필 캐릭터 목록을 반환한다.
    */
   async getProfileCharacters(userId: number): Promise<ProfileCharacterListResult> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
-    }
+    const user = await this.findUserOrThrow(userId);
 
     const ownedRows = await this.userProfileCharacterRepository.find({
       where: { userId },
@@ -362,14 +367,10 @@ export class ProfileService {
       const ownershipRepository = manager.getRepository(UserProfileCharacter);
 
       const user = await userRepository.findOne({ where: { id: userId } });
-      if (!user) {
-        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
-      }
+      if (!user) throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
 
       const character = await characterRepository.findOne({ where: { id: characterId } });
-      if (!character) {
-        throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
-      }
+      if (!character) throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
 
       if (!character.isActive) {
         throw new BadRequestException('판매 중인 캐릭터가 아닙니다.');
@@ -393,10 +394,7 @@ export class ProfileService {
       user.diamondCount -= character.priceDiamonds;
       await userRepository.save(user);
 
-      const ownership = ownershipRepository.create({
-        userId,
-        characterId,
-      });
+      const ownership = ownershipRepository.create({ userId, characterId });
       await ownershipRepository.save(ownership);
 
       return {
@@ -416,18 +414,10 @@ export class ProfileService {
   ): Promise<ProfileCharacterApplyResult> {
     return this.dataSource.transaction(async manager => {
       const userRepository = manager.getRepository(User);
-      const characterRepository = manager.getRepository(ProfileCharacter);
       const ownershipRepository = manager.getRepository(UserProfileCharacter);
 
       const user = await userRepository.findOne({ where: { id: userId } });
-      if (!user) {
-        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
-      }
-
-      const character = await characterRepository.findOne({ where: { id: characterId } });
-      if (!character) {
-        throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
-      }
+      if (!user) throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
 
       const ownership = await ownershipRepository.findOne({
         where: { userId, characterId },
@@ -439,10 +429,7 @@ export class ProfileService {
       user.profileCharacterId = characterId;
       await userRepository.save(user);
 
-      return {
-        characterId,
-        applied: true,
-      };
+      return { characterId, applied: true };
     });
   }
 
@@ -454,17 +441,12 @@ export class ProfileService {
       const userRepository = manager.getRepository(User);
 
       const user = await userRepository.findOne({ where: { id: userId } });
-      if (!user) {
-        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
-      }
+      if (!user) throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
 
       user.profileCharacterId = null;
       await userRepository.save(user);
 
-      return {
-        characterId: 0,
-        applied: false,
-      };
+      return { characterId: 0, applied: false };
     });
   }
 
@@ -531,12 +513,8 @@ export class ProfileService {
 
   /**
    * 학습 시간 계산을 위한 재사용 가능한 쿼리 빌더를 생성한다.
-   * TIMESTAMPDIFF와 COMPLETED 상태 필터가 이미 적용된 SelectQueryBuilder를 반환한다.
-   *
-   * @param {number} userId 사용자 ID
-   * @returns {SelectQueryBuilder} 부분적으로 구성된 쿼리 빌더
    */
-  private createStudyTimeQueryBuilder(userId: number) {
+  private createStudyTimeQueryBuilder(userId: number): SelectQueryBuilder<UserStepAttempt> {
     return this.stepAttemptRepository
       .createQueryBuilder('stepAttempt')
       .where('stepAttempt.userId = :userId', { userId })
@@ -553,12 +531,12 @@ export class ProfileService {
         .createQueryBuilder('solveLog')
         .select(['COUNT(*) AS solvedCount'])
         .where('solveLog.userId = :userId AND solveLog.isCorrect = true', { userId })
-        .getRawOne(),
+        .getRawOne<SolveStatsRawResult>(),
       this.createStudyTimeQueryBuilder(userId)
         .select([
           'SUM(TIMESTAMPDIFF(SECOND, stepAttempt.startedAt, stepAttempt.finishedAt)) AS totalSeconds',
         ])
-        .getRawOne(),
+        .getRawOne<SolveStatsRawResult>(),
     ]);
 
     const totalStudyTimeSeconds = Number(durationResult?.totalSeconds ?? 0);
@@ -571,7 +549,6 @@ export class ProfileService {
 
   /**
    * 날짜별 학습 시간(초) 조회
-   * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchStudySecondsByDateRange(
     userId: number,
@@ -600,7 +577,7 @@ export class ProfileService {
 
   /**
    * 날짜별 문제 풀이 수 조회
-   * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
+   * * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    *
    * @param {number} userId 사용자 ID
    * @param {string} startDate 시작 날짜 (YYYY-MM-DD)
@@ -663,7 +640,6 @@ export class ProfileService {
 
   /**
    * 필드별 풀이 수 쿼리
-   * 요청 타임존 기준으로 날짜를 그룹화하여 정확한 통계를 제공한다.
    */
   private async fetchFieldSolvedCountsByDateRange(
     userId: number,
@@ -730,34 +706,22 @@ export class ProfileService {
 
   /**
    * 검색 결과 사용자 목록을 이름 기준으로 정렬한다.
-   *
+   * *
    * @param {ProfileSearchUser[]} users 정렬할 사용자 목록
    * @returns {ProfileSearchUser[]} 정렬된 사용자 목록
    */
   private sortSearchUsersByName(users: ProfileSearchUser[]): ProfileSearchUser[] {
-    const collatorEnglish = new Intl.Collator('en', { sensitivity: 'base' });
-    const collatorKorean = new Intl.Collator('ko', { sensitivity: 'base' });
-    const sortedUsers = [...users];
+    return [...users].sort((left, right) => {
+      const leftGroup = this.getDisplayNameGroup(left.displayName);
+      const rightGroup = this.getDisplayNameGroup(right.displayName);
 
-    sortedUsers.sort((leftUser, rightUser) => {
-      const leftGroup = this.getDisplayNameGroup(leftUser.displayName);
-      const rightGroup = this.getDisplayNameGroup(rightUser.displayName);
+      if (leftGroup !== rightGroup) return leftGroup - rightGroup;
 
-      if (leftGroup !== rightGroup) {
-        return leftGroup - rightGroup;
-      }
-
-      if (leftGroup === 0) {
-        return collatorEnglish.compare(leftUser.displayName, rightUser.displayName);
-      }
-
-      if (leftGroup === 1) {
-        return collatorKorean.compare(leftUser.displayName, rightUser.displayName);
-      }
-
-      return leftUser.displayName.localeCompare(rightUser.displayName);
+      if (leftGroup === 0)
+        return ProfileService.COLLATOR_EN.compare(left.displayName, right.displayName);
+      if (leftGroup === 1)
+        return ProfileService.COLLATOR_KO.compare(left.displayName, right.displayName);
+      return left.displayName.localeCompare(right.displayName);
     });
-
-    return sortedUsers;
   }
 }

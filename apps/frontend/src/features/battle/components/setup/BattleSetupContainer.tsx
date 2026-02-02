@@ -13,6 +13,7 @@ export interface BattleSetupContainerProps {
   isHost: boolean;
   roomId: string | null;
   settings: BattleRoomSettings | null;
+  participantCount: number;
   onUpdateRoom: (roomId: string, settings: BattleRoomSettings) => void;
   onStartBattle: (roomId: string) => void;
   onCopyLink: () => void;
@@ -24,6 +25,7 @@ export const BattleSetupContainer = ({
   isHost,
   roomId,
   settings,
+  participantCount,
   onUpdateRoom,
   onStartBattle,
   onCopyLink,
@@ -37,6 +39,7 @@ export const BattleSetupContainer = ({
         isHost={isHost}
         roomId={roomId}
         settings={settings}
+        participantCount={participantCount}
         onUpdateRoom={onUpdateRoom}
         onStartBattle={onStartBattle}
         onCopyLink={onCopyLink}

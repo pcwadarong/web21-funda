@@ -14,6 +14,14 @@ interface ProfileHeaderProps {
   profileSummary: ProfileSummaryResult | null;
   /** 다이아몬드 개수 */
   diamondCount: number;
+  /** 프로필 이미지 영역 클릭 핸들러 */
+  onProfileImageClick?: () => void;
+  /** 내 프로필 여부 */
+  isMyProfile: boolean;
+  /** 팔로우 상태 */
+  isFollowing: boolean;
+  /** 팔로우 토글 핸들러 */
+  onFollowToggle?: () => void;
 }
 
 /**
@@ -21,7 +29,14 @@ interface ProfileHeaderProps {
  *
  * 그라데이션 배경의 헤더 영역으로, 프로필 이미지, 사용자 이름, 티어, XP, 다이아몬드 정보를 표시합니다.
  */
-export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderProps) => {
+export const ProfileHeader = ({
+  profileSummary,
+  diamondCount,
+  onProfileImageClick,
+  isMyProfile,
+  isFollowing,
+  onFollowToggle,
+}: ProfileHeaderProps) => {
   const theme = useTheme();
 
   const displayName = profileSummary?.displayName ?? '사용자';
@@ -29,22 +44,34 @@ export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderPro
   const experience = profileSummary?.experience ?? 0;
   const profileImageUrl = profileSummary?.profileImageUrl ?? null;
 
+  const isEditable = Boolean(onProfileImageClick) && isMyProfile;
+  const shouldShowFollow = !isMyProfile && Boolean(onFollowToggle);
+
   return (
     <section css={headerCardStyle(theme)}>
       <div css={headerLeftWrapperStyle}>
-        <Avatar
-          src={profileImageUrl}
-          name={displayName}
-          size="md"
-          css={avatarStyle(theme)}
-          alt={`${displayName} 프로필`}
-        />
+        <div css={avatarWrapperStyle}>
+          <Avatar
+            src={profileImageUrl}
+            name={displayName}
+            size="md"
+            css={avatarStyle(theme)}
+            alt={`${displayName} 프로필`}
+          />
+          {isEditable && (
+            <button
+              type="button"
+              css={avatarEditButtonStyle(theme, false)}
+              onClick={onProfileImageClick}
+              aria-label="프로필 이미지 변경"
+            >
+              <SVGIcon icon="Edit" size="sm" />
+            </button>
+          )}
+        </div>
         <div css={headerInfoWrapperStyle}>
           <div css={nameRowWrapperStyle}>
             <h1 css={nameStyle(theme)}>{displayName}</h1>
-            <button type="button" aria-label="사용자 이름 수정">
-              <SVGIcon icon="Edit" size="lg" />
-            </button>
           </div>
           <span css={tierBadgeStyle}>{tierName}</span>
           <div css={metaRowWrapperStyle}>
@@ -59,9 +86,15 @@ export const ProfileHeader = ({ profileSummary, diamondCount }: ProfileHeaderPro
           </div>
         </div>
       </div>
-      <button type="button" css={editButtonStyle(theme)} disabled>
-        프로필 이미지 수정하기
-      </button>
+      {isMyProfile ? (
+        <div />
+      ) : shouldShowFollow ? (
+        <button type="button" css={rightActionButtonStyle(theme)} onClick={onFollowToggle}>
+          {isFollowing ? '언팔로우하기' : '팔로우하기'}
+        </button>
+      ) : (
+        <div />
+      )}
     </section>
   );
 };
@@ -85,6 +118,11 @@ const headerLeftWrapperStyle = css`
   display: flex;
   align-items: center;
   gap: 1.25rem;
+`;
+
+const avatarWrapperStyle = css`
+  position: relative;
+  display: inline-flex;
 `;
 
 const avatarStyle = (theme: Theme) => css`
@@ -117,6 +155,7 @@ const nameStyle = (theme: Theme) => css`
 const tierBadgeStyle = css`
   letter-spacing: 0.05em;
   font-size: 0.875rem;
+  padding-left: 2px;
 `;
 
 const metaRowWrapperStyle = css`
@@ -131,7 +170,28 @@ const metaItemStyle = css`
   gap: 0.375rem;
 `;
 
-const editButtonStyle = (theme: Theme) => css`
+const avatarEditButtonStyle = (theme: Theme, _isDisabled: boolean) => css`
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  border: 2px solid ${palette.grayscale[50]};
+  background: ${palette.grayscale[50]};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${theme.colors.primary.main};
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+
+  &:hover {
+    background: ${palette.grayscale[100]};
+  }
+`;
+
+const rightActionButtonStyle = (theme: Theme) => css`
   padding: 0.625rem 1rem;
   border-radius: ${theme.borderRadius.medium};
   border: none;
@@ -139,6 +199,6 @@ const editButtonStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${palette.grayscale[50]};
-  cursor: not-allowed;
-  opacity: 0.8;
+  cursor: pointer;
+  opacity: 0.95;
 `;

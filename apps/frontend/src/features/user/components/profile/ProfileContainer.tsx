@@ -27,6 +27,14 @@ interface ProfileContainerProps {
   diamondCount: number;
   /** 사용자 클릭 핸들러 */
   onUserClick: (userId: number) => void;
+  /** 프로필 이미지 변경 클릭 핸들러 */
+  onProfileImageClick?: () => void;
+  /** 내 프로필 여부 */
+  isMyProfile: boolean;
+  /** 팔로우 상태 */
+  isFollowing: boolean;
+  /** 팔로우 토글 핸들러 */
+  onFollowToggle?: () => void;
 }
 
 /**
@@ -43,6 +51,10 @@ export const ProfileContainer = ({
   isFollowersLoading,
   diamondCount,
   onUserClick,
+  onProfileImageClick,
+  isMyProfile,
+  isFollowing,
+  onFollowToggle,
 }: ProfileContainerProps) => {
   const theme = useTheme();
 
@@ -55,7 +67,14 @@ export const ProfileContainer = ({
           <h1 css={pageTitleStyle(theme)}>PROFILE</h1>
         </header>
 
-        <ProfileHeader profileSummary={profileSummary} diamondCount={diamondCount} />
+        <ProfileHeader
+          profileSummary={profileSummary}
+          diamondCount={diamondCount}
+          onProfileImageClick={onProfileImageClick}
+          isMyProfile={isMyProfile}
+          isFollowing={isFollowing}
+          onFollowToggle={onFollowToggle}
+        />
 
         <div css={twoColumnGridStyle}>
           <FollowListSection

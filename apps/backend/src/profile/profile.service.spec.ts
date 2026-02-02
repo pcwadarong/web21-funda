@@ -1,19 +1,24 @@
 import { BadRequestException } from '@nestjs/common';
-import type { Repository } from 'typeorm';
+import type { DataSource, Repository } from 'typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
 import { User } from '../users/entities/user.entity';
 
+import { ProfileCharacter } from './entities/profile-character.entity';
 import { UserFollow } from './entities/user-follow.entity';
+import { UserProfileCharacter } from './entities/user-profile-character.entity';
 import { ProfileService } from './profile.service';
 
 describe('ProfileService', () => {
   let service: ProfileService;
+  let dataSource: Partial<DataSource>;
   let userRepository: Partial<Repository<User>>;
   let solveLogRepository: Partial<Repository<SolveLog>>;
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let followRepository: Partial<Repository<UserFollow>>;
+  let profileCharacterRepository: Partial<Repository<ProfileCharacter>>;
+  let userProfileCharacterRepository: Partial<Repository<UserProfileCharacter>>;
   let userFindOneMock: jest.Mock;
   let followCountMock: jest.Mock;
   let followFindOneMock: jest.Mock;
@@ -73,11 +78,18 @@ describe('ProfileService', () => {
       find: followFindMock,
     };
 
+    dataSource = {};
+    profileCharacterRepository = {};
+    userProfileCharacterRepository = {};
+
     service = new ProfileService(
+      dataSource as DataSource,
       userRepository as Repository<User>,
       solveLogRepository as Repository<SolveLog>,
       stepAttemptRepository as Repository<UserStepAttempt>,
       followRepository as Repository<UserFollow>,
+      profileCharacterRepository as Repository<ProfileCharacter>,
+      userProfileCharacterRepository as Repository<UserProfileCharacter>,
     );
   });
 

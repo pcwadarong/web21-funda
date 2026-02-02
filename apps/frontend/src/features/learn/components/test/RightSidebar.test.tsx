@@ -207,6 +207,12 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(screen.getByText('복습 노트')).toBeInTheDocument();
   });
 
+  it('친구 추가 카드가 표시된다', () => {
+    renderSidebar();
+
+    expect(screen.getByText('친구 추가')).toBeInTheDocument();
+  });
+
   it('비로그인 상태에서 복습 노트에 로그인 링크가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(false);
     renderSidebar();
@@ -235,37 +241,19 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(await screen.findByText('복습 시작')).toBeInTheDocument();
   });
 
-  it('오늘의 목표 카드가 표시된다', () => {
-    renderSidebar();
-
-    expect(screen.getByText('오늘의 목표')).toBeInTheDocument();
-  });
-
-  it('비로그인 상태에서 오늘의 목표에 로그인 링크가 표시된다', () => {
+  it('비로그인 상태에서 친구 추가에 로그인 링크가 표시된다', () => {
     mockUseAuthStore.mockReturnValue(false);
     renderSidebar();
 
-    expect(screen.getByText(/로그인 후 진도를 저장해보세요/)).toBeInTheDocument();
+    expect(screen.getByText(/로그인 후 친구를 추가해보세요/)).toBeInTheDocument();
   });
 
-  it('로그인 상태에서 오늘의 목표가 표시된다', () => {
+  it('로그인 상태에서 친구 추가 버튼이 표시된다', () => {
     mockUseAuthStore.mockReturnValue(true);
     mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
     renderSidebar();
 
-    expect(screen.getByText(/10 XP 획득하기/)).toBeInTheDocument();
-    expect(screen.getByText(/2개의 완벽한 레슨 끝내기/)).toBeInTheDocument();
-    expect(screen.getByText(/20\/50/)).toBeInTheDocument();
-    expect(screen.getByText(/2\/2/)).toBeInTheDocument();
-  });
-
-  it('로그인 상태에서 진행률 바가 표시된다', () => {
-    mockUseAuthStore.mockReturnValue(true);
-    mockUseAuthUser.mockReturnValue({ heartCount: 4, currentStreak: 7 });
-    renderSidebar();
-
-    const progressBars = screen.getAllByRole('progressbar');
-    expect(progressBars.length).toBe(2); // 두 개의 목표
+    expect(screen.getByText('친구 추가하기')).toBeInTheDocument();
   });
 
   it('아이콘들이 올바르게 렌더링된다', () => {
@@ -274,7 +262,7 @@ describe('LearnRightSidebar 컴포넌트 테스트', () => {
     expect(screen.getByTestId('icon-Frontend')).toBeInTheDocument();
     expect(screen.getByTestId('icon-Heart')).toBeInTheDocument();
     expect(screen.getByTestId('icon-Book')).toBeInTheDocument();
-    expect(screen.getByTestId('icon-Fire')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-Search')).toBeInTheDocument();
   });
 
   it('드롭다운 옵션을 선택했을 때 상태가 갱신되고 이동이 호출되어야 한다', async () => {

@@ -1,11 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
+import { ProfileCharacter } from '../profile/entities/profile-character.entity';
 import { Field } from '../roadmap/entities/field.entity';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 import { Step } from '../roadmap/entities/step.entity';
 import { Unit } from '../roadmap/entities/unit.entity';
 
+import type {
+  ProfileCharacterJsonlRow,
+  ProfileCharacterUploadSummary,
+} from './dto/profile-characters-upload.dto';
 import type { QuizJsonlRow, UploadSummary } from './dto/quizzes-upload.dto';
 import type {
   UnitOverviewJsonlRow,
@@ -126,6 +131,76 @@ export class BackofficeService {
   }
 
   /**
+   * 프로필 캐릭터 JSONL 파일로 캐릭터를 일괄 등록/수정한다.
+   *
+   * @param fileBuffer 업로드된 JSONL 파일 버퍼
+   * @returns 업로드 결과 요약
+   */
+  async uploadProfileCharactersFromJsonl(
+    fileBuffer: Buffer,
+  ): Promise<ProfileCharacterUploadSummary> {
+    if (!fileBuffer || fileBuffer.length === 0) {
+      throw new BadRequestException('파일을 업로드해주세요.');
+    }
+
+    const rows = this.parseProfileCharacterJsonl(fileBuffer.toString('utf8'));
+    if (rows.length === 0) {
+      throw new BadRequestException('유효한 JSONL 데이터가 없습니다.');
+    }
+
+    const summary: ProfileCharacterUploadSummary = {
+      processed: rows.length,
+      charactersCreated: 0,
+      charactersUpdated: 0,
+    };
+
+    await this.dataSource.transaction(async manager => {
+      for (const [index, row] of rows.entries()) {
+        const lineNumber = index + 1;
+        this.validateProfileCharacterRow(row, lineNumber);
+
+        const result = await this.upsertProfileCharacter(row, manager, lineNumber);
+        summary.charactersCreated += result.created ? 1 : 0;
+        summary.charactersUpdated += result.updated ? 1 : 0;
+      }
+    });
+
+    return summary;
+  }
+
+  /**
+   * 단일 프로필 캐릭터를 등록한다.
+   *
+   * @param payload 단일 등록 요청
+   * @returns 등록 결과
+   */
+  async createProfileCharacter(payload: {
+    imageUrl: string;
+    priceDiamonds: number;
+    description?: string | null;
+    isActive?: boolean;
+  }): Promise<{ id: number; created: boolean; updated: boolean }> {
+    const normalized = this.normalizeProfileCharacterPayload(payload);
+
+    const result = await this.dataSource.transaction(async manager => {
+      const row: ProfileCharacterJsonlRow = {
+        image_url: normalized.imageUrl,
+        price_diamonds: normalized.priceDiamonds,
+        description: normalized.description ?? undefined,
+        is_active: normalized.isActive,
+      };
+
+      return this.upsertProfileCharacter(row, manager);
+    });
+
+    return {
+      id: result.entity.id,
+      created: result.created,
+      updated: !!result.updated,
+    };
+  }
+
+  /**
    * JSONL 문자열을 파싱해 각 라인을 객체로 변환한다.
    * 파싱 실패 시 라인 번호와 함께 예외를 던진다.
    */
@@ -183,6 +258,78 @@ export class BackofficeService {
     }
 
     return rows;
+  }
+
+  /**
+   * 프로필 캐릭터 JSONL을 파싱해 각 라인을 객체로 변환한다.
+   * 파싱 실패 시 라인 번호와 함께 예외를 던진다.
+   */
+  private parseProfileCharacterJsonl(fileText: string): ProfileCharacterJsonlRow[] {
+    const lines = fileText.split(/\r?\n/);
+    const rows: ProfileCharacterJsonlRow[] = [];
+    const errors: string[] = [];
+
+    lines.forEach((line, index) => {
+      const trimmed = this.normalizeLine(line);
+      if (!trimmed) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(trimmed) as ProfileCharacterJsonlRow;
+        rows.push(parsed);
+      } catch (error) {
+        errors.push(`Line ${index + 1}: ${(error as Error).message}`);
+      }
+    });
+
+    if (errors.length > 0) {
+      throw new BadRequestException(['JSONL 파싱 오류가 있습니다.', ...errors].join('\n'));
+    }
+
+    return rows;
+  }
+
+  /**
+   * 프로필 캐릭터 JSONL 필수 필드를 검증한다.
+   인정하지 않는 입력이 DB에 저장되는 것을 방지하기 위함이다.
+   */
+  private validateProfileCharacterRow(row: ProfileCharacterJsonlRow, lineNumber: number): void {
+    const imageUrl = row.image_url?.trim();
+    const priceDiamonds = Number(row.price_diamonds);
+
+    if (!imageUrl) {
+      throw new BadRequestException(`Line ${lineNumber}: image_url은 필수입니다.`);
+    }
+
+    if (!Number.isFinite(priceDiamonds) || priceDiamonds < 0) {
+      throw new BadRequestException(`Line ${lineNumber}: price_diamonds는 0 이상 숫자여야 합니다.`);
+    }
+  }
+
+  /**
+   * 단일 등록 요청에서 사용할 값을 정규화한다.
+   */
+  private normalizeProfileCharacterPayload(payload: {
+    imageUrl: string;
+    priceDiamonds: number;
+    description?: string | null;
+    isActive?: boolean;
+  }): { imageUrl: string; priceDiamonds: number; description: string | null; isActive: boolean } {
+    const imageUrl = payload.imageUrl?.trim();
+    if (!imageUrl) {
+      throw new BadRequestException('imageUrl은 필수입니다.');
+    }
+
+    const priceDiamonds = Number(payload.priceDiamonds);
+    if (!Number.isFinite(priceDiamonds) || priceDiamonds < 0) {
+      throw new BadRequestException('priceDiamonds는 0 이상 숫자여야 합니다.');
+    }
+
+    const description = payload.description?.trim() ?? null;
+    const isActive = payload.isActive ?? true;
+
+    return { imageUrl, priceDiamonds, description, isActive };
   }
 
   /** BOM/스마트 따옴표 등을 정리해 JSON 파싱 안정성을 높인다. */
@@ -274,6 +421,73 @@ export class BackofficeService {
     }
 
     return { entity: field, created: false, updated };
+  }
+
+  /**
+   * 프로필 캐릭터를 image_url 기준으로 업서트한다.
+   */
+  private async upsertProfileCharacter(
+    row: ProfileCharacterJsonlRow,
+    manager: EntityManager,
+    lineNumber?: number,
+  ): Promise<UpsertResult<ProfileCharacter>> {
+    const repository = manager.getRepository(ProfileCharacter);
+    const imageUrl = row.image_url.trim();
+    const priceDiamonds = Number(row.price_diamonds);
+    const description = row.description?.trim() ?? null;
+    const isActive = row.is_active ?? true;
+
+    let character = await repository.findOne({ where: { imageUrl } });
+    if (!character) {
+      const name = this.buildProfileCharacterName(imageUrl, lineNumber);
+      character = repository.create({
+        name,
+        imageUrl,
+        priceDiamonds,
+        description,
+        isActive,
+      });
+      await repository.save(character);
+      return { entity: character, created: true };
+    }
+
+    let updated = false;
+    if (character.priceDiamonds !== priceDiamonds) {
+      character.priceDiamonds = priceDiamonds;
+      updated = true;
+    }
+
+    if ((character.description ?? null) !== description) {
+      character.description = description;
+      updated = true;
+    }
+
+    if (character.isActive !== isActive) {
+      character.isActive = isActive;
+      updated = true;
+    }
+
+    if (updated) {
+      await repository.save(character);
+    }
+
+    return { entity: character, created: false, updated };
+  }
+
+  /**
+   * 이름 입력을 받지 않는 운영 흐름을 위해 서버에서 관리용 이름을 생성한다.
+   */
+  private buildProfileCharacterName(imageUrl: string, lineNumber?: number): string {
+    const fileName = imageUrl.split('/').pop();
+    const splitFileName = (fileName ?? 'character').split('?');
+    const safeFileName = (splitFileName.at(0) ?? 'character').trim();
+    const baseName = safeFileName || 'character';
+
+    if (lineNumber !== undefined) {
+      return `character-${lineNumber}-${baseName}`.slice(0, 100);
+    }
+
+    return `character-${Date.now()}-${baseName}`.slice(0, 100);
   }
 
   /** Unit을 field + title 기준으로 upsert한다. */

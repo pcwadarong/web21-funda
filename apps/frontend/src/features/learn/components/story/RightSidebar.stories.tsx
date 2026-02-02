@@ -96,12 +96,8 @@ export const LoggedOut: Story = {
     // 2. 복습 노트 로그인 유도 확인
     await expect(canvas.getByText(/로그인 후 복습 노트를 확인해보세요/)).toBeInTheDocument();
 
-    // 3. 오늘의 목표 로그인 유도 확인
-    await expect(canvas.getByText(/로그인 후 진도를 저장해보세요/)).toBeInTheDocument();
-
-    // 4. 진행바(progressbar)가 렌더링되지 않았는지 확인
-    const progressBars = canvas.queryAllByRole('progressbar');
-    await expect(progressBars.length).toBe(0);
+    // 3. 친구 추가 로그인 유도 확인
+    await expect(canvas.getByText(/로그인 후 친구를 추가해보세요/)).toBeInTheDocument();
   },
 };
 

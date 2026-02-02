@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { ProfileCharacter } from '../../profile/entities/profile-character.entity';
 import { RankingTier } from '../../ranking/entities/ranking-tier.entity';
 
 import { UserRefreshToken } from './user-refresh-token.entity';
@@ -52,6 +53,13 @@ export class User {
 
   @Column({ name: 'profile_image_url', type: 'varchar', length: 500, nullable: true })
   profileImageUrl?: string | null;
+
+  @Column({ name: 'profile_character_id', type: 'int', nullable: true })
+  profileCharacterId?: number | null;
+
+  @ManyToOne(() => ProfileCharacter, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'profile_character_id' })
+  profileCharacter?: ProfileCharacter | null;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role!: UserRole;

@@ -80,7 +80,14 @@ export const FollowListSection = ({
           <div css={listStyle}>
             {isListLoading && <EmptyView message="로딩 중..." theme={theme} />}
             {!isListLoading && activeList.length === 0 && (
-              <EmptyView message="표시할 사용자가 없습니다." theme={theme} />
+              <EmptyView
+                message={
+                  activeTab === 'following'
+                    ? '아직 팔로잉한 사용자가 없어요.'
+                    : '아직 나를 팔로우한 사용자가 없어요.'
+                }
+                theme={theme}
+              />
             )}
             {!isListLoading &&
               mainListItems.map((member, index) => (
@@ -94,13 +101,15 @@ export const FollowListSection = ({
               ))}
           </div>
           {activeList.length > 3 && (
-            <button
-              type="button"
-              css={moreButtonStyle(theme)}
-              onClick={() => setIsFollowModalOpen(true)}
-            >
-              {activeList.length - 3}명 더보기 &gt;
-            </button>
+            <div css={actionRowStyle}>
+              <button
+                type="button"
+                css={moreButtonStyle(theme)}
+                onClick={() => setIsFollowModalOpen(true)}
+              >
+                {activeList.length - 3}명 더보기 &gt;
+              </button>
+            </div>
           )}
         </div>
       </section>
@@ -288,6 +297,14 @@ const emptyTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.light};
   padding: 0.5rem 0.25rem;
+  text-align: center;
+`;
+
+const actionRowStyle = css`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 `;
 
 const moreButtonStyle = (theme: Theme) => css`

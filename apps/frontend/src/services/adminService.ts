@@ -20,6 +20,23 @@ export interface UnitOverviewUploadSummary {
   unitsNotFound: number;
 }
 
+export interface ProfileCharacterUploadSummary {
+  processed: number;
+  charactersCreated: number;
+  charactersUpdated: number;
+}
+
+export interface ProfileCharacterCreateRequest {
+  imageUrl: string;
+  priceDiamonds: number;
+  description?: string | null;
+  isActive?: boolean;
+}
+
+export type ProfileCharacterCreateResponse =
+  | { id: number; created: boolean; updated: boolean }
+  | { error: string };
+
 export type UploadResponse =
   | { summary: UploadSummary }
   | { message: string; frontendPath?: string; error?: string }
@@ -56,6 +73,33 @@ export const adminService = {
       formData.append('file', file);
     });
     return apiFetch.post<UnitOverviewUploadSummary>('/admin/units/overview/upload', formData);
+  },
+
+  /**
+   * 프로필 캐릭터를 단일 등록합니다.
+   * @param payload 단일 등록 요청
+   * @returns 등록 결과
+   */
+  async createProfileCharacter(
+    payload: ProfileCharacterCreateRequest,
+  ): Promise<ProfileCharacterCreateResponse> {
+    return apiFetch.post<ProfileCharacterCreateResponse>('/admin/profile-characters', payload);
+  },
+
+  /**
+   * 프로필 캐릭터 JSONL 파일을 업로드합니다.
+   * @param files 업로드할 JSONL 파일 목록
+   * @returns 업로드 결과 요약
+   */
+  async uploadProfileCharacters(files: File[]): Promise<ProfileCharacterUploadSummary> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('file', file);
+    });
+    return apiFetch.post<ProfileCharacterUploadSummary>(
+      '/admin/profile-characters/upload',
+      formData,
+    );
   },
 
   /**

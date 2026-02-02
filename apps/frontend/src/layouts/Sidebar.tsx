@@ -8,6 +8,7 @@ import { Loading } from '@/components/Loading';
 import SVGIcon from '@/components/SVGIcon';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
+import { useProfileSummary } from '@/hooks/queries/userQueries';
 import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
@@ -31,38 +32,20 @@ const ADMIN_NAV_ITEM = {
 export const Sidebar = () => {
   const theme = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
-  const navigate = useNavigate();
+  const userId = user?.id ?? null;
 
   const { showToast } = useToast();
-
+  const { confirm } = useModal();
   const logoutMutation = useLogoutMutation();
 
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
-
-  // 로그아웃 함수
-  const { confirm } = useModal();
-  const handleLogout = useCallback(async () => {
-    const isConfirmed = await confirm({
-      title: '로그아웃',
-      content: '정말 로그아웃 하시겠습니까?',
-      confirmText: '로그아웃',
-    });
-    if (!isConfirmed) return;
-
-    try {
-      navigate('/learn', { replace: true });
-      await logoutMutation.mutateAsync();
-    } catch {
-      showToast('로그아웃 중 오류가 발생했습니다.');
-    }
-  }, [confirm, logoutMutation, showToast, navigate]);
-
-  // 드롭다운 옵션 정의
-  const dropdownOptions = [{ value: 'logout', label: '로그아웃' }];
+  const { data: profileSummary } = useProfileSummary(userId);
+  const profileImageUrl = profileSummary?.profileImageUrl ?? user?.profileImageUrl ?? null;
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -84,12 +67,33 @@ export const Sidebar = () => {
 
   const activeItemId = getActiveItemId();
 
+  const handleLogout = useCallback(async () => {
+    const isConfirmed = await confirm({
+      title: '로그아웃',
+      content: '정말 로그아웃 하시겠습니까?',
+      confirmText: '로그아웃',
+    });
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      navigate('/learn', { replace: true });
+      await logoutMutation.mutateAsync();
+    } catch {
+      showToast('로그아웃 중 오류가 발생했습니다.');
+    }
+  }, [confirm, logoutMutation, navigate, showToast]);
+
+  const dropdownOptions = [{ value: 'logout', label: '로그아웃' }];
+
   const handleLinkClick = async (
-    e: React.MouseEvent<HTMLAnchorElement>,
+    event: React.MouseEvent<HTMLAnchorElement>,
     itemId: string,
     targetPath: string,
   ) => {
-    e.preventDefault();
+    event.preventDefault();
 
     if (!isLoggedIn && !user && (itemId === 'ranking' || itemId === 'profile')) {
       const isConfirmed = await confirm({
@@ -104,7 +108,9 @@ export const Sidebar = () => {
         confirmText: '로그인',
       });
 
-      if (!isConfirmed) return;
+      if (!isConfirmed) {
+        return;
+      }
 
       try {
         sessionStorage.setItem('loginRedirectPath', targetPath);
@@ -139,7 +145,7 @@ export const Sidebar = () => {
             return (
               <Link
                 key={item.id}
-                onClick={e => handleLinkClick(e, item.id, targetPath)}
+                onClick={event => handleLinkClick(event, item.id, targetPath)}
                 to={targetPath}
                 css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
               >
@@ -162,7 +168,7 @@ export const Sidebar = () => {
             triggerContent={
               <div css={userSectionStyle(theme)}>
                 <Avatar
-                  src={user.profileImageUrl}
+                  src={profileImageUrl}
                   name={user.displayName}
                   size="sm"
                   alt={user.displayName}
@@ -384,6 +390,5 @@ const userSectionTriggerStyle = css`
     :hover {
       filter: brightness(0.97);
     }
-  }
   }
 `;

@@ -1,6 +1,9 @@
 import { css, useTheme } from '@emotion/react';
+import type { MouseEvent } from 'react';
+import { useRef, useState } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
+import { Popover } from '@/components/Popover';
 import type { ProfileCharacterItem } from '@/features/profile-character/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
@@ -30,6 +33,38 @@ export const ProfileCharacterContainer = ({
   onBack,
 }: ProfileCharacterContainerProps) => {
   const theme = useTheme();
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [hoveredCharacter, setHoveredCharacter] = useState<{
+    id: number;
+    description: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleCharacterMouseEnter = (
+    event: MouseEvent<HTMLButtonElement>,
+    character: ProfileCharacterItem,
+  ) => {
+    if (!character.description) {
+      return;
+    }
+
+    if (!gridRef.current) {
+      return;
+    }
+
+    const rect = gridRef.current.getBoundingClientRect();
+    setHoveredCharacter({
+      id: character.id,
+      description: character.description,
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+  };
+
+  const handleCharacterMouseLeave = () => {
+    setHoveredCharacter(null);
+  };
 
   return (
     <main css={pageStyle(theme)}>
@@ -46,7 +81,7 @@ export const ProfileCharacterContainer = ({
           <h1 css={titleStyle(theme)}>캐릭터 프로필 설정하기</h1>
         </header>
 
-        <section css={gridStyle}>
+        <section css={gridStyle} ref={gridRef}>
           {isLoading ? (
             <div css={loadingStyle(theme)}>캐릭터 목록을 불러오는 중입니다.</div>
           ) : (
@@ -70,13 +105,17 @@ export const ProfileCharacterContainer = ({
                     type="button"
                     css={cardStyle(theme, isSelected)}
                     onClick={() => onSelect(item.id)}
+                    onMouseEnter={event => handleCharacterMouseEnter(event, item)}
+                    onMouseLeave={handleCharacterMouseLeave}
                     aria-label={`캐릭터 ${item.id} 선택`}
                   >
                     <div css={imageWrapperStyle}>
                       <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
                     </div>
                     <div css={priceStyle(theme)}>
-                      {item.priceDiamonds === 0 ? (
+                      {item.isOwned ? (
+                        <span css={purchasedLabelStyle(theme)}>구매함</span>
+                      ) : item.priceDiamonds === 0 ? (
                         <span css={freeLabelStyle}>FREE</span>
                       ) : (
                         <>
@@ -101,6 +140,16 @@ export const ProfileCharacterContainer = ({
               );
             })
           )}
+          <Popover
+            x={hoveredCharacter?.x ?? 0}
+            y={hoveredCharacter?.y ?? 0}
+            isVisible={hoveredCharacter !== null}
+            onMouseEnter={() => hoveredCharacter && setHoveredCharacter(hoveredCharacter)}
+            onMouseLeave={handleCharacterMouseLeave}
+            offsetY={-40}
+          >
+            <p>{hoveredCharacter?.description ?? ''}</p>
+          </Popover>
         </section>
       </div>
     </main>
@@ -173,6 +222,7 @@ const clearButtonStyle = (theme: Theme) => css`
 `;
 
 const gridStyle = css`
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, 160px);
   row-gap: 1.5rem;
@@ -260,6 +310,11 @@ const freeLabelStyle = css`
   color: ${palette.grayscale[600]};
   letter-spacing: 0.05em;
   font-weight: 700;
+`;
+
+const purchasedLabelStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.weak};
+  font-weight: ${theme.typography['12Bold'].fontWeight};
 `;
 
 const actionWrapperStyle = css`

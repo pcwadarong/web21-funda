@@ -36,6 +36,7 @@ export const useProfileCharacterApply = () => {
     mutationFn: characterId => profileCharacterService.applyCharacter(characterId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileCharacterKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ['user', 'summary'] });
     },
   });
 };
@@ -47,6 +48,7 @@ export const useProfileCharacterClear = () => {
     mutationFn: () => profileCharacterService.clearCharacter(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileCharacterKeys.list() });
+      queryClient.invalidateQueries({ queryKey: ['user', 'summary'] });
     },
   });
 };

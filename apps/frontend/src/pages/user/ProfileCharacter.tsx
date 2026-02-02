@@ -44,7 +44,7 @@ export const ProfileCharacter = () => {
 
   const handleBack = () => {
     if (authUser?.id) {
-      navigate(`/profile/${authUser.id}`, { state: { refetch: true } });
+      navigate(`/profile/${authUser.id}`);
       return;
     }
 

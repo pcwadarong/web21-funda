@@ -101,7 +101,7 @@ describe('ProfileService', () => {
     };
 
     followRepository = {
-      count: followCountMock,
+      countBy: followCountMock,
       findOne: followFindOneMock,
       save: followSaveMock,
       create: followCreateMock,
@@ -134,12 +134,12 @@ describe('ProfileService', () => {
       currentTier: { id: 2, name: 'BRONZE', orderIndex: 1 },
     } as User);
 
-    followCountMock.mockImplementation(async options => {
-      if (options?.where?.followingId === 1) {
+    followCountMock.mockImplementation(async where => {
+      if (where?.followingId === 1) {
         return 3;
       }
 
-      if (options?.where?.followerId === 1) {
+      if (where?.followerId === 1) {
         return 5;
       }
 
@@ -170,10 +170,14 @@ describe('ProfileService', () => {
   it('팔로우 요청 시 관계를 저장한다', async () => {
     userFindOneMock.mockResolvedValue({ id: 2 } as User);
     followFindOneMock.mockResolvedValue(null);
+    followCountMock.mockResolvedValueOnce(4);
+    followCountMock.mockResolvedValueOnce(6);
 
     const result = await service.followUser(2, 1);
 
     expect(result.isFollowing).toBe(true);
+    expect(result.targetFollowerCount).toBe(4);
+    expect(result.followerFollowingCount).toBe(6);
     expect(followCreateMock).toHaveBeenCalledWith({ followerId: 1, followingId: 2 });
     expect(followSaveMock).toHaveBeenCalled();
   });

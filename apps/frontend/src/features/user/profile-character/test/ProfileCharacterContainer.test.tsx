@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@emotion/react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -20,7 +20,7 @@ const TestWrapper = () => {
             id: 1,
             imageUrl: 'https://placehold.co/140x140?text=01',
             priceDiamonds: 1,
-            description: null,
+            description: '첫 번째 캐릭터 설명입니다.',
             isActive: true,
             isOwned: false,
           },
@@ -53,5 +53,24 @@ describe('ProfileCharacterContainer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '캐릭터 2 선택' }));
     expect(screen.getByRole('button', { name: '적용하기' })).toBeInTheDocument();
+  });
+
+  it('구매한 캐릭터는 카드 하단에 구매함 문구가 표시된다', () => {
+    render(<TestWrapper />);
+
+    const ownedCharacterCard = screen.getByRole('button', { name: '캐릭터 2 선택' });
+
+    expect(within(ownedCharacterCard).getByText('구매함')).toBeInTheDocument();
+    expect(within(ownedCharacterCard).queryByText('1')).not.toBeInTheDocument();
+  });
+
+  it('캐릭터 카드에 마우스를 올리면 설명이 Popover로 표시된다', () => {
+    render(<TestWrapper />);
+
+    const characterCard = screen.getByRole('button', { name: '캐릭터 1 선택' });
+
+    fireEvent.mouseEnter(characterCard, { clientX: 120, clientY: 80 });
+
+    expect(screen.getByText('첫 번째 캐릭터 설명입니다.')).toBeInTheDocument();
   });
 });

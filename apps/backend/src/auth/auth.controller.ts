@@ -66,7 +66,7 @@ export class AuthController {
     this.clientRedirectBase = origin;
     this.clientRedirectPath = this.configService.get<string>(
       'CLIENT_LOGIN_REDIRECT_PATH',
-      '/learn',
+      '/login/callback',
     );
   }
 

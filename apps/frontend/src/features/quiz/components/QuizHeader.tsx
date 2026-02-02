@@ -62,7 +62,6 @@ export const QuizHeader = ({
   }, [navigate, leaveBattle, disconnect, roomId, isBattleMode]);
 
   const progress = (completedSteps / totalSteps) * 100;
-
   const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
 
   return (

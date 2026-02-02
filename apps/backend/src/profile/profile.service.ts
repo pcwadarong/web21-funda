@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, In, Like, Repository } from 'typeorm';
 
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
@@ -13,11 +13,19 @@ import type {
   FieldDailyStatsResult,
   FollowStateResult,
   ProfileFollowUser,
+  ProfileSearchUser,
   ProfileStreakDay,
   ProfileSummaryResult,
   ProfileTierSummary,
 } from './dto/profile.dto';
+import type {
+  ProfileCharacterApplyResult,
+  ProfileCharacterListResult,
+  ProfileCharacterPurchaseResult,
+} from './dto/profile-character.dto';
+import { ProfileCharacter } from './entities/profile-character.entity';
 import { UserFollow } from './entities/user-follow.entity';
+import { UserProfileCharacter } from './entities/user-profile-character.entity';
 import { getDateRange, getLast7Days, toDateStringInTimeZone } from './utils/date.utils';
 
 /**
@@ -50,6 +58,8 @@ export class ProfileService {
     `DATE_FORMAT(${ProfileService.TZ_CONVERT(column, timeZone)}, '%Y-%m-%d')`;
 
   constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(SolveLog)
@@ -60,6 +70,10 @@ export class ProfileService {
     private readonly fieldRepository: Repository<Field>,
     @InjectRepository(UserFollow)
     private readonly followRepository: Repository<UserFollow>,
+    @InjectRepository(ProfileCharacter)
+    private readonly profileCharacterRepository: Repository<ProfileCharacter>,
+    @InjectRepository(UserProfileCharacter)
+    private readonly userProfileCharacterRepository: Repository<UserProfileCharacter>,
   ) {}
 
   /**
@@ -78,7 +92,7 @@ export class ProfileService {
    */
   async getProfileSummary(userId: number): Promise<ProfileSummaryResult> {
     const [user, followerCount, followingCount, solveStats] = await Promise.all([
-      this.findUserOrThrow(userId, { currentTier: true }),
+      this.findUserOrThrow(userId, { currentTier: true, profileCharacter: true }),
       this.followRepository.countBy({ followingId: userId }),
       this.followRepository.countBy({ followerId: userId }),
       this.calculateSolveStats(userId),
@@ -87,7 +101,7 @@ export class ProfileService {
     return {
       userId: user.id,
       displayName: user.displayName,
-      profileImageUrl: user.profileImageUrl ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       experience: user.experience,
       currentStreak: user.currentStreak,
       tier: this.buildTierSummary(user.currentTier),
@@ -95,6 +109,52 @@ export class ProfileService {
       followingCount,
       ...solveStats,
     };
+  }
+
+  /**
+   * 사용자를 검색한다.
+   *
+   * @param {string} keyword 검색 키워드
+   * @param {number} requesterUserId 검색을 요청한 사용자 ID
+   * @returns {Promise<ProfileSearchUser[]>} 사용자 검색 결과
+   */
+  async searchUsers(keyword: string, requesterUserId: number): Promise<ProfileSearchUser[]> {
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword.length < 1) {
+      return [];
+    }
+
+    const searchKeyword = `%${trimmedKeyword}%`;
+
+    const matchedUsers = await this.userRepository.find({
+      where: [{ displayName: Like(searchKeyword) }, { email: Like(searchKeyword) }],
+      relations: { currentTier: true, profileCharacter: true },
+      take: 20,
+    });
+
+    const filteredUsers = matchedUsers.filter(user => user.id !== requesterUserId);
+    const userIds = filteredUsers.map(user => user.id);
+
+    const followRows =
+      userIds.length > 0
+        ? await this.followRepository.find({
+            where: { followerId: requesterUserId, followingId: In(userIds) },
+          })
+        : [];
+
+    const followingSet = new Set(followRows.map(row => row.followingId));
+
+    const results: ProfileSearchUser[] = filteredUsers.map(user => ({
+      userId: user.id,
+      displayName: user.displayName,
+      email: user.email ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
+      experience: user.experience,
+      tier: this.buildTierSummary(user.currentTier ?? null),
+      isFollowing: followingSet.has(user.id),
+    }));
+
+    return this.sortSearchUsersByName(results);
   }
 
   /**
@@ -249,6 +309,163 @@ export class ProfileService {
     const fieldMap = this.initializeFieldStats(roadmapFields, allDates);
     this.applyFieldSolvedCounts(fieldMap, rows);
     return { fields: this.calculateFieldStatsSummary(fieldMap) };
+  }
+
+  /**
+   * 프로필 캐릭터 목록을 반환한다.
+   */
+  async getProfileCharacters(userId: number): Promise<ProfileCharacterListResult> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+    }
+
+    const ownedRows = await this.userProfileCharacterRepository.find({
+      where: { userId },
+      select: ['characterId'],
+    });
+    const ownedIds = ownedRows.map(row => row.characterId);
+    const ownedSet = new Set(ownedIds);
+
+    const whereClause =
+      ownedIds.length > 0 ? [{ isActive: true }, { id: In(ownedIds) }] : [{ isActive: true }];
+
+    const characters = await this.profileCharacterRepository.find({
+      where: whereClause,
+      order: { id: 'ASC' },
+    });
+
+    return {
+      selectedCharacterId: user.profileCharacterId ?? null,
+      diamondCount: user.diamondCount,
+      characters: characters.map(character => ({
+        id: character.id,
+        imageUrl: character.imageUrl,
+        priceDiamonds: character.priceDiamonds,
+        description: character.description ?? null,
+        isActive: character.isActive,
+        isOwned: ownedSet.has(character.id),
+      })),
+    };
+  }
+
+  /**
+   * 프로필 캐릭터를 구매한다.
+   */
+  async purchaseProfileCharacter(
+    userId: number,
+    characterId: number,
+  ): Promise<ProfileCharacterPurchaseResult> {
+    return this.dataSource.transaction(async manager => {
+      const userRepository = manager.getRepository(User);
+      const characterRepository = manager.getRepository(ProfileCharacter);
+      const ownershipRepository = manager.getRepository(UserProfileCharacter);
+
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+      }
+
+      const character = await characterRepository.findOne({ where: { id: characterId } });
+      if (!character) {
+        throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
+      }
+
+      if (!character.isActive) {
+        throw new BadRequestException('판매 중인 캐릭터가 아닙니다.');
+      }
+
+      const existingOwnership = await ownershipRepository.findOne({
+        where: { userId, characterId },
+      });
+      if (existingOwnership) {
+        return {
+          characterId,
+          purchased: false,
+          diamondCount: user.diamondCount,
+        };
+      }
+
+      if (user.diamondCount < character.priceDiamonds) {
+        throw new BadRequestException('다이아가 부족합니다.');
+      }
+
+      user.diamondCount -= character.priceDiamonds;
+      await userRepository.save(user);
+
+      const ownership = ownershipRepository.create({
+        userId,
+        characterId,
+      });
+      await ownershipRepository.save(ownership);
+
+      return {
+        characterId,
+        purchased: true,
+        diamondCount: user.diamondCount,
+      };
+    });
+  }
+
+  /**
+   * 구매한 프로필 캐릭터를 적용한다.
+   */
+  async applyProfileCharacter(
+    userId: number,
+    characterId: number,
+  ): Promise<ProfileCharacterApplyResult> {
+    return this.dataSource.transaction(async manager => {
+      const userRepository = manager.getRepository(User);
+      const characterRepository = manager.getRepository(ProfileCharacter);
+      const ownershipRepository = manager.getRepository(UserProfileCharacter);
+
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+      }
+
+      const character = await characterRepository.findOne({ where: { id: characterId } });
+      if (!character) {
+        throw new NotFoundException('캐릭터 정보를 찾을 수 없습니다.');
+      }
+
+      const ownership = await ownershipRepository.findOne({
+        where: { userId, characterId },
+      });
+      if (!ownership) {
+        throw new BadRequestException('구매한 캐릭터만 적용할 수 있습니다.');
+      }
+
+      user.profileCharacterId = characterId;
+      await userRepository.save(user);
+
+      return {
+        characterId,
+        applied: true,
+      };
+    });
+  }
+
+  /**
+   * 프로필 캐릭터 적용을 해제한다.
+   */
+  async clearProfileCharacter(userId: number): Promise<ProfileCharacterApplyResult> {
+    return this.dataSource.transaction(async manager => {
+      const userRepository = manager.getRepository(User);
+
+      const user = await userRepository.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('사용자 정보를 찾을 수 없습니다.');
+      }
+
+      user.profileCharacterId = null;
+      await userRepository.save(user);
+
+      return {
+        characterId: 0,
+        applied: false,
+      };
+    });
   }
 
   // --- Private Helper Methods ---
@@ -509,5 +726,38 @@ export class ProfileService {
           entry.dailyData.length > 0 ? Math.floor(total / entry.dailyData.length) : 0,
       };
     });
+  }
+
+  /**
+   * 검색 결과 사용자 목록을 이름 기준으로 정렬한다.
+   *
+   * @param {ProfileSearchUser[]} users 정렬할 사용자 목록
+   * @returns {ProfileSearchUser[]} 정렬된 사용자 목록
+   */
+  private sortSearchUsersByName(users: ProfileSearchUser[]): ProfileSearchUser[] {
+    const collatorEnglish = new Intl.Collator('en', { sensitivity: 'base' });
+    const collatorKorean = new Intl.Collator('ko', { sensitivity: 'base' });
+    const sortedUsers = [...users];
+
+    sortedUsers.sort((leftUser, rightUser) => {
+      const leftGroup = this.getDisplayNameGroup(leftUser.displayName);
+      const rightGroup = this.getDisplayNameGroup(rightUser.displayName);
+
+      if (leftGroup !== rightGroup) {
+        return leftGroup - rightGroup;
+      }
+
+      if (leftGroup === 0) {
+        return collatorEnglish.compare(leftUser.displayName, rightUser.displayName);
+      }
+
+      if (leftGroup === 1) {
+        return collatorKorean.compare(leftUser.displayName, rightUser.displayName);
+      }
+
+      return leftUser.displayName.localeCompare(rightUser.displayName);
+    });
+
+    return sortedUsers;
   }
 }

@@ -13,12 +13,7 @@ import {
   useProfileSummary,
   useUnfollowUserMutation,
 } from '@/hooks/queries/userQueries';
-import {
-  useAuthProfileImageUrl,
-  useAuthUser,
-  useIsAuthReady,
-  useIsLoggedIn,
-} from '@/store/authStore';
+import { useAuthProfileImageUrl, useAuthUser } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 /**

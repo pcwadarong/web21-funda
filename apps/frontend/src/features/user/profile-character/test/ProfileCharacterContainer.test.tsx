@@ -20,7 +20,7 @@ const TestWrapper = () => {
             id: 1,
             imageUrl: 'https://placehold.co/140x140?text=01',
             priceDiamonds: 1,
-            description: null,
+            description: '첫 번째 캐릭터 설명입니다.',
             isActive: true,
             isOwned: false,
           },
@@ -62,5 +62,15 @@ describe('ProfileCharacterContainer', () => {
 
     expect(within(ownedCharacterCard).getByText('구매함')).toBeInTheDocument();
     expect(within(ownedCharacterCard).queryByText('1')).not.toBeInTheDocument();
+  });
+
+  it('캐릭터 카드에 마우스를 올리면 설명이 Popover로 표시된다', () => {
+    render(<TestWrapper />);
+
+    const characterCard = screen.getByRole('button', { name: '캐릭터 1 선택' });
+
+    fireEvent.mouseEnter(characterCard, { clientX: 120, clientY: 80 });
+
+    expect(screen.getByText('첫 번째 캐릭터 설명입니다.')).toBeInTheDocument();
   });
 });

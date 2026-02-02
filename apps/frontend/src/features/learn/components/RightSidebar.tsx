@@ -1,13 +1,24 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { Button } from '@/comp/Button';
 import { Dropdown } from '@/comp/Dropdown';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
+import { Modal } from '@/components/Modal';
+import { UserSearchModal } from '@/feat/user/profile/components/UserSearchModal';
+import type { ProfileSearchUser } from '@/feat/user/profile/types';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
+import {
+  useFollowUserMutation,
+  useProfileSearchUsers,
+  userKeys,
+  useUnfollowUserMutation,
+} from '@/hooks/queries/userQueries';
 import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
@@ -15,8 +26,8 @@ import type { Theme } from '@/styles/theme';
 
 // TODO: 오늘의 목표 추가
 const TODAY_GOALS = [
-  { id: 'xp', label: '10 XP 획득하기', current: 20, target: 50 },
-  { id: 'lessons', label: '2개의 완벽한 레슨 끝내기', current: 2, target: 2 },
+  { id: 'xp', label: '50 XP 획득하기', current: 0, target: 50 },
+  { id: 'lessons', label: '2개의 퀴즈 만점 받기', current: 0, target: 2 },
 ] as const;
 
 export const LearnRightSidebar = ({
@@ -28,6 +39,7 @@ export const LearnRightSidebar = ({
 }) => {
   const reviewBatchSize = 10;
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const user = useAuthUser();
   const { progress, updateUIState } = useStorage();
   const navigate = useNavigate();
@@ -52,6 +64,14 @@ export const LearnRightSidebar = ({
 
   const { showToast } = useToast();
   const [isNavigatingReview, setIsNavigatingReview] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [followOverrides, setFollowOverrides] = useState<Record<number, boolean>>({});
+  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
+
+  const followMutation = useFollowUserMutation();
+  const unfollowMutation = useUnfollowUserMutation();
 
   const selectedField = useMemo(
     () => fields.find(field => field.slug.toLowerCase() === fieldSlug.toLowerCase()),
@@ -113,6 +133,108 @@ export const LearnRightSidebar = ({
     });
   }, [fieldSlug, isLoggedIn, navigate, refetchReviewQueue, reviewQueueData, showToast]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(searchKeyword.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  useEffect(() => {
+    setFollowOverrides({});
+  }, [debouncedKeyword]);
+
+  const shouldSearch = isSearchModalOpen && isLoggedIn && debouncedKeyword.length >= 1;
+  const { data: searchUsers = [], isLoading: isSearchLoading } = useProfileSearchUsers(
+    debouncedKeyword,
+    shouldSearch,
+  );
+
+  const resolvedSearchUsers = useMemo(
+    () =>
+      searchUsers.map(userData => ({
+        ...userData,
+        isFollowing: followOverrides[userData.userId] ?? userData.isFollowing,
+      })),
+    [searchUsers, followOverrides],
+  );
+
+  const handleOpenSearchModal = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+
+    setIsSearchModalOpen(true);
+  };
+
+  const handleCloseSearchModal = () => {
+    setIsSearchModalOpen(false);
+    setSearchKeyword('');
+    setDebouncedKeyword('');
+    setFollowOverrides({});
+    setPendingUserId(null);
+  };
+
+  const handleSearchUserClick = (targetUserId: number) => {
+    handleCloseSearchModal();
+    navigate(`/profile/${targetUserId}`, { state: { refetch: true } });
+  };
+
+  const handleFollowToggle = async (targetUserId: number, isFollowing: boolean) => {
+    if (pendingUserId !== null) {
+      return;
+    }
+
+    if (!user?.id) {
+      return;
+    }
+
+    setPendingUserId(targetUserId);
+    setFollowOverrides(prev => ({ ...prev, [targetUserId]: !isFollowing }));
+
+    try {
+      let nextIsFollowing = !isFollowing;
+      if (isFollowing) {
+        const result = await unfollowMutation.mutateAsync({
+          targetUserId,
+          myId: user.id,
+        });
+        nextIsFollowing = result.isFollowing;
+      } else {
+        const result = await followMutation.mutateAsync(targetUserId);
+        nextIsFollowing = result.isFollowing;
+      }
+
+      setFollowOverrides(prev => ({ ...prev, [targetUserId]: nextIsFollowing }));
+      queryClient.setQueryData<ProfileSearchUser[]>(
+        userKeys.search(debouncedKeyword),
+        previousData => {
+          if (!previousData) {
+            return previousData;
+          }
+
+          return previousData.map(userData =>
+            userData.userId === targetUserId
+              ? { ...userData, isFollowing: nextIsFollowing }
+              : userData,
+          );
+        },
+      );
+
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: userKeys.following(user.id) });
+        queryClient.invalidateQueries({ queryKey: userKeys.summary(user.id) });
+      }
+    } catch (followError) {
+      setFollowOverrides(prev => ({ ...prev, [targetUserId]: isFollowing }));
+      showToast((followError as Error).message);
+    } finally {
+      setPendingUserId(null);
+    }
+  };
+
   if (!isAuthReady) return null;
   if (isNavigatingReview) return <Loading text="복습 문제를 불러오는 중입니다" />;
 
@@ -169,32 +291,32 @@ export const LearnRightSidebar = ({
         </div>
       </div>
 
-      <div css={cardStyle(theme)}>
-        <div css={cardHeaderStyle}>
-          <span css={cardIconStyle}>
-            <SVGIcon icon="Book" size="md" />
-          </span>
-          <span css={cardTitleStyle(theme)}>복습 노트</span>
+      <div css={cardContainerStyle}>
+        <div css={cardStyle(theme)}>
+          <div css={cardHeaderStyle}>
+            <span css={cardIconStyle}>
+              <SVGIcon icon="Book" size="md" />
+            </span>
+            <span css={cardTitleStyle(theme)}>복습 노트</span>
+          </div>
+          <Button
+            variant="primary"
+            fullWidth={true}
+            onClick={handleReviewClick}
+            css={rightSidebarBtnStyle(theme)}
+            disabled={!isLoggedIn}
+          >
+            복습 시작하기
+          </Button>
         </div>
-        {isLoggedIn && user ? (
-          <button css={reviewBadgeStyle(theme)} onClick={handleReviewClick}>
-            복습 시작
-          </button>
-        ) : (
-          <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 복습 노트를 확인해보세요!</div>
-          </Link>
-        )}
-      </div>
 
-      <div css={cardStyle(theme)}>
-        <div css={cardHeaderStyle}>
-          <span css={cardIconStyle}>
-            <SVGIcon icon="Fire" size="md" />
-          </span>
-          <span css={cardTitleStyle(theme)}>오늘의 목표</span>
-        </div>
-        {isLoggedIn ? (
+        <div css={cardStyle(theme)}>
+          <div css={cardHeaderStyle}>
+            <span css={cardIconStyle}>
+              <SVGIcon icon="Fire" size="md" />
+            </span>
+            <span css={cardTitleStyle(theme)}>오늘의 목표</span>
+          </div>
           <div css={goalsContentStyle}>
             {TODAY_GOALS.map(goal => (
               <div key={goal.id} css={goalItemStyle}>
@@ -213,12 +335,61 @@ export const LearnRightSidebar = ({
               </div>
             ))}
           </div>
-        ) : (
-          <Link to="/login" css={rightSidebarLinkStyle}>
-            <div css={reviewBadgeStyle(theme)}>로그인 후 진도를 저장해보세요!</div>
-          </Link>
+        </div>
+
+        <div css={cardStyle(theme)}>
+          <div css={cardHeaderStyle}>
+            <span css={cardIconStyle}>
+              <SVGIcon icon="Search" size="md" />
+            </span>
+            <span css={cardTitleStyle(theme)}>친구 추가</span>
+          </div>
+          <Button
+            variant="primary"
+            fullWidth={true}
+            onClick={handleOpenSearchModal}
+            css={rightSidebarBtnStyle(theme)}
+            disabled={!isLoggedIn}
+          >
+            친구 추가하기
+          </Button>
+        </div>
+
+        {!isLoggedIn && !user && (
+          <div css={overlayStyle(theme)}>
+            <div css={overlayHeaderStyle}>
+              <span css={overlayTitleStyle(theme)}>
+                로그인하여 학습 기록을 저장하고 친구 추가를 해보세요!
+              </span>
+            </div>
+
+            <Link to="/login" css={rightSidebarLinkStyle}>
+              <Button variant="primary" fullWidth={true} css={rightSidebarBtnStyle(theme)}>
+                로그인
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
+
+      {isSearchModalOpen && (
+        <Modal
+          title="친구 추가"
+          content={
+            <UserSearchModal
+              keyword={searchKeyword}
+              users={shouldSearch ? resolvedSearchUsers : []}
+              isLoading={shouldSearch && isSearchLoading}
+              pendingUserId={pendingUserId}
+              onKeywordChange={setSearchKeyword}
+              onUserClick={handleSearchUserClick}
+              onFollowToggle={handleFollowToggle}
+            />
+          }
+          onClose={handleCloseSearchModal}
+          maxWidth={560}
+        />
+      )}
     </aside>
   );
 };
@@ -227,8 +398,8 @@ const rightSectionStyle = css`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 320px;
-  min-width: 320px;
+  width: 360px;
+  min-width: 360px;
   padding-right: 8px;
 
   @media (max-width: 1024px) {
@@ -237,9 +408,10 @@ const rightSectionStyle = css`
 `;
 
 const statsContainerStyle = (isLoggedIn: boolean) => css`
+  width: ${isLoggedIn ? '100%' : '40%'};
   display: flex;
-  align-items: center;
-  justify-content: ${isLoggedIn ? 'space-between' : 'flex-start'};
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
 `;
 
@@ -276,9 +448,27 @@ const rightSidebarLinkStyle = css`
   }
 `;
 
+const rightSidebarBtnStyle = (theme: Theme) => css`
+  margin-bottom: 0.5rem;
+
+  &:disabled {
+    background: ${theme.colors.grayscale[300]};
+    color: ${theme.colors.text.light};
+    box-shadow: 0 8px 0 ${theme.colors.grayscale[400]};
+    opacity: 0.3;
+  }
+`;
+
 const statValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   font-weight: ${theme.typography['12Medium'].fontWeight};
+`;
+
+const cardContainerStyle = css`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 `;
 
 const cardStyle = (theme: Theme) => css`
@@ -304,60 +494,56 @@ const cardIconStyle = css`
 
 const cardTitleStyle = (theme: Theme) => css`
   flex: 1;
-  font-size: ${theme.typography['16Bold'].fontSize};
-  line-height: ${theme.typography['16Bold'].lineHeight};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
+  font-size: ${theme.typography['18Bold'].fontSize};
+  line-height: ${theme.typography['18Bold'].lineHeight};
+  font-weight: ${theme.typography['18Bold'].fontWeight};
   color: ${theme.colors.text.strong};
 `;
 
-const reviewBadgeStyle = (theme: Theme) => css`
-  /* 레이아웃: 클릭 영역 확보를 위해 좌우 패딩을 넉넉히 */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
+const overlayStyle = (theme: Theme) => css`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  gap: 24px;
+  background: linear-gradient(
+    to bottom,
+    ${theme.colors.surface.strong},
+    ${theme.colors.surface.strong}F2,
+    ${theme.colors.surface.strong}F2,
+    ${theme.colors.surface.strong}F2,
+    ${theme.colors.surface.strong}E6,
+    ${theme.colors.surface.strong}E6,
+    ${theme.colors.surface.strong}E6,
+    ${theme.colors.surface.strong}B3,
+    ${theme.colors.surface.strong}80
+  );
 
-  /* 배경 및 컬러: 시스템의 Primary Main과 Grayscale 50 활용 */
-  background: ${theme.colors.primary.main};
-  color: ${theme.colors.grayscale[50]};
-
-  /* 테두리: 둥근 모서리(16px)로 버튼다움 강조 */
-  border: none;
   border-radius: ${theme.borderRadius.medium};
+  word-break: keep-all;
+`;
 
-  /* 타이포그래피: 가독성 높은 16Bold 적용 */
-  font-size: ${theme.typography['16Bold'].fontSize};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
-  line-height: ${theme.typography['16Bold'].lineHeight};
+const overlayHeaderStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
 
-  /* 인터랙션 및 피드백 */
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(101, 89, 234, 0.25);
-
-  &:hover {
-    background: ${theme.colors.primary.dark};
-    transform: translateY(-2px); /* 부드럽게 떠오르는 효과 */
-    box-shadow: 0 6px 16px rgba(101, 89, 234, 0.35);
-  }
-
-  &:active {
-    transform: translateY(0);
-    filter: brightness(0.95);
-  }
-
-  &:disabled {
-    background: ${theme.colors.grayscale[300]};
-    color: ${theme.colors.grayscale[500]};
-    cursor: not-allowed;
-    box-shadow: none;
-  }
+const overlayTitleStyle = (theme: Theme) => css`
+  text-align: center;
+  flex: 1;
+  font-size: ${theme.typography['20Medium'].fontSize};
+  line-height: ${theme.typography['20Medium'].lineHeight};
+  font-weight: ${theme.typography['20Medium'].fontWeight};
+  color: ${theme.colors.text.strong};
 `;
 
 const goalsContentStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 `;
 
 const goalItemStyle = css`
@@ -372,9 +558,9 @@ const goalLabelContainerStyle = css`
 `;
 
 const goalLabelStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.default};
 `;
 

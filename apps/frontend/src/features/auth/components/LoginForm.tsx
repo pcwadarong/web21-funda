@@ -9,9 +9,10 @@ import type { Theme } from '@/styles/theme';
 interface LoginFormProps {
   onGoogleLogin: () => void;
   onGitHubLogin: () => void;
+  isLoggingIn: boolean;
 }
 
-export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin }: LoginFormProps) => {
+export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: LoginFormProps) => {
   const theme = useTheme();
 
   return (
@@ -34,9 +35,15 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin }: LoginFormProps)
             <SVGIcon icon="Google" size="md" />
             <span>Google로 계속하기</span>
           </Button>
-          <Button variant="primary" onClick={onGitHubLogin} fullWidth css={loginButtonStyle}>
+          <Button
+            variant="primary"
+            onClick={onGitHubLogin}
+            fullWidth
+            css={loginButtonStyle}
+            disabled={isLoggingIn}
+          >
             <SVGIcon icon="Github" size="md" />
-            <span>GitHub로 계속하기</span>
+            <span>GitHub로 {isLoggingIn ? '로그인 중..' : '계속하기'}</span>
           </Button>
         </div>
 

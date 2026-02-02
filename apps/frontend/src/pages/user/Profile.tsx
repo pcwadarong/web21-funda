@@ -1,13 +1,26 @@
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
+import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
 import { ErrorView } from '@/features/error/components/ErrorView';
-import { ProfileContainer } from '@/features/user/components/profile/ProfileContainer';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import {
+  useFollowUserMutation,
+  useProfileDailyStats,
+  useProfileFieldDailyStats,
   useProfileFollowers,
   useProfileFollowing,
+  useProfileStreaks,
   useProfileSummary,
-} from '@/hooks/queries/profileQueries';
-import { useAuthUser } from '@/store/authStore';
+  useUnfollowUserMutation,
+} from '@/hooks/queries/userQueries';
+import {
+  useAuthProfileImageUrl,
+  useAuthUser,
+  useIsAuthReady,
+  useIsLoggedIn,
+} from '@/store/authStore';
+import { useToast } from '@/store/toastStore';
 
 /**
  * 프로필 페이지
@@ -18,7 +31,11 @@ import { useAuthUser } from '@/store/authStore';
 export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
+  const authProfileImageUrl = useAuthProfileImageUrl();
   const navigate = useNavigate();
+  const isLoggedIn = useIsLoggedIn();
+  const isAuthReady = useIsAuthReady();
+  const { showToast } = useToast();
 
   const numericUserId = userId ? Number(userId) : null;
   const shouldFetch = Number.isFinite(numericUserId ?? NaN) ? numericUserId : null;
@@ -28,8 +45,62 @@ export const Profile = () => {
     error: profileSummaryError,
     isLoading: isProfileLoading,
   } = useProfileSummary(shouldFetch);
+
   const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
   const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
+  const followMutation = useFollowUserMutation();
+  const unfollowMutation = useUnfollowUserMutation();
+
+  const handleUserClick = (targetUserId: number) => {
+    navigate(`/profile/${targetUserId}`);
+  };
+
+  const { data: streaks } = useProfileStreaks(shouldFetch);
+  const { data: dailyStats } = useProfileDailyStats(shouldFetch);
+  const { data: fieldDailyStats } = useProfileFieldDailyStats(shouldFetch);
+
+  const shouldFetchRanking = isLoggedIn && isAuthReady && !!user;
+  const { data: rankingMe } = useRankingMe(shouldFetchRanking);
+
+  const isMyProfile = user?.id !== undefined && profileSummary?.userId === user.id;
+  const handleProfileImageClick = isMyProfile ? () => navigate('/profile/characters') : undefined;
+  const computedIsFollowing = Boolean(
+    user?.id && followers?.some(follower => follower.userId === user.id),
+  );
+  const [isFollowingOverride, setIsFollowingOverride] = useState<boolean | null>(null);
+  const isFollowing = isFollowingOverride ?? computedIsFollowing;
+
+  useEffect(() => {
+    setIsFollowingOverride(null);
+  }, [computedIsFollowing]);
+
+  const handleFollowToggle = async () => {
+    if (!profileSummary || !user?.id) {
+      return;
+    }
+
+    try {
+      setIsFollowingOverride(!isFollowing);
+
+      if (isFollowing) {
+        const result = await unfollowMutation.mutateAsync({
+          targetUserId: profileSummary.userId,
+          myId: user.id,
+        });
+        setIsFollowingOverride(result.isFollowing);
+        showToast('언팔로우했습니다.');
+      } else {
+        const result = await followMutation.mutateAsync(profileSummary.userId);
+        setIsFollowingOverride(result.isFollowing);
+        showToast('팔로우했습니다.');
+      }
+    } catch (followError) {
+      setIsFollowingOverride(null);
+      showToast((followError as Error).message);
+    }
+  };
+
+  const diamondCount = rankingMe?.diamondCount ?? 0;
 
   // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
   if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
@@ -45,22 +116,27 @@ export const Profile = () => {
     );
   }
 
-  const handleUserClick = (targetUserId: number) => {
-    navigate(`/profile/${targetUserId}`);
-  };
-
-  // TODO: 실제 다이아몬드 개수는 프로필 API에서 가져와야 함
-  const diamondCount = 0;
+  const resolvedProfileSummary =
+    isMyProfile && profileSummary
+      ? { ...profileSummary, profileImageUrl: authProfileImageUrl }
+      : profileSummary;
 
   return (
     <ProfileContainer
-      profileSummary={profileSummary ?? null}
+      profileSummary={resolvedProfileSummary ?? null}
       following={following ?? []}
       followers={followers ?? []}
       isFollowingLoading={isFollowingLoading}
       isFollowersLoading={isFollowersLoading}
+      streaks={streaks ?? []}
+      dailyStats={dailyStats ?? null}
+      fieldDailyStats={fieldDailyStats ?? null}
       diamondCount={diamondCount}
       onUserClick={handleUserClick}
+      onProfileImageClick={handleProfileImageClick}
+      isMyProfile={isMyProfile}
+      isFollowing={isFollowing}
+      onFollowToggle={!isMyProfile ? handleFollowToggle : undefined}
     />
   );
 };

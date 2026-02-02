@@ -8,6 +8,7 @@ import { SidebarSuspenseLayout } from '@/layouts/SidebarSuspenseLayout';
 // import { ServicePreparation } from '@/pages/common/ServicePreparation';
 import { AuthCheck } from '@/pages/auth/AuthCheck';
 import { Login } from '@/pages/auth/Login';
+import { LoginCallback } from '@/pages/auth/LoginCallback';
 import { Landing } from '@/pages/common/Landing';
 import { NotFound } from '@/pages/common/NotFound';
 import { AdminGuard } from '@/router/guards/AdminGuard';
@@ -24,6 +25,9 @@ const AdminUnitOverviewUpload = lazy(() =>
 );
 const AdminLeaderboard = lazy(() =>
   import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
+);
+const AdminProfileCharacters = lazy(() =>
+  import('@/pages/admin/ProfileCharacters').then(m => ({ default: m.AdminProfileCharacters })),
 );
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 
@@ -62,6 +66,9 @@ const QuizResultError = lazy(() =>
   import('@/pages/quiz/QuizResultError').then(m => ({ default: m.QuizResultError })),
 );
 const Profile = lazy(() => import('@/pages/user/Profile').then(m => ({ default: m.Profile })));
+const ProfileCharacter = lazy(() =>
+  import('@/pages/user/ProfileCharacter').then(m => ({ default: m.ProfileCharacter })),
+);
 const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: m.Setting })));
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
@@ -139,6 +146,7 @@ export const router = createBrowserRouter([
         element: <LoginGuard />,
         loader: protectedLoader,
         children: [
+          { path: 'login/callback', element: <LoginCallback /> },
           // 사이드바가 있는 페이지 그룹
           {
             element: <SidebarSuspenseLayout />,
@@ -149,6 +157,7 @@ export const router = createBrowserRouter([
               },
               { path: 'leaderboard', element: <Leaderboard /> },
               { path: 'profile/:userId?', element: <Profile /> },
+              { path: 'profile/characters', element: <ProfileCharacter /> },
             ],
           },
           // 관리자 전용 (이중 보호)
@@ -163,6 +172,7 @@ export const router = createBrowserRouter([
                   { path: 'quizzes/upload', element: <AdminQuizUpload /> },
                   { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
                   { path: 'quizzes/reports', element: <Reports /> },
+                  { path: 'profile-characters', element: <AdminProfileCharacters /> },
                 ],
               },
             ],

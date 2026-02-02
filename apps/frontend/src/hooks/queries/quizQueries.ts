@@ -17,6 +17,7 @@ export const useQuizzesByStepQuery = (
     queryKey: ['quizzes-by-step', stepId],
     queryFn: () => quizService.getQuizzesByStep(stepId),
     staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
     ...options,
   });
 

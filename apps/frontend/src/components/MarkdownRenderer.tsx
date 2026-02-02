@@ -118,13 +118,13 @@ const markdownContainerStyle = (theme: Theme) => css`
     margin: 0px 0px 0.5rem 0px;
     position: relative;
     padding: 40px 55px 40px;
-    background: ${theme.colors.grayscale['100']};
+    background: ${theme.colors.surface.default};
     border-radius: 16px;
   }
 
   & blockquote:after {
     content: '\\201C';
-    font-size: 76px;
+    font-size: 60px;
     position: absolute;
     top: 5px;
     left: 15px;
@@ -137,7 +137,7 @@ const markdownContainerStyle = (theme: Theme) => css`
     font-size: 16px;
     position: absolute;
     bottom: 20px;
-    left: 55px;
+    right: 30px;
     font-family: georgia;
     font-style: italic;
     color: ${theme.colors.text.weak};
@@ -148,6 +148,7 @@ const markdownContainerStyle = (theme: Theme) => css`
     padding: 0;
     margin: 0 0 15px;
     font-size: 20px;
+    font-weight: 500;
     line-height: 32px;
     word-break: keep-all;
     color: ${theme.colors.text.default};

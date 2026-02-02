@@ -9,6 +9,7 @@ import type {
   ProfileSummaryResult,
 } from '@/feat/user/profile/types';
 import { notificationService, userService } from '@/services/userService';
+import { useAuthStore } from '@/store/authStore';
 
 type UnsubscribeRequest = {
   email: string;
@@ -48,10 +49,113 @@ export const useFollowUserMutation = () => {
 
   return useMutation({
     mutationFn: (userId: number) => userService.followUser(userId),
-    onSuccess: (_, userId) => {
-      queryClient.invalidateQueries({ queryKey: userKeys.summary(userId) });
-      queryClient.invalidateQueries({ queryKey: userKeys.followers(userId) });
-      queryClient.invalidateQueries({ queryKey: userKeys.following(userId) });
+    onSuccess: (result, userId) => {
+      const authUser = useAuthStore.getState().user;
+      const isFollowingNow = result.isFollowing;
+
+      queryClient.setQueryData<ProfileSummaryResult>(userKeys.summary(userId), previousSummary =>
+        previousSummary
+          ? {
+              ...previousSummary,
+              followerCount:
+                result.targetFollowerCount ??
+                previousSummary.followerCount + (isFollowingNow ? 1 : -1),
+            }
+          : previousSummary,
+      );
+
+      if (authUser) {
+        queryClient.setQueryData<ProfileSummaryResult>(
+          userKeys.summary(authUser.id),
+          previousSummary =>
+            previousSummary
+              ? {
+                  ...previousSummary,
+                  followingCount:
+                    result.followerFollowingCount ??
+                    previousSummary.followingCount + (isFollowingNow ? 1 : -1),
+                }
+              : previousSummary,
+        );
+      }
+
+      queryClient.setQueryData<ProfileFollowUser[]>(
+        userKeys.followers(userId),
+        previousFollowers => {
+          if (!previousFollowers || !authUser) {
+            return previousFollowers;
+          }
+
+          const isAlreadyFollower = previousFollowers.some(
+            follower => follower.userId === authUser.id,
+          );
+
+          if (isAlreadyFollower) {
+            return previousFollowers;
+          }
+
+          const nextFollower: ProfileFollowUser = {
+            userId: authUser.id,
+            displayName: authUser.displayName,
+            profileImageUrl: authUser.profileImageUrl ?? null,
+            experience: authUser.experience,
+            tier: null,
+          };
+
+          return [nextFollower, ...previousFollowers];
+        },
+      );
+
+      if (authUser) {
+        queryClient.setQueryData<ProfileFollowUser[]>(
+          userKeys.following(authUser.id),
+          previousFollowing => {
+            if (!previousFollowing) {
+              return previousFollowing;
+            }
+
+            const isAlreadyFollowing = previousFollowing.some(
+              followingUser => followingUser.userId === userId,
+            );
+
+            if (isAlreadyFollowing) {
+              return previousFollowing;
+            }
+
+            const targetSummary = queryClient.getQueryData<ProfileSummaryResult>(
+              userKeys.summary(userId),
+            );
+
+            if (!targetSummary) {
+              return previousFollowing;
+            }
+
+            const nextFollowing: ProfileFollowUser = {
+              userId: targetSummary.userId,
+              displayName: targetSummary.displayName,
+              profileImageUrl: targetSummary.profileImageUrl ?? null,
+              experience: targetSummary.experience,
+              tier: targetSummary.tier ?? null,
+            };
+
+            return [nextFollowing, ...previousFollowing];
+          },
+        );
+      }
+
+      queryClient.invalidateQueries({ queryKey: userKeys.summary(userId), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: userKeys.followers(userId), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: userKeys.following(userId), refetchType: 'all' });
+      if (authUser) {
+        queryClient.invalidateQueries({
+          queryKey: userKeys.summary(authUser.id),
+          refetchType: 'all',
+        });
+        queryClient.invalidateQueries({
+          queryKey: userKeys.following(authUser.id),
+          refetchType: 'all',
+        });
+      }
     },
   });
 };
@@ -61,10 +165,73 @@ export const useUnfollowUserMutation = () => {
 
   return useMutation({
     mutationFn: (userId: number) => userService.unfollowUser(userId),
-    onSuccess: (_, userId) => {
-      queryClient.invalidateQueries({ queryKey: userKeys.summary(userId) });
-      queryClient.invalidateQueries({ queryKey: userKeys.followers(userId) });
-      queryClient.invalidateQueries({ queryKey: userKeys.following(userId) });
+    onSuccess: (result, userId) => {
+      const authUser = useAuthStore.getState().user;
+      const isFollowingNow = result.isFollowing;
+
+      queryClient.setQueryData<ProfileSummaryResult>(userKeys.summary(userId), previousSummary =>
+        previousSummary
+          ? {
+              ...previousSummary,
+              followerCount:
+                result.targetFollowerCount ??
+                previousSummary.followerCount + (isFollowingNow ? 1 : -1),
+            }
+          : previousSummary,
+      );
+
+      if (authUser) {
+        queryClient.setQueryData<ProfileSummaryResult>(
+          userKeys.summary(authUser.id),
+          previousSummary =>
+            previousSummary
+              ? {
+                  ...previousSummary,
+                  followingCount:
+                    result.followerFollowingCount ??
+                    previousSummary.followingCount + (isFollowingNow ? 1 : -1),
+                }
+              : previousSummary,
+        );
+      }
+
+      queryClient.setQueryData<ProfileFollowUser[]>(
+        userKeys.followers(userId),
+        previousFollowers => {
+          if (!previousFollowers || !authUser) {
+            return previousFollowers;
+          }
+
+          return previousFollowers.filter(follower => follower.userId !== authUser.id);
+        },
+      );
+
+      if (authUser) {
+        queryClient.setQueryData<ProfileFollowUser[]>(
+          userKeys.following(authUser.id),
+          previousFollowing => {
+            if (!previousFollowing) {
+              return previousFollowing;
+            }
+
+            return previousFollowing.filter(followingUser => followingUser.userId !== userId);
+          },
+        );
+      }
+
+      queryClient.invalidateQueries({ queryKey: userKeys.summary(userId), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: userKeys.followers(userId), refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: userKeys.following(userId), refetchType: 'all' });
+      if (authUser) {
+        queryClient.invalidateQueries({
+          queryKey: userKeys.summary(authUser.id),
+          refetchType: 'all',
+        });
+        queryClient.invalidateQueries({
+          queryKey: userKeys.following(authUser.id),
+          refetchType: 'all',
+        });
+      }
     },
   });
 };
@@ -76,7 +243,7 @@ export const useProfileSummary = (userId: number | null) =>
       return userService.getProfileSummary(userId);
     },
     enabled: userId !== null,
-    staleTime: 1000 * 60,
+    staleTime: 0,
     retry: false,
   });
 
@@ -88,7 +255,7 @@ export const useProfileFollowers = (userId: number | null) =>
       return userService.getFollowers(userId);
     },
     enabled: userId !== null,
-    staleTime: 1000 * 60,
+    staleTime: 0,
   });
 
 export const useProfileFollowing = (userId: number | null) =>
@@ -99,7 +266,7 @@ export const useProfileFollowing = (userId: number | null) =>
       return userService.getFollowing(userId);
     },
     enabled: userId !== null,
-    staleTime: 1000 * 60,
+    staleTime: 0,
   });
 
 export const useProfileDailyStats = (userId: number | null) =>

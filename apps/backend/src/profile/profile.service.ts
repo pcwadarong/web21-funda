@@ -219,7 +219,16 @@ export class ProfileService {
       );
     }
 
-    return { isFollowing: true };
+    const [targetFollowerCount, followerFollowingCount] = await Promise.all([
+      this.followRepository.countBy({ followingId: targetUserId }),
+      this.followRepository.countBy({ followerId: followerUserId }),
+    ]);
+
+    return {
+      isFollowing: true,
+      targetFollowerCount,
+      followerFollowingCount,
+    };
   }
 
   /**
@@ -235,7 +244,16 @@ export class ProfileService {
 
     if (existingFollow) await this.followRepository.remove(existingFollow);
 
-    return { isFollowing: false };
+    const [targetFollowerCount, followerFollowingCount] = await Promise.all([
+      this.followRepository.countBy({ followingId: targetUserId }),
+      this.followRepository.countBy({ followerId: followerUserId }),
+    ]);
+
+    return {
+      isFollowing: false,
+      targetFollowerCount,
+      followerFollowingCount,
+    };
   }
 
   /**

@@ -1,6 +1,7 @@
 import type {
   DailyStatsResult,
   FieldDailyStatsResult,
+  FollowStateResult,
   ProfileFollowUser,
   ProfileSearchUser,
   ProfileStreakDay,
@@ -47,15 +48,15 @@ export const userService = {
   /**
    * 대상 사용자를 팔로우합니다.
    */
-  async followUser(userId: number): Promise<{ isFollowing: boolean }> {
-    return apiFetch.post<{ isFollowing: boolean }>(`/profiles/${userId}/follow`);
+  async followUser(userId: number): Promise<FollowStateResult> {
+    return apiFetch.post<FollowStateResult>(`/profiles/${userId}/follow`);
   },
 
   /**
    * 대상 사용자를 언팔로우합니다.
    */
-  async unfollowUser(userId: number): Promise<{ isFollowing: boolean }> {
-    return apiFetch.delete<{ isFollowing: boolean }>(`/profiles/${userId}/follow`);
+  async unfollowUser(userId: number): Promise<FollowStateResult> {
+    return apiFetch.delete<FollowStateResult>(`/profiles/${userId}/follow`);
   },
 
   /**

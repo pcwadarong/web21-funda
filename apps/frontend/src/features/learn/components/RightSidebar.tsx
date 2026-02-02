@@ -180,13 +180,20 @@ export const LearnRightSidebar = ({
       return;
     }
 
+    if (!user?.id) {
+      return;
+    }
+
     setPendingUserId(targetUserId);
     setFollowOverrides(prev => ({ ...prev, [targetUserId]: !isFollowing }));
 
     try {
       let nextIsFollowing = !isFollowing;
       if (isFollowing) {
-        const result = await unfollowMutation.mutateAsync(targetUserId);
+        const result = await unfollowMutation.mutateAsync({
+          targetUserId,
+          myId: user.id,
+        });
         nextIsFollowing = result.isFollowing;
       } else {
         const result = await followMutation.mutateAsync(targetUserId);

@@ -42,6 +42,12 @@ export interface ProfileStreakDay {
   solvedCount: number;
 }
 
+export interface FollowStateResult {
+  isFollowing: boolean;
+  targetFollowerCount?: number;
+  followerFollowingCount?: number;
+}
+
 export interface DailyStatsData {
   date: string;
   studySeconds: number;

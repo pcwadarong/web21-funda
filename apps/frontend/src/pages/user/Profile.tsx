@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
 import { ErrorView } from '@/features/error/components/ErrorView';
@@ -29,7 +29,6 @@ export const Profile = () => {
   const navigate = useNavigate();
   const isLoggedIn = useIsLoggedIn();
   const isAuthReady = useIsAuthReady();
-  const location = useLocation();
   const { showToast } = useToast();
 
   const numericUserId = userId ? Number(userId) : null;
@@ -39,19 +38,10 @@ export const Profile = () => {
     data: profileSummary,
     error: profileSummaryError,
     isLoading: isProfileLoading,
-    refetch: refetchProfileSummary,
   } = useProfileSummary(shouldFetch);
 
-  const {
-    data: followers,
-    isLoading: isFollowersLoading,
-    refetch: refetchFollowers,
-  } = useProfileFollowers(shouldFetch);
-  const {
-    data: following,
-    isLoading: isFollowingLoading,
-    refetch: refetchFollowing,
-  } = useProfileFollowing(shouldFetch);
+  const { data: followers, isLoading: isFollowersLoading } = useProfileFollowers(shouldFetch);
+  const { data: following, isLoading: isFollowingLoading } = useProfileFollowing(shouldFetch);
   const followMutation = useFollowUserMutation();
   const unfollowMutation = useUnfollowUserMutation();
 
@@ -59,34 +49,6 @@ export const Profile = () => {
     navigate(`/profile/${targetUserId}`);
   };
 
-  const shouldRefetch = Boolean((location.state as { refetch?: boolean } | null)?.refetch);
-
-  useEffect(() => {
-    if (!shouldRefetch) {
-      return;
-    }
-
-    void refetchProfileSummary();
-    void refetchFollowers();
-    void refetchFollowing();
-    navigate(location.pathname, { replace: true, state: null });
-  }, [
-    navigate,
-    location.pathname,
-    refetchFollowers,
-    refetchFollowing,
-    refetchProfileSummary,
-    shouldRefetch,
-  ]);
-
-  useEffect(() => {
-    if (shouldFetch === null) {
-      return;
-    }
-
-    void refetchFollowers();
-    void refetchFollowing();
-  }, [refetchFollowers, refetchFollowing, shouldFetch]);
   const { data: streaks } = useProfileStreaks(shouldFetch);
   const { data: dailyStats } = useProfileDailyStats(shouldFetch);
   const { data: fieldDailyStats } = useProfileFieldDailyStats(shouldFetch);
@@ -115,15 +77,14 @@ export const Profile = () => {
       setIsFollowingOverride(!isFollowing);
 
       if (isFollowing) {
-        await unfollowMutation.mutateAsync(profileSummary.userId);
+        const result = await unfollowMutation.mutateAsync(profileSummary.userId);
+        setIsFollowingOverride(result.isFollowing);
         showToast('언팔로우했습니다.');
       } else {
-        await followMutation.mutateAsync(profileSummary.userId);
+        const result = await followMutation.mutateAsync(profileSummary.userId);
+        setIsFollowingOverride(result.isFollowing);
         showToast('팔로우했습니다.');
       }
-
-      await Promise.all([refetchFollowers(), refetchFollowing(), refetchProfileSummary()]);
-      setIsFollowingOverride(null);
     } catch (followError) {
       setIsFollowingOverride(null);
       showToast((followError as Error).message);

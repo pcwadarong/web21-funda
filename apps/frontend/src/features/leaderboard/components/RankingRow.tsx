@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 
 import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
+import type { IconMapTypes } from '@/constants/icons';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
@@ -22,6 +23,7 @@ export const RankingRow = ({
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { isMe, rankZone, rank, profileImageUrl, displayName, xp, tierName } = member;
+  const tierIconName = getTierIconName(tierName);
 
   const ZONE_COLORS = {
     PROMOTION: theme.colors.success.main,
@@ -78,7 +80,11 @@ export const RankingRow = ({
 
       <div css={nameBlockStyle}>
         <span css={memberNameStyle(theme, isMe, isDarkMode)}>{displayName}</span>
-        {tierName && <span css={tierBadgeStyle(theme)}>{tierName}</span>}
+        {tierIconName && (
+          <span css={tierIconWrapperStyle} aria-label={`티어 ${tierName}`}>
+            <SVGIcon icon={tierIconName} size="md" />
+          </span>
+        )}
         {isMe && <span css={meBadgeStyle(theme, isDarkMode)}>나</span>}
       </div>
 
@@ -163,15 +169,35 @@ const meBadgeStyle = (theme: Theme, isDarkMode: boolean) => css`
   flex-shrink: 0;
 `;
 
-const tierBadgeStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['12Bold'].fontSize};
-  color: ${theme.colors.text.weak};
-  background: ${theme.colors.surface.default};
-  border: 1px solid ${theme.colors.border.default};
-  padding: 2px 8px;
-  border-radius: 999px;
+const tierIconWrapperStyle = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 `;
+
+const getTierIconName = (tierName?: string): IconMapTypes | null => {
+  if (!tierName) return null;
+
+  switch (tierName) {
+    case 'BRONZE':
+      return 'TierBronze';
+    case 'SILVER':
+      return 'TierSilver';
+    case 'GOLD':
+      return 'TierGold';
+    case 'SAPPHIRE':
+      return 'TierSapphire';
+    case 'RUBY':
+      return 'TierRuby';
+    case 'MASTER':
+      return 'TierMaster';
+    default:
+      return null;
+  }
+};
 
 const xpBlockStyle = css`
   display: flex;

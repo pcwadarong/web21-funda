@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
+import type { IconMapTypes } from '@/constants/icons';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
@@ -78,6 +79,7 @@ export const LeaderboardContainer = ({
       ? `${weeklyRanking.tier.name} 리그`
       : ''
     : '전체 순위';
+  const tierIconName = isMyLeagueView ? getTierIconName(weeklyRanking?.tier.name) : null;
   const groupedMembers =
     weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
   const remainingDaysText = activeRanking ? buildRemainingDaysText(activeRanking.weekKey) : '';
@@ -86,7 +88,25 @@ export const LeaderboardContainer = ({
       ? `${activeRanking.weekKey}주차 · 그룹 ${weeklyRanking!.groupIndex} · 총 ${activeRanking.totalMembers}명`
       : `${activeRanking.weekKey}주차 · 총 ${activeRanking.totalMembers}명`
     : '';
-  const overallMembers = overallRanking?.members ?? [];
+  const overallMembers = [...(overallRanking?.members ?? [])]
+    .sort((left, right) => {
+      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
+      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
+
+      if (leftTierOrderIndex !== rightTierOrderIndex) {
+        return rightTierOrderIndex - leftTierOrderIndex;
+      }
+
+      if (left.xp !== right.xp) {
+        return right.xp - left.xp;
+      }
+
+      return left.userId - right.userId;
+    })
+    .map((member, index) => ({
+      ...member,
+      rank: index + 1,
+    }));
 
   return (
     <main css={pageStyle}>
@@ -140,6 +160,11 @@ export const LeaderboardContainer = ({
             <section css={summaryCardStyle(theme)} data-section="summary">
               <div>
                 <div css={summaryMainStyle}>
+                  {tierIconName && (
+                    <span css={summaryTierIconStyle}>
+                      <SVGIcon icon={tierIconName} size="lg" />
+                    </span>
+                  )}
                   <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
                   {isMyLeagueView && (
                     <button
@@ -290,6 +315,16 @@ const summaryMainStyle = css`
   align-items: center;
 `;
 
+const summaryTierIconStyle = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  transform: translateY(-4px);
+`;
+
 const summaryTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   line-height: ${theme.typography['20Bold'].lineHeight};
@@ -394,3 +429,24 @@ const zoneHeaderStyle = (theme: Theme, zoneType?: 'PROMOTION' | 'DEMOTION') => c
       : theme.colors.text.weak};
   padding: 8px 0;
 `;
+
+const getTierIconName = (tierName?: string | null): IconMapTypes | null => {
+  if (!tierName) return null;
+
+  switch (tierName) {
+    case 'BRONZE':
+      return 'TierBronze';
+    case 'SILVER':
+      return 'TierSilver';
+    case 'GOLD':
+      return 'TierGold';
+    case 'SAPPHIRE':
+      return 'TierSapphire';
+    case 'RUBY':
+      return 'TierRuby';
+    case 'MASTER':
+      return 'TierMaster';
+    default:
+      return null;
+  }
+};

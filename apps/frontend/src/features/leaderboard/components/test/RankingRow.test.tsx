@@ -70,10 +70,10 @@ describe('RankingRow 컴포넌트 테스트', () => {
   it('티어 정보가 있으면 표시된다', () => {
     renderRankingRow({
       ...mockMember,
-      tierName: '골드',
+      tierName: 'GOLD',
     });
 
-    expect(screen.getByText('골드')).toBeInTheDocument();
+    expect(screen.getByTestId('svg-icon-TierGold')).toBeInTheDocument();
   });
 
   it('프로필 이미지가 없을 때 아바타 라벨이 표시된다', () => {

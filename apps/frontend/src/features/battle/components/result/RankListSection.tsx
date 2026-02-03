@@ -1,8 +1,8 @@
 import { css } from '@emotion/react';
 
-import BronzeMedal from '@/assets/bronze-medal.svg';
-import GoldMedal from '@/assets/gold-medal.svg';
-import SilverMedal from '@/assets/silver-medal.svg';
+import BronzeMedal from '@/assets/images/bronze-medal.svg';
+import GoldMedal from '@/assets/images/gold-medal.svg';
+import SilverMedal from '@/assets/images/silver-medal.svg';
 import { Button } from '@/comp/Button';
 import { Avatar } from '@/components/Avatar';
 import type { BattleParticipant, Ranking } from '@/feat/battle/types';

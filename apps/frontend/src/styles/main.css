@@ -1,8 +1,8 @@
 @font-face {
   font-family: 'D2Coding';
   src:
-    url('../assets/d2coding-ligature-subset.woff2') format('woff2'),
-    url('../assets/d2coding-ligature-subset.woff') format('woff');
+    url('../assets/fonts/d2coding-ligature-subset.woff2') format('woff2'),
+    url('../assets/fonts/d2coding-ligature-subset.woff') format('woff');
   font-display: swap;
 }
 

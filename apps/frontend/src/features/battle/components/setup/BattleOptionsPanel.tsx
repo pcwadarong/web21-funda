@@ -1,11 +1,14 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import dingSound from '@/assets/audio/ding.mp3';
+import startSound from '@/assets/audio/start.mp3';
 import { Button } from '@/components/Button';
 import SVGIcon from '@/components/SVGIcon';
 import { BattleStartCountdown } from '@/feat/battle/components/play/BattleStartCountdown';
 import { useBattleStartCountdown } from '@/feat/battle/hooks/useBattleStartCountdown';
 import type { BattleRoomSettings } from '@/feat/battle/types';
+import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 
 export const BATTLE_CONFIG: Record<
@@ -61,7 +64,10 @@ export const BattleOptionsPanel = ({
   onCopyLink,
 }: BattleOptionsPanelProps) => {
   const theme = useTheme();
+  const { playSound } = useSound();
   const [isExpanded, setIsExpanded] = useState(false);
+  const startSoundTimerRef = useRef<number | null>(null);
+  const startSoundPlayedRef = useRef(false);
   const canStartBattle = isHost && participantCount > 1;
   const hasCountdownStarted = countdownEndsAt !== null;
   const startButtonLabel = !isHost
@@ -70,10 +76,66 @@ export const BattleOptionsPanel = ({
       ? '게임 시작'
       : '참가자 대기 중';
 
+  const handleCountdownTick = useCallback(
+    (label: string) => {
+      // 시작 효과음을 START 라벨보다 살짝 빠르게 재생한다.
+      if (startSoundTimerRef.current) {
+        window.clearTimeout(startSoundTimerRef.current);
+        startSoundTimerRef.current = null;
+      }
+
+      if (label === 'START') {
+        if (startSoundPlayedRef.current) {
+          return;
+        }
+
+        playSound({ src: startSound, currentTime: 0 });
+        startSoundPlayedRef.current = true;
+        return;
+      }
+
+      if (label === '1') {
+        if (startSoundPlayedRef.current) {
+          playSound({ src: dingSound, currentTime: 0 });
+          return;
+        }
+
+        startSoundTimerRef.current = window.setTimeout(() => {
+          playSound({ src: startSound, currentTime: 0 });
+          startSoundTimerRef.current = null;
+          startSoundPlayedRef.current = true;
+        }, 500);
+      }
+
+      playSound({ src: dingSound, currentTime: 0 });
+    },
+    [playSound],
+  );
+
   const { isVisible: isStartCountdownVisible, label: startCountdownLabel } =
     useBattleStartCountdown({
       endsAt: countdownEndsAt,
+      onTick: handleCountdownTick,
     });
+
+  useEffect(() => {
+    // 새 카운트다운이 시작되면 재생 플래그와 타이머를 초기화한다.
+    startSoundPlayedRef.current = false;
+    if (startSoundTimerRef.current) {
+      window.clearTimeout(startSoundTimerRef.current);
+      startSoundTimerRef.current = null;
+    }
+  }, [countdownEndsAt]);
+
+  useEffect(
+    () => () => {
+      if (startSoundTimerRef.current) {
+        window.clearTimeout(startSoundTimerRef.current);
+        startSoundTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   const handleStartBattleClick = useCallback(() => {
     if (!roomId || !canStartBattle || hasCountdownStarted) {

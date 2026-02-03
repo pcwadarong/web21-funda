@@ -349,7 +349,7 @@ export const Quiz = () => {
    * @param selection 사용자가 선택한 답안 정보
    */
   const submitAnswer = useCallback(
-    async (selection: QuizSubmissionRequest['selection']) => {
+    async (params: { selection: QuizSubmissionRequest['selection']; isDontKnow?: boolean }) => {
       if (!currentQuiz) return;
       if (currentQuestionStatus !== 'idle') return;
       if (isLoggedIn && stepAttemptId === null && !isReviewMode) {
@@ -359,6 +359,7 @@ export const Quiz = () => {
       setCurrentQuestionStatus('checking');
 
       try {
+        const { selection, isDontKnow } = params;
         const quizType =
           currentQuiz.type === 'matching'
             ? 'MATCHING'
@@ -370,6 +371,10 @@ export const Quiz = () => {
           selection,
           current_step_order_index: uiState.current_step_order_index,
         };
+
+        if (isDontKnow) {
+          payload.is_dont_know = true;
+        }
 
         if (isLoggedIn && stepAttemptId !== null) {
           payload.step_attempt_id = stepAttemptId;
@@ -473,7 +478,7 @@ export const Quiz = () => {
         ? { pairs: (currentAnswer as { pairs: MatchingPair[] }).pairs }
         : { option_id: currentAnswer as string };
 
-    await submitAnswer(selection);
+    await submitAnswer({ selection });
   }, [currentAnswer, currentQuiz, submitAnswer]);
 
   /**
@@ -490,7 +495,7 @@ export const Quiz = () => {
       return newAnswers;
     });
 
-    await submitAnswer({});
+    await submitAnswer({ selection: {}, isDontKnow: true });
   }, [currentQuestionStatus, currentQuiz, currentQuizIndex, submitAnswer]);
 
   /** 마지막 문제 여부 */

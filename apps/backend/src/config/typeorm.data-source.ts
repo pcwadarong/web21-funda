@@ -9,7 +9,7 @@ const toInt = (value: string | undefined, fallback: number): number => {
 };
 
 const loadEnvironment = (): void => {
-  const environment = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development';
+  const environment = process.env.NODE_ENV ?? 'development';
   loadEnv({ path: `.env.${environment}` });
   loadEnv({ path: '.env' });
 };

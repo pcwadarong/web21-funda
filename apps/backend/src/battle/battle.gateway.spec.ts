@@ -1,9 +1,8 @@
-import type { Server } from 'socket.io';
-import type { Socket } from 'socket.io';
+import type { Server, Socket } from 'socket.io';
 
-import type { BattleRoomState } from './battle-state';
 import { BattleGateway } from './battle.gateway';
 import type { BattleService } from './battle.service';
+import type { BattleRoomState } from './battle-state';
 
 const createRoom = (overrides: Partial<BattleRoomState>): BattleRoomState => ({
   roomId: 'room-1',

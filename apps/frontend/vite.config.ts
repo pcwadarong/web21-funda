@@ -6,7 +6,9 @@ import svgr from 'vite-plugin-svgr';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
-import compression from 'vite-plugin-compression2';
+import compression, { defineAlgorithm } from 'vite-plugin-compression2';
+import { constants as zlibConstants } from 'node:zlib';
+
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,9 +19,10 @@ export default defineConfig({
     svgr({ include: '**/*.svg?react' }),
     compression({
       algorithms: [
-        ['brotliCompress', {}],
-        ['gzip', {}],
+        defineAlgorithm('brotliCompress', { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 } }),
+        defineAlgorithm('gzip', { level: 9 }),
       ],
+      exclude: [/\.(map)$/],
     }),
   ],
   resolve: {

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
@@ -46,7 +46,8 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
   validate(request: RequestWithCookies, payload: JwtPayload): RefreshRequestUser {
     const refreshToken = JwtRefreshStrategy.extractRefreshToken(request);
     if (!refreshToken) {
-      throw new UnauthorizedException('리프레시 토큰이 없습니다.');
+      // 401이 아니라 400으로 반환 → 재시도하지 않음
+      throw new BadRequestException('리프레시 토큰이 없습니다.');
     }
 
     return {

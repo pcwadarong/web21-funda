@@ -113,6 +113,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana      # 대시보드 및 설정 영구 저장
       - ./grafana/provisioning:/etc/grafana/provisioning:ro  # 자동 프로비저닝
+      - ./grafana/provisioning-local/alerting:/etc/grafana/provisioning/alerting:ro  # 로컬: 알림 프로비저닝 비활성화
     networks:
       - funda-network
     restart: unless-stopped

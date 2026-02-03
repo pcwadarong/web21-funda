@@ -1,0 +1,116 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: loki-error-alerts
+    interval: 1m
+    rules:
+      - uid: loki-errors-critical
+        title: "Loki Errors Critical (5m)"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: Loki
+            model:
+              datasource:
+                type: loki
+                uid: Loki
+              editorMode: code
+              expr: 'sum(count_over_time({container=~".+"} |~ "(?i)(error|exception|fatal|panic|crash)" [5m]))'
+              queryType: range
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              type: reduce
+              reducer: last
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              type: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [10]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "최근 5분 에러 건수 임계치 초과"
+          description: "value={{ $values.B }}"
+        dashboardUid: custom-error-monitoring
+        panelId: 2
+
+      - uid: loki-errors-warning
+        title: "Loki Errors Warning (Top1 rate 1m)"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: Loki
+            model:
+              datasource:
+                type: loki
+                uid: Loki
+              editorMode: code
+              expr: 'topk(1, sum by (container) (rate({container=~".+"} |~ "(?i)(error|exception|fatal)" [1m])))'
+              queryType: range
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              type: reduce
+              reducer: last
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              type: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1]
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  reducer:
+                    type: last
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "컨테이너별 에러율 상위 1개 임계치 초과"
+          description: "container={{ $labels.container }} value={{ $values.B }}"
+        dashboardUid: custom-error-monitoring
+        panelId: 4

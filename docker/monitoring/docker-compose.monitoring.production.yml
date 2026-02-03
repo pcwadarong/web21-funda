@@ -103,6 +103,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       # 프로덕션: 환경 변수에서 비밀번호 주입 (GitHub Secrets)
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
       - GF_USERS_ALLOW_SIGN_UP=false                # 사용자 자동 가입 비활성화
       # 서브패스 설정: Nginx 리버스 프록시를 통한 접근
       - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-%(protocol)s://%(domain)s/grafana/}

@@ -36,6 +36,7 @@ const battleState = {
   participants: [],
   rankings: [],
   rewards: [],
+  countdownEndsAt: null,
   currentQuizIndex: 0,
   totalQuizzes: 0,
   remainingSeconds: 0,

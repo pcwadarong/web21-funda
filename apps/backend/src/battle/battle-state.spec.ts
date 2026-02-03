@@ -1,4 +1,11 @@
-import { applyDisconnect, applyLeave, applyStart, BattleRoomState } from './battle-state';
+import {
+  applyCancelCountdown,
+  applyDisconnect,
+  applyLeave,
+  applyStart,
+  applyStartCountdown,
+  BattleRoomState,
+} from './battle-state';
 
 const baseRoomState: BattleRoomState = {
   roomId: 'room_test',
@@ -37,6 +44,7 @@ const baseRoomState: BattleRoomState = {
   readyParticipantIds: ['socket-1', 'socket-2'],
   inviteToken: 'token',
   inviteExpired: false,
+  countdownEndsAt: null,
   startedAt: null,
   endedAt: null,
   currentQuizIndex: 0,
@@ -67,6 +75,36 @@ describe('battle-state', () => {
     });
 
     expect(nextRoom.readyParticipantIds).toEqual([]);
+  });
+
+  it('applyStartCountdown는 카운트다운 정보를 저장한다.', () => {
+    const nextRoom = applyStartCountdown(baseRoomState, {
+      roomId: baseRoomState.roomId,
+      requesterParticipantId: 'socket-1',
+      now: 100,
+      countdownEndsAt: 4100,
+      quizIds: [1, 2, 3],
+    });
+
+    expect(nextRoom.status).toBe('countdown');
+    expect(nextRoom.countdownEndsAt).toBe(4100);
+    expect(nextRoom.quizIds).toEqual([1, 2, 3]);
+  });
+
+  it('applyCancelCountdown는 대기 상태로 되돌린다.', () => {
+    const countdownRoom = applyStartCountdown(baseRoomState, {
+      roomId: baseRoomState.roomId,
+      requesterParticipantId: 'socket-1',
+      now: 100,
+      countdownEndsAt: 4100,
+      quizIds: [1, 2, 3],
+    });
+
+    const nextRoom = applyCancelCountdown(countdownRoom);
+
+    expect(nextRoom.status).toBe('waiting');
+    expect(nextRoom.countdownEndsAt).toBeNull();
+    expect(nextRoom.quizIds).toEqual([]);
   });
 
   it('applyDisconnect는 참가자를 목록에서 유지한 채 연결 해제 처리한다.', () => {

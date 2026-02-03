@@ -15,6 +15,12 @@ loki.source.docker "containers" {
 
 loki.relabel "container_labels" {
   rule {
+    source_labels = ["__meta_docker_container_state"]
+    regex         = "running"
+    action        = "keep"
+  }
+
+  rule {
     source_labels = ["__meta_docker_container_name"]
     regex         = "/(.*)"
     target_label  = "container"

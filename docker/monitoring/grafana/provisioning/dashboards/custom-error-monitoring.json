@@ -24,10 +24,10 @@
     {
       "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 0,
+        "w": 24,
+        "h": 1
       },
       "id": 1,
       "panels": [],
@@ -66,10 +66,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 6,
         "x": 0,
-        "y": 1
+        "y": 1,
+        "w": 8,
+        "h": 6
       },
       "id": 2,
       "options": {
@@ -98,72 +98,6 @@
         }
       ],
       "title": "최근 5분 에러 건수",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 1
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "Loki"
-          },
-          "editorMode": "code",
-          "expr": "sum(count_over_time({container=~\".+\"} |~ \"(?i)(warning|warn)\" [5m]))",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "최근 5분 경고 건수",
       "type": "stat"
     },
     {
@@ -220,10 +154,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
-        "y": 1
+        "x": 8,
+        "y": 1,
+        "w": 16,
+        "h": 6
       },
       "id": 4,
       "options": {
@@ -260,10 +194,10 @@
         "uid": "Loki"
       },
       "gridPos": {
-        "h": 10,
-        "w": 24,
         "x": 0,
-        "y": 7
+        "y": 7,
+        "w": 24,
+        "h": 10
       },
       "id": 5,
       "options": {
@@ -290,126 +224,6 @@
       ],
       "title": "🔴 최근 에러 로그 (실시간)",
       "type": "logs"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 17
-      },
-      "id": 6,
-      "panels": [],
-      "title": "⚠️ 경고 및 상세 로그",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 24,
-        "x": 0,
-        "y": 18
-      },
-      "id": 7,
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "Loki"
-          },
-          "editorMode": "code",
-          "expr": "{container=~\".+\"} |~ \"(?i)(warning|warn)\"",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "⚠️ 경고 로그 (Warning)",
-      "type": "logs"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "id": 8,
-      "panels": [],
-      "title": "🔍 컨테이너별 상세 분석",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 29
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "values": ["value", "percent"]
-        },
-        "pieType": "pie",
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "Loki"
-          },
-          "editorMode": "code",
-          "expr": "sum by (container) (count_over_time({container=~\".+\"} |~ \"(?i)(error|exception|fatal)\" [1h]))",
-          "legendFormat": "{{container}}",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "컨테이너별 에러 분포 (1시간)",
-      "type": "piechart"
     },
     {
       "datasource": {
@@ -446,10 +260,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "x": 0,
+        "y": 17,
         "w": 12,
-        "x": 12,
-        "y": 29
+        "h": 8
       },
       "id": 10,
       "options": {
@@ -486,19 +300,6 @@
         }
       ],
       "type": "table"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 37
-      },
-      "id": 11,
-      "panels": [],
-      "title": "📊 로그 레벨별 분석",
-      "type": "row"
     },
     {
       "datasource": {
@@ -600,10 +401,10 @@
         ]
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 38
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 8
       },
       "id": 12,
       "options": {
@@ -633,56 +434,6 @@
       ],
       "title": "로그 레벨별 발생 건수 (5분)",
       "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 46
-      },
-      "id": 13,
-      "panels": [],
-      "title": "🔎 특정 키워드 검색",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "loki",
-        "uid": "Loki"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 47
-      },
-      "id": 14,
-      "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": true,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "Loki"
-          },
-          "editorMode": "code",
-          "expr": "{container=~\"$container\"} |~ \"$search_keyword\"",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "🔍 커스텀 키워드 검색 (변수 사용)",
-      "type": "logs"
     }
   ],
   "refresh": "30s",

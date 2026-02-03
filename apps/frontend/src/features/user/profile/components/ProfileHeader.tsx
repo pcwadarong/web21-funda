@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
+import type { IconMapTypes } from '@/constants/icons';
 import { Avatar } from '@/components/Avatar';
 import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
@@ -49,6 +50,7 @@ export const ProfileHeader = memo(
       () => profileSummary?.tier?.name ?? 'BRONZE',
       [profileSummary?.tier?.name],
     );
+    const tierIconName = getTierIconName(tierName);
     const experience = useMemo(() => profileSummary?.experience ?? 0, [profileSummary?.experience]);
     const profileImageUrl = useMemo(
       () => profileSummary?.profileImageUrl ?? null,
@@ -83,7 +85,10 @@ export const ProfileHeader = memo(
             <div css={nameRowWrapperStyle}>
               <h1 css={nameStyle(theme)}>{displayName}</h1>
             </div>
-            <span css={tierBadgeStyle}>{tierName}</span>
+            <div css={tierRowStyle}>
+              {tierIconName && <SVGIcon icon={tierIconName} size="md" />}
+              <span css={tierBadgeStyle}>{tierName}</span>
+            </div>
             <div css={metaRowWrapperStyle}>
               <div css={metaItemStyle}>
                 <SVGIcon icon="Xp" />
@@ -152,6 +157,12 @@ const nameStyle = (theme: Theme) => css`
   color: ${palette.grayscale[50]};
 `;
 
+const tierRowStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
 const tierBadgeStyle = css`
   letter-spacing: 0.05em;
   font-size: 0.875rem;
@@ -211,3 +222,24 @@ const rightActionButtonStyle = (theme: Theme) => css`
   cursor: pointer;
   opacity: 0.95;
 `;
+
+const getTierIconName = (tierName: string | null): IconMapTypes | null => {
+  if (!tierName) return null;
+
+  switch (tierName) {
+    case 'BRONZE':
+      return 'TierBronze';
+    case 'SILVER':
+      return 'TierSilver';
+    case 'GOLD':
+      return 'TierGold';
+    case 'SAPPHIRE':
+      return 'TierSapphire';
+    case 'RUBY':
+      return 'TierRuby';
+    case 'MASTER':
+      return 'TierMaster';
+    default:
+      return null;
+  }
+};

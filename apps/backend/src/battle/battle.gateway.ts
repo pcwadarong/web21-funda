@@ -28,6 +28,7 @@ import {
   BattleQuizSubmission,
   BattleRoomState,
   BattleTimeLimitType,
+  clampMaxPlayers,
   validateJoin,
   validateRestart,
   validateStart,
@@ -374,11 +375,12 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     const timeLimitSeconds = this.getTimeLimitSeconds(payload.timeLimitType);
+    const maxPlayers = clampMaxPlayers(payload.maxPlayers);
     const nextRoom = applyUpdateRoom(room, {
       roomId: room.roomId,
       requesterParticipantId: client.id,
       fieldSlug: payload.fieldSlug,
-      maxPlayers: payload.maxPlayers,
+      maxPlayers,
       timeLimitType: payload.timeLimitType,
       timeLimitSeconds,
     });

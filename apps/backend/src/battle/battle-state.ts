@@ -13,6 +13,8 @@ export type BattleErrorCode =
   | 'GAME_NOT_STARTED'
   | 'INVALID_STATE';
 
+export const MAX_BATTLE_PLAYERS = 15;
+
 export type BattleValidationResult =
   | { ok: true }
   | { ok: false; code: BattleErrorCode; message: string };
@@ -119,6 +121,20 @@ export type FinishBattleRoomParams = {
 export type RestartBattleRoomParams = {
   roomId: string;
   requesterParticipantId: string;
+};
+
+/**
+ * 최대 인원 상한선을 넘지 않도록 보정한다.
+ *
+ * @param maxPlayers 요청된 최대 인원 수
+ * @returns 상한선이 적용된 최대 인원 수
+ */
+export const clampMaxPlayers = (maxPlayers: number): number => {
+  if (maxPlayers > MAX_BATTLE_PLAYERS) {
+    return MAX_BATTLE_PLAYERS;
+  }
+
+  return maxPlayers;
 };
 
 /**

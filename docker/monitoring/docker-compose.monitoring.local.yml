@@ -14,9 +14,9 @@ services:
     image: grafana/loki:2.9.0
     container_name: funda-loki
     ports:
-      - "3100:3100"  # 로컬 접근용 포트 노출 (프로덕션에서는 제거)
+      - '3100:3100' # 로컬 접근용 포트 노출 (프로덕션에서는 제거)
     volumes:
-      - loki_data:/loki  # 로그 데이터 영구 저장
+      - loki_data:/loki # 로그 데이터 영구 저장
       - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     networks:
@@ -61,11 +61,11 @@ services:
       # 불필요한 마운트 포인트 제외 (성능 최적화)
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     volumes:
-      - /proc:/host/proc:ro      # 프로세스 정보
-      - /sys:/host/sys:ro        # 시스템 정보
-      - /:/rootfs:ro             # 루트 파일시스템 (읽기 전용)
+      - /proc:/host/proc:ro # 프로세스 정보
+      - /sys:/host/sys:ro # 시스템 정보
+      - /:/rootfs:ro # 루트 파일시스템 (읽기 전용)
     ports:
-      - '9100:9100'  # 로컬 접근용 포트 노출
+      - '9100:9100' # 로컬 접근용 포트 노출
     networks:
       - funda-network
     restart: unless-stopped
@@ -79,15 +79,15 @@ services:
     container_name: funda-prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'           # 메트릭 저장 경로
-      - '--storage.tsdb.retention.time=30d'         # 로컬: 30일 보관
+      - '--storage.tsdb.path=/prometheus' # 메트릭 저장 경로
+      - '--storage.tsdb.retention.time=30d' # 로컬: 30일 보관
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'                    # 설정 리로드 API 활성화
+      - '--web.enable-lifecycle' # 설정 리로드 API 활성화
     ports:
-      - '9090:9090'  # 로컬 접근용 포트 노출
+      - '9090:9090' # 로컬 접근용 포트 노출
     volumes:
-      - prometheus_data:/prometheus                 # 메트릭 데이터 영구 저장
+      - prometheus_data:/prometheus # 메트릭 데이터 영구 저장
       - ./prometheus/prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - funda-network
@@ -105,15 +105,15 @@ services:
     container_name: funda-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin  # 로컬 전용 (프로덕션에서는 환경 변수 사용)
-      - GF_USERS_ALLOW_SIGN_UP=false       # 사용자 자동 가입 비활성화
+      - GF_SECURITY_ADMIN_PASSWORD=admin # 로컬 전용 (프로덕션에서는 환경 변수 사용)
+      - GF_USERS_ALLOW_SIGN_UP=false # 사용자 자동 가입 비활성화
       - GF_SERVER_ROOT_URL=http://localhost:3001
     ports:
-      - '3001:3000'  # 로컬 접근용 포트 노출 (프로덕션에서는 제거)
+      - '3001:3000' # 로컬 접근용 포트 노출 (프로덕션에서는 제거)
     volumes:
-      - grafana_data:/var/lib/grafana      # 대시보드 및 설정 영구 저장
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro  # 자동 프로비저닝
-      - ./grafana/provisioning-local/alerting:/etc/grafana/provisioning/alerting:ro  # 로컬: alerting provisioning을 빈 폴더로 덮어써서 무효화
+      - grafana_data:/var/lib/grafana # 대시보드 및 설정 영구 저장
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro # 자동 프로비저닝
+      - ./grafana/provisioning-local/alerting:/etc/grafana/provisioning/alerting:ro # 로컬: alerting provisioning을 빈 폴더로 덮어써서 무효화
     networks:
       - funda-network
     restart: unless-stopped
@@ -135,15 +135,15 @@ volumes:
   # Prometheus 메트릭 데이터: 시계열 데이터베이스 저장소
   prometheus_data:
     driver: local
-  
+
   # Grafana 데이터: 대시보드, 사용자 설정, 데이터소스 설정
   grafana_data:
     driver: local
-  
+
   # Loki 로그 데이터: 수집된 로그 저장소
   loki_data:
     driver: local
-  
+
   # Alloy 내부 상태 (positions 등)
   alloy_data:
     driver: local

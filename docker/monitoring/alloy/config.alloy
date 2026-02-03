@@ -3,21 +3,40 @@
 // Docker 컨테이너 로그를 수집하여 Loki로 전송
 // ============================================================
 
-discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
+discovery.docker "container_logs" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
 }
 
-loki.source.docker "containers" {
-  host    = "unix:///var/run/docker.sock"
-  targets = discovery.docker.containers.targets
-  forward_to = [loki.relabel.container_labels.receiver]
+loki.process "container_logs" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.replace {
+    expression = "([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+)"
+    replace    = "****@****.***"
+  }
+
+  stage.json {
+    expressions = {
+      level = "level",
+      msg   = "message",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = null,
+    }
+  }
 }
 
-loki.relabel "container_labels" {
+discovery.relabel "container_logs" {
+  targets = []
+
   rule {
     source_labels = ["__meta_docker_container_state"]
-    regex         = "running"
-    action        = "keep"
+    regex         = "exited|dead|created|removing|restarting|paused"
+    action        = "drop"
   }
 
   rule {
@@ -30,12 +49,19 @@ loki.relabel "container_labels" {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
-
-  forward_to = [loki.write.loki.receiver]
 }
 
-loki.write "loki" {
+loki.source.docker "container_logs" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.docker.container_logs.targets
+  forward_to       = [loki.process.container_logs.receiver]
+  relabel_rules    = discovery.relabel.container_logs.rules
+  refresh_interval = "5s"
+}
+
+loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }
+  external_labels = {}
 }

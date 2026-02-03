@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type SimpleBarCore from 'simplebar-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UnitsResponse } from '@/services/fieldService';
@@ -135,8 +136,12 @@ describe('useLearnUnits Hook', () => {
     Object.defineProperty(unit1, 'offsetTop', { value: 0 });
     Object.defineProperty(unit2, 'offsetTop', { value: 500 });
 
+    const mockSimpleBar: Pick<SimpleBarCore, 'getScrollElement'> = {
+      getScrollElement: () => container,
+    };
+
     act(() => {
-      result.current.scrollContainerRef.current = container;
+      result.current.scrollContainerRef.current = mockSimpleBar as SimpleBarCore;
       result.current.headerRef.current = header;
       result.current.registerUnitRef(1)(unit1);
       result.current.registerUnitRef(2)(unit2);
@@ -199,8 +204,12 @@ describe('useLearnUnits Hook', () => {
     const scrollToMock = vi.fn();
     container.scrollTo = scrollToMock;
 
+    const mockSimpleBar: Pick<SimpleBarCore, 'getScrollElement'> = {
+      getScrollElement: () => container,
+    };
+
     act(() => {
-      result.current.scrollContainerRef.current = container;
+      result.current.scrollContainerRef.current = mockSimpleBar as SimpleBarCore;
       result.current.headerRef.current = header;
       result.current.registerUnitRef(2)(unit2);
     });
@@ -257,8 +266,12 @@ describe('useLearnUnits Hook', () => {
     const scrollToMock = vi.fn();
     container.scrollTo = scrollToMock;
 
+    const mockSimpleBar: Pick<SimpleBarCore, 'getScrollElement'> = {
+      getScrollElement: () => container,
+    };
+
     act(() => {
-      result.current.scrollContainerRef.current = container;
+      result.current.scrollContainerRef.current = mockSimpleBar as SimpleBarCore;
       result.current.headerRef.current = header;
       result.current.registerUnitRef(1)(unit1);
     });
@@ -305,8 +318,12 @@ describe('useLearnUnits Hook', () => {
     const scrollToMock = vi.fn();
     container.scrollTo = scrollToMock;
 
+    const mockSimpleBar: Pick<SimpleBarCore, 'getScrollElement'> = {
+      getScrollElement: () => container,
+    };
+
     act(() => {
-      result.current.scrollContainerRef.current = container;
+      result.current.scrollContainerRef.current = mockSimpleBar as SimpleBarCore;
       result.current.headerRef.current = header;
       result.current.registerUnitRef(2)(unit2);
     });

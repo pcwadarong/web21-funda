@@ -355,6 +355,8 @@ export const LearnRightSidebar = ({
           </Button>
         </div>
 
+        <div style={{ margin: 0 }} data-boostad-zone css={cardStyle(theme)}></div>
+
         {!isLoggedIn && !user && (
           <div css={overlayStyle(theme)}>
             <div css={overlayHeaderStyle}>

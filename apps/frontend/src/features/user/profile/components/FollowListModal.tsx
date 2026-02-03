@@ -34,7 +34,7 @@ export const FollowListModal = ({
     activeTab === 'following' ? '팔로잉한 사용자가 없습니다.' : '팔로워가 없습니다.';
 
   return (
-    <div css={containerStyle(theme)}>
+    <div css={containerStyle} role="dialog" aria-label="팔로잉/팔로워 목록">
       <div css={tabRowStyle(theme, activeTab)}>
         <button
           type="button"
@@ -51,7 +51,7 @@ export const FollowListModal = ({
           팔로워 {followerCount}
         </button>
       </div>
-      <div css={listWrapperStyle()}>
+      <div css={listWrapperStyle}>
         {isLoading && <p css={emptyTextStyle(theme)}>로딩 중...</p>}
         {!isLoading && list.length === 0 && <p css={emptyTextStyle(theme)}>{emptyText}</p>}
         {!isLoading &&
@@ -85,12 +85,10 @@ export const FollowListModal = ({
   );
 };
 
-const containerStyle = (theme: Theme) => css`
+const containerStyle = css`
+  height: 65vh;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  color: ${theme.colors.text.default};
-  min-height: 420px;
 `;
 
 const tabRowStyle = (theme: Theme, activeTab: 'following' | 'followers') => css`
@@ -120,15 +118,13 @@ const tabStyle = (theme: Theme, isActive: boolean) => css`
   color: ${isActive ? theme.colors.primary.main : theme.colors.text.light};
 `;
 
-const listWrapperStyle = () => css`
+const listWrapperStyle = css`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 320px;
-  max-height: 480px;
   flex: 1;
+  padding-top: 16px;
   overflow-y: auto;
-  padding-right: 4px;
 `;
 
 const listItemStyle = (theme: Theme) => css`

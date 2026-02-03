@@ -16,5 +16,5 @@ contactPoints:
             value={{ index .Values "C" }}
             {{ if .DashboardURL }}dashboard={{ .DashboardURL }}{{ end }}
             {{ end }}
-        secure_settings:
+        secureSettings:
           url: ${SLACK_WEBHOOK_URL}

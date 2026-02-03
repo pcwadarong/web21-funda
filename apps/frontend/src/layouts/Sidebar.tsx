@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { Dropdown } from '@/components/Dropdown';
 import { Loading } from '@/components/Loading';
 import SVGIcon from '@/components/SVGIcon';
+import type { IconMapTypes } from '@/constants/icons';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
@@ -43,6 +44,7 @@ export const Sidebar = () => {
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
+  const tierIconName = getTierIconName(tierName);
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -172,7 +174,10 @@ export const Sidebar = () => {
                 />
                 <div css={userInfoStyle}>
                   <div css={userNameStyle(theme)}>{user.displayName}</div>
-                  <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
+                  <div css={userTierRowStyle}>
+                    {tierIconName && <SVGIcon icon={tierIconName} size="sm" />}
+                    <span css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</span>
+                  </div>
                 </div>
               </div>
             }
@@ -371,8 +376,35 @@ const userLevelStyle = (theme: Theme) => css`
   text-align: left;
 `;
 
+const userTierRowStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
 const buildTierLabel = (tierName: string | null) =>
   tierName ? `${tierName} 티어` : '티어 정보 없음';
+
+const getTierIconName = (tierName: string | null): IconMapTypes | null => {
+  if (!tierName) return null;
+
+  switch (tierName) {
+    case 'BRONZE':
+      return 'TierBronze';
+    case 'SILVER':
+      return 'TierSilver';
+    case 'GOLD':
+      return 'TierGold';
+    case 'SAPPHIRE':
+      return 'TierSapphire';
+    case 'RUBY':
+      return 'TierRuby';
+    case 'MASTER':
+      return 'TierMaster';
+    default:
+      return null;
+  }
+};
 
 const userSectionTriggerStyle = css`
   width: 100%;

@@ -241,7 +241,7 @@ const explanationTextStyle = (theme: Theme) => css`
 const dontKnowWrapperStyle = css`
   display: flex;
   justify-content: center;
-  margin-top: 12px;
+  margin-top: 25px;
 `;
 
 const dontKnowButtonStyle = (theme: Theme, isDarkMode: boolean) => css`

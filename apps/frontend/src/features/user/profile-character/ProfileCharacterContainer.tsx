@@ -39,6 +39,7 @@ export const ProfileCharacterContainer = ({
     description: string;
     x: number;
     y: number;
+    containerRect: DOMRect;
   } | null>(null);
 
   const handleCharacterMouseEnter = (
@@ -59,6 +60,7 @@ export const ProfileCharacterContainer = ({
       description: character.description,
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
+      containerRect: rect,
     });
   };
 
@@ -144,6 +146,7 @@ export const ProfileCharacterContainer = ({
             x={hoveredCharacter?.x ?? 0}
             y={hoveredCharacter?.y ?? 0}
             isVisible={hoveredCharacter !== null}
+            containerRect={hoveredCharacter?.containerRect ?? null}
             onMouseEnter={() => hoveredCharacter && setHoveredCharacter(hoveredCharacter)}
             onMouseLeave={handleCharacterMouseLeave}
             offsetY={-40}

@@ -355,7 +355,7 @@ export const LearnRightSidebar = ({
           </Button>
         </div>
 
-        <div style={{ margin: 0 }} data-boostad-zone css={cardStyle(theme)}></div>
+        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
 
         {!isLoggedIn && !user && (
           <div css={overlayStyle(theme)}>
@@ -580,4 +580,12 @@ const progressBarStyle = (theme: Theme, percentage: number) => css`
   background: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.small};
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const boostadZoneOverride = css`
+  &[data-boostad-zone] {
+    margin: 0 !important;
+  }
+
+  min-height: 107px;
 `;

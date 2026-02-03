@@ -105,6 +105,31 @@ export const BattleSetupPage = () => {
     [leaveBattle],
   );
 
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const currentRoomId = latestRoomIdRef.current;
+      const currentStatus = latestStatusRef.current;
+
+      if (!currentRoomId) {
+        return;
+      }
+
+      const isPlayingStatus =
+        currentStatus === 'countdown' ||
+        currentStatus === 'in_progress' ||
+        currentStatus === 'finished';
+      if (isPlayingStatus) {
+        return;
+      }
+
+      leaveBattle(currentRoomId);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [leaveBattle]);
+
   const participants: Participant[] = battleParticipants.map(p => ({
     id: p.userId ?? hashString(p.participantId),
     name: p.displayName,

@@ -142,7 +142,7 @@ export const AdminProfileCharacters = () => {
           <span css={statusDot(submitStatus)} />
           {submitStatus}
         </div>
-        <pre css={preStyle(theme)}>{JSON.stringify(submitResult ?? {}, null, 2)}</pre>
+        <pre css={preStyle(theme, 260)}>{JSON.stringify(submitResult ?? {}, null, 2)}</pre>
       </section>
 
       <JsonlUploadCard
@@ -155,7 +155,7 @@ export const AdminProfileCharacters = () => {
         onFileChange={onFileChange}
         onSubmit={onSubmit}
         example={
-          <pre css={examplePreStyle}>
+          <pre>
             {`{"image_url":"https://.../char01.png","price_diamonds":1,"description":"기본 캐릭터","is_active":true}
 {"image_url":"https://.../char02.png","price_diamonds":5,"is_active":true}`}
           </pre>
@@ -284,23 +284,17 @@ const statusDot = (status: string) => {
   `;
 };
 
-const preStyle = (theme: Theme) => css`
+const preStyle = (theme: Theme, maxHeight: number) => css`
   margin-top: 16px;
   padding: 16px;
   background: #1e293b;
   color: #f8fafc;
   border-radius: 8px;
-  font-family: monospace;
+  font-family: 'D2Coding', monospace;
   font-size: 14px;
   overflow: auto;
-  max-height: 260px;
+  max-height: ${maxHeight}px;
   border: 1px solid ${theme.colors.border.default};
-`;
-
-const examplePreStyle = css`
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
 `;

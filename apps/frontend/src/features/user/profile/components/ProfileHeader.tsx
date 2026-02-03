@@ -2,8 +2,8 @@ import { css, useTheme } from '@emotion/react';
 import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
-import type { IconMapTypes } from '@/constants/icons';
 import { Avatar } from '@/components/Avatar';
+import type { IconMapTypes } from '@/constants/icons';
 import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';

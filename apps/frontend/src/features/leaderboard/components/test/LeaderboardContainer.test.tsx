@@ -4,7 +4,11 @@ import type React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LeaderboardContainer } from '@/feat/leaderboard/components/LeaderboardContainer';
-import type { RankingMember, WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type {
+  OverallRankingResult,
+  RankingMember,
+  WeeklyRankingResult,
+} from '@/feat/leaderboard/types';
 import { ModalProvider } from '@/store/modalStore';
 import { lightTheme } from '@/styles/theme';
 
@@ -91,13 +95,47 @@ const mockWeeklyRanking: WeeklyRankingResult = {
   ],
 };
 
+const mockOverallRanking: OverallRankingResult = {
+  weekKey: '2024-01',
+  totalMembers: 10,
+  myRank: 2,
+  myWeeklyXp: 900,
+  members: [
+    {
+      rank: 1,
+      userId: 11,
+      displayName: 'AlgoMaster',
+      profileImageUrl: null,
+      xp: 2400,
+      isMe: false,
+      rankZone: 'MAINTAIN',
+      tierName: '골드',
+      tierOrderIndex: 3,
+    },
+    {
+      rank: 2,
+      userId: 12,
+      displayName: 'DevLearner',
+      profileImageUrl: null,
+      xp: 2100,
+      isMe: true,
+      rankZone: 'MAINTAIN',
+      tierName: '골드',
+      tierOrderIndex: 3,
+    },
+  ],
+};
+
 const renderLeaderboardContainer = (
   props: Partial<React.ComponentProps<typeof LeaderboardContainer>> = {},
 ) => {
   const defaultProps = {
     weeklyRanking: null,
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: null,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
     ...props,
   };
 
@@ -129,7 +167,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
   describe('로딩 상태', () => {
     it('isLoading이 true일 때 Loading 컴포넌트가 표시된다', () => {
-      renderLeaderboardContainer({ isLoading: true });
+      renderLeaderboardContainer({ isWeeklyLoading: true });
 
       expect(screen.getByTestId('loading')).toBeInTheDocument();
       expect(screen.getByText('랭킹 정보를 불러오는 중입니다.')).toBeInTheDocument();
@@ -137,8 +175,9 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
     it('로딩 중일 때 다른 컨텐츠가 표시되지 않는다', () => {
       renderLeaderboardContainer({
-        isLoading: true,
+        isWeeklyLoading: true,
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
       });
 
       expect(screen.getByTestId('loading')).toBeInTheDocument();
@@ -148,7 +187,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
   describe('에러 상태', () => {
     it('errorMessage가 있을 때 에러 메시지가 표시된다', () => {
-      renderLeaderboardContainer({ errorMessage: '에러 발생' });
+      renderLeaderboardContainer({ weeklyErrorMessage: '에러 발생' });
 
       expect(screen.getByTestId('state-message-error')).toBeInTheDocument();
       expect(screen.getByText('에러 발생')).toBeInTheDocument();
@@ -156,8 +195,9 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
     it('에러 상태일 때 정상 컨텐츠가 표시되지 않는다', () => {
       renderLeaderboardContainer({
-        errorMessage: '에러 발생',
+        weeklyErrorMessage: '에러 발생',
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
       });
 
       expect(screen.getByTestId('state-message-error')).toBeInTheDocument();
@@ -188,14 +228,20 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
   describe('정상 상태', () => {
     it('정상 상태일 때 리그 정보가 표시된다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+      renderLeaderboardContainer({
+        weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
+      });
 
       expect(screen.getByText('브론즈 리그')).toBeInTheDocument();
       expect(screen.getByText(/2024-01주차 · 그룹 1 · 총 10명/)).toBeInTheDocument();
     });
 
     it('정상 상태일 때 멤버 리스트가 표시된다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+      renderLeaderboardContainer({
+        weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
+      });
 
       // MemberList는 구역별로 여러 번 렌더링됨 (promotion, maintain, demotion)
       const memberLists = screen.getAllByTestId('member-list');
@@ -208,7 +254,10 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
     });
 
     it('정상 상태일 때 구역별 헤더가 표시된다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+      renderLeaderboardContainer({
+        weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
+      });
 
       expect(screen.getByText('승급권')).toBeInTheDocument();
       expect(screen.getByText('강등권')).toBeInTheDocument();
@@ -217,7 +266,10 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
   describe('랭킹 보기 전환', () => {
     it('기본 상태는 나의 리그가 활성화된다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+      renderLeaderboardContainer({
+        weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
+      });
 
       const myLeagueTab = screen.getByRole('tab', { name: '나의 리그' });
       const overallTab = screen.getByRole('tab', { name: '전체 순위' });
@@ -227,7 +279,10 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
     });
 
     it('전체 순위를 클릭하면 활성 상태가 변경된다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+      renderLeaderboardContainer({
+        weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
+      });
 
       const myLeagueTab = screen.getByRole('tab', { name: '나의 리그' });
       const overallTab = screen.getByRole('tab', { name: '전체 순위' });
@@ -239,7 +294,10 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
     });
 
     it('전체 순위로 전환되면 요약 정보와 구역 구분이 변경된다', () => {
-      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+      renderLeaderboardContainer({
+        weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
+      });
 
       fireEvent.click(screen.getByRole('tab', { name: '전체 순위' }));
 
@@ -260,6 +318,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
       const handleRefresh = vi.fn();
       renderLeaderboardContainer({
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
         onRefresh: handleRefresh,
       });
 
@@ -272,6 +331,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
       const handleRefresh = vi.fn();
       renderLeaderboardContainer({
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
         onRefresh: handleRefresh,
       });
 
@@ -285,6 +345,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
       const handleRefresh = vi.fn();
       renderLeaderboardContainer({
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
         onRefresh: handleRefresh,
         isRefreshing: true,
       });
@@ -297,6 +358,7 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
       const handleRefresh = vi.fn();
       renderLeaderboardContainer({
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
         onRefresh: handleRefresh,
         isRefreshing: false,
       });
@@ -309,9 +371,10 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
   describe('상태 우선순위', () => {
     it('로딩 상태가 다른 상태보다 우선한다', () => {
       renderLeaderboardContainer({
-        isLoading: true,
-        errorMessage: '에러',
+        isWeeklyLoading: true,
+        weeklyErrorMessage: '에러',
         weeklyRanking: mockWeeklyRanking,
+        overallRanking: mockOverallRanking,
       });
 
       expect(screen.getByTestId('loading')).toBeInTheDocument();
@@ -320,8 +383,9 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
     it('에러 상태가 빈 상태보다 우선한다', () => {
       renderLeaderboardContainer({
-        errorMessage: '에러',
+        weeklyErrorMessage: '에러',
         weeklyRanking: null,
+        overallRanking: mockOverallRanking,
       });
 
       expect(screen.getByTestId('state-message-error')).toBeInTheDocument();

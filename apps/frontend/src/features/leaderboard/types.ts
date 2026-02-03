@@ -35,6 +35,14 @@ export interface WeeklyRankingResult {
   members: RankingMember[];
 }
 
+export interface OverallRankingResult {
+  weekKey: string;
+  totalMembers: number;
+  myRank: number | null;
+  myWeeklyXp: number;
+  members: RankingMember[];
+}
+
 export interface RankingMeResult {
   tier: {
     id: number;

@@ -6,83 +6,31 @@ import { Loading } from '@/components/Loading';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
-import type { RankingMember, WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type { OverallRankingResult, WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
 
 interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
-  isLoading: boolean;
-  errorMessage: string | null;
+  overallRanking: OverallRankingResult | null;
+  isWeeklyLoading: boolean;
+  isOverallLoading: boolean;
+  weeklyErrorMessage: string | null;
+  overallErrorMessage: string | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
 
 type LeaderboardView = 'MY_LEAGUE' | 'OVERALL';
 
-const OVERALL_DUMMY_MEMBERS: RankingMember[] = [
-  {
-    rank: 0,
-    userId: 101,
-    displayName: 'AlgoMaster',
-    profileImageUrl: null,
-    xp: 2400,
-    isMe: false,
-    rankZone: 'MAINTAIN',
-    tierName: '골드',
-    tierOrderIndex: 3,
-  },
-  {
-    rank: 0,
-    userId: 102,
-    displayName: 'DevLearner',
-    profileImageUrl: null,
-    xp: 2100,
-    isMe: true,
-    rankZone: 'MAINTAIN',
-    tierName: '골드',
-    tierOrderIndex: 3,
-  },
-  {
-    rank: 0,
-    userId: 103,
-    displayName: 'ReactKing',
-    profileImageUrl: null,
-    xp: 1250,
-    isMe: false,
-    rankZone: 'MAINTAIN',
-    tierName: '실버',
-    tierOrderIndex: 2,
-  },
-  {
-    rank: 0,
-    userId: 104,
-    displayName: 'CloudRanger',
-    profileImageUrl: null,
-    xp: 980,
-    isMe: false,
-    rankZone: 'MAINTAIN',
-    tierName: '브론즈',
-    tierOrderIndex: 1,
-  },
-  {
-    rank: 0,
-    userId: 105,
-    displayName: 'TypeHero',
-    profileImageUrl: null,
-    xp: 1100,
-    isMe: false,
-    rankZone: 'MAINTAIN',
-    tierName: '실버',
-    tierOrderIndex: 2,
-  },
-];
-
 export const LeaderboardContainer = ({
   weeklyRanking,
-  isLoading,
-  errorMessage,
+  overallRanking,
+  isWeeklyLoading,
+  isOverallLoading,
+  weeklyErrorMessage,
+  overallErrorMessage,
   onRefresh,
   isRefreshing = false,
 }: LeaderboardContainerProps) => {
@@ -106,50 +54,39 @@ export const LeaderboardContainer = ({
     setActiveLeaderboardView('OVERALL');
   };
 
+  const activeErrorMessage = isMyLeagueView ? weeklyErrorMessage : overallErrorMessage;
+  const activeRanking = isMyLeagueView ? weeklyRanking : overallRanking;
+  const isLoading = isMyLeagueView ? isWeeklyLoading : isOverallLoading;
+
   // 상태 결정
   let stateType: 'error' | 'empty' | 'unassigned' | 'normal' = 'normal';
   let stateMessage: string | undefined;
 
-  if (errorMessage) {
+  if (activeErrorMessage) {
     stateType = 'error';
-    stateMessage = errorMessage;
-  } else if (!weeklyRanking) {
+    stateMessage = activeErrorMessage;
+  } else if (!activeRanking) {
     stateType = 'empty';
-  } else if (weeklyRanking.groupIndex === null) {
+  } else if (isMyLeagueView && weeklyRanking?.groupIndex === null) {
     stateType = 'unassigned';
   } else {
     stateType = 'normal';
   }
 
-  const leagueTitle =
-    weeklyRanking && weeklyRanking.groupIndex !== null
-      ? isMyLeagueView
-        ? `${weeklyRanking.tier.name} 리그`
-        : '전체 순위'
-      : '';
+  const leagueTitle = isMyLeagueView
+    ? weeklyRanking && weeklyRanking.groupIndex !== null
+      ? `${weeklyRanking.tier.name} 리그`
+      : ''
+    : '전체 순위';
   const groupedMembers =
     weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
-  const remainingDaysText = weeklyRanking ? buildRemainingDaysText(weeklyRanking.weekKey) : '';
-  const summaryDetailText = weeklyRanking
+  const remainingDaysText = activeRanking ? buildRemainingDaysText(activeRanking.weekKey) : '';
+  const summaryDetailText = activeRanking
     ? isMyLeagueView
-      ? `${weeklyRanking.weekKey}주차 · 그룹 ${weeklyRanking.groupIndex} · 총 ${weeklyRanking.totalMembers}명`
-      : `${weeklyRanking.weekKey}주차 · 총 ${weeklyRanking.totalMembers}명`
+      ? `${activeRanking.weekKey}주차 · 그룹 ${weeklyRanking!.groupIndex} · 총 ${activeRanking.totalMembers}명`
+      : `${activeRanking.weekKey}주차 · 총 ${activeRanking.totalMembers}명`
     : '';
-  const overallMembers = [...OVERALL_DUMMY_MEMBERS]
-    .sort((left, right) => {
-      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
-      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
-
-      if (leftTierOrderIndex !== rightTierOrderIndex) {
-        return rightTierOrderIndex - leftTierOrderIndex;
-      }
-
-      return right.xp - left.xp;
-    })
-    .map((member, index) => ({
-      ...member,
-      rank: index + 1,
-    }));
+  const overallMembers = overallRanking?.members ?? [];
 
   return (
     <main css={pageStyle}>

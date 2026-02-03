@@ -14,7 +14,6 @@ import Edit from '@/assets/icons/edit.svg?react';
 import Github from '@/assets/icons/github.svg?react';
 import Google from '@/assets/icons/google.svg?react';
 import Lock from '@/assets/icons/lock.svg?react';
-import Logo from '@/assets/icons/logo.svg?react';
 import Logout from '@/assets/icons/logout.svg?react';
 import Minus from '@/assets/icons/minus.svg?react';
 import NextArrow from '@/assets/icons/next-arrow.svg?react';
@@ -61,7 +60,6 @@ export const IconMap = {
   Github,
   Google,
   Lock,
-  Logo,
   Logout,
   Minus,
   NextArrow,

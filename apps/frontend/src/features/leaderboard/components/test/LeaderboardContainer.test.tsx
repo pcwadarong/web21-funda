@@ -109,6 +109,8 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
     renderLeaderboardContainer();
 
     expect(screen.getByText('LEADERBOARD')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '나의 리그' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '전체 순위' })).toBeInTheDocument();
   });
 
   describe('로딩 상태', () => {
@@ -196,6 +198,30 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
       expect(screen.getByText('승급권')).toBeInTheDocument();
       expect(screen.getByText('강등권')).toBeInTheDocument();
+    });
+  });
+
+  describe('랭킹 보기 전환', () => {
+    it('기본 상태는 나의 리그가 활성화된다', () => {
+      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+
+      const myLeagueTab = screen.getByRole('tab', { name: '나의 리그' });
+      const overallTab = screen.getByRole('tab', { name: '전체 순위' });
+
+      expect(myLeagueTab).toHaveAttribute('aria-selected', 'true');
+      expect(overallTab).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('전체 순위를 클릭하면 활성 상태가 변경된다', () => {
+      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+
+      const myLeagueTab = screen.getByRole('tab', { name: '나의 리그' });
+      const overallTab = screen.getByRole('tab', { name: '전체 순위' });
+
+      fireEvent.click(overallTab);
+
+      expect(myLeagueTab).toHaveAttribute('aria-selected', 'false');
+      expect(overallTab).toHaveAttribute('aria-selected', 'true');
     });
   });
 

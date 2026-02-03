@@ -1,4 +1,5 @@
 import { css, keyframes, type Theme, useTheme } from '@emotion/react';
+import { useState } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
@@ -18,6 +19,8 @@ interface LeaderboardContainerProps {
   isRefreshing?: boolean;
 }
 
+type LeaderboardView = 'MY_LEAGUE' | 'OVERALL';
+
 export const LeaderboardContainer = ({
   weeklyRanking,
   isLoading,
@@ -27,6 +30,23 @@ export const LeaderboardContainer = ({
 }: LeaderboardContainerProps) => {
   const theme = useTheme();
   const { openModal } = useModal();
+  const [activeLeaderboardView, setActiveLeaderboardView] = useState<LeaderboardView>('MY_LEAGUE');
+
+  const isMyLeagueView = activeLeaderboardView === 'MY_LEAGUE';
+  const isOverallView = activeLeaderboardView === 'OVERALL';
+
+  let indicatorTranslateX = '0%';
+  if (isOverallView) {
+    indicatorTranslateX = '100%';
+  }
+
+  const handleSelectMyLeague = () => {
+    setActiveLeaderboardView('MY_LEAGUE');
+  };
+
+  const handleSelectOverall = () => {
+    setActiveLeaderboardView('OVERALL');
+  };
 
   // 상태 결정
   let stateType: 'error' | 'empty' | 'unassigned' | 'normal' = 'normal';
@@ -65,6 +85,31 @@ export const LeaderboardContainer = ({
             </button>
           )}
         </header>
+
+        <section aria-label="랭킹 보기 전환">
+          <div css={leaderboardSwitchRailStyle(theme)}>
+            <div css={leaderboardSwitchStyle(theme, indicatorTranslateX)} role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isMyLeagueView}
+                onClick={handleSelectMyLeague}
+                css={leaderboardSwitchButtonStyle(theme, isMyLeagueView)}
+              >
+                나의 리그
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isOverallView}
+                onClick={handleSelectOverall}
+                css={leaderboardSwitchButtonStyle(theme, isOverallView)}
+              >
+                전체 순위
+              </button>
+            </div>
+          </div>
+        </section>
 
         {isLoading ? (
           <Loading text="랭킹 정보를 불러오는 중입니다." />
@@ -252,6 +297,49 @@ const leaderboardCardStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   padding: 20px;
+`;
+
+const leaderboardSwitchRailStyle = (theme: Theme) => css`
+  width: 100%;
+  border-bottom: 1px solid ${theme.colors.border.default};
+`;
+
+const leaderboardSwitchStyle = (theme: Theme, indicatorTranslateX: string) => css`
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  width: min(260px, 100%);
+  padding-bottom: 4px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 50%;
+    height: 2px;
+    background: ${theme.colors.primary.main};
+    transform: translateX(${indicatorTranslateX});
+    transition: transform 200ms ease;
+  }
+`;
+
+const leaderboardSwitchButtonStyle = (theme: Theme, isActive: boolean) => css`
+  border: none;
+  background: transparent;
+  padding: 6px 0 10px;
+  font-size: ${theme.typography['14Medium'].fontSize};
+  line-height: ${theme.typography['14Medium'].lineHeight};
+  font-weight: ${theme.typography['14Medium'].fontWeight};
+  color: ${isActive ? theme.colors.primary.main : theme.colors.text.light};
+  cursor: pointer;
+  transition: color 200ms ease;
+
+  &:focus-visible {
+    outline: 2px solid ${theme.colors.primary.main};
+    outline-offset: 2px;
+  }
 `;
 
 const zoneSectionStyle = css`

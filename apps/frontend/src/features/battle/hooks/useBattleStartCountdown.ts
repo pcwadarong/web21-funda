@@ -22,7 +22,10 @@ export const useBattleStartCountdown = ({
   onTick?: (label: string) => void;
   onComplete?: () => void;
 }) => {
-  const steps = useMemo(() => customSteps ?? ['3', '2', '1', 'START'], [customSteps]);
+  const steps = useMemo(() => {
+    const baseSteps = customSteps ?? ['3', '2', '1', 'START'];
+    return baseSteps.length > 0 ? baseSteps : ['START'];
+  }, [customSteps]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const lastLabelRef = useRef<string | null>(null);
@@ -61,7 +64,7 @@ export const useBattleStartCountdown = ({
 
       const elapsedMs = now - startAt;
       const nextIndex = Math.min(steps.length - 1, Math.floor(elapsedMs / intervalMs));
-      const nextLabel = steps[nextIndex];
+      const nextLabel = steps[nextIndex] ?? steps[0] ?? '';
 
       setCurrentIndex(nextIndex);
       setIsVisible(true);
@@ -80,6 +83,6 @@ export const useBattleStartCountdown = ({
 
   return {
     isVisible,
-    label: steps[currentIndex],
+    label: steps[currentIndex] ?? steps[0] ?? '',
   };
 };

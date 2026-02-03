@@ -7,7 +7,6 @@ contactPoints:
       - uid: slack-main
         type: slack
         settings:
-          recipient: "#alerts"
           username: "grafana"
           icon_emoji: ":rotating_light:"
           message: |

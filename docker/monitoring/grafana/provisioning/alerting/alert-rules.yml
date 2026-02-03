@@ -12,6 +12,9 @@ groups:
         data:
           - refId: A
             datasourceUid: Loki
+            relativeTimeRange:
+              from: 300
+              to: 0
             model:
               datasource:
                 type: loki
@@ -67,6 +70,9 @@ groups:
         data:
           - refId: A
             datasourceUid: Loki
+            relativeTimeRange:
+              from: 60
+              to: 0
             model:
               datasource:
                 type: loki

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { Loading } from '@/components/Loading';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
@@ -21,7 +21,6 @@ function hashString(str: string): number {
 export const BattleSetupPage = () => {
   const { inviteToken } = useParams<{ inviteToken: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { showToast } = useToast();
   const authUser = useAuthUser();
   const battleProfileImageUrl = useAuthProfileImageUrl() ?? undefined;
@@ -78,29 +77,32 @@ export const BattleSetupPage = () => {
     navigate('/battle');
   }, [isError, error, navigate, showToast]);
 
-  const unmountedRef = useRef(false);
-  const latestPathRef = useRef(location.pathname);
+  const latestStatusRef = useRef(status);
+  const latestRoomIdRef = useRef(roomId);
 
-  useEffect(() => {
-    latestPathRef.current = location.pathname;
-  }, [location.pathname]);
+  latestStatusRef.current = status;
+  latestRoomIdRef.current = roomId;
 
   useEffect(
     () => () => {
-      if (!roomId || unmountedRef.current) return;
+      const currentRoomId = latestRoomIdRef.current;
+      const currentStatus = latestStatusRef.current;
 
-      if (status === 'countdown' || status === 'in_progress' || status === 'finished') return;
-
-      const nextPath = latestPathRef.current;
-      const isBattleFlowPath = nextPath === '/battle' || nextPath.startsWith('/battle/');
-      if (isBattleFlowPath) {
+      if (!currentRoomId) {
         return;
       }
 
-      unmountedRef.current = true;
-      leaveBattle(roomId);
+      const isPlayingStatus =
+        currentStatus === 'countdown' ||
+        currentStatus === 'in_progress' ||
+        currentStatus === 'finished';
+      if (isPlayingStatus) {
+        return;
+      }
+
+      leaveBattle(currentRoomId);
     },
-    [roomId, status, leaveBattle],
+    [leaveBattle],
   );
 
   const participants: Participant[] = battleParticipants.map(p => ({

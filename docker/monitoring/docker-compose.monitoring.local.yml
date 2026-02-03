@@ -28,7 +28,7 @@ services:
   # Docker 컨테이너 로그를 읽어서 Loki로 전송
   # ------------------------------------------------------------
   alloy:
-    image: grafana/alloy:1.6.1
+    image: grafana/alloy:v1.12.2
     container_name: funda-alloy
     volumes:
       # Docker 컨테이너 로그 디렉토리 (읽기 전용)

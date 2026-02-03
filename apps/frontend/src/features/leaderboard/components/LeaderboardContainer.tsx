@@ -6,7 +6,7 @@ import { Loading } from '@/components/Loading';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
-import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type { RankingMember, WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
@@ -20,6 +20,64 @@ interface LeaderboardContainerProps {
 }
 
 type LeaderboardView = 'MY_LEAGUE' | 'OVERALL';
+
+const OVERALL_DUMMY_MEMBERS: RankingMember[] = [
+  {
+    rank: 0,
+    userId: 101,
+    displayName: 'AlgoMaster',
+    profileImageUrl: null,
+    xp: 2400,
+    isMe: false,
+    rankZone: 'MAINTAIN',
+    tierName: '골드',
+    tierOrderIndex: 3,
+  },
+  {
+    rank: 0,
+    userId: 102,
+    displayName: 'DevLearner',
+    profileImageUrl: null,
+    xp: 2100,
+    isMe: true,
+    rankZone: 'MAINTAIN',
+    tierName: '골드',
+    tierOrderIndex: 3,
+  },
+  {
+    rank: 0,
+    userId: 103,
+    displayName: 'ReactKing',
+    profileImageUrl: null,
+    xp: 1250,
+    isMe: false,
+    rankZone: 'MAINTAIN',
+    tierName: '실버',
+    tierOrderIndex: 2,
+  },
+  {
+    rank: 0,
+    userId: 104,
+    displayName: 'CloudRanger',
+    profileImageUrl: null,
+    xp: 980,
+    isMe: false,
+    rankZone: 'MAINTAIN',
+    tierName: '브론즈',
+    tierOrderIndex: 1,
+  },
+  {
+    rank: 0,
+    userId: 105,
+    displayName: 'TypeHero',
+    profileImageUrl: null,
+    xp: 1100,
+    isMe: false,
+    rankZone: 'MAINTAIN',
+    tierName: '실버',
+    tierOrderIndex: 2,
+  },
+];
 
 export const LeaderboardContainer = ({
   weeklyRanking,
@@ -64,9 +122,34 @@ export const LeaderboardContainer = ({
   }
 
   const leagueTitle =
-    weeklyRanking && weeklyRanking.groupIndex !== null ? `${weeklyRanking.tier.name} 리그` : '';
-  const groupedMembers = weeklyRanking ? groupMembersByZone(weeklyRanking.members) : null;
+    weeklyRanking && weeklyRanking.groupIndex !== null
+      ? isMyLeagueView
+        ? `${weeklyRanking.tier.name} 리그`
+        : '전체 순위'
+      : '';
+  const groupedMembers =
+    weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
   const remainingDaysText = weeklyRanking ? buildRemainingDaysText(weeklyRanking.weekKey) : '';
+  const summaryDetailText = weeklyRanking
+    ? isMyLeagueView
+      ? `${weeklyRanking.weekKey}주차 · 그룹 ${weeklyRanking.groupIndex} · 총 ${weeklyRanking.totalMembers}명`
+      : `${weeklyRanking.weekKey}주차 · 총 ${weeklyRanking.totalMembers}명`
+    : '';
+  const overallMembers = [...OVERALL_DUMMY_MEMBERS]
+    .sort((left, right) => {
+      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
+      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
+
+      if (leftTierOrderIndex !== rightTierOrderIndex) {
+        return rightTierOrderIndex - leftTierOrderIndex;
+      }
+
+      return right.xp - left.xp;
+    })
+    .map((member, index) => ({
+      ...member,
+      rank: index + 1,
+    }));
 
   return (
     <main css={pageStyle}>
@@ -121,56 +204,68 @@ export const LeaderboardContainer = ({
               <div>
                 <div css={summaryMainStyle}>
                   <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
-                  <button
-                    type="button"
-                    aria-label="리더보드 안내 열기"
-                    css={infoButtonStyle(theme)}
-                    onClick={() =>
-                      openModal('리더보드란?', <InfoLeaderBoardModal />, {
-                        maxWidth: 880,
-                      })
-                    }
-                  >
-                    <span>?</span>
-                  </button>
+                  {isMyLeagueView && (
+                    <button
+                      type="button"
+                      aria-label="리더보드 안내 열기"
+                      css={infoButtonStyle(theme)}
+                      onClick={() =>
+                        openModal('리더보드란?', <InfoLeaderBoardModal />, {
+                          maxWidth: 880,
+                        })
+                      }
+                    >
+                      <span>?</span>
+                    </button>
+                  )}
                 </div>
-                <p css={summarySubTextStyle(theme)}>
-                  {weeklyRanking!.weekKey}주차 · 그룹 {weeklyRanking!.groupIndex} · 총{' '}
-                  {weeklyRanking!.totalMembers}명
-                </p>
+                <p css={summarySubTextStyle(theme)}>{summaryDetailText}</p>
               </div>
               <div css={summaryRightStyle(theme)}>{remainingDaysText}</div>
             </section>
 
             <section css={leaderboardCardStyle(theme)} data-section="ranking">
-              {weeklyRanking!.tier.name !== 'MASTER' && (
-                <div css={zoneSectionStyle}>
-                  <MemberList members={groupedMembers!.promotion} />
-                  <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
-                    <SVGIcon
-                      style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
-                      icon="ArrowLeft"
-                      size="sm"
-                    />
-                    <span>승급권</span>
+              {isMyLeagueView ? (
+                <>
+                  {weeklyRanking!.tier.name !== 'MASTER' && (
+                    <div css={zoneSectionStyle}>
+                      <MemberList members={groupedMembers!.promotion} />
+                      <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                        <SVGIcon
+                          style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
+                          icon="ArrowLeft"
+                          size="sm"
+                        />
+                        <span>승급권</span>
+                      </div>
+                    </div>
+                  )}
+                  <div css={zoneSectionStyle}>
+                    <MemberList members={groupedMembers!.maintain} />
                   </div>
-                </div>
-              )}
-              <div css={zoneSectionStyle}>
-                <MemberList members={groupedMembers!.maintain} />
-              </div>
-              {/* BRONZE가 아닐 때만 강등권 표시 */}
-              {weeklyRanking!.tier.name !== 'BRONZE' && (
+                  {/* BRONZE가 아닐 때만 강등권 표시 */}
+                  {weeklyRanking!.tier.name !== 'BRONZE' && (
+                    <div css={zoneSectionStyle}>
+                      <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                        <SVGIcon
+                          icon="ArrowLeft"
+                          style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
+                          size="sm"
+                        />
+                        <span>강등권</span>
+                      </div>
+                      <MemberList members={groupedMembers!.demotion} />
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div css={zoneSectionStyle}>
-                  <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
-                    <SVGIcon
-                      icon="ArrowLeft"
-                      style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
-                      size="sm"
-                    />
-                    <span>강등권</span>
-                  </div>
-                  <MemberList members={groupedMembers!.demotion} />
+                  <MemberList
+                    members={overallMembers}
+                    emptyMessage="이번 주 랭킹에 인원이 없습니다."
+                    showRankZoneIcon={false}
+                    xpLabel="XP"
+                  />
                 </div>
               )}
             </section>

@@ -10,12 +10,18 @@ import type { RankingMember } from '../types';
 
 interface RankingRowProps {
   member: RankingMember;
+  showRankZoneIcon?: boolean;
+  xpLabel?: string;
 }
 
-export const RankingRow = ({ member }: RankingRowProps) => {
+export const RankingRow = ({
+  member,
+  showRankZoneIcon = true,
+  xpLabel = 'XP',
+}: RankingRowProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
-  const { isMe, rankZone, rank, profileImageUrl, displayName, xp } = member;
+  const { isMe, rankZone, rank, profileImageUrl, displayName, xp, tierName } = member;
 
   const ZONE_COLORS = {
     PROMOTION: theme.colors.success.main,
@@ -30,6 +36,10 @@ export const RankingRow = ({ member }: RankingRowProps) => {
     : ZONE_COLORS[rankZone] || theme.colors.text.strong;
 
   const renderRankZoneIcon = () => {
+    if (!showRankZoneIcon) {
+      return null;
+    }
+
     switch (rankZone) {
       case 'PROMOTION':
         return (
@@ -68,11 +78,14 @@ export const RankingRow = ({ member }: RankingRowProps) => {
 
       <div css={nameBlockStyle}>
         <span css={memberNameStyle(theme, isMe, isDarkMode)}>{displayName}</span>
+        {tierName && <span css={tierBadgeStyle(theme)}>{tierName}</span>}
         {isMe && <span css={meBadgeStyle(theme, isDarkMode)}>나</span>}
       </div>
 
       <div css={xpBlockStyle}>
-        <span css={xpValueStyle(theme, isMe, isDarkMode)}>{xp.toLocaleString()} XP</span>
+        <span css={xpValueStyle(theme, isMe, isDarkMode)}>
+          {xp.toLocaleString()} {xpLabel}
+        </span>
         {renderRankZoneIcon()}
       </div>
     </li>
@@ -145,6 +158,16 @@ const meBadgeStyle = (theme: Theme, isDarkMode: boolean) => css`
   color: ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
   background: ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : theme.colors.surface.strong};
   border: 1px solid ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+`;
+
+const tierBadgeStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Bold'].fontSize};
+  color: ${theme.colors.text.weak};
+  background: ${theme.colors.surface.default};
+  border: 1px solid ${theme.colors.border.default};
   padding: 2px 8px;
   border-radius: 999px;
   flex-shrink: 0;

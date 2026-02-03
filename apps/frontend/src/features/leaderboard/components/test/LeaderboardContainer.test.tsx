@@ -20,13 +20,27 @@ vi.mock('@/feat/leaderboard/components/LeaderboardStateMessage', () => ({
 }));
 
 vi.mock('@/feat/leaderboard/components/MemberList', () => ({
-  MemberList: ({ members }: { members: RankingMember[] }) => (
-    <div data-testid="member-list">
-      {members.map((m, i) => (
-        <div key={i} data-testid={`member-${m.userId}`}>
-          {m.displayName}
-        </div>
-      ))}
+  MemberList: ({
+    members,
+    emptyMessage,
+    xpLabel,
+  }: {
+    members: RankingMember[];
+    emptyMessage?: string;
+    showRankZoneIcon?: boolean;
+    xpLabel?: string;
+  }) => (
+    <div data-testid="member-list" data-xp-label={xpLabel}>
+      {members.length === 0 ? (
+        <span>{emptyMessage ?? '해당 구역에 인원이 없습니다.'}</span>
+      ) : (
+        members.map((m, i) => (
+          <div key={i} data-testid={`member-${m.userId}`}>
+            {m.displayName}
+            {m.tierName ? `-${m.tierName}` : ''}
+          </div>
+        ))
+      )}
     </div>
   ),
 }));
@@ -222,6 +236,22 @@ describe('LeaderboardContainer 컴포넌트 테스트', () => {
 
       expect(myLeagueTab).toHaveAttribute('aria-selected', 'false');
       expect(overallTab).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('전체 순위로 전환되면 요약 정보와 구역 구분이 변경된다', () => {
+      renderLeaderboardContainer({ weeklyRanking: mockWeeklyRanking });
+
+      fireEvent.click(screen.getByRole('tab', { name: '전체 순위' }));
+
+      expect(screen.getByText('전체 순위')).toBeInTheDocument();
+      expect(screen.queryByText('브론즈 리그')).not.toBeInTheDocument();
+      expect(screen.queryByText(/그룹/)).not.toBeInTheDocument();
+      expect(screen.getByText(/총 10명/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '리더보드 안내 열기' })).not.toBeInTheDocument();
+      expect(screen.queryByText('승급권')).not.toBeInTheDocument();
+      expect(screen.queryByText('강등권')).not.toBeInTheDocument();
+      expect(screen.getByTestId('member-list')).toHaveAttribute('data-xp-label', 'XP');
+      expect(screen.getByText('AlgoMaster-골드')).toBeInTheDocument();
     });
   });
 

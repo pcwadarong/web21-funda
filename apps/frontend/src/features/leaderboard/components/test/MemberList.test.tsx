@@ -8,7 +8,7 @@ import { lightTheme } from '@/styles/theme';
 
 // RankingRow 모킹
 vi.mock('@/feat/leaderboard/components/RankingRow', () => ({
-  RankingRow: ({ member }: { member: RankingMember }) => (
+  RankingRow: ({ member }: { member: RankingMember; xpLabel?: string }) => (
     <div data-testid={`ranking-row-${member.userId}`}>
       {member.displayName} - {member.rank}
     </div>
@@ -45,10 +45,10 @@ const mockMembers: RankingMember[] = [
   },
 ];
 
-const renderMemberList = (members: RankingMember[] = mockMembers) =>
+const renderMemberList = (members: RankingMember[] = mockMembers, emptyMessage?: string) =>
   render(
     <ThemeProvider theme={lightTheme}>
-      <MemberList members={members} />
+      <MemberList members={members} emptyMessage={emptyMessage} />
     </ThemeProvider>,
   );
 
@@ -82,6 +82,12 @@ describe('MemberList 컴포넌트 테스트', () => {
 
     expect(screen.getByText('해당 구역에 인원이 없습니다.')).toBeInTheDocument();
     expect(screen.queryByTestId(/ranking-row-/)).not.toBeInTheDocument();
+  });
+
+  it('빈 상태 메시지를 커스텀할 수 있다', () => {
+    renderMemberList([], '이번 주 랭킹에 인원이 없습니다.');
+
+    expect(screen.getByText('이번 주 랭킹에 인원이 없습니다.')).toBeInTheDocument();
   });
 
   it('단일 멤버가 올바르게 렌더링된다', () => {

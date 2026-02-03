@@ -18,6 +18,8 @@ export interface RankingMember {
   xp: number;
   isMe: boolean;
   rankZone: RankingZone;
+  tierName?: string;
+  tierOrderIndex?: number;
 }
 
 /**

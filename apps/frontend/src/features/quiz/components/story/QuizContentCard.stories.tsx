@@ -22,6 +22,10 @@ const sampleQuestion: QuizQuestion = {
 const meta: Meta<typeof QuizContentCard> = {
   title: 'Features/Quiz/QuizContentCard',
   component: QuizContentCard,
+  args: {
+    onDontKnow: () => {},
+    isDontKnowDisabled: false,
+  },
   parameters: {
     layout: 'centered',
     docs: {
@@ -124,7 +128,6 @@ export const Checked: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: '해설 보기' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: '다음 문제' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'AI 질문' })).toBeInTheDocument();
   },

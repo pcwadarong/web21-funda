@@ -26,7 +26,9 @@ interface QuizContentCardProps {
   explanation: string;
   onAnswerChange: (answer: AnswerType) => void;
   isSubmitDisabled: boolean;
+  isDontKnowDisabled?: boolean;
   onCheck: () => void;
+  onDontKnow?: () => void;
   onNext: () => void;
   isLast: boolean;
   isReviewMode: boolean;
@@ -41,9 +43,11 @@ export const QuizContentCard = ({
   selectedAnswer,
   onAnswerChange,
   isSubmitDisabled,
+  isDontKnowDisabled = false,
   correctAnswer,
   explanation,
   onCheck,
+  onDontKnow,
   onNext,
   isLast,
   isReviewMode,
@@ -53,6 +57,7 @@ export const QuizContentCard = ({
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
   const showResult = status === 'checked';
+  const showDontKnowButton = Boolean(onDontKnow) && !showResult && !isBattleMode && !isReviewMode;
   const endsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
   const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
   const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
@@ -103,6 +108,19 @@ export const QuizContentCard = ({
         <div css={explanationStyle(theme)}>
           <span style={{ marginRight: '8px' }}>💡</span>
           <span css={explanationTextStyle(theme)}>{<TextWithCodeStyle text={explanation} />}</span>
+        </div>
+      )}
+
+      {showDontKnowButton && (
+        <div css={dontKnowWrapperStyle}>
+          <button
+            type="button"
+            css={dontKnowButtonStyle(theme, isDarkMode)}
+            onClick={onDontKnow}
+            disabled={isDontKnowDisabled}
+          >
+            잘 모르겠어요
+          </button>
         </div>
       )}
 
@@ -188,7 +206,7 @@ const footerStyle = (theme: Theme) => css`
   display: flex;
   gap: 12px;
   margin-top: auto;
-  padding-top: 32px;
+  padding-top: 12px;
 
   @media (max-width: 768px) {
     position: fixed;
@@ -218,6 +236,40 @@ const explanationTextStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.text.default};
+`;
+
+const dontKnowWrapperStyle = css`
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+`;
+
+const dontKnowButtonStyle = (theme: Theme, isDarkMode: boolean) => css`
+  padding: 8px 18px;
+  border-radius: ${theme.borderRadius.xlarge};
+  border: 1px solid ${isDarkMode ? theme.colors.primary.main : theme.colors.primary.surface};
+  background: ${isDarkMode ? theme.colors.surface.strong : theme.colors.grayscale[50]};
+  color: ${theme.colors.primary.main};
+  font-size: ${theme.typography['14Medium'].fontSize};
+  line-height: ${theme.typography['14Medium'].lineHeight};
+  font-weight: ${theme.typography['14Medium'].fontWeight};
+  cursor: pointer;
+  transition:
+    filter 150ms ease,
+    transform 150ms ease;
+
+  &:not(:disabled):hover {
+    filter: brightness(0.98);
+  }
+
+  &:not(:disabled):active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 const reportButtonStyle = (theme: Theme, isDarkMode: boolean) => css`

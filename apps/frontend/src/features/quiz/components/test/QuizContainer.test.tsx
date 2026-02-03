@@ -14,12 +14,23 @@ vi.mock('@/feat/quiz/components/QuizContentCard', () => ({
     question: unknown;
     status: 'idle' | 'checking' | 'checked';
     isSubmitDisabled: boolean;
+    isDontKnowDisabled: boolean;
     onAnswerChange: (a: unknown) => void;
     onCheck: () => void;
+    onDontKnow: () => void;
     onNext: () => void;
     isReviewMode: boolean;
   }) => {
-    const { question, status, isSubmitDisabled, onAnswerChange, onCheck, onNext } = props;
+    const {
+      question,
+      status,
+      isSubmitDisabled,
+      isDontKnowDisabled,
+      onAnswerChange,
+      onCheck,
+      onDontKnow,
+      onNext,
+    } = props;
     type MatchingQuestion = {
       type?: string;
       content?: {
@@ -47,6 +58,9 @@ vi.mock('@/feat/quiz/components/QuizContentCard', () => ({
     return (
       <div>
         <button onClick={handleSelect}>옵션 선택</button>
+        <button disabled={isDontKnowDisabled} onClick={onDontKnow}>
+          잘 모르겠어요
+        </button>
         <button disabled={isSubmitDisabled} onClick={onCheck}>
           정답 확인
         </button>
@@ -124,10 +138,12 @@ const renderContainer = (props: Partial<React.ComponentProps<typeof QuizContaine
     quizSolutions: [null],
     questionStatuses: ['idle' as const],
     isCheckDisabled: true,
+    isDontKnowDisabled: false,
     isLastQuestion: false,
     isReviewMode: false,
     handleAnswerChange: vi.fn(),
     handleCheckAnswer: vi.fn().mockResolvedValue(undefined),
+    handleDontKnowAnswer: vi.fn().mockResolvedValue(undefined),
     handleNextQuestion: vi.fn(),
     heartCount: 0,
     ...props,
@@ -188,5 +204,16 @@ describe('QuizContainer 컴포넌트 테스트', () => {
     const { container } = renderContainer({ quizzes: [] });
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('잘 모르겠어요 버튼 클릭 시 handleDontKnowAnswer가 호출된다', async () => {
+    const handleDontKnowAnswer = vi.fn().mockResolvedValue(undefined);
+    renderContainer({ handleDontKnowAnswer, isDontKnowDisabled: false });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('잘 모르겠어요'));
+    });
+
+    expect(handleDontKnowAnswer).toHaveBeenCalled();
   });
 });

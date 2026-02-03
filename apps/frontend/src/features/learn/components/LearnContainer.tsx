@@ -1,5 +1,7 @@
 import { css, keyframes, useTheme } from '@emotion/react';
 import { Link } from 'react-router-dom';
+import type SimpleBarCore from 'simplebar-core';
+import SimpleBar from 'simplebar-react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { LearnRightSidebar } from '@/feat/learn/components/RightSidebar';
@@ -8,11 +10,13 @@ import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
 
+import 'simplebar-react/dist/simplebar.min.css';
+
 interface LearnContainerProps {
   fieldName: string;
   units: UnitType[];
   activeUnit: UnitType | undefined;
-  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  scrollContainerRef: React.RefObject<SimpleBarCore | null>;
   headerRef: React.RefObject<HTMLDivElement | null>;
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
   onStepClick: (stepId: stepType) => void;
@@ -38,120 +42,178 @@ export const LearnContainer = ({
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   return (
-    <div css={mainStyle}>
-      <div css={centerSectionStyle} ref={scrollContainerRef}>
-        {activeUnit && (
-          <div css={stickyHeaderWrapperStyle} ref={headerRef}>
-            <div
-              key={activeUnit.id}
-              css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
-            >
-              <div css={headerContentStyle}>
-                <Link to="/learn/roadmap">
-                  <div css={unitTextStyle(theme)}>
-                    <SVGIcon icon="ArrowLeft" size="md" />
-                    전체 {fieldName} 로드맵
+    <div css={containerStyle}>
+      <SimpleBar css={simpleBarStyle} ref={scrollContainerRef}>
+        <div css={mainStyle}>
+          <div css={centerSectionStyle}>
+            <div css={spaceFillerStyle(isDarkMode)}></div>
+            {activeUnit && (
+              <div css={stickyHeaderWrapperStyle} ref={headerRef}>
+                <div
+                  key={activeUnit.id}
+                  css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
+                >
+                  <div css={headerContentStyle}>
+                    <Link to="/learn/roadmap">
+                      <div css={unitTextStyle(theme)}>
+                        <SVGIcon icon="ArrowLeft" size="md" />
+                        전체 {fieldName} 로드맵
+                      </div>
+                    </Link>
+                    <div css={titleTextStyle(theme)}>
+                      <span key={activeUnit.title} css={titleFadeStyle}>
+                        {activeUnit.title}
+                      </span>
+                    </div>
                   </div>
-                </Link>
-                <div css={titleTextStyle(theme)}>
-                  <span key={activeUnit.title} css={titleFadeStyle}>
-                    {activeUnit.title}
-                  </span>
+                  <Link
+                    to={`overview/${activeUnit.id}`}
+                    onClick={() => onOverviewClick(activeUnit.id)}
+                    css={overviewButtonStyle(theme)}
+                  >
+                    <SVGIcon icon="Notebook" />
+                    <span>학습 개요</span>
+                  </Link>
                 </div>
               </div>
-              <Link
-                to={`overview/${activeUnit.id}`}
-                onClick={() => onOverviewClick(activeUnit.id)}
-                css={overviewButtonStyle(theme)}
-              >
-                <SVGIcon icon="Notebook" />
-                <span>학습 개요</span>
-              </Link>
+            )}
+
+            <div css={centerSectionInnerStyle}>
+              {units.map((unit, unitIndex) => (
+                <section
+                  key={unit.id}
+                  css={sectionBlockStyle}
+                  ref={registerUnitRef(unit.id)}
+                  data-unit-id={unit.id}
+                >
+                  <div css={unitDividerStyle(theme)}>
+                    <span css={unitDividerLineStyle(theme)} />
+                    <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
+                    <span css={unitDividerLineStyle(theme)} />
+                  </div>
+                  <div css={lessonsContainerStyle(unit.steps.length)}>
+                    {unit.steps.map((step, index) => {
+                      const positionStyle = lessonPositionStyle(index, unitIndex);
+
+                      if (step.isLocked) {
+                        return (
+                          <div key={step.id} css={positionStyle}>
+                            <div css={lessonStackStyle}>
+                              <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                                <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
+                              </div>
+                              <div css={lessonNamePillStyle(theme)}>{step.title}</div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const handleStepSelection = () => {
+                        if (step.isLocked) {
+                          return;
+                        }
+                        onStepClick(step);
+                      };
+
+                      return (
+                        <div key={step.id} css={positionStyle}>
+                          <div css={lessonStackStyle}>
+                            <div
+                              onClick={handleStepSelection}
+                              onPointerEnter={() => onStepHover?.(Number(step.id))} // prefetch 를 위해
+                              css={[
+                                lessonItemStyle(theme),
+                                step.isCompleted && completedLessonStyle(theme, isDarkMode),
+                                step.isLocked && step.isCheckpoint && lockedLessonStyle(theme),
+                                !step.isCompleted && !step.isLocked && activeLessonStyle(theme),
+                              ]}
+                              style={{ cursor: step.isLocked ? 'not-allowed' : 'pointer' }}
+                            >
+                              <SVGIcon
+                                icon={step.isCompleted ? 'Check' : step.isLocked ? 'Lock' : 'Start'}
+                                aria-hidden="true"
+                                size="lg"
+                              />
+                            </div>
+                            <div css={lessonNamePillStyle(theme)}>{step.title}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           </div>
-        )}
 
-        <div css={centerSectionInnerStyle}>
-          {units.map((unit, unitIndex) => (
-            <section
-              key={unit.id}
-              css={sectionBlockStyle}
-              ref={registerUnitRef(unit.id)}
-              data-unit-id={unit.id}
-            >
-              <div css={unitDividerStyle(theme)}>
-                <span css={unitDividerLineStyle(theme)} />
-                <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
-                <span css={unitDividerLineStyle(theme)} />
-              </div>
-              <div css={lessonsContainerStyle(unit.steps.length)}>
-                {unit.steps.map((step, index) => {
-                  const positionStyle = lessonPositionStyle(index, unitIndex);
-
-                  if (step.isLocked) {
-                    return (
-                      <div key={step.id} css={positionStyle}>
-                        <div css={lessonStackStyle}>
-                          <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
-                            <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
-                          </div>
-                          <div css={lessonNamePillStyle(theme)}>{step.title}</div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  const handleStepSelection = () => {
-                    if (step.isLocked) {
-                      return;
-                    }
-                    onStepClick(step);
-                  };
-
-                  return (
-                    <div key={step.id} css={positionStyle}>
-                      <div css={lessonStackStyle}>
-                        <div
-                          onClick={handleStepSelection}
-                          onPointerEnter={() => onStepHover?.(Number(step.id))} // prefetch 를 위해
-                          css={[
-                            lessonItemStyle(theme),
-                            step.isCompleted && completedLessonStyle(theme, isDarkMode),
-                            step.isLocked && step.isCheckpoint && lockedLessonStyle(theme),
-                            !step.isCompleted && !step.isLocked && activeLessonStyle(theme),
-                          ]}
-                          style={{ cursor: step.isLocked ? 'not-allowed' : 'pointer' }}
-                        >
-                          <SVGIcon
-                            icon={step.isCompleted ? 'Check' : step.isLocked ? 'Lock' : 'Start'}
-                            aria-hidden="true"
-                            size="lg"
-                          />
-                        </div>
-                        <div css={lessonNamePillStyle(theme)}>{step.title}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+          <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
         </div>
-      </div>
-
-      <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
+      </SimpleBar>
     </div>
   );
 };
+
+const containerStyle = css`
+  height: 100dvh;
+  word-break: keep-all;
+`;
+
+const simpleBarStyle = css`
+  height: 100dvh;
+
+  & .simplebar-track,
+  .simplebar-scrollbar {
+    pointer-events: auto !important;
+  }
+
+  & .simplebar-track.simplebar-vertical {
+    width: 12px;
+    top: 1px;
+    bottom: 1px;
+    right: 1px;
+  }
+
+  & .simplebar-track.simplebar-horizontal {
+    height: 12px;
+  }
+
+  & .simplebar-visible.simplebar-scrollbar::before {
+    opacity: 1;
+  }
+
+  & .simplebar-scrollbar::before {
+    background-color: #c8c8c8;
+  }
+
+  & .simplebar-scrollbar:hover::before {
+    background-color: #878787 !important;
+  }
+`;
 
 const mainStyle = css`
   display: flex;
   flex: 1;
   gap: 24px;
-  padding: 24px 24px 0 24px;
-  overflow: visible;
-  height: 100vh;
-  min-height: 0;
+  padding: 0 24px;
+
+  @media (max-width: 1024px) {
+    flex-direction: column-reverse;
+    gap: 0;
+  }
+`;
+
+const spaceFillerStyle = (isDarkMode: boolean) => css`
+  position: sticky;
+  top: 0;
+  left: 0;
+  height: 24px;
+  width: 100%;
+  background: ${isDarkMode ? '#1c1d2bff' : '#faf5ff'};
+  z-index: 5;
+
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
 `;
 
 const centerSectionStyle = css`
@@ -161,12 +223,11 @@ const centerSectionStyle = css`
   min-width: 0;
   position: relative;
   min-height: 0;
-  overflow-y: auto;
   padding-bottom: 36px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
+  z-index: 0;
+
+  @media (max-width: 768px) {
+    padding-bottom: calc(36px + 96px);
   }
 `;
 
@@ -189,11 +250,15 @@ const sectionBlockStyle = css`
 
 const stickyHeaderWrapperStyle = css`
   position: sticky;
-  top: 0px;
+  top: 24px;
   z-index: 5;
   width: 100%;
   display: flex;
   justify-content: center;
+
+  @media (max-width: 1024px) {
+    top: 48px;
+  }
 `;
 
 const stickyHeaderStyle = (theme: Theme) => css`
@@ -202,7 +267,6 @@ const stickyHeaderStyle = (theme: Theme) => css`
   background: linear-gradient(180deg, rgb(90, 77, 232) 0%, rgba(123, 111, 249, 1) 100%);
   box-shadow: 0 12px 20px rgba(20, 20, 43, 0.12);
   border-radius: ${theme.borderRadius.large};
-  overflow: hidden;
 `;
 
 const headerPulse = keyframes`
@@ -257,8 +321,8 @@ const lessonPositionStyle = (index: number, unitIndex: number) => {
   const isOddUnit = unitIndex % 2 === 0;
   const positions = isOddUnit ? oddLeftPositions : evenLeftPositions;
   const left = positions[index % positions.length] ?? positions[0] ?? 0;
-  const minLeft = Math.max(150, Math.round(left * 0.65));
-  const midLeft = Math.max(18, Math.round(left / 9));
+  const minLeft = Math.max(90, Math.round(left * 0.6));
+  const midLeft = Math.max(16, Math.round(left / 13));
   const tightMinLeft = Math.max(100, Math.round(left * 0.4));
   const tightMidLeft = Math.max(13, Math.round(left / 15));
 
@@ -270,7 +334,11 @@ const lessonPositionStyle = (index: number, unitIndex: number) => {
 
     @media (max-width: 1420px) and (min-width: 1024px) {
       left: clamp(${tightMinLeft}px, ${tightMidLeft}vw, ${left}px);
-      transform: translateX(-80%);
+      transform: translateX(-85%);
+    }
+
+    @media (max-width: 768px) {
+      transform: translateX(-65%);
     }
   `;
 };
@@ -281,6 +349,10 @@ const headerSectionStyle = () => css`
   align-items: center;
   justify-content: space-between;
   padding: 24px 32px;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
 `;
 
 const headerContentStyle = css`
@@ -290,8 +362,8 @@ const headerContentStyle = css`
 `;
 
 const unitTextStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-size: clamp(12px, 2.6vw, ${theme.typography['16Medium'].fontSize});
+  line-height: clamp(16px, 3vw, ${theme.typography['16Medium'].lineHeight});
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${colors.light.grayscale[300]};
   display: flex;
@@ -304,8 +376,8 @@ const unitTextStyle = (theme: Theme) => css`
 `;
 
 const titleTextStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['32Bold'].fontSize};
-  line-height: ${theme.typography['32Bold'].lineHeight};
+  font-size: clamp(24px, 4vw, ${theme.typography['32Bold'].fontSize});
+  line-height: clamp(28px, 5vw, ${theme.typography['32Bold'].lineHeight});
   font-weight: ${theme.typography['32Bold'].fontWeight};
   color: ${colors.light.grayscale[50]};
   overflow: hidden;
@@ -334,18 +406,19 @@ const titleFadeStyle = css`
 const overviewButtonStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   background: ${theme.colors.primary.light}A6;
   color: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.large};
   padding: 8px 16px;
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
+  font-size: clamp(12px, 2.6vw, ${theme.typography['16Medium'].fontSize});
+  line-height: clamp(16px, 3vw, ${theme.typography['16Medium'].lineHeight});
   font-weight: ${theme.typography['16Medium'].fontWeight};
   align-self: flex-end;
-  //border: 2px solid ${theme.colors.primary.dark}33;
   box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark}80;
   transition: all 150ms ease;
+  width: clamp(115px, 20vw, 125px);
 
   &:hover {
     transform: translateY(-0.1rem);

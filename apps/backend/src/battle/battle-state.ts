@@ -1,6 +1,6 @@
 import { QuizSubmissionResponse } from '../roadmap/dto/quiz-submission.dto';
 
-export type BattleRoomStatus = 'waiting' | 'in_progress' | 'finished' | 'invalid';
+export type BattleRoomStatus = 'waiting' | 'countdown' | 'in_progress' | 'finished' | 'invalid';
 
 export type BattleTimeLimitType = 'recommended' | 'relaxed' | 'fast';
 
@@ -60,6 +60,7 @@ export type BattleRoomState = {
   readyParticipantIds: string[];
   inviteToken: string;
   inviteExpired: boolean;
+  countdownEndsAt: number | null;
   startedAt: number | null;
   endedAt: number | null;
   currentQuizIndex: number;
@@ -111,6 +112,14 @@ export type StartBattleRoomParams = {
   quizIds: number[];
 };
 
+export type StartBattleCountdownParams = {
+  roomId: string;
+  requesterParticipantId: string;
+  now: number;
+  countdownEndsAt: number;
+  quizIds: number[];
+};
+
 export type FinishBattleRoomParams = {
   roomId: string;
   now: number;
@@ -136,6 +145,7 @@ export const createBattleRoomState = (params: CreateBattleRoomParams): BattleRoo
   readyParticipantIds: [],
   inviteToken: params.inviteToken,
   inviteExpired: false,
+  countdownEndsAt: null,
   startedAt: null,
   endedAt: null,
   currentQuizIndex: 0,
@@ -430,11 +440,35 @@ export const applyStart = (
   status: 'in_progress',
   inviteExpired: true,
   readyParticipantIds: [],
+  countdownEndsAt: null,
   startedAt: params.now,
   endedAt: null,
   currentQuizIndex: 0,
   quizIds: params.quizIds,
   quizEndsAt: null,
+});
+
+/**
+ * 카운트다운 시작 상태로 전환한다.
+ *
+ * @param state 방 상태
+ * @param params 카운트다운 시작 정보
+ * @returns 변경된 방 상태
+ */
+export const applyStartCountdown = (
+  state: BattleRoomState,
+  params: StartBattleCountdownParams,
+): BattleRoomState => ({
+  ...state,
+  status: 'countdown',
+  readyParticipantIds: [],
+  countdownEndsAt: params.countdownEndsAt,
+  startedAt: null,
+  endedAt: null,
+  currentQuizIndex: 0,
+  quizIds: params.quizIds,
+  quizEndsAt: null,
+  resultEndsAt: null,
 });
 
 /**
@@ -474,6 +508,7 @@ export const applyRestart = (
   return {
     ...state,
     status: 'waiting',
+    countdownEndsAt: null,
     startedAt: null,
     endedAt: null,
     currentQuizIndex: 0,
@@ -481,6 +516,25 @@ export const applyRestart = (
     participants: resetParticipants,
   };
 };
+
+/**
+ * 카운트다운을 취소하고 대기 상태로 되돌린다.
+ *
+ * @param state 방 상태
+ * @returns 변경된 방 상태
+ */
+export const applyCancelCountdown = (state: BattleRoomState): BattleRoomState => ({
+  ...state,
+  status: 'waiting',
+  readyParticipantIds: [],
+  countdownEndsAt: null,
+  startedAt: null,
+  endedAt: null,
+  currentQuizIndex: 0,
+  quizIds: [],
+  quizEndsAt: null,
+  resultEndsAt: null,
+});
 
 export const applySubmission = (
   state: BattleRoomState,

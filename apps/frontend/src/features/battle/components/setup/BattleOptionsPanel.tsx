@@ -12,7 +12,7 @@ export const BATTLE_CONFIG: Record<
 > = {
   maxPlayers: {
     label: '최대 인원 수',
-    options: [2, 5, 10, 25, 30].map(v => ({ label: `${v}명`, value: v })),
+    options: [2, 5, 10, 15].map(v => ({ label: `${v}명`, value: v })),
   },
   timeLimitType: {
     label: '제한 시간',

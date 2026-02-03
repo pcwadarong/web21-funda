@@ -6,12 +6,22 @@ import svgr from 'vite-plugin-svgr';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
+import compression from 'vite-plugin-compression2';
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [react(), svgr({ include: '**/*.svg?react' })],
+  plugins: [
+    react(),
+    svgr({ include: '**/*.svg?react' }),
+    compression({
+      algorithms: [
+        ['brotliCompress', {}],
+        ['gzip', {}],
+      ],
+    }),
+  ],
   resolve: {
     alias: [
       { find: '@/comp', replacement: path.resolve(dirname, './src/components') },

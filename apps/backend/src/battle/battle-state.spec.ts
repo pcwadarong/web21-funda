@@ -117,4 +117,22 @@ describe('battle-state', () => {
     const disconnected = nextRoom.participants.find(p => p.participantId === 'socket-2');
     expect(disconnected?.isConnected).toBe(false);
   });
+
+  it('applyLeave는 인원 부족으로 무효 처리될 때 endedAt을 기록한다.', () => {
+    const inProgressRoom: BattleRoomState = {
+      ...baseRoomState,
+      status: 'in_progress',
+    };
+
+    const now = 500;
+    const nextRoom = applyLeave(inProgressRoom, {
+      roomId: inProgressRoom.roomId,
+      participantId: 'socket-2',
+      now,
+      penaltyScore: -999,
+    });
+
+    expect(nextRoom.status).toBe('invalid');
+    expect(nextRoom.endedAt).toBe(now);
+  });
 });

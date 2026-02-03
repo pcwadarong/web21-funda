@@ -374,6 +374,7 @@ export const applyLeave = (
   const shouldInvalidate = state.status === 'in_progress' && nextParticipants.length < 2;
 
   const nextStatus = shouldInvalidate ? 'invalid' : state.status;
+  const nextEndedAt = shouldInvalidate ? params.now : state.endedAt;
 
   return {
     ...state,
@@ -381,6 +382,7 @@ export const applyLeave = (
     hostParticipantId: nextHostParticipantId,
     readyParticipantIds: nextReadyParticipantIds,
     status: nextStatus,
+    endedAt: nextEndedAt,
   };
 };
 

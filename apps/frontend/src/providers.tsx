@@ -73,24 +73,25 @@ const globalStyle = (isDarkMode: boolean) => css`
     transition: background 0.3s ease;
   }
 
-  *::-webkit-scrollbar {
-    width: 18px;
-    background: transparent;
+  ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
   }
 
-  *::-webkit-scrollbar-track {
-    background: transparent;
-    border: none;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background-color: #b2b2b2;
+  ::-webkit-scrollbar-thumb {
+    outline: none;
     border-radius: 10px;
-    border: 5px solid transparent;
-    background-clip: padding-box;
+    border: 4px solid transparent;
+    box-shadow: inset 8px 8px 0 #c8c8c8;
   }
 
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: #8c8c8c;
+  ::-webkit-scrollbar-thumb:hover {
+    border: 4px solid transparent;
+    box-shadow: inset 8px 8px 0 #878787;
+  }
+
+  ::-webkit-scrollbar-track {
+    box-shadow: none;
+    background-color: transparent;
   }
 `;

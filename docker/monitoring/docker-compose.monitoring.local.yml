@@ -24,22 +24,22 @@ services:
     restart: unless-stopped
 
   # ------------------------------------------------------------
-  # Promtail: 로그 수집 에이전트
+  # Grafana Alloy: 로그 수집 에이전트
   # Docker 컨테이너 로그를 읽어서 Loki로 전송
   # ------------------------------------------------------------
-  promtail:
-    image: grafana/promtail:2.9.0
-    container_name: funda-promtail
+  alloy:
+    image: grafana/alloy:v1.12.2
+    container_name: funda-alloy
     volumes:
       # Docker 컨테이너 로그 디렉토리 (읽기 전용)
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       # Docker 소켓: 컨테이너 자동 감지 및 메타데이터 수집용
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Promtail 설정 파일
-      - ./promtail/promtail-config.yml:/etc/promtail/config.yaml:ro
-      # 수집 위치 추적 파일: 컨테이너 재시작 시에도 수집 위치 유지
-      - promtail_positions:/tmp
-    command: -config.file=/etc/promtail/config.yaml
+      # Alloy 설정 파일
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Alloy 내부 상태 (positions 등) 유지
+      - alloy_data:/var/lib/alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     networks:
       - funda-network
     restart: unless-stopped
@@ -95,7 +95,6 @@ services:
     depends_on:
       - node-exporter
       - loki
-      - promtail
 
   # ------------------------------------------------------------
   # Grafana: 메트릭 및 로그 시각화 대시보드
@@ -114,6 +113,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana      # 대시보드 및 설정 영구 저장
       - ./grafana/provisioning:/etc/grafana/provisioning:ro  # 자동 프로비저닝
+      - ./grafana/provisioning-local/alerting:/etc/grafana/provisioning/alerting:ro  # 로컬: 알림 프로비저닝 비활성화
     networks:
       - funda-network
     restart: unless-stopped
@@ -144,6 +144,6 @@ volumes:
   loki_data:
     driver: local
   
-  # Promtail 위치 추적: 로그 수집 위치 정보 유지
-  promtail_positions:
+  # Alloy 내부 상태 (positions 등)
+  alloy_data:
     driver: local

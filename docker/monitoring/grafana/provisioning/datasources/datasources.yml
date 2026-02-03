@@ -11,6 +11,7 @@ datasources:
   # ------------------------------------------------------------
   - name: Prometheus
     type: prometheus
+    uid: Prometheus
     access: proxy                    # Grafana가 프록시를 통해 접근
     url: http://prometheus:9090       # Prometheus 서비스 내부 URL
     isDefault: true                  # 기본 데이터소스로 설정
@@ -22,6 +23,7 @@ datasources:
   # ------------------------------------------------------------
   - name: Loki
     type: loki
+    uid: Loki
     access: proxy                    # Grafana가 프록시를 통해 접근
     url: http://loki:3100            # Loki 서비스 내부 URL
     isDefault: false                 # 기본 데이터소스 아님

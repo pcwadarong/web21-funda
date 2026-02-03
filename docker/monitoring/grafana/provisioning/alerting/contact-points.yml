@@ -1,0 +1,21 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: slack-main
+    receivers:
+      - uid: slack-main
+        type: slack
+        settings:
+          recipient: "#alerts"
+          username: "grafana"
+          icon_emoji: ":rotating_light:"
+          message: |
+            {{ range .Alerts }}
+            *{{ .Status | toUpper }}* {{ .Labels.alertname }} ({{ .Labels.severity }})
+            container={{ .Labels.container }}
+            value={{ index .Values "C" }}
+            {{ if .DashboardURL }}dashboard={{ .DashboardURL }}{{ end }}
+            {{ end }}
+        secure_settings:
+          url: ${SLACK_WEBHOOK_URL}

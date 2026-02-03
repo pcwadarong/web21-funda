@@ -29,7 +29,7 @@ jobs:
             git pull origin main
 
             # 2. .env 파일 생성 (루트 디렉토리)
-            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\nGRAFANA_ADMIN_USER=%s\nGRAFANA_ADMIN_PASSWORD=%s\nGRAFANA_ROOT_URL=%s\nSLACK_WEBHOOK_URL=%s\n" \
+            printf "NCR_REGISTRY=%s\nDB_USER=%s\nDB_PASSWORD=%s\nGRAFANA_ADMIN_PASSWORD=%s\nGRAFANA_ROOT_URL=%s\nSLACK_WEBHOOK_URL=%s\n" \
             "${{ secrets.NCR_REGISTRY }}" \
             "${{ secrets.DB_USER }}" \
             "${{ secrets.DB_PASSWORD }}" \

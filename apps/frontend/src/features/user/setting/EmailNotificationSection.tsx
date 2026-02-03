@@ -58,7 +58,7 @@ const labelTitleStyle = css`
 `;
 
 const labelDescriptionStyle = (theme: Theme) => css`
-  margin: 4px 0 0 0;
+  margin: 8px 0 0 0;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
 `;

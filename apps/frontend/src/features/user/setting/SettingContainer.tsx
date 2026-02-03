@@ -45,12 +45,14 @@ export const SettingContainer = memo(
         </header>
         <AppearanceSection isDarkMode={isDarkMode} onDarkModeToggle={onDarkModeToggle} />
         <SoundSection soundVolume={soundVolume} onSoundVolumeChange={onSoundVolumeChange} />
-        <EmailNotificationSection
-          isEmailSubscribed={isEmailSubscribed}
-          email={email}
-          isDisabled={isEmailToggleDisabled}
-          onToggle={onEmailToggle}
-        />
+        {isAuthReady && isLoggedIn && (
+          <EmailNotificationSection
+            isEmailSubscribed={isEmailSubscribed}
+            email={email}
+            isDisabled={isEmailToggleDisabled}
+            onToggle={onEmailToggle}
+          />
+        )}
 
         {isAuthReady && isLoggedIn && (
           <Button variant="primary" fullWidth onClick={onLogout} css={logoutButtonStyle}>

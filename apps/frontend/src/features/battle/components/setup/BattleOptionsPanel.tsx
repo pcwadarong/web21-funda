@@ -44,6 +44,7 @@ export interface BattleOptionsPanelProps {
   roomId: string | null;
   settings: BattleRoomSettings | null;
   participantCount: number;
+  countdownEndsAt: number | null;
   onUpdateRoom: (roomId: string, settings: BattleRoomSettings) => void;
   onStartBattle: (roomId: string) => void;
   onCopyLink: () => void;
@@ -54,43 +55,33 @@ export const BattleOptionsPanel = ({
   roomId,
   settings,
   participantCount,
+  countdownEndsAt,
   onUpdateRoom,
   onStartBattle,
   onCopyLink,
 }: BattleOptionsPanelProps) => {
   const theme = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isStartCountdownActive, setIsStartCountdownActive] = useState(false);
   const canStartBattle = isHost && participantCount > 1;
+  const hasCountdownStarted = countdownEndsAt !== null;
   const startButtonLabel = !isHost
     ? '호스트 대기 중'
     : canStartBattle
       ? '게임 시작'
       : '참가자 대기 중';
 
-  const handleStartCountdownComplete = useCallback(() => {
-    if (!roomId) {
-      setIsStartCountdownActive(false);
+  const { isVisible: isStartCountdownVisible, label: startCountdownLabel } =
+    useBattleStartCountdown({
+      endsAt: countdownEndsAt,
+    });
+
+  const handleStartBattleClick = useCallback(() => {
+    if (!roomId || !canStartBattle || hasCountdownStarted) {
       return;
     }
 
     onStartBattle(roomId);
-    setIsStartCountdownActive(false);
-  }, [onStartBattle, roomId]);
-
-  const { isVisible: isStartCountdownVisible, label: startCountdownLabel } =
-    useBattleStartCountdown({
-      isActive: isStartCountdownActive,
-      onComplete: handleStartCountdownComplete,
-    });
-
-  const handleStartBattleClick = useCallback(() => {
-    if (!roomId || !canStartBattle || isStartCountdownActive) {
-      return;
-    }
-
-    setIsStartCountdownActive(true);
-  }, [canStartBattle, isStartCountdownActive, roomId]);
+  }, [canStartBattle, hasCountdownStarted, onStartBattle, roomId]);
 
   return (
     <div css={containerStyle}>
@@ -151,7 +142,7 @@ export const BattleOptionsPanel = ({
         <Button
           variant="primary"
           fullWidth
-          disabled={!canStartBattle || isStartCountdownActive}
+          disabled={!canStartBattle || hasCountdownStarted}
           onClick={handleStartBattleClick}
           css={flexBtn}
         >

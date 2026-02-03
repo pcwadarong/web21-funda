@@ -14,6 +14,7 @@ export interface BattleSetupContainerProps {
   roomId: string | null;
   settings: BattleRoomSettings | null;
   participantCount: number;
+  countdownEndsAt: number | null;
   onUpdateRoom: (roomId: string, settings: BattleRoomSettings) => void;
   onStartBattle: (roomId: string) => void;
   onCopyLink: () => void;
@@ -26,6 +27,7 @@ export const BattleSetupContainer = ({
   roomId,
   settings,
   participantCount,
+  countdownEndsAt,
   onUpdateRoom,
   onStartBattle,
   onCopyLink,
@@ -40,6 +42,7 @@ export const BattleSetupContainer = ({
         roomId={roomId}
         settings={settings}
         participantCount={participantCount}
+        countdownEndsAt={countdownEndsAt}
         onUpdateRoom={onUpdateRoom}
         onStartBattle={onStartBattle}
         onCopyLink={onCopyLink}

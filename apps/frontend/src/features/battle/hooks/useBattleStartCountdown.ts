@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const DEFAULT_INTERVAL_MS = 1000;
+const COUNTDOWN_POLL_MS = 100;
 
 /**
  * 배틀 시작 카운트다운 진행 상태를 관리한다.
  *
- * - 첫 퀴즈 진입 시 한 번만 동작하도록 설계
- * - 외부에서 라벨 변경 시점을 제어할 수 있도록 인터벌을 분리
+ * - endsAt 기준으로 라벨을 계산해 네트워크 지연에도 동일한 타이밍을 보장한다.
+ * - 카운트다운이 끝나면 자동으로 숨기고 완료 콜백을 호출한다.
  */
 export const useBattleStartCountdown = ({
-  isActive,
+  endsAt,
   intervalMs = DEFAULT_INTERVAL_MS,
   steps: customSteps,
   onTick,
   onComplete,
 }: {
-  isActive: boolean;
+  endsAt: number | null;
   intervalMs?: number;
   steps?: string[];
   onTick?: (label: string) => void;
@@ -24,41 +25,58 @@ export const useBattleStartCountdown = ({
   const steps = useMemo(() => customSteps ?? ['3', '2', '1', 'START'], [customSteps]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-  const hasStartedRef = useRef(false);
+  const lastLabelRef = useRef<string | null>(null);
+  const hasCompletedRef = useRef(false);
 
   useEffect(() => {
-    if (!isActive || hasStartedRef.current) {
+    hasCompletedRef.current = false;
+    lastLabelRef.current = null;
+  }, [endsAt]);
+
+  useEffect(() => {
+    if (!endsAt) {
+      setIsVisible(false);
       return;
     }
 
-    hasStartedRef.current = true;
-    setCurrentIndex(0);
-    setIsVisible(true);
-  }, [isActive]);
+    const totalDurationMs = steps.length * intervalMs;
+    const startAt = endsAt - totalDurationMs;
 
-  useEffect(() => {
-    if (!isVisible) {
-      return;
-    }
+    const updateCountdown = () => {
+      const now = Date.now();
 
-    const currentLabel = steps[currentIndex];
-    onTick?.(currentLabel);
-
-    if (currentIndex >= steps.length - 1) {
-      const hideTimer = window.setTimeout(() => {
+      if (now < startAt) {
         setIsVisible(false);
-        onComplete?.();
-      }, intervalMs);
+        return;
+      }
 
-      return () => window.clearTimeout(hideTimer);
-    }
+      if (now >= endsAt) {
+        setIsVisible(false);
+        if (!hasCompletedRef.current) {
+          hasCompletedRef.current = true;
+          onComplete?.();
+        }
+        return;
+      }
 
-    const timerId = window.setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
-    }, intervalMs);
+      const elapsedMs = now - startAt;
+      const nextIndex = Math.min(steps.length - 1, Math.floor(elapsedMs / intervalMs));
+      const nextLabel = steps[nextIndex];
 
-    return () => window.clearTimeout(timerId);
-  }, [currentIndex, intervalMs, isVisible, onComplete, onTick, steps]);
+      setCurrentIndex(nextIndex);
+      setIsVisible(true);
+
+      if (nextLabel !== lastLabelRef.current) {
+        lastLabelRef.current = nextLabel;
+        onTick?.(nextLabel);
+      }
+    };
+
+    updateCountdown();
+    const timerId = window.setInterval(updateCountdown, COUNTDOWN_POLL_MS);
+
+    return () => window.clearInterval(timerId);
+  }, [endsAt, intervalMs, onComplete, onTick, steps]);
 
   return {
     isVisible,

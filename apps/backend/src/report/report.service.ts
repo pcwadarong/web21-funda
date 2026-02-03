@@ -2,14 +2,36 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { Quiz } from '../roadmap/entities/quiz.entity';
+import { User } from '../users/entities/user.entity';
+
 import { Report } from './entities/report.entity';
 
 @Injectable()
 export class ReportService {
   constructor(@InjectRepository(Report) private repo: Repository<Report>) {}
 
-  async create(quizId: number, report_description: string) {
-    const entity = this.repo.create({ quizId, report_description });
+  async create(quizId: number, userId: number | null, report_description: string) {
+    const entity = this.repo.create({ quizId, userId, report_description });
     return await this.repo.save(entity);
+  }
+
+  async findAll() {
+    return await this.repo
+      .createQueryBuilder('report')
+      .leftJoin(Quiz, 'quiz', 'quiz.id = report.quizId')
+      .leftJoin(User, 'user', 'user.id = report.userId')
+      .select([
+        'report.id AS id',
+        'report.quizId AS quizId',
+        'report.report_description AS report_description',
+        'report.createdAt AS createdAt',
+        'quiz.question AS question',
+        'user.id AS userId',
+        'user.displayName AS userDisplayName',
+        'user.email AS userEmail',
+      ])
+      .orderBy('report.createdAt', 'ASC')
+      .getRawMany();
   }
 }

@@ -10,6 +10,7 @@ export interface QuizSubmissionRequest {
     pairs?: MatchingPair[];
   };
   step_attempt_id?: number;
+  current_step_order_index?: number;
 }
 
 export interface QuizSubmissionResponse {
@@ -19,6 +20,7 @@ export interface QuizSubmissionResponse {
     correct_option_id?: string;
     correct_pairs?: MatchingPair[];
   };
+  user_heart_count?: number;
 }
 
 export interface StepCompletionPayload {

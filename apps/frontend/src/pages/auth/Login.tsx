@@ -1,8 +1,28 @@
+import { useCallback, useState } from 'react';
+
 import { LoginForm } from '@/feat/auth/components/LoginForm';
-import { useAuth } from '@/feat/auth/hooks/useAuth';
+import { authService } from '@/services/authService';
 
 export const Login = () => {
-  const { loginWithGoogle, loginWithGitHub } = useAuth();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  return <LoginForm onGoogleLogin={loginWithGoogle} onGitHubLogin={loginWithGitHub} />;
+  const handleGitHubLogin = useCallback(() => {
+    setIsLoggingIn(true);
+
+    setTimeout(() => {
+      authService.loginWithGitHub();
+    }, 0);
+  }, []);
+
+  const handleGoogleLogin = useCallback(() => {
+    authService.loginWithGoogle();
+  }, []);
+
+  return (
+    <LoginForm
+      onGoogleLogin={handleGoogleLogin}
+      onGitHubLogin={handleGitHubLogin}
+      isLoggingIn={isLoggingIn}
+    />
+  );
 };

@@ -1,13 +1,23 @@
 #!/bin/sh
 
-echo "🔍 Running pnpm run lint..."
-pnpm run lint
-RESULT=$?
+run_step () {
+  NAME=$1
+  CMD=$2
 
-if [ $RESULT -ne 0 ]; then
-  echo "❌ Lint failed. Push aborted."
-  exit 1
-fi
+  echo "▶ Running $NAME..."
+  sh -c "$CMD"
+  RESULT=$?
 
-echo "✅ Lint passed. Push allowed."
+  if [ $RESULT -ne 0 ]; then
+    echo "❌ $NAME failed. Push aborted."
+    exit 1
+  fi
+}
+
+run_step "lint" "pnpm run lint"
+run_step "type check" "pnpm run check-types"
+# run_step "tests" "pnpm run test"
+run_step "build" "pnpm run build"
+
+echo "✅ All checks passed. Push allowed."
 exit 0

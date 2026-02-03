@@ -1,6 +1,19 @@
-import { useParams } from 'react-router-dom';
+import { LeaderboardContainer } from '@/features/leaderboard/components/LeaderboardContainer';
+import { useWeeklyRanking } from '@/hooks/queries/leaderboardQueries';
 
 export const Leaderboard = () => {
-  const { groupId } = useParams<{ groupId: string }>();
-  return <div>Leaderboard Page - Group ID: {groupId}</div>;
+  const { data: weeklyRanking, isLoading, error, refetch, isFetching } = useWeeklyRanking();
+
+  const errorMessage =
+    error instanceof Error ? error.message : error ? '랭킹 정보를 불러오지 못했습니다.' : null;
+
+  return (
+    <LeaderboardContainer
+      weeklyRanking={weeklyRanking ?? null}
+      isLoading={isLoading}
+      errorMessage={errorMessage}
+      onRefresh={() => refetch()}
+      isRefreshing={isFetching}
+    />
+  );
 };

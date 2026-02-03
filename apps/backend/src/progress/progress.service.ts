@@ -2,12 +2,19 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Quiz, Step } from '../roadmap/entities';
+import { getKstNextDayStart, getKstNow } from '../common/utils/kst-date';
+import { QuizContentService } from '../common/utils/quiz-content.service';
+import { DEFAULT_SCORE_WEIGHTS } from '../common/utils/score-weights';
+import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
+import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
+import { UserQuizStatus } from './entities/user-quiz-status.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
 import { UserStepStatus } from './entities/user-step-status.entity';
+
+const DEFAULT_REVIEW_QUEUE_LIMIT = 10;
 
 @Injectable()
 export class ProgressService {
@@ -20,10 +27,15 @@ export class ProgressService {
     private readonly stepStatusRepository: Repository<UserStepStatus>,
     @InjectRepository(Step)
     private readonly stepRepository: Repository<Step>,
+    @InjectRepository(CheckpointQuizPool)
+    private readonly checkpointQuizPoolRepository: Repository<CheckpointQuizPool>,
     @InjectRepository(Quiz)
     private readonly quizRepository: Repository<Quiz>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(UserQuizStatus)
+    private readonly userQuizStatusRepository: Repository<UserQuizStatus>,
+    private readonly quizContentService: QuizContentService,
   ) {}
 
   /**
@@ -43,7 +55,7 @@ export class ProgressService {
       order: { attemptNo: 'DESC' },
     });
     const nextAttemptNo = (lastAttempt?.attemptNo ?? 0) + 1;
-    const totalQuizzes = await this.quizRepository.count({ where: { step: { id: stepId } } });
+    const totalQuizzes = await this.getTotalQuizzesForStep(step);
 
     const attempt = this.stepAttemptRepository.create({
       userId,
@@ -85,15 +97,15 @@ export class ProgressService {
       Math.floor((finishedAtDate.getTime() - attempt.startedAt.getTime()) / 1000),
     );
 
-    const successRate =
-      attempt.totalQuizzes === 0 ? 0 : (scoreResult.correctCount / attempt.totalQuizzes) * 100;
+    const totalQuizzes = this.resolveTotalQuizzesForResult(attempt.totalQuizzes, scoreResult);
+    const successRate = totalQuizzes === 0 ? 0 : (scoreResult.correctCount / totalQuizzes) * 100;
 
     attempt.answeredCount = solveLogs.length;
     attempt.correctCount = scoreResult.correctCount;
     attempt.successRate = successRate;
     attempt.status = StepAttemptStatus.COMPLETED;
     attempt.finishedAt = finishedAtDate;
-    attempt.totalQuizzes = attempt.totalQuizzes ?? scoreResult.totalQuizzes;
+    attempt.totalQuizzes = totalQuizzes;
 
     await this.stepAttemptRepository.save(attempt);
 
@@ -142,6 +154,61 @@ export class ProgressService {
   }
 
   /**
+   * 복습 노트 대상 퀴즈를 조회한다.
+   * - 복습 부담을 줄이기 위해 시간 단위 대신 날짜 기준으로 오늘까지 포함해 조회한다.
+   *
+   * @param userId 사용자 ID
+   * @returns 복습 큐 응답
+   */
+  async getReviewQueue(
+    userId: number,
+    options?: {
+      fieldSlug?: string;
+      limit?: number;
+    },
+  ): Promise<QuizResponse[]> {
+    const now = getKstNow();
+    const reviewCutoff = getKstNextDayStart(now);
+
+    const queryBuilder = this.userQuizStatusRepository
+      .createQueryBuilder('status')
+      .innerJoinAndSelect('status.quiz', 'quiz')
+      .innerJoin('quiz.step', 'step')
+      .innerJoin('step.unit', 'unit')
+      .innerJoin('unit.field', 'field')
+      .where('status.userId = :userId', { userId })
+      .andWhere('status.nextReviewAt IS NOT NULL')
+      .andWhere('status.nextReviewAt < :reviewCutoff', { reviewCutoff })
+      .orderBy('status.nextReviewAt', 'ASC');
+
+    if (options?.fieldSlug) {
+      queryBuilder.andWhere('LOWER(field.slug) = LOWER(:fieldSlug)', {
+        fieldSlug: options.fieldSlug,
+      });
+    }
+
+    const reviewLimit = options?.limit ?? DEFAULT_REVIEW_QUEUE_LIMIT;
+    queryBuilder.take(reviewLimit);
+
+    const reviewStatuses = await queryBuilder.getMany();
+
+    const reviews: QuizResponse[] = [];
+
+    for (const status of reviewStatuses) {
+      const quiz = status.quiz;
+      if (!quiz) {
+        continue;
+      }
+
+      // 퀴즈 조회 API와 동일한 응답을 유지하기 위해 공용 변환기를 사용한다.
+      const quizResponse = await this.quizContentService.toQuizResponse(quiz);
+      reviews.push(quizResponse);
+    }
+
+    return reviews;
+  }
+
+  /**
    * 완료 처리 대상 스텝 시도를 찾는다.
    * - 클라이언트가 명시한 stepAttemptId를 우선 사용한다.
    * - 없으면 최신 진행 중(in_progress) 시도를 반환한다.
@@ -171,6 +238,46 @@ export class ProgressService {
   }
 
   /**
+   * 체크포인트 여부를 고려해 스텝의 총 퀴즈 수를 계산한다.
+   *
+   * @param step 스텝 엔티티
+   * @returns 총 퀴즈 수
+   */
+  private async getTotalQuizzesForStep(step: Step): Promise<number> {
+    const maxQuizCount = 10;
+
+    if (step.isCheckpoint) {
+      const totalInPool = await this.checkpointQuizPoolRepository.count({
+        where: { checkpointStep: { id: step.id } },
+      });
+
+      return Math.min(totalInPool, maxQuizCount);
+    }
+
+    const totalInStep = await this.quizRepository.count({ where: { step: { id: step.id } } });
+
+    return Math.min(totalInStep, maxQuizCount);
+  }
+
+  /**
+   * 결과 계산 시 사용할 총 퀴즈 수를 정한다.
+   *
+   * @param attemptTotal 시도에 저장된 총 퀴즈 수
+   * @param scoreResult 점수 계산 결과
+   * @returns 총 퀴즈 수
+   */
+  private resolveTotalQuizzesForResult(
+    attemptTotal: number,
+    scoreResult: StepAttemptScore,
+  ): number {
+    if (attemptTotal > 0) {
+      return attemptTotal;
+    }
+
+    return scoreResult.totalQuizzes;
+  }
+
+  /**
    * 스텝 시도에 해당하는 퀴즈 풀이 로그를 기반으로 점수를 계산한다.
    * @param stepAttemptId 계산 대상 스텝 시도 ID
    * @param options 점수 가중치 설정(없으면 기본값 사용)
@@ -197,11 +304,10 @@ export class ProgressService {
     const totalQuizzes = logs.length;
     const correctCount = logs.filter(log => log.isCorrect).length;
 
-    // 기본 3점 + 보너스(확장 시)
+    // 기본 3점 + 정답 보너스(기본 1점) + 기타 보너스(확장 시)
     const score = logs.reduce((accumulator, log) => {
       const baseScore = weights.baseScorePerQuiz;
-      // TODO: 추후 난이도/시간/정답 가중치 반영 시 아래 보너스 값을 채운다.
-      // correctBonus가 현재는 0점
+      // TODO: 추후 난이도/시간 가중치 반영 시 아래 보너스 값을 채운다.
       const correctnessBonus = log.isCorrect ? weights.correctBonus : weights.wrongBonus;
       const difficultyBonus = 0; // weights.difficultyMultiplier * (log.quiz?.difficulty ?? 0);
       const speedBonus = 0; // 시간 기반 보너스/페널티
@@ -221,11 +327,7 @@ export class ProgressService {
 
   private mergeScoreWeights(options?: Partial<ScoreCalculationOptions>): ScoreCalculationOptions {
     return {
-      baseScorePerQuiz: 3,
-      correctBonus: 0,
-      wrongBonus: 0,
-      difficultyMultiplier: 0,
-      speedBonus: 0,
+      ...DEFAULT_SCORE_WEIGHTS,
       ...(options ?? {}),
     };
   }

@@ -1,0 +1,24 @@
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_BLOCK_ENV_ACCESS_IN_WORKFLOW=false
+      - N8N_BLOCK_FS_WRITE_ACCESS=false
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+      - N8N_RESTRICT_FILE_ACCESS_TO=/home/node/downloads
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - NODE_ENV=production
+      - AI_API_KEY1=${AI_API_KEY1}
+      - AI_API_KEY2=${AI_API_KEY2}
+      - AI_API_KEY3=${AI_API_KEY3}
+      - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+      - GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=${GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY}
+    volumes:
+      - ~/.n8n:/home/node/.n8n
+      - ${DOWNLOAD_DIR}:/home/node/downloads

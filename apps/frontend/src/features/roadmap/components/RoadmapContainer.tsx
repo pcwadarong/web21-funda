@@ -4,99 +4,73 @@ import { Link } from 'react-router-dom';
 import SVGIcon from '@/comp/SVGIcon';
 import { UnitCard } from '@/feat/roadmap/components/UnitCard';
 import type { RoadmapUnit } from '@/feat/roadmap/types';
+import { useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 interface RoadmapContainerProps {
   fieldName: string | undefined;
   units: RoadmapUnit[];
-  isLoggedIn: boolean;
   onUnitClick: (unitId: number) => void;
 }
 
-export const RoadmapContainer = ({
-  fieldName,
-  units,
-  isLoggedIn,
-  onUnitClick,
-}: RoadmapContainerProps) => {
+export const RoadmapContainer = ({ fieldName, units, onUnitClick }: RoadmapContainerProps) => {
   const theme = useTheme();
 
+  const isLoggedIn = useIsLoggedIn();
+
+  const totalUnits = units.length;
   const completedUnits = units.filter(unit => unit.progress === 100).length;
-  const progressPercent = Math.round((completedUnits / units.length) * 100);
+  const progressPercent = totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
 
   return (
-    <div css={containerStyle}>
-      <main css={mainStyle(theme)}>
-        <section css={heroStyle}>
-          <div css={heroTopStyle}>
-            <Link to="/learn/select-field" css={backLinkStyle(theme)}>
-              <SVGIcon icon="ArrowLeft" size="sm" />
-              분야 선택으로 돌아가기
-            </Link>
+    <div css={contentWrapperStyle}>
+      <header css={headerStyle}>
+        <Link to="/learn/select-field" css={backLinkStyle(theme)}>
+          <SVGIcon icon="ArrowLeft" size="sm" />
+          전체 학습 분야
+        </Link>
+
+        <div css={heroStyle}>
+          <div css={heroTitleStyle}>
+            <h1 css={heroLabelStyle(theme)}>{fieldName} 로드맵</h1>
+            <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
           </div>
-          <div css={heroTopStyle}>
-            <div css={heroTitleStyle}>
-              <span css={heroLabelStyle(theme)}>{fieldName} 로드맵</span>
-              <span css={heroHeadingStyle(theme)}>단계별로 학습하며 전문가가 되어보세요</span>
+          {isLoggedIn && (
+            <div css={progressSummaryStyle(theme)}>
+              <span css={progressValueStyle(theme)}>{progressPercent}%</span>
+              <span css={progressMetaStyle(theme)}>
+                {completedUnits}/{totalUnits} 완료
+              </span>
             </div>
-            {isLoggedIn && (
-              <div css={progressSummaryStyle(theme)}>
-                <span css={progressValueStyle(theme)}>{progressPercent}%</span>
-                <span css={progressMetaStyle(theme)}>
-                  {completedUnits}/{units.length} 완료
-                </span>
-              </div>
-            )}
-          </div>
-        </section>
-        <section css={gridStyle}>
-          {units.map(unit => (
-            <UnitCard
-              key={unit.id}
-              unit={unit}
-              isLoggedIn={isLoggedIn}
-              onClick={() => onUnitClick(unit.id)}
-            />
-          ))}
-        </section>
-      </main>
+          )}
+        </div>
+      </header>
+
+      <section css={gridStyle}>
+        {units.map(unit => (
+          <UnitCard
+            key={unit.id}
+            unit={unit}
+            isLoggedIn={isLoggedIn}
+            onClick={() => onUnitClick(unit.id)}
+          />
+        ))}
+      </section>
     </div>
   );
 };
 
-const containerStyle = css`
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-`;
-
-const mainStyle = (theme: Theme) => css`
-  position: relative;
+const contentWrapperStyle = css`
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
-
-  &:before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: radial-gradient(${theme.colors.surface.bold} 1px, transparent 1px);
-    background-size: 28px 28px;
-    opacity: 0.4;
-  }
-
-  @media (max-width: 768px) {
-    padding: 32px 20px 80px;
-  }
+  width: 100%;
+  padding: 40px 30px;
 `;
 
-const heroStyle = css`
+const headerStyle = css`
   position: relative;
   z-index: 1;
   display: flex;
@@ -105,24 +79,28 @@ const heroStyle = css`
   margin-bottom: 10px;
 `;
 
-const heroTopStyle = css`
+const backLinkStyle = (theme: Theme) => css`
+  color: ${theme.colors.text.light};
+  text-decoration: none;
+  font-size: ${theme.typography['14Medium'].fontSize};
+  line-height: ${theme.typography['14Medium'].lineHeight};
+  font-weight: ${theme.typography['14Medium'].fontWeight};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+
+  &:hover {
+    filter: brightness(150%);
+  }
+`;
+
+const heroStyle = css`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-`;
-
-const backLinkStyle = (theme: Theme) => css`
-  color: ${theme.colors.text.light};
-  text-decoration: none;
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
 `;
 
 const heroTitleStyle = css`
@@ -136,6 +114,7 @@ const heroLabelStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${theme.colors.primary.main};
+  margin: 0;
 `;
 
 const heroHeadingStyle = (theme: Theme) => css`
@@ -143,6 +122,7 @@ const heroHeadingStyle = (theme: Theme) => css`
   line-height: ${theme.typography['20Medium'].lineHeight};
   font-weight: ${theme.typography['20Medium'].fontWeight};
   color: ${theme.colors.grayscale[600]};
+  margin-bottom: 1rem;
 `;
 
 const progressSummaryStyle = (theme: Theme) => css`
@@ -172,15 +152,8 @@ const gridStyle = css`
   display: grid;
   grid-template-columns: repeat(3, minmax(240px, 1fr));
   gap: 20px;
-  padding: 20px 0;
-
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  padding: 10px 0;
+  min-height: 0;
 
   @media (max-width: 1200px) {
     grid-template-columns: repeat(2, minmax(240px, 1fr));

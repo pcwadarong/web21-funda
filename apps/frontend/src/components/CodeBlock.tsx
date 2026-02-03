@@ -103,6 +103,12 @@ export const CodeBlock = ({ children, language = 'javascript' }: CodeBlockProps)
           language={language.toLowerCase()}
           style={vscDarkPlus}
           PreTag="div"
+          codeTagProps={{
+            style: {
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+            },
+          }}
           customStyle={{
             margin: 0,
             padding: 0,
@@ -124,6 +130,7 @@ const codeBlockContainerStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.medium};
   border: 1px solid ${theme.colors.border.default};
   overflow: hidden;
+  width: 100%;
 `;
 
 const badgeContainerStyle = (theme: Theme) => css`
@@ -137,14 +144,15 @@ const badgeContainerStyle = (theme: Theme) => css`
 
 const badgeStyle = (theme: Theme) => css`
   background: #fff9c4;
-  padding: 4px 12px;
+  padding: 0px 12px;
   border-radius: 20px;
   color: #704508;
   font-size: ${theme.typography['12Medium'].fontSize};
 `;
 
 const preStyle = css`
-  margin: 0;
   padding: 20px;
   overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 `;

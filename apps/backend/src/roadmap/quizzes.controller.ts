@@ -45,8 +45,9 @@ export class QuizzesController {
   async submitQuiz(
     @Param('quizId', ParseIntPipe) quizId: number,
     @Body() payload: QuizSubmissionRequest,
-    @Req() req: Request & { user?: JwtPayload },
+    @Req() req: Request & { user?: JwtPayload; cookies?: Record<string, string> },
   ): Promise<QuizSubmissionResponse> {
-    return this.roadmapService.submitQuiz(quizId, payload, req.user?.sub ?? null);
+    const clientId = req.cookies?.client_id;
+    return this.roadmapService.submitQuiz(quizId, payload, req.user?.sub ?? null, clientId);
   }
 }

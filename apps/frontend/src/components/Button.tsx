@@ -26,7 +26,7 @@ export const Button = ({
       css={[
         baseStyle(theme, fullWidth),
         variant === 'primary' ? primaryStyle(theme) : secondaryStyle(theme),
-        props.disabled && disabledStyle(theme),
+        props.disabled && disabledStyle,
         customCss,
       ]}
       {...props}
@@ -41,7 +41,7 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
   align-items: center;
   justify-content: center;
   width: ${fullWidth ? '100%' : 'auto'};
-  padding: 12px;
+  padding: 10px 12px;
   border: 0;
   border-radius: ${theme.borderRadius.medium};
   transition:
@@ -65,17 +65,18 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
 const primaryStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
   color: ${colors.light.grayscale[50]};
-  box-shadow: 0 10px 0 ${theme.colors.primary.dark};
+  border: 2px solid transparent;
+  box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark};
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 0 ${theme.colors.primary.dark};
+  &:not(:disabled):hover {
+    transform: translateY(-0.125rem);
+    box-shadow: 0 0.525rem 0 ${theme.colors.primary.dark};
     filter: brightness(1.02);
   }
 
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 8px 0 ${theme.colors.primary.dark};
+  &:not(:disabled):active {
+    transform: translateY(0.275rem);
+    box-shadow: 0 0.125rem 0 ${theme.colors.primary.dark};
   }
 `;
 
@@ -83,22 +84,21 @@ const secondaryStyle = (theme: Theme) => css`
   background: ${colors.light.grayscale[50]};
   color: ${colors.light.grayscale[700]};
   border: 2px solid ${theme.colors.primary.surface};
-  box-shadow: 0 0.5rem 0 ${theme.colors.border.default};
+  box-shadow: 0 0.3rem 0 ${theme.colors.border.default};
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.7rem 0 ${theme.colors.border.default};
+  &:not(:disabled):hover {
+    transform: translateY(-0.125rem);
+    box-shadow: 0 0.425rem 0 ${theme.colors.border.default};
     filter: brightness(0.99);
   }
 
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 0.4rem 0 ${theme.colors.border.default};
+  &:not(:disabled):active {
+    transform: translateY(0.175rem);
+    box-shadow: 0 0.125rem 0 ${theme.colors.border.default};
   }
 `;
 
-const disabledStyle = (theme: Theme) => css`
+const disabledStyle = css`
   opacity: 0.5;
   cursor: not-allowed;
-  border-color: ${theme.colors.border.default};
 `;

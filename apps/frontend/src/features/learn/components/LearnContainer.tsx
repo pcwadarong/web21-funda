@@ -17,6 +17,7 @@ interface LearnContainerProps {
   registerUnitRef: (unitId: number) => (element: HTMLElement | null) => void;
   onStepClick: (stepId: stepType) => void;
   onStepHover?: (stepId: number) => void;
+  onOverviewClick: (unitId: number) => void;
   fieldSlug: string;
   setFieldSlug: (slug: string) => void;
 }
@@ -30,6 +31,7 @@ export const LearnContainer = ({
   registerUnitRef,
   onStepClick,
   onStepHover,
+  onOverviewClick,
   fieldSlug,
   setFieldSlug,
 }: LearnContainerProps) => {
@@ -48,7 +50,7 @@ export const LearnContainer = ({
                 <Link to="/learn/roadmap">
                   <div css={unitTextStyle(theme)}>
                     <SVGIcon icon="ArrowLeft" size="md" />
-                    {fieldName} 로드맵
+                    전체 {fieldName} 로드맵
                   </div>
                 </Link>
                 <div css={titleTextStyle(theme)}>
@@ -57,8 +59,13 @@ export const LearnContainer = ({
                   </span>
                 </div>
               </div>
-              <Link to={`overview/${activeUnit.id}`} css={overviewButtonStyle(theme)}>
-                학습 개요
+              <Link
+                to={`overview/${activeUnit.id}`}
+                onClick={() => onOverviewClick(activeUnit.id)}
+                css={overviewButtonStyle(theme)}
+              >
+                <SVGIcon icon="Notebook" />
+                <span>학습 개요</span>
               </Link>
             </div>
           </div>
@@ -145,10 +152,6 @@ const mainStyle = css`
   overflow: visible;
   height: 100vh;
   min-height: 0;
-
-  @media (max-width: 768px) {
-    padding-bottom: 80px;
-  }
 `;
 
 const centerSectionStyle = css`
@@ -290,10 +293,14 @@ const unitTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${colors.light.grayscale[400]};
+  color: ${colors.light.grayscale[300]};
   display: flex;
   align-items: center;
   gap: 6px;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
 `;
 
 const titleTextStyle = (theme: Theme) => css`
@@ -325,7 +332,10 @@ const titleFadeStyle = css`
 `;
 
 const overviewButtonStyle = (theme: Theme) => css`
-  background: ${theme.colors.primary.light};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: ${theme.colors.primary.light}A6;
   color: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.large};
   padding: 8px 16px;
@@ -333,6 +343,20 @@ const overviewButtonStyle = (theme: Theme) => css`
   line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
   align-self: flex-end;
+  //border: 2px solid ${theme.colors.primary.dark}33;
+  box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark}80;
+  transition: all 150ms ease;
+
+  &:hover {
+    transform: translateY(-0.1rem);
+    box-shadow: 0 0.5rem 0 ${theme.colors.primary.dark}80;
+    filter: brightness(1.02);
+  }
+
+  &:active {
+    transform: translateY(0.2rem);
+    box-shadow: 0 0.2rem 0 ${theme.colors.primary.dark}80;
+  }
 `;
 
 const lessonsContainerStyle = (count: number) => css`
@@ -365,24 +389,22 @@ const lessonItemStyle = (theme: Theme) => css`
     transform: scale(clamp(0.78, 2.4vw, 1));
     transform-origin: center;
   }
-
-  &:hover {
-    transform: translateY(-2px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
 `;
 
 const completedLessonStyle = (theme: Theme, isDarkMode: boolean) => css`
   background: ${isDarkMode ? '#b4b5ff' : theme.colors.primary.surface};
   border-color: ${theme.colors.primary.main};
   color: ${theme.colors.primary.main};
-  box-shadow: 0 8px 0 ${theme.colors.primary.main};
+  box-shadow: 0 0.4rem 0 ${theme.colors.primary.main};
+
+  &:hover {
+    transform: translateY(-0.125em);
+    box-shadow: 0 0.525rem 0 ${theme.colors.primary.main};
+  }
 
   &:active {
-    box-shadow: 0 0.4rem 0 ${theme.colors.primary.main};
+    transform: translateY(0.275em);
+    box-shadow: 0 0.125rem 0 ${theme.colors.primary.main};
   }
 `;
 
@@ -390,10 +412,16 @@ const activeLessonStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
   border-color: ${theme.colors.primary.dark};
   color: ${colors.light.grayscale[50]};
-  box-shadow: 0 8px 0 ${theme.colors.primary.dark};
+  box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark};
+
+  &:hover {
+    transform: translateY(-0.125em);
+    box-shadow: 0 0.525rem 0 ${theme.colors.primary.dark};
+  }
 
   &:active {
-    box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark};
+    transform: translateY(0.275em);
+    box-shadow: 0 0.125rem 0 ${theme.colors.primary.dark};
   }
 `;
 
@@ -402,12 +430,9 @@ const lockedLessonStyle = (theme: Theme) => css`
   color: ${theme.colors.text.light};
   opacity: 0.6;
   cursor: not-allowed;
-  box-shadow: 0 8px 0 ${theme.colors.text.light};
-
-  &:active {
-    box-shadow: 0 0.4rem 0 ${theme.colors.text.light};
-  }
+  box-shadow: 0 0.4rem 0 ${theme.colors.text.light};
 `;
+
 const lessonNamePillStyle = (theme: Theme) => css`
   display: inline-block;
   padding: 6px 14px;

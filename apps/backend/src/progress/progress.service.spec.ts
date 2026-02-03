@@ -1,9 +1,13 @@
 import { Repository } from 'typeorm';
 
-import { Quiz, Step } from '../roadmap/entities';
+import type { QuizContentService } from '../common/utils/quiz-content.service';
+import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
+import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
 
 import { SolveLog } from './entities/solve-log.entity';
+import type { UserQuizStatus } from './entities/user-quiz-status.entity';
+import { QuizLearningStatus } from './entities/user-quiz-status.entity';
 import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt.entity';
 import { UserStepStatus } from './entities/user-step-status.entity';
 import { ProgressService } from './progress.service';
@@ -14,8 +18,11 @@ describe('ProgressService', () => {
   let stepAttemptRepository: Partial<Repository<UserStepAttempt>>;
   let stepStatusRepository: Partial<Repository<UserStepStatus>>;
   let stepRepository: Partial<Repository<Step>>;
+  let checkpointQuizPoolRepository: Partial<Repository<CheckpointQuizPool>>;
   let quizRepository: Partial<Repository<Quiz>>;
   let userRepository: Partial<Repository<User>>;
+  let userQuizStatusRepository: Partial<Repository<UserQuizStatus>>;
+  let quizContentService: Partial<QuizContentService>;
   let solveLogFindMock: jest.Mock;
   let stepAttemptFindOneMock: jest.Mock;
   let stepAttemptSaveMock: jest.Mock;
@@ -25,7 +32,18 @@ describe('ProgressService', () => {
   let stepStatusCreateMock: jest.Mock;
   let stepFindOneMock: jest.Mock;
   let quizCountMock: jest.Mock;
+  let checkpointPoolCountMock: jest.Mock;
   let userIncrementMock: jest.Mock;
+  let userQuizStatusQueryBuilderMock: {
+    innerJoinAndSelect: jest.Mock;
+    innerJoin: jest.Mock;
+    where: jest.Mock;
+    andWhere: jest.Mock;
+    orderBy: jest.Mock;
+    take: jest.Mock;
+    getMany: jest.Mock;
+  };
+  let quizResponseMock: jest.Mock;
 
   beforeEach(() => {
     solveLogFindMock = jest.fn();
@@ -37,7 +55,18 @@ describe('ProgressService', () => {
     stepStatusCreateMock = jest.fn(entity => entity);
     stepFindOneMock = jest.fn().mockResolvedValue({ id: 1 } as Step);
     quizCountMock = jest.fn().mockResolvedValue(0);
+    checkpointPoolCountMock = jest.fn().mockResolvedValue(0);
     userIncrementMock = jest.fn().mockResolvedValue({});
+    quizResponseMock = jest.fn();
+    userQuizStatusQueryBuilderMock = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
+    };
 
     solveLogRepository = {
       find: solveLogFindMock,
@@ -55,11 +84,20 @@ describe('ProgressService', () => {
     stepRepository = {
       findOne: stepFindOneMock,
     };
+    checkpointQuizPoolRepository = {
+      count: checkpointPoolCountMock,
+    };
     quizRepository = {
       count: quizCountMock,
     };
     userRepository = {
       increment: userIncrementMock,
+    };
+    userQuizStatusRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue(userQuizStatusQueryBuilderMock),
+    };
+    quizContentService = {
+      toQuizResponse: quizResponseMock,
     };
 
     service = new ProgressService(
@@ -67,8 +105,11 @@ describe('ProgressService', () => {
       stepAttemptRepository as Repository<UserStepAttempt>,
       stepStatusRepository as Repository<UserStepStatus>,
       stepRepository as Repository<Step>,
+      checkpointQuizPoolRepository as Repository<CheckpointQuizPool>,
       quizRepository as Repository<Quiz>,
       userRepository as Repository<User>,
+      userQuizStatusRepository as Repository<UserQuizStatus>,
+      quizContentService as QuizContentService,
     );
   });
 
@@ -77,7 +118,7 @@ describe('ProgressService', () => {
 
     const result = await service.calculateStepAttemptScore(1);
 
-    expect(solveLogFindMock).toHaveBeenCalledWith({ where: { stepAttemptId: 1 } });
+    expect(solveLogFindMock).toHaveBeenCalledWith({ where: { stepAttempt: { id: 1 } } });
     expect(result).toEqual({
       score: 0,
       correctCount: 0,
@@ -253,5 +294,83 @@ describe('ProgressService', () => {
 
     expect(result.syncedCount).toBe(0);
     expect(userIncrementMock).not.toHaveBeenCalled();
+  });
+
+  it('복습 큐 조회는 내일 0시 이전까지를 포함해 조회한다', async () => {
+    jest.useFakeTimers();
+    const now = new Date('2026-01-01T10:15:00.000Z');
+    jest.setSystemTime(now);
+
+    userQuizStatusQueryBuilderMock.getMany.mockResolvedValue([]);
+
+    await service.getReviewQueue(10);
+
+    const expectedCutoff = new Date(Date.UTC(2026, 0, 2, 0, 0, 0, 0));
+    const andWhereCalls = userQuizStatusQueryBuilderMock.andWhere.mock.calls;
+    let cutoffCallArgs: unknown[] | undefined;
+
+    for (const call of andWhereCalls) {
+      if (String(call[0]).includes('reviewCutoff')) {
+        cutoffCallArgs = call;
+        break;
+      }
+    }
+
+    expect(cutoffCallArgs).toBeDefined();
+
+    const cutoffParams = cutoffCallArgs ? (cutoffCallArgs[1] as { reviewCutoff: Date }) : null;
+    expect(cutoffParams?.reviewCutoff).toEqual(expectedCutoff);
+
+    jest.useRealTimers();
+  });
+
+  it('복습 큐 조회 시 퀴즈 응답 형태로 반환한다', async () => {
+    const quiz = {
+      id: 101,
+      type: 'MCQ',
+      question: '',
+      content: {
+        question: '복습 질문',
+        options: [{ id: 'c1', text: '보기 1' }],
+      },
+    } as Quiz;
+
+    userQuizStatusQueryBuilderMock.getMany.mockResolvedValue([
+      {
+        quiz,
+        status: QuizLearningStatus.REVIEW,
+        interval: 6,
+        nextReviewAt: new Date('2026-01-02T00:00:00.000Z'),
+        lastSolvedAt: new Date('2026-01-01T00:00:00.000Z'),
+        isWrong: false,
+      } as UserQuizStatus,
+    ]);
+
+    const expectedResponse: QuizResponse = {
+      id: 101,
+      type: 'MCQ',
+      content: {
+        question: '복습 질문',
+        options: [{ id: 'c1', text: '보기 1' }],
+      },
+    };
+    quizResponseMock.mockResolvedValue(expectedResponse);
+
+    const result = await service.getReviewQueue(1);
+
+    expect(quizResponseMock).toHaveBeenCalledWith(quiz);
+    expect(result).toEqual([expectedResponse]);
+  });
+
+  it('복습 큐 조회 시 필드와 제한 개수를 반영한다', async () => {
+    userQuizStatusQueryBuilderMock.getMany.mockResolvedValue([]);
+
+    await service.getReviewQueue(3, { fieldSlug: 'frontend', limit: 10 });
+
+    const andWhereCalls = userQuizStatusQueryBuilderMock.andWhere.mock.calls;
+    const fieldFilterCall = andWhereCalls.find(call => String(call[0]).includes('field.slug'));
+
+    expect(fieldFilterCall).toBeDefined();
+    expect(userQuizStatusQueryBuilderMock.take).toHaveBeenCalledWith(10);
   });
 });

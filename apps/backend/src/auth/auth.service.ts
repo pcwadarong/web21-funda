@@ -7,6 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { Response } from 'express';
 import { Repository } from 'typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
+import { UserStepStatus } from '../progress/entities';
+import { Step } from '../roadmap/entities';
 import { User, UserRefreshToken } from '../users/entities';
 import { AuthProvider, UserRole } from '../users/entities/user.entity';
 
@@ -31,6 +34,7 @@ export interface AuthUserProfile {
   heartCount: number;
   maxHeartCount: number;
   experience: number;
+  diamondCount: number;
   currentStreak: number;
   provider: AuthProvider;
 }
@@ -44,15 +48,74 @@ export class AuthService {
     private readonly users: Repository<User>,
     @InjectRepository(UserRefreshToken)
     private readonly refreshTokens: Repository<UserRefreshToken>,
+    @InjectRepository(UserStepStatus)
+    private readonly stepStatusRepository: Repository<UserStepStatus>,
+    @InjectRepository(Step)
+    private readonly stepRepository: Repository<Step>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
    * GitHub 프로필 기반으로 유저를 생성하거나 업데이트한 뒤 토큰을 발급한다.
+   * Redis에 저장된 비로그인 사용자의 데이터를 동기화한다.
    */
-  async handleGithubLogin(profile: GithubProfile, meta: RequestMeta): Promise<TokenPairResult> {
+  async handleGithubLogin(
+    profile: GithubProfile,
+    meta: RequestMeta,
+    clientId?: string,
+  ): Promise<TokenPairResult> {
     const user = await this.upsertGithubUser(profile);
+    await this.recoverHeart(user);
+
+    // Redis에서 비로그인 사용자의 데이터 동기화
+    if (clientId) {
+      // 1. step_ids 동기화
+      const stepIdsData = await this.redisService.get(`step_ids:${clientId}`);
+      if (stepIdsData) {
+        const stepIds = stepIdsData as number[];
+
+        for (const stepId of stepIds) {
+          const existingStatus = await this.stepStatusRepository.findOne({
+            where: { userId: user.id, step: { id: stepId } },
+          });
+
+          if (!existingStatus) {
+            const step = await this.stepRepository.findOne({ where: { id: stepId } });
+            if (step) {
+              const stepStatus = this.stepStatusRepository.create({
+                userId: user.id,
+                step,
+                isCompleted: true,
+                bestScore: null,
+                successRate: null,
+              });
+              await this.stepStatusRepository.save(stepStatus);
+            }
+          }
+        }
+
+        // Redis step_ids 삭제
+        await this.redisService.del(`step_ids:${clientId}`);
+      }
+
+      // 2. heart 동기화
+      const heartFromRedis = await this.redisService.get(`heart:${clientId}`);
+
+      if (heartFromRedis !== null && heartFromRedis !== undefined) {
+        const heartValue =
+          typeof heartFromRedis === 'number'
+            ? heartFromRedis
+            : parseInt(heartFromRedis as string, 10);
+        user.heartCount = heartValue;
+        await this.users.save(user);
+
+        // Redis heart 삭제
+        await this.redisService.del(`heart:${clientId}`);
+      }
+    }
+
     const { accessToken, refreshToken } = await this.issueTokens(user, meta);
 
     return {
@@ -79,11 +142,15 @@ export class AuthService {
     tokenRecord.lastUsedAt = new Date();
     await this.refreshTokens.save(tokenRecord);
 
-    const user = await this.users.findOneBy({ id: userId });
+    const user = await this.users.findOne({
+      where: { id: userId },
+      relations: { profileCharacter: true },
+    });
     if (!user) {
       throw new UnauthorizedException('유저 정보를 찾을 수 없습니다.');
     }
 
+    await this.recoverHeart(user);
     const { accessToken, refreshToken: newRefreshToken } = await this.issueTokens(user, meta);
 
     return {
@@ -318,7 +385,44 @@ export class AuthService {
    * ID로 유저를 조회한다.
    */
   async getUserById(userId: number): Promise<User | null> {
-    return this.users.findOneBy({ id: userId });
+    return this.users.findOne({
+      where: { id: userId },
+      relations: { profileCharacter: true },
+    });
+  }
+
+  /**
+   * Heart를 회복한다 (10분마다 1개씩, 최대 maxHeartCount까지).
+   * @param user 사용자
+   */
+  async recoverHeartPublic(user: User): Promise<void> {
+    return this.recoverHeart(user);
+  }
+
+  /**
+   * Heart를 회복한다 (10분마다 1개씩, 최대 maxHeartCount까지).
+   * @param user 사용자
+   */
+  private async recoverHeart(user: User): Promise<void> {
+    const now = new Date();
+    const lastSyncedTime = user.lastHeartSyncedAt.getTime();
+    const elapsedMilliseconds = now.getTime() - lastSyncedTime;
+    const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
+
+    // 10분(600초) 단위로 heart 회복 횟수 계산
+    const recoveryIntervalSeconds = 10 * 60; // 10분
+    const recoveryCount = Math.floor(elapsedSeconds / recoveryIntervalSeconds);
+
+    if (recoveryCount > 0) {
+      // 회복할 heart 수 계산
+      const newHeartCount = Math.min(user.heartCount + recoveryCount, user.maxHeartCount);
+
+      // heart 회복 및 lastHeartSyncedAt 업데이트
+      user.heartCount = newHeartCount;
+      user.lastHeartSyncedAt = now;
+
+      await this.users.save(user);
+    }
   }
 
   /**
@@ -329,11 +433,12 @@ export class AuthService {
       id: user.id,
       displayName: user.displayName,
       email: user.email ?? null,
-      profileImageUrl: user.profileImageUrl ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       role: user.role,
       heartCount: user.heartCount,
       maxHeartCount: user.maxHeartCount,
       experience: user.experience,
+      diamondCount: user.diamondCount,
       currentStreak: user.currentStreak,
       provider: user.provider,
     };

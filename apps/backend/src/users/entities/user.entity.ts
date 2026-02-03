@@ -3,10 +3,15 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+import { ProfileCharacter } from '../../profile/entities/profile-character.entity';
+import { RankingTier } from '../../ranking/entities/ranking-tier.entity';
 
 import { UserRefreshToken } from './user-refresh-token.entity';
 
@@ -39,8 +44,22 @@ export class User {
   @Column({ name: 'display_name', type: 'varchar', length: 100 })
   displayName!: string;
 
+  @Column({ name: 'current_tier_id', type: 'int', nullable: true })
+  currentTierId?: number | null;
+
+  @ManyToOne(() => RankingTier, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'current_tier_id' })
+  currentTier?: RankingTier | null;
+
   @Column({ name: 'profile_image_url', type: 'varchar', length: 500, nullable: true })
   profileImageUrl?: string | null;
+
+  @Column({ name: 'profile_character_id', type: 'int', nullable: true })
+  profileCharacterId?: number | null;
+
+  @ManyToOne(() => ProfileCharacter, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'profile_character_id' })
+  profileCharacter?: ProfileCharacter | null;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role!: UserRole;
@@ -55,6 +74,9 @@ export class User {
   // 아이템/보상/레벨업으로 증가 가능한 구조. 기본값은 5
   @Column({ name: 'max_heart_count', type: 'int', default: 5 })
   maxHeartCount!: number;
+
+  @Column({ name: 'diamond_count', type: 'int', default: 0 })
+  diamondCount!: number;
 
   // 하트는 일단 lazy 방식으로 하트 주기 계산을 위해 마지막 싱크 시각을 저장하도록.. 근데 나중에 수정될 수 있음
   @Column({
@@ -82,4 +104,10 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'datetime' })
   updatedAt!: Date;
+
+  @Column({ name: 'is_email_subscribed', type: 'boolean', default: true })
+  isEmailSubscribed!: boolean;
+
+  @Column({ name: 'last_remind_email_sent_at', type: 'datetime', nullable: true })
+  lastRemindEmailSentAt?: Date | null;
 }

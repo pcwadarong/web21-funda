@@ -25,7 +25,7 @@ jobs:
             APP_DIR=~/web21-funda
             cd $APP_DIR
 
-            # 1. 최신 코드 가져오기 (배포 설정 파일 갱신)
+            # 1. 최신 코드 가져오기 (배포 설정 파일 갱신) 배포용
             git pull origin main
 
             # 2. .env 파일 생성 (루트 디렉토리)
@@ -53,14 +53,14 @@ jobs:
             APP_COMPOSE=docker/production/docker-compose.deploy.yml
             MONITOR_COMPOSE=docker/monitoring/docker-compose.monitoring.production.yml
 
-            docker compose -f $APP_COMPOSE pull
-            docker compose -f $MONITOR_COMPOSE pull
-            
-            docker compose -f $APP_COMPOSE up -d
-            docker compose -f $MONITOR_COMPOSE up -d
+            docker compose --env-file .env -f $APP_COMPOSE pull
+            docker compose --env-file .env -f $MONITOR_COMPOSE pull
+
+            docker compose --env-file .env -f $APP_COMPOSE up -d
+            docker compose --env-file .env -f $MONITOR_COMPOSE up -d
 
             # 7. DB 마이그레이션
-            docker compose -f $APP_COMPOSE exec -T backend \
+            docker compose --env-file .env -f $APP_COMPOSE exec -T backend \
               node ./node_modules/typeorm/cli.js -d dist/config/typeorm.data-source.js migration:run
 
             # 8. 정리

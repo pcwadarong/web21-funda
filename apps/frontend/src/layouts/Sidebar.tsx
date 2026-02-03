@@ -1,80 +1,186 @@
 import { css, useTheme } from '@emotion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import SVGIcon from '@/comp/SVGIcon';
-import { useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { Avatar } from '@/components/Avatar';
+import { Dropdown } from '@/components/Dropdown';
+import { Loading } from '@/components/Loading';
+import SVGIcon from '@/components/SVGIcon';
+import { useLogoutMutation } from '@/hooks/queries/authQueries';
+import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
+import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import { useModal } from '@/store/modalStore';
+import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
+  { id: 'battle', label: '퀴즈배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 
+const ADMIN_NAV_ITEM = {
+  id: 'admin',
+  label: '관리자',
+  icon: 'Data',
+  path: '/admin',
+} as const;
+
 export const Sidebar = () => {
   const theme = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
+  const profileImageUrl = useAuthProfileImageUrl();
 
-  // 활성화된 네비게이션 아이템 찾기
-  const activeItemId = NAV_ITEMS.find(item => {
+  const { showToast } = useToast();
+  const { confirm } = useModal();
+  const logoutMutation = useLogoutMutation();
+
+  // 사용자 티어 조회
+  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
+  const tierName = rankingMe?.tier?.name ?? null;
+
+  // 관리자 여부 확인
+  const isAdmin = user?.role === 'admin';
+
+  // 전체 메뉴 구성
+  const allNavItems = isAdmin ? [...NAV_ITEMS, ADMIN_NAV_ITEM] : NAV_ITEMS;
+
+  // 활성화된 네비게이션 아이템 ID 찾기 로직
+  const getActiveItemId = () => {
     const currentPath = location.pathname;
 
-    // 프로필의 경우 동적 경로 처리
-    if (item.id === 'profile') return currentPath.startsWith('/profile');
+    if (currentPath.startsWith('/admin')) return 'admin';
+    if (currentPath.startsWith('/profile')) return 'profile';
+    if (currentPath.startsWith('/learn')) return 'learn';
+    if (currentPath.startsWith('/battle')) return 'battle';
 
-    // 학습하기의 경우 하위 경로도 포함
-    if (item.id === 'learn') return currentPath.startsWith('/learn');
+    return NAV_ITEMS.find(item => currentPath === item.path)?.id;
+  };
 
-    // 나머지는 정확히 일치하는지 확인
-    return currentPath === item.path;
-  })?.id;
+  const activeItemId = getActiveItemId();
+
+  const handleLogout = useCallback(async () => {
+    const isConfirmed = await confirm({
+      title: '로그아웃',
+      content: '정말 로그아웃 하시겠습니까?',
+      confirmText: '로그아웃',
+    });
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      navigate('/learn', { replace: true });
+      await logoutMutation.mutateAsync();
+    } catch {
+      showToast('로그아웃 중 오류가 발생했습니다.');
+    }
+  }, [confirm, logoutMutation, navigate, showToast]);
+
+  const dropdownOptions = [{ value: 'logout', label: '로그아웃' }];
+
+  const handleLinkClick = async (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    itemId: string,
+    targetPath: string,
+  ) => {
+    event.preventDefault();
+
+    if (!isLoggedIn && !user && (itemId === 'ranking' || itemId === 'profile')) {
+      const isConfirmed = await confirm({
+        title: '로그인 필요',
+        content: (
+          <>
+            해당 페이지는 로그인 하셔야 확인하실 수 있습니다.
+            <br />
+            로그인 하시겠습니까?
+          </>
+        ),
+        confirmText: '로그인',
+      });
+
+      if (!isConfirmed) {
+        return;
+      }
+
+      try {
+        sessionStorage.setItem('loginRedirectPath', targetPath);
+        navigate('/login');
+      } catch {
+        showToast('오류가 발생했습니다.');
+      }
+
+      return;
+    }
+
+    navigate(targetPath);
+  };
 
   return (
-    <aside css={sidebarStyle(theme)}>
-      <Link to="/learn" css={logoSectionStyle}>
-        <span css={logoIconStyle}>
-          <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
-        </span>
-        <span css={logoTextStyle(theme)}>Funda</span>
-      </Link>
+    <>
+      {logoutMutation.isPending && <Loading />}
+      <aside css={sidebarStyle(theme)}>
+        <Link to="/learn" css={logoSectionStyle}>
+          <span css={logoIconStyle}>
+            <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
+          </span>
+          <span css={logoTextStyle(theme)}>Funda</span>
+        </Link>
 
-      <nav css={navStyle}>
-        {NAV_ITEMS.map(item => {
-          const targetPath = item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
+        <nav css={navStyle}>
+          {allNavItems.map(item => {
+            // 프로필의 경우 유저 ID를 포함한 경로로 설정
+            const targetPath =
+              item.id === 'profile' && user?.id ? `/profile/${user.id}` : item.path;
 
-          return (
-            <Link
-              key={item.id}
-              to={targetPath}
-              css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
-            >
-              <span css={navIconStyle}>
-                <SVGIcon icon={`${item.icon}`} size="md" />
-              </span>
-              <span css={navLabelStyle(theme)}>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-      {isLoggedIn && user && (
-        <div css={userSectionStyle(theme)}>
-          <div css={avatarStyle(theme)}>
-            {user.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt={user.displayName} css={avatarImageStyle} />
-            ) : (
-              <SVGIcon icon="Profile" size="md" />
-            )}
-          </div>
-          <div css={userInfoStyle}>
-            <div css={userNameStyle(theme)}>{user.displayName}</div>
-            <div css={userLevelStyle(theme)}>{user.experience} XP</div>
-          </div>
-        </div>
-      )}
-    </aside>
+            return (
+              <Link
+                key={item.id}
+                onClick={event => handleLinkClick(event, item.id, targetPath)}
+                to={targetPath}
+                css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
+              >
+                <span css={navIconStyle}>
+                  <SVGIcon icon={`${item.icon}`} size="md" />
+                </span>
+                <span css={navLabelStyle(theme)}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {isLoggedIn && user && (
+          <Dropdown
+            options={dropdownOptions}
+            onChange={handleLogout}
+            variant="plain"
+            placement="top"
+            triggerCss={userSectionTriggerStyle}
+            triggerContent={
+              <div css={userSectionStyle(theme)}>
+                <Avatar
+                  src={profileImageUrl}
+                  name={user.displayName}
+                  size="sm"
+                  alt={user.displayName}
+                />
+                <div css={userInfoStyle}>
+                  <div css={userNameStyle(theme)}>{user.displayName}</div>
+                  <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
+                </div>
+              </div>
+            }
+            triggerAction="click"
+          />
+        )}
+      </aside>
+    </>
   );
 };
 
@@ -95,18 +201,19 @@ const sidebarStyle = (theme: Theme) => css`
   }
 
   @media (max-width: 768px) {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    order: 2;
+
     width: 100%;
-    height: auto;
+    height: 96px;
+    flex-shrink: 0;
+
     flex-direction: row;
-    justify-content: space-around;
     padding: 12px;
-    border-right: none;
+    background: ${theme.colors.surface.strong};
     border-top: 1px solid ${theme.colors.border.default};
-    z-index: 100;
+    align-items: center;
+    justify-content: space-around;
   }
 `;
 
@@ -115,6 +222,7 @@ const logoSectionStyle = css`
   align-items: center;
   gap: 8px;
   margin-bottom: 32px;
+  text-decoration: none;
 
   @media (max-width: 768px) {
     display: none;
@@ -122,17 +230,9 @@ const logoSectionStyle = css`
 `;
 
 const logoIconStyle = css`
-  font-size: 24px;
-  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-
-  @media (max-width: 1024px) {
-    flex: 1;
-    text-align: center;
-  }
 `;
 
 const logoImageStyle = css`
@@ -144,9 +244,7 @@ const logoImageStyle = css`
 const logoTextStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
-  line-height: ${theme.typography['20Bold'].lineHeight};
   color: ${theme.colors.primary.main};
-
   @media (max-width: 1024px) {
     display: none;
   }
@@ -176,6 +274,7 @@ const navItemStyle = (theme: Theme) => css`
   text-decoration: none;
   color: ${theme.colors.text.default};
   transition: background-color 150ms ease;
+  text-align: center;
 
   &:hover {
     background: ${theme.colors.surface.default};
@@ -206,21 +305,15 @@ const activeNavItemStyle = (theme: Theme) => css`
 `;
 
 const navIconStyle = css`
-  font-size: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-
-  @media (max-width: 768px) {
-    font-size: 24px;
-  }
 `;
 
 const navLabelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
   font-weight: ${theme.typography['16Medium'].fontWeight};
 
   @media (max-width: 1024px) {
@@ -230,8 +323,6 @@ const navLabelStyle = (theme: Theme) => css`
   @media (max-width: 768px) {
     display: block;
     font-size: ${theme.typography['12Medium'].fontSize};
-    line-height: ${theme.typography['12Medium'].lineHeight};
-    font-weight: ${theme.typography['12Medium'].fontWeight};
   }
 `;
 
@@ -253,32 +344,6 @@ const userSectionStyle = (theme: Theme) => css`
   }
 `;
 
-const avatarImageStyle = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-`;
-
-const avatarStyle = (theme: Theme) => css`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: ${theme.colors.primary.surface};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-  overflow: hidden;
-
-  @media (max-width: 1024px) {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
-  }
-`;
-
 const userInfoStyle = css`
   display: flex;
   flex-direction: column;
@@ -293,14 +358,34 @@ const userInfoStyle = css`
 
 const userNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Bold'].fontSize};
-  line-height: ${theme.typography['16Bold'].lineHeight};
-  font-weight: ${theme.typography['16Bold'].fontWeight};
   color: ${theme.colors.text.strong};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 `;
 
 const userLevelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
   color: ${theme.colors.text.weak};
+  text-align: left;
+`;
+
+const buildTierLabel = (tierName: string | null) =>
+  tierName ? `${tierName} 티어` : '티어 정보 없음';
+
+const userSectionTriggerStyle = css`
+  width: 100%;
+  padding: 0 !important;
+  border: none !important;
+
+  & > div {
+    width: 100%;
+    transition: background-color 150ms ease;
+    cursor: pointer;
+
+    :hover {
+      filter: brightness(0.97);
+    }
+  }
 `;

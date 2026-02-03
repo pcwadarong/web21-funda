@@ -38,7 +38,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <Toast message={toast.message} isOpen={toast.isOpen} />
+      {toast.isOpen && <Toast message={toast.message} isOpen={toast.isOpen} />}
     </ToastContext.Provider>
   );
 };

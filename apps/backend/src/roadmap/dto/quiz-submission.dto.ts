@@ -15,6 +15,11 @@ export interface QuizSubmissionRequest {
    * 비로그인 사용자는 포함하지 않는다.
    */
   step_attempt_id?: number;
+  /**
+   * 현재 풀고 있는 스텝의 orderIndex.
+   * 하트 차감 조건 확인에 사용된다.
+   */
+  current_step_order_index?: number;
 }
 
 export interface QuizSubmissionResponse {
@@ -25,4 +30,5 @@ export interface QuizSubmissionResponse {
     correct_pairs?: MatchingPair[];
     explanation?: string | null;
   };
+  user_heart_count?: number;
 }

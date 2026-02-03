@@ -6,14 +6,43 @@ interface ModalProps {
   title: string;
   content: React.ReactNode;
   onClose: () => void;
+  maxWidth?: number;
+  padding?: boolean;
+  verticalAlign?: 'center' | 'top';
+  closeOnBackdropClick?: boolean;
 }
 
-export const Modal = ({ title, content, onClose }: ModalProps) => {
+export const Modal = ({
+  title,
+  content,
+  onClose,
+  maxWidth = 500,
+  padding = true,
+  verticalAlign = 'center',
+  closeOnBackdropClick = true,
+}: ModalProps) => {
   const theme = useTheme();
 
   return (
-    <div css={modalOverlayStyle} onClick={onClose}>
-      <div css={modalContentStyle(theme)} onClick={e => e.stopPropagation()}>
+    <div
+      css={modalOverlayStyle(verticalAlign)}
+      onClick={() => closeOnBackdropClick && onClose()}
+      role="button"
+      tabIndex={0}
+      onKeyDown={event => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+    >
+      <div
+        css={modalContentStyle(theme, maxWidth, padding)}
+        role="presentation"
+        tabIndex={-1}
+        onClick={e => e.stopPropagation()}
+      >
         <div css={modalHeaderStyle}>
           <h2 css={modalTitleStyle(theme)}>{title}</h2>
           <button css={modalCloseButtonStyle} onClick={onClose}>
@@ -26,7 +55,7 @@ export const Modal = ({ title, content, onClose }: ModalProps) => {
   );
 };
 
-const modalOverlayStyle = css`
+const modalOverlayStyle = (verticalAlign: 'center' | 'top') => css`
   position: fixed;
   top: 0;
   left: 0;
@@ -34,21 +63,24 @@ const modalOverlayStyle = css`
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   display: flex;
-  align-items: center;
   justify-content: center;
   z-index: 1000;
+
+  align-items: ${verticalAlign === 'top' ? 'flex-start' : 'center'};
+  padding-top: ${verticalAlign === 'top' ? '10vh' : 0};
 `;
 
-const modalContentStyle = (theme: Theme) => css`
+const modalContentStyle = (theme: Theme, maxWidth: number, padding: boolean) => css`
   background: ${theme.colors.surface.strong};
   border-radius: ${theme.borderRadius.large};
-  padding: 24px;
+  padding: ${padding ? '24px' : '24px 24px 0'};
   width: 90%;
-  max-width: 500px;
+  max-width: ${maxWidth}px;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   color: ${theme.colors.text.strong};
+  position: relative;
 `;
 
 const modalHeaderStyle = css`
@@ -62,7 +94,6 @@ const modalTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   line-height: ${theme.typography['20Bold'].lineHeight};
   font-weight: ${theme.typography['20Bold'].fontWeight};
-  margin: 0;
 `;
 
 const modalCloseButtonStyle = (theme: Theme) => css`

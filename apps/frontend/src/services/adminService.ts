@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import type { WeeklyRankingResult } from '@/features/leaderboard/types';
+
+import { apiFetch } from './api';
 
 export interface UploadSummary {
   processed: number;
@@ -12,42 +14,105 @@ export interface UploadSummary {
   quizzesUpdated: number;
 }
 
+export interface UnitOverviewUploadSummary {
+  processed: number;
+  unitsUpdated: number;
+  unitsNotFound: number;
+}
+
+export interface ProfileCharacterUploadSummary {
+  processed: number;
+  charactersCreated: number;
+  charactersUpdated: number;
+}
+
+export interface ProfileCharacterCreateRequest {
+  imageUrl: string;
+  priceDiamonds: number;
+  description?: string | null;
+  isActive?: boolean;
+}
+
+export type ProfileCharacterCreateResponse =
+  | { id: number; created: boolean; updated: boolean }
+  | { error: string };
+
 export type UploadResponse =
   | { summary: UploadSummary }
   | { message: string; frontendPath?: string; error?: string }
   | { error: string };
 
+export interface AdminWeeklyRankingParams {
+  tierName: string;
+  groupIndex: number;
+  weekKey?: string | null;
+}
+
 export const adminService = {
   /**
    * JSONL 파일을 업로드하여 퀴즈 데이터를 일괄 업로드합니다.
-   * @param file 업로드할 JSONL 파일
+   * @param files 업로드할 JSONL 파일 목록
    * @returns 업로드 결과 요약 또는 에러 메시지
    */
-  async uploadQuizzes(file: File): Promise<UploadResponse> {
+  async uploadQuizzes(files: File[]): Promise<UploadResponse> {
     const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${BASE_URL}/admin/quizzes/upload`, {
-      method: 'POST',
-      body: formData,
+    files.forEach(file => {
+      formData.append('file', file);
     });
+    return apiFetch.post<UploadResponse>('/admin/quizzes/upload', formData);
+  },
 
-    const text = await response.text();
-    let parsed: UploadResponse;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = { error: text || '응답을 해석할 수 없습니다.' };
+  /**
+   * JSONL 파일을 업로드하여 유닛 개요를 일괄 업데이트합니다.
+   * @param files 업로드할 JSONL 파일 목록
+   * @returns 업로드 결과 요약
+   */
+  async uploadUnitOverviews(files: File[]): Promise<UnitOverviewUploadSummary> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('file', file);
+    });
+    return apiFetch.post<UnitOverviewUploadSummary>('/admin/units/overview/upload', formData);
+  },
+
+  /**
+   * 프로필 캐릭터를 단일 등록합니다.
+   * @param payload 단일 등록 요청
+   * @returns 등록 결과
+   */
+  async createProfileCharacter(
+    payload: ProfileCharacterCreateRequest,
+  ): Promise<ProfileCharacterCreateResponse> {
+    return apiFetch.post<ProfileCharacterCreateResponse>('/admin/profile-characters', payload);
+  },
+
+  /**
+   * 프로필 캐릭터 JSONL 파일을 업로드합니다.
+   * @param files 업로드할 JSONL 파일 목록
+   * @returns 업로드 결과 요약
+   */
+  async uploadProfileCharacters(files: File[]): Promise<ProfileCharacterUploadSummary> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('file', file);
+    });
+    return apiFetch.post<ProfileCharacterUploadSummary>(
+      '/admin/profile-characters/upload',
+      formData,
+    );
+  },
+
+  /**
+   * 관리자용 주간 랭킹 정보를 가져옵니다.
+   */
+  async getWeeklyRankingByGroup(params: AdminWeeklyRankingParams): Promise<WeeklyRankingResult> {
+    const query = new URLSearchParams();
+    query.set('tierName', params.tierName);
+    query.set('groupIndex', String(params.groupIndex));
+    if (params.weekKey) {
+      query.set('weekKey', params.weekKey);
     }
 
-    if (!response.ok) {
-      const message =
-        (parsed as { message?: string }).message ||
-        (parsed as { error?: string }).error ||
-        '업로드 실패';
-      throw new Error(message);
-    }
-
-    return parsed;
+    return apiFetch.get<WeeklyRankingResult>(`/admin/ranking/weekly?${query.toString()}`);
   },
 };

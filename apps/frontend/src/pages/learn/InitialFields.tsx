@@ -1,28 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { InitialFieldsContainer } from '@/feat/fields/components/InitialFieldsContainer';
+import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
 import { useStorage } from '@/hooks/useStorage';
-import { type Field, fieldService } from '@/services/fieldService';
+import { fieldService } from '@/services/fieldService';
 
 export const InitialFields = () => {
   const navigate = useNavigate();
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const { updateUIState } = useStorage();
-  const [fields, setFields] = useState<Field[]>([]);
+  const queryClient = useQueryClient();
+  const { data } = useFieldsQuery();
 
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        const data = await fieldService.getFields();
-        setFields(data.fields);
-      } catch (error) {
-        console.error('API Error:', error);
-      }
-    };
-
-    fetchFields();
-  }, []);
+  const fields = data.fields;
 
   const handleFieldChange = useCallback((slug: string) => {
     setSelectedField(prev => (prev === slug ? null : slug));
@@ -32,7 +24,10 @@ export const InitialFields = () => {
     if (!selectedField) return;
 
     try {
-      const data = await fieldService.getFirstUnit(selectedField);
+      const data = await queryClient.fetchQuery({
+        queryKey: ['field-first-unit', selectedField],
+        queryFn: () => fieldService.getFirstUnit(selectedField),
+      });
 
       if (data.unit && data.unit.steps[0]) {
         const firstStepId = data.unit.steps[0].id;
@@ -49,7 +44,7 @@ export const InitialFields = () => {
       });
     }
     navigate('/quiz');
-  }, [navigate, selectedField, updateUIState]);
+  }, [navigate, selectedField, updateUIState, queryClient]);
 
   return (
     <InitialFieldsContainer

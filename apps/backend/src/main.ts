@@ -1,14 +1,25 @@
+// Import with `const Sentry = require("@sentry/nestjs");` if you are using CJS
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as Sentry from '@sentry/nestjs';
 import cookieParser from 'cookie-parser';
 
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
 import { AppModule } from './app.module';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  // Tracing
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  // Setting this option to true will send default PII data to Sentry.
+  // For example, automatic IP address collection on events
+  sendDefaultPii: true,
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

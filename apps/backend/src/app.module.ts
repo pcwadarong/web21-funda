@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 import { AiAskModule } from './ai-ask/ai-ask.module';
 import { AuthModule } from './auth/auth.module';
@@ -21,6 +22,7 @@ import { AppService } from './app.service';
 
 @Module({
   imports: [
+    SentryModule.forRoot(), // Sentry 초기화
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [`.env.${process.env.NODE_ENV ?? 'local'}`, '.env'],

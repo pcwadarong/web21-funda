@@ -6,13 +6,13 @@ import { Avatar } from '@/components/Avatar';
 import { Dropdown } from '@/components/Dropdown';
 import { Loading } from '@/components/Loading';
 import SVGIcon from '@/components/SVGIcon';
-import type { IconMapTypes } from '@/constants/icons';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
+import { getTierIconName } from '@/utils/tier';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
@@ -384,27 +384,6 @@ const userTierRowStyle = css`
 
 const buildTierLabel = (tierName: string | null) =>
   tierName ? `${tierName} 티어` : '티어 정보 없음';
-
-const getTierIconName = (tierName: string | null): IconMapTypes | null => {
-  if (!tierName) return null;
-
-  switch (tierName) {
-    case 'BRONZE':
-      return 'TierBronze';
-    case 'SILVER':
-      return 'TierSilver';
-    case 'GOLD':
-      return 'TierGold';
-    case 'SAPPHIRE':
-      return 'TierSapphire';
-    case 'RUBY':
-      return 'TierRuby';
-    case 'MASTER':
-      return 'TierMaster';
-    default:
-      return null;
-  }
-};
 
 const userSectionTriggerStyle = css`
   width: 100%;

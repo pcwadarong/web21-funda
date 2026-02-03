@@ -3,10 +3,10 @@ import { memo, useMemo } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Avatar } from '@/components/Avatar';
-import type { IconMapTypes } from '@/constants/icons';
 import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
+import { getTierIconName } from '@/utils/tier';
 
 /**
  * 프로필 헤더 컴포넌트 Props
@@ -222,24 +222,3 @@ const rightActionButtonStyle = (theme: Theme) => css`
   cursor: pointer;
   opacity: 0.95;
 `;
-
-const getTierIconName = (tierName: string | null): IconMapTypes | null => {
-  if (!tierName) return null;
-
-  switch (tierName) {
-    case 'BRONZE':
-      return 'TierBronze';
-    case 'SILVER':
-      return 'TierSilver';
-    case 'GOLD':
-      return 'TierGold';
-    case 'SAPPHIRE':
-      return 'TierSapphire';
-    case 'RUBY':
-      return 'TierRuby';
-    case 'MASTER':
-      return 'TierMaster';
-    default:
-      return null;
-  }
-};

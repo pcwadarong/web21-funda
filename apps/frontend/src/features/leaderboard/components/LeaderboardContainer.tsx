@@ -3,7 +3,6 @@ import { useState } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
-import type { IconMapTypes } from '@/constants/icons';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
@@ -11,6 +10,7 @@ import type { OverallRankingResult, WeeklyRankingResult } from '@/feat/leaderboa
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
+import { getTierIconName } from '@/utils/tier';
 
 interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
@@ -429,24 +429,3 @@ const zoneHeaderStyle = (theme: Theme, zoneType?: 'PROMOTION' | 'DEMOTION') => c
       : theme.colors.text.weak};
   padding: 8px 0;
 `;
-
-const getTierIconName = (tierName?: string | null): IconMapTypes | null => {
-  if (!tierName) return null;
-
-  switch (tierName) {
-    case 'BRONZE':
-      return 'TierBronze';
-    case 'SILVER':
-      return 'TierSilver';
-    case 'GOLD':
-      return 'TierGold';
-    case 'SAPPHIRE':
-      return 'TierSapphire';
-    case 'RUBY':
-      return 'TierRuby';
-    case 'MASTER':
-      return 'TierMaster';
-    default:
-      return null;
-  }
-};

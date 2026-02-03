@@ -2,10 +2,10 @@ import { css, useTheme } from '@emotion/react';
 
 import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
-import type { IconMapTypes } from '@/constants/icons';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
+import { getTierIconName } from '@/utils/tier';
 
 import type { RankingMember } from '../types';
 
@@ -177,27 +177,6 @@ const tierIconWrapperStyle = css`
   height: 24px;
   flex-shrink: 0;
 `;
-
-const getTierIconName = (tierName?: string): IconMapTypes | null => {
-  if (!tierName) return null;
-
-  switch (tierName) {
-    case 'BRONZE':
-      return 'TierBronze';
-    case 'SILVER':
-      return 'TierSilver';
-    case 'GOLD':
-      return 'TierGold';
-    case 'SAPPHIRE':
-      return 'TierSapphire';
-    case 'RUBY':
-      return 'TierRuby';
-    case 'MASTER':
-      return 'TierMaster';
-    default:
-      return null;
-  }
-};
 
 const xpBlockStyle = css`
   display: flex;

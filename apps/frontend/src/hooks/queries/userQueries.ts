@@ -21,9 +21,34 @@ type UnsubscribeResponse = {
   message: string;
 };
 
+type UpdateEmailSubscriptionRequest = {
+  isEmailSubscribed: boolean;
+};
+
+type UpdateEmailSubscriptionResponse = {
+  success: boolean;
+  isEmailSubscribed: boolean;
+};
+
 export const useUnsubscribeMutation = () =>
   useMutation<UnsubscribeResponse, Error, UnsubscribeRequest>({
     mutationFn: data => notificationService.unsubscribe(data),
+  });
+
+export const useUpdateEmailSubscriptionMutation = () =>
+  useMutation<UpdateEmailSubscriptionResponse, Error, UpdateEmailSubscriptionRequest>({
+    mutationFn: data => notificationService.updateEmailSubscription(data),
+    onSuccess: result => {
+      const { user, actions } = useAuthStore.getState();
+      if (!user) {
+        return;
+      }
+
+      actions.setUser({
+        ...user,
+        isEmailSubscribed: result.isEmailSubscribed,
+      });
+    },
   });
 
 export const userKeys = {

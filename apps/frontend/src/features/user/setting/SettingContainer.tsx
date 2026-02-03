@@ -7,6 +7,7 @@ import { useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 
 import { AppearanceSection } from './AppearanceSection';
+import { EmailNotificationSection } from './EmailNotificationSection';
 import { SoundSection } from './SoundSection';
 
 interface SettingProps {
@@ -15,10 +16,24 @@ interface SettingProps {
   onLogout: () => void;
   soundVolume: number;
   onSoundVolumeChange: (volume: number) => void;
+  isEmailSubscribed: boolean;
+  email: string | null;
+  isEmailToggleDisabled: boolean;
+  onEmailToggle: (checked: boolean) => void;
 }
 
 export const SettingContainer = memo(
-  ({ isDarkMode, onDarkModeToggle, onLogout, soundVolume, onSoundVolumeChange }: SettingProps) => {
+  ({
+    isDarkMode,
+    onDarkModeToggle,
+    onLogout,
+    soundVolume,
+    onSoundVolumeChange,
+    isEmailSubscribed,
+    email,
+    isEmailToggleDisabled,
+    onEmailToggle,
+  }: SettingProps) => {
     const theme = useTheme();
     const isLoggedIn = useIsLoggedIn();
     const isAuthReady = useIsAuthReady();
@@ -30,6 +45,12 @@ export const SettingContainer = memo(
         </header>
         <AppearanceSection isDarkMode={isDarkMode} onDarkModeToggle={onDarkModeToggle} />
         <SoundSection soundVolume={soundVolume} onSoundVolumeChange={onSoundVolumeChange} />
+        <EmailNotificationSection
+          isEmailSubscribed={isEmailSubscribed}
+          email={email}
+          isDisabled={isEmailToggleDisabled}
+          onToggle={onEmailToggle}
+        />
 
         {isAuthReady && isLoggedIn && (
           <Button variant="primary" fullWidth onClick={onLogout} css={logoutButtonStyle}>

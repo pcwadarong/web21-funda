@@ -27,7 +27,7 @@ describe('RankingQueryService', () => {
   beforeEach(() => {
     weekRepository = { findOne: jest.fn() };
     groupRepository = { findOne: jest.fn() };
-    memberRepository = { findOne: jest.fn(), find: jest.fn() };
+    memberRepository = { findOne: jest.fn(), find: jest.fn(), createQueryBuilder: jest.fn() };
     weeklyXpRepository = { find: jest.fn() };
     tierRepository = { findOne: jest.fn() };
     tierRuleRepository = { findOne: jest.fn() };
@@ -131,9 +131,35 @@ describe('RankingQueryService', () => {
       { userId: 3, xp: 800, lastSolvedAt: new Date('2025-01-03') },
     ] as RankingWeeklyXp[];
 
+    const queryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawAndEntities: jest.fn().mockResolvedValue({
+        raw: [
+          {
+            weeklyXp_xp: weeklyXpList[0]?.xp,
+            weeklyXp_firstSolvedAt: weeklyXpList[0]?.lastSolvedAt,
+            weeklyXp_lastSolvedAt: weeklyXpList[0]?.lastSolvedAt,
+          },
+          {
+            weeklyXp_xp: weeklyXpList[1]?.xp,
+            weeklyXp_firstSolvedAt: weeklyXpList[1]?.lastSolvedAt,
+            weeklyXp_lastSolvedAt: weeklyXpList[1]?.lastSolvedAt,
+          },
+          {
+            weeklyXp_xp: weeklyXpList[2]?.xp,
+            weeklyXp_firstSolvedAt: weeklyXpList[2]?.lastSolvedAt,
+            weeklyXp_lastSolvedAt: weeklyXpList[2]?.lastSolvedAt,
+          },
+        ],
+        entities: members,
+      }),
+    };
+
     (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
-    (memberRepository.find as jest.Mock).mockResolvedValue(members);
-    (weeklyXpRepository.find as jest.Mock).mockResolvedValue(weeklyXpList);
+    (memberRepository.createQueryBuilder as jest.Mock).mockReturnValue(queryBuilder);
 
     const result = await service.getOverallWeeklyRanking(3, '2025-01');
 

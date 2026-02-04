@@ -230,10 +230,21 @@ export class RankingQueryService {
       return this.cacheOverallWeeklyRanking(userId, targetWeekKey, result);
     }
 
-    const allMembers = await this.memberRepository.find({
-      where: { weekId: week.id },
-      relations: { user: { profileCharacter: true }, tier: true },
-    });
+    const { raw: rawRows, entities: allMembers } = await this.memberRepository
+      .createQueryBuilder('member')
+      .leftJoinAndSelect('member.user', 'user')
+      .leftJoinAndSelect('user.profileCharacter', 'profileCharacter')
+      .leftJoinAndSelect('member.tier', 'tier')
+      .leftJoin(
+        RankingWeeklyXp,
+        'weeklyXp',
+        'weeklyXp.week_id = member.week_id AND weeklyXp.user_id = member.user_id',
+      )
+      .addSelect('weeklyXp.xp', 'weeklyXp_xp')
+      .addSelect('weeklyXp.first_solved_at', 'weeklyXp_firstSolvedAt')
+      .addSelect('weeklyXp.last_solved_at', 'weeklyXp_lastSolvedAt')
+      .where('member.week_id = :weekId', { weekId: week.id })
+      .getRawAndEntities();
 
     if (allMembers.length === 0) {
       const result: OverallRankingResult = {
@@ -246,22 +257,17 @@ export class RankingQueryService {
       return this.cacheOverallWeeklyRanking(userId, targetWeekKey, result);
     }
 
-    const memberIds = allMembers.map(member => member.userId);
-    const weeklyXpList = await this.weeklyXpRepository.find({
-      where: { weekId: week.id, userId: In(memberIds) },
-    });
-    const weeklyXpMap = new Map(weeklyXpList.map(item => [item.userId, item]));
-
-    const rankingSeeds = allMembers.map(member => {
-      const weeklyXp = weeklyXpMap.get(member.userId);
-      const lastSolvedAt = weeklyXp?.lastSolvedAt ?? weeklyXp?.firstSolvedAt ?? member.joinedAt;
+    const rankingSeeds = allMembers.map((member, index) => {
+      const rawRow = rawRows[index];
+      const weeklyXp = this.parseWeeklyXpRow(rawRow);
+      const lastSolvedAt = weeklyXp.lastSolvedAt ?? weeklyXp.firstSolvedAt ?? member.joinedAt;
 
       return {
         userId: member.userId,
         displayName: member.user?.displayName ?? '알 수 없음',
         profileImageUrl:
           member.user?.profileCharacter?.imageUrl ?? member.user?.profileImageUrl ?? null,
-        xp: weeklyXp?.xp ?? 0,
+        xp: weeklyXp.xp,
         lastSolvedAt,
         tierName: member.tier?.name ?? null,
         tierOrderIndex: member.tier?.orderIndex ?? null,
@@ -302,7 +308,7 @@ export class RankingQueryService {
     }));
 
     const myRank = members.find(entry => entry.userId === userId)?.rank ?? null;
-    const myWeeklyXp = weeklyXpMap.get(userId)?.xp ?? 0;
+    const myWeeklyXp = rankingSeeds.find(entry => entry.userId === userId)?.xp ?? 0;
 
     const result: OverallRankingResult = {
       weekKey: targetWeekKey,
@@ -512,6 +518,48 @@ export class RankingQueryService {
     }
 
     return 'MAINTAIN';
+  }
+
+  private parseWeeklyXpRow(row: unknown): {
+    xp: number;
+    firstSolvedAt: Date | null;
+    lastSolvedAt: Date | null;
+  } {
+    if (!row || typeof row !== 'object') {
+      return { xp: 0, firstSolvedAt: null, lastSolvedAt: null };
+    }
+
+    const record = row as {
+      weeklyXp_xp?: number | string | null;
+      weeklyXp_firstSolvedAt?: Date | string | null;
+      weeklyXp_lastSolvedAt?: Date | string | null;
+    };
+
+    const xp =
+      record.weeklyXp_xp !== null && record.weeklyXp_xp !== undefined
+        ? Number(record.weeklyXp_xp)
+        : 0;
+    const firstSolvedAt = this.toDateOrNull(record.weeklyXp_firstSolvedAt);
+    const lastSolvedAt = this.toDateOrNull(record.weeklyXp_lastSolvedAt);
+
+    return { xp, firstSolvedAt, lastSolvedAt };
+  }
+
+  private toDateOrNull(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return value;
+    }
+
+    const parsed = new Date(String(value));
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return parsed;
   }
 
   private async cacheWeeklyRanking(

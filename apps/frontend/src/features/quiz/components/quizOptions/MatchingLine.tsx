@@ -2,6 +2,8 @@ import { useLayoutEffect, useState } from 'react';
 
 import { palette } from '@/styles/token';
 
+type MatchingLineVariant = 'neutral' | 'correct' | 'wrong';
+
 interface MatchingLineProps {
   /** 시작점(좌측) 버튼의 DOM 요소 */
   startEl: HTMLButtonElement;
@@ -9,15 +11,27 @@ interface MatchingLineProps {
   endEl: HTMLButtonElement;
   /** 기준이 되는 부모 컨테이너 DOM 요소 */
   containerEl: HTMLDivElement;
-  /** 정답 여부에 따른 선의 색상 결정 */
-  isCorrect: boolean;
+  /** 선의 색상/스타일 결정 */
+  variant?: MatchingLineVariant;
 }
 
 /**
  * 두 선택지 사이의 연결선을 계산하여 SVG Line으로 렌더링
  */
-export const MatchingLine = ({ startEl, endEl, containerEl, isCorrect }: MatchingLineProps) => {
+export const MatchingLine = ({
+  startEl,
+  endEl,
+  containerEl,
+  variant = 'neutral',
+}: MatchingLineProps) => {
   const [coords, setCoords] = useState({ x1: 0, y1: 0, x2: 0, y2: 0 });
+  const strokeColor =
+    variant === 'correct'
+      ? palette.success.main
+      : variant === 'wrong'
+        ? palette.error.main
+        : palette.primary.light;
+  const dashArray = variant === 'wrong' ? '5,5' : '0';
 
   /** getBoundingClientRect를 사용하여 실시간 좌표를 계산 */
   useLayoutEffect(() => {
@@ -47,9 +61,9 @@ export const MatchingLine = ({ startEl, endEl, containerEl, isCorrect }: Matchin
       y1={coords.y1}
       x2={coords.x2}
       y2={coords.y2}
-      stroke={isCorrect ? palette.success.main : palette.error.main}
+      stroke={strokeColor}
       strokeWidth="2"
-      strokeDasharray={isCorrect ? '0' : '5,5'}
+      strokeDasharray={dashArray}
       style={{ transition: 'all 0.3s ease' }}
     />
   );

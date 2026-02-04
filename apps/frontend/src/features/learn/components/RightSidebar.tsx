@@ -1,7 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import { Dropdown } from '@/comp/Dropdown';
@@ -363,6 +363,12 @@ export const LearnRightSidebar = ({
                   로그인하여 학습 기록을 저장하고 친구 추가를 해보세요!
                 </span>
               </div>
+
+              <Link to="/login" css={rightSidebarLinkStyle}>
+                <Button variant="primary" fullWidth={true} css={rightSidebarBtnStyle(theme)}>
+                  로그인
+                </Button>
+              </Link>
             </div>
           )}
         </div>
@@ -474,6 +480,16 @@ const statIconStyle = css`
   display: flex;
   align-items: center;
   justify-content: center;
+`;
+
+const rightSidebarLinkStyle = css`
+  text-decoration: none;
+  color: inherit;
+
+  &:visited,
+  &:active {
+    color: inherit;
+  }
 `;
 
 const rightSidebarBtnStyle = (theme: Theme) => css`

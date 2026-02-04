@@ -79,7 +79,9 @@ export const LeaderboardContainer = ({
       ? `${weeklyRanking.tier.name} 리그`
       : ''
     : '전체 순위';
-  const tierIconName = isMyLeagueView ? getTierIconName(weeklyRanking?.tier.name) : null;
+
+  const tierIconName =
+    isMyLeagueView && weeklyRanking?.tier ? getTierIconName(weeklyRanking.tier.name) : null;
   const groupedMembers =
     weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
   const remainingDaysText = activeRanking ? buildRemainingDaysText(activeRanking.weekKey) : '';

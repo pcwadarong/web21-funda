@@ -11,6 +11,8 @@ import { palette } from '@/styles/token';
 interface ProfileCharacterContainerProps {
   characters: ProfileCharacterItem[];
   selectedCharacterId: number | null;
+  activeCharacterId?: number | null;
+  activeCharacterImageUrl?: string | null;
   isLoading?: boolean;
   onSelect: (characterId: number) => void;
   onPurchase: (characterId: number) => void;
@@ -25,6 +27,8 @@ interface ProfileCharacterContainerProps {
 export const ProfileCharacterContainer = ({
   characters,
   selectedCharacterId,
+  activeCharacterId = null,
+  activeCharacterImageUrl = null,
   isLoading = false,
   onSelect,
   onPurchase,
@@ -39,19 +43,15 @@ export const ProfileCharacterContainer = ({
     description: string;
     x: number;
     y: number;
+    containerRect: DOMRect;
   } | null>(null);
 
   const handleCharacterMouseEnter = (
     event: MouseEvent<HTMLButtonElement>,
     character: ProfileCharacterItem,
   ) => {
-    if (!character.description) {
-      return;
-    }
-
-    if (!gridRef.current) {
-      return;
-    }
+    if (!character.description) return;
+    if (!gridRef.current) return;
 
     const rect = gridRef.current.getBoundingClientRect();
     setHoveredCharacter({
@@ -59,6 +59,7 @@ export const ProfileCharacterContainer = ({
       description: character.description,
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
+      containerRect: rect,
     });
   };
 
@@ -87,10 +88,24 @@ export const ProfileCharacterContainer = ({
           ) : (
             characters.map(item => {
               const isSelected = item.id === selectedCharacterId;
+              const isActiveCharacter =
+                (activeCharacterId !== null && item.id === activeCharacterId) ||
+                (!!activeCharacterImageUrl && item.imageUrl === activeCharacterImageUrl);
               const shouldShowAction = isSelected;
-              const actionLabel = item.isOwned ? '적용하기' : '구매하기';
+              const actionLabel = item.isOwned
+                ? isActiveCharacter
+                  ? '적용됨'
+                  : '적용하기'
+                : '구매하기';
+              const isActionDisabled = item.isOwned ? isActiveCharacter : false;
+              const actionVariant = item.isOwned
+                ? isActiveCharacter
+                  ? 'applied'
+                  : 'apply'
+                : 'purchase';
 
               const handleActionClick = () => {
+                if (isActionDisabled) return;
                 if (item.isOwned) {
                   onApply(item.id);
                   return;
@@ -113,7 +128,9 @@ export const ProfileCharacterContainer = ({
                       <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
                     </div>
                     <div css={priceStyle(theme)}>
-                      {item.isOwned ? (
+                      {isActiveCharacter ? (
+                        <span css={appliedLabelStyle(theme)}>적용됨</span>
+                      ) : item.isOwned ? (
                         <span css={purchasedLabelStyle(theme)}>구매함</span>
                       ) : item.priceDiamonds === 0 ? (
                         <span css={freeLabelStyle}>FREE</span>
@@ -129,8 +146,9 @@ export const ProfileCharacterContainer = ({
                     <div css={actionWrapperStyle}>
                       <button
                         type="button"
-                        css={actionCardStyle(theme)}
+                        css={actionCardStyle(theme, actionVariant)}
                         onClick={handleActionClick}
+                        disabled={isActionDisabled}
                       >
                         {actionLabel}
                       </button>
@@ -144,6 +162,7 @@ export const ProfileCharacterContainer = ({
             x={hoveredCharacter?.x ?? 0}
             y={hoveredCharacter?.y ?? 0}
             isVisible={hoveredCharacter !== null}
+            containerRect={hoveredCharacter?.containerRect ?? null}
             onMouseEnter={() => hoveredCharacter && setHoveredCharacter(hoveredCharacter)}
             onMouseLeave={handleCharacterMouseLeave}
             offsetY={-40}
@@ -159,7 +178,7 @@ export const ProfileCharacterContainer = ({
 const pageStyle = (theme: Theme) => css`
   flex: 1;
   min-height: 100vh;
-  padding: 2rem 1.5rem 7.5rem;
+  padding: 2rem 1.5rem 0;
   background: ${theme.colors.surface.default};
 `;
 
@@ -313,7 +332,19 @@ const freeLabelStyle = css`
 `;
 
 const purchasedLabelStyle = (theme: Theme) => css`
-  color: ${theme.colors.text.weak};
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: ${theme.colors.surface.strong};
+  color: ${theme.colors.text.default};
+  font-weight: ${theme.typography['12Bold'].fontWeight};
+  border: 1px solid ${theme.colors.border.default};
+`;
+
+const appliedLabelStyle = (theme: Theme) => css`
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: ${theme.colors.primary.main};
+  color: ${theme.colors.grayscale[50]};
   font-weight: ${theme.typography['12Bold'].fontWeight};
 `;
 
@@ -324,7 +355,7 @@ const actionWrapperStyle = css`
   position: relative;
 `;
 
-const actionCardStyle = (theme: Theme) => css`
+const actionCardStyle = (theme: Theme, variant: 'apply' | 'purchase' | 'applied') => css`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -332,14 +363,14 @@ const actionCardStyle = (theme: Theme) => css`
   padding: 12px 24px;
   border: none;
   border-radius: ${theme.borderRadius.medium};
-  background: ${theme.colors.primary.main};
+  background: ${variant === 'purchase' ? theme.colors.primary.main : theme.colors.text.weak};
   color: ${theme.colors.grayscale[50]};
   font-size: ${theme.typography['16Bold'].fontSize};
   font-weight: ${theme.typography['16Bold'].fontWeight};
   line-height: ${theme.typography['16Bold'].lineHeight};
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(101, 89, 234, 0.25);
+  box-shadow: ${variant === 'purchase' ? '0 4px 12px rgba(101, 89, 234, 0.25)' : 'none'};
   position: relative;
 
   &::before {
@@ -352,13 +383,14 @@ const actionCardStyle = (theme: Theme) => css`
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 10px solid ${theme.colors.primary.main};
+    border-bottom: 10px solid
+      ${variant === 'purchase' ? theme.colors.primary.main : theme.colors.text.default};
   }
 
   &:hover {
-    background: ${theme.colors.primary.dark};
+    background: ${variant === 'purchase' ? theme.colors.primary.dark : theme.colors.text.default};
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(101, 89, 234, 0.35);
+    box-shadow: ${variant === 'purchase' ? '0 6px 16px rgba(101, 89, 234, 0.35)' : 'none'};
   }
 
   &:active {

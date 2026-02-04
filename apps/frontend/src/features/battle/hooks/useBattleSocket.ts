@@ -69,6 +69,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       participants: state.participants,
       rankings: state.rankings,
       rewards: state.rewards,
+      countdownEndsAt: state.countdownEndsAt,
       currentQuizIndex: state.currentQuizIndex,
       totalQuizzes: state.totalQuizzes,
       remainingSeconds: state.remainingSeconds,
@@ -95,6 +96,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
 
   // ready 중복 요청 방지를 위한 ref
   const readySentRef = useRef(false);
+  const lastCountdownEndsAtRef = useRef<number | null>(null);
   // 소켓/인증 준비 전에 들어온 join 요청을 보류했다가 재시도하기 위한 ref
   const pendingJoinRef = useRef<{
     roomId: string;
@@ -130,6 +132,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       rankings: Ranking[];
       resultEndsAt?: number;
       serverTime?: number;
+      countdownEndsAt?: number | null;
     }) => {
       setBattleState({
         status: data.status,
@@ -137,6 +140,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
         rankings: data.rankings,
         resultEndsAt: data.resultEndsAt ?? undefined,
         serverTime: data.serverTime ?? undefined,
+        countdownEndsAt: data.countdownEndsAt ?? null,
       });
     };
 
@@ -159,6 +163,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       setBattleState({
         status: 'in_progress',
         resultEndsAt: null,
+        countdownEndsAt: null,
       });
 
       setQuiz(data);
@@ -242,16 +247,51 @@ export function useBattleSocket(): UseBattleSocketReturn {
   // roomId 변경 시 readySentRef 리셋
   useEffect(() => {
     readySentRef.current = false;
+    lastCountdownEndsAtRef.current = null;
   }, [battleState.roomId]);
 
-  // status가 'in_progress'가 되면 자동으로 ready 신호 전송
+  // 대기 상태로 돌아가면 ready 상태를 초기화
   useEffect(() => {
-    if (battleState.status !== 'in_progress' || readySentRef.current) return;
-    if (!socket || !battleState.roomId) return;
+    if (battleState.status !== 'waiting') {
+      return;
+    }
 
-    readySentRef.current = true;
-    socket.emit('battle:ready', { roomId: battleState.roomId });
-  }, [battleState.status, battleState.roomId, socket]);
+    readySentRef.current = false;
+    lastCountdownEndsAtRef.current = null;
+  }, [battleState.status]);
+
+  // 카운트다운 종료 시점에 자동으로 ready 신호 전송
+  useEffect(() => {
+    if (!socket || !battleState.roomId) {
+      return;
+    }
+
+    const countdownEndsAt = battleState.countdownEndsAt;
+    if (!countdownEndsAt) {
+      return;
+    }
+
+    if (countdownEndsAt !== lastCountdownEndsAtRef.current) {
+      lastCountdownEndsAtRef.current = countdownEndsAt;
+      readySentRef.current = false;
+    }
+
+    if (readySentRef.current) {
+      return;
+    }
+
+    const delayMs = Math.max(0, countdownEndsAt - Date.now());
+    const timerId = window.setTimeout(() => {
+      if (readySentRef.current) {
+        return;
+      }
+
+      readySentRef.current = true;
+      socket.emit('battle:ready', { roomId: battleState.roomId });
+    }, delayMs);
+
+    return () => window.clearTimeout(timerId);
+  }, [battleState.countdownEndsAt, battleState.roomId, socket]);
 
   const disconnect = useCallback(() => {
     socketContext.disconnect();

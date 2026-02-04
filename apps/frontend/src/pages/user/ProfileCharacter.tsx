@@ -1,4 +1,5 @@
 import { css } from '@emotion/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +19,7 @@ import { useToast } from '@/store/toastStore';
  * 프로필 캐릭터 구매/적용 페이지
  */
 export const ProfileCharacter = () => {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const authUser = useAuthUser();
@@ -33,13 +35,8 @@ export const ProfileCharacter = () => {
     selectedId !== undefined ? selectedId : (data?.selectedCharacterId ?? null);
 
   useEffect(() => {
-    if (selectedId !== undefined) {
-      return;
-    }
-
-    if (data?.selectedCharacterId) {
-      setSelectedId(data.selectedCharacterId);
-    }
+    if (selectedId !== undefined) return;
+    if (data?.selectedCharacterId) setSelectedId(data.selectedCharacterId);
   }, [data?.selectedCharacterId, selectedId]);
 
   const handleBack = () => {
@@ -60,9 +57,7 @@ export const ProfileCharacter = () => {
   };
 
   const handleConfirmPurchase = async () => {
-    if (pendingPurchaseId === null) {
-      return;
-    }
+    if (pendingPurchaseId === null) return;
 
     try {
       await purchaseMutation.mutateAsync(pendingPurchaseId);
@@ -76,6 +71,7 @@ export const ProfileCharacter = () => {
   const handleApply = async (characterId: number) => {
     try {
       await applyMutation.mutateAsync(characterId);
+      await queryClient.invalidateQueries({ queryKey: ['current-user'], refetchType: 'all' });
       showToast('캐릭터를 적용했습니다.');
     } catch (applyError) {
       showToast((applyError as Error).message);
@@ -85,6 +81,7 @@ export const ProfileCharacter = () => {
   const handleClear = async () => {
     try {
       await clearMutation.mutateAsync();
+      await queryClient.invalidateQueries({ queryKey: ['current-user'], refetchType: 'all' });
       setSelectedId(null);
       showToast('기본 프로필로 되돌렸습니다.');
     } catch (clearError) {
@@ -93,10 +90,7 @@ export const ProfileCharacter = () => {
   };
 
   useEffect(() => {
-    if (!error) {
-      return;
-    }
-
+    if (!error) return;
     showToast('캐릭터 목록을 불러오지 못했습니다.');
   }, [error, showToast]);
 
@@ -105,6 +99,8 @@ export const ProfileCharacter = () => {
       <ProfileCharacterContainer
         characters={characters}
         selectedCharacterId={selectedCharacterId}
+        activeCharacterId={data?.selectedCharacterId ?? null}
+        activeCharacterImageUrl={authUser?.profileImageUrl ?? null}
         isLoading={isLoading}
         onSelect={handleSelect}
         onPurchase={handlePurchaseRequest}

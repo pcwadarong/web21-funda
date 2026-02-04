@@ -16,23 +16,30 @@ import type { MatchingPair } from '../roadmap/dto/quiz-submission.dto';
 
 import { BattleService } from './battle.service';
 import {
+  applyCancelCountdown,
   applyDisconnect,
   applyFinish,
   applyJoin,
   applyLeave,
   applyRestart,
   applyStart,
+  applyStartCountdown,
   applySubmission,
   applyUpdateRoom,
   BattleParticipant,
   BattleQuizSubmission,
   BattleRoomState,
   BattleTimeLimitType,
+  clampMaxPlayers,
   validateJoin,
   validateRestart,
   validateStart,
   validateUpdateRoom,
 } from './battle-state';
+
+const COUNTDOWN_STEP_MS = 1000;
+const COUNTDOWN_STEP_COUNT = 4;
+const COUNTDOWN_DURATION_MS = COUNTDOWN_STEP_MS * COUNTDOWN_STEP_COUNT;
 
 @Injectable()
 @WebSocketGateway({
@@ -46,6 +53,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   @WebSocketServer()
   private readonly server!: Server;
   private readonly logger = new Logger('BattleGateway');
+  private readonly countdownStartTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(private readonly battleService: BattleService) {}
 
@@ -100,25 +108,36 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     // 퇴장할 참가자 정보 미리 보관
     const leavingParticipant = room.participants.find(p => p.participantId === client.id) ?? null;
 
-    const nextRoom: BattleRoomState =
-      room.status === 'in_progress'
-        ? applyLeave(room, {
-            roomId,
-            participantId: client.id,
-            now,
-            penaltyScore: -999,
-          })
-        : applyDisconnect(room, {
-            roomId,
-            participantId: client.id,
-            now,
-          });
+    let nextRoom: BattleRoomState;
+    if (room.status === 'in_progress') {
+      nextRoom = applyLeave(room, {
+        roomId,
+        participantId: client.id,
+        now,
+        penaltyScore: -999,
+      });
+    } else if (room.status === 'waiting' || room.status === 'countdown') {
+      nextRoom = applyLeave(room, {
+        roomId,
+        participantId: client.id,
+        now,
+        penaltyScore: 0,
+      });
+    } else {
+      nextRoom = applyDisconnect(room, {
+        roomId,
+        participantId: client.id,
+        now,
+      });
+    }
 
-    this.battleService.saveRoom(nextRoom);
+    const normalizedRoom = this.cancelCountdownIfNeeded(nextRoom);
 
-    this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
-      roomId: nextRoom.roomId,
-      participants: nextRoom.participants,
+    this.battleService.saveRoom(normalizedRoom);
+
+    this.server.to(normalizedRoom.roomId).emit('battle:participantsUpdated', {
+      roomId: normalizedRoom.roomId,
+      participants: normalizedRoom.participants,
       leavingParticipant: leavingParticipant
         ? {
             participantId: leavingParticipant.participantId,
@@ -127,20 +146,21 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         : null,
     });
 
-    const remainingSeconds = nextRoom.quizEndsAt
-      ? Math.max(0, Math.ceil((nextRoom.quizEndsAt - Date.now()) / 1000))
-      : nextRoom.settings.timeLimitSeconds;
+    const remainingSeconds = normalizedRoom.quizEndsAt
+      ? Math.max(0, Math.ceil((normalizedRoom.quizEndsAt - Date.now()) / 1000))
+      : normalizedRoom.settings.timeLimitSeconds;
 
-    this.server.to(nextRoom.roomId).emit('battle:state', {
-      roomId: nextRoom.roomId,
-      status: nextRoom.status,
+    this.server.to(normalizedRoom.roomId).emit('battle:state', {
+      roomId: normalizedRoom.roomId,
+      status: normalizedRoom.status,
       remainingSeconds,
-      rankings: this.buildRankings(nextRoom),
+      rankings: this.buildRankings(normalizedRoom),
+      countdownEndsAt: normalizedRoom.countdownEndsAt,
     });
 
-    if (nextRoom.status === 'invalid') {
-      this.server.to(nextRoom.roomId).emit('battle:invalid', {
-        roomId: nextRoom.roomId,
+    if (normalizedRoom.status === 'invalid') {
+      this.server.to(normalizedRoom.roomId).emit('battle:invalid', {
+        roomId: normalizedRoom.roomId,
         reason: '참가자가 부족하여 종료 되었습니다.',
       });
     }
@@ -307,12 +327,14 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       penaltyScore: room.status === 'in_progress' ? -999 : 0,
     });
 
-    this.battleService.saveRoom(nextRoom);
-    client.leave(nextRoom.roomId);
+    const normalizedRoom = this.cancelCountdownIfNeeded(nextRoom);
 
-    this.server.to(nextRoom.roomId).emit('battle:participantsUpdated', {
-      roomId: nextRoom.roomId,
-      participants: nextRoom.participants,
+    this.battleService.saveRoom(normalizedRoom);
+    client.leave(normalizedRoom.roomId);
+
+    this.server.to(normalizedRoom.roomId).emit('battle:participantsUpdated', {
+      roomId: normalizedRoom.roomId,
+      participants: normalizedRoom.participants,
       leavingParticipant: leavingParticipant
         ? {
             participantId: leavingParticipant.participantId,
@@ -321,20 +343,21 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         : null,
     });
 
-    const remainingSeconds = nextRoom.quizEndsAt
-      ? Math.max(0, Math.ceil((nextRoom.quizEndsAt - Date.now()) / 1000))
-      : nextRoom.settings.timeLimitSeconds;
+    const remainingSeconds = normalizedRoom.quizEndsAt
+      ? Math.max(0, Math.ceil((normalizedRoom.quizEndsAt - Date.now()) / 1000))
+      : normalizedRoom.settings.timeLimitSeconds;
 
-    this.server.to(nextRoom.roomId).emit('battle:state', {
-      roomId: nextRoom.roomId,
-      status: nextRoom.status,
+    this.server.to(normalizedRoom.roomId).emit('battle:state', {
+      roomId: normalizedRoom.roomId,
+      status: normalizedRoom.status,
       remainingSeconds,
-      rankings: this.buildRankings(nextRoom),
+      rankings: this.buildRankings(normalizedRoom),
+      countdownEndsAt: normalizedRoom.countdownEndsAt,
     });
 
-    if (nextRoom.status === 'invalid') {
-      this.server.to(nextRoom.roomId).emit('battle:invalid', {
-        roomId: nextRoom.roomId,
+    if (normalizedRoom.status === 'invalid') {
+      this.server.to(normalizedRoom.roomId).emit('battle:invalid', {
+        roomId: normalizedRoom.roomId,
         reason: '참가자가 부족하여 종료 되었습니다.',
       });
     }
@@ -374,11 +397,12 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     const timeLimitSeconds = this.getTimeLimitSeconds(payload.timeLimitType);
+    const maxPlayers = clampMaxPlayers(payload.maxPlayers);
     const nextRoom = applyUpdateRoom(room, {
       roomId: room.roomId,
       requesterParticipantId: client.id,
       fieldSlug: payload.fieldSlug,
-      maxPlayers: payload.maxPlayers,
+      maxPlayers,
       timeLimitType: payload.timeLimitType,
       timeLimitSeconds,
     });
@@ -430,19 +454,25 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       room.totalQuizzes,
     );
 
-    const nextRoom = applyStart(room, {
+    const now = Date.now();
+    const countdownEndsAt = now + COUNTDOWN_DURATION_MS;
+
+    const nextRoom = applyStartCountdown(room, {
       roomId: room.roomId,
       requesterParticipantId: client.id,
-      now: Date.now(),
+      now,
+      countdownEndsAt,
       quizIds,
     });
 
+    this.clearCountdownTimer(nextRoom.roomId);
     this.battleService.saveRoom(nextRoom);
     this.server.to(nextRoom.roomId).emit('battle:state', {
       roomId: nextRoom.roomId,
       status: nextRoom.status,
-      remainingSeconds: 0,
+      remainingSeconds: Math.max(0, Math.ceil((countdownEndsAt - now) / 1000)),
       rankings: this.buildRankings(nextRoom),
+      countdownEndsAt: nextRoom.countdownEndsAt,
     });
   }
 
@@ -464,7 +494,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    if (room.status !== 'in_progress') {
+    if (room.status !== 'countdown') {
       return;
     }
 
@@ -489,18 +519,17 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       return;
     }
 
-    if (nextRoom.quizEndsAt) {
+    if (!nextRoom.countdownEndsAt) {
       return;
     }
 
-    this.server.to(nextRoom.roomId).emit('battle:state', {
-      roomId: nextRoom.roomId,
-      status: nextRoom.status,
-      remainingSeconds: nextRoom.settings.timeLimitSeconds,
-      rankings: this.buildRankings(nextRoom),
-    });
+    const now = Date.now();
+    if (now >= nextRoom.countdownEndsAt) {
+      this.startBattleAfterCountdown(nextRoom.roomId);
+      return;
+    }
 
-    void this.sendCurrentQuiz(nextRoom);
+    this.scheduleStartAfterCountdown(nextRoom);
   }
 
   /**
@@ -535,12 +564,14 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       requesterParticipantId: client.id,
     });
 
+    this.clearCountdownTimer(nextRoom.roomId);
     this.battleService.saveRoom(nextRoom);
     this.server.to(nextRoom.roomId).emit('battle:state', {
       roomId: nextRoom.roomId,
       status: nextRoom.status,
       remainingSeconds: nextRoom.settings.timeLimitSeconds,
       rankings: this.buildRankings(nextRoom),
+      countdownEndsAt: nextRoom.countdownEndsAt,
     });
   }
 
@@ -795,6 +826,115 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
 
   /**
+   * 카운트다운 종료 시점에 게임 시작을 예약한다.
+   *
+   * @param room 방 상태
+   * @returns 없음
+   */
+  private scheduleStartAfterCountdown(room: BattleRoomState): void {
+    if (!room.countdownEndsAt) {
+      return;
+    }
+
+    if (this.countdownStartTimers.has(room.roomId)) {
+      return;
+    }
+
+    const delayMs = Math.max(0, room.countdownEndsAt - Date.now());
+    const timerId = setTimeout(() => {
+      this.countdownStartTimers.delete(room.roomId);
+      this.startBattleAfterCountdown(room.roomId);
+    }, delayMs);
+
+    this.countdownStartTimers.set(room.roomId, timerId);
+  }
+
+  /**
+   * 카운트다운 종료 후 게임 시작 조건을 다시 확인하고 시작한다.
+   *
+   * @param roomId 방 ID
+   * @returns 없음
+   */
+  private startBattleAfterCountdown(roomId: string): void {
+    const room = this.battleService.getRoom(roomId);
+    if (!room) {
+      return;
+    }
+
+    if (room.status !== 'countdown') {
+      return;
+    }
+
+    if (!this.isAllParticipantsReady(room)) {
+      return;
+    }
+
+    if (!room.countdownEndsAt) {
+      return;
+    }
+
+    if (Date.now() < room.countdownEndsAt) {
+      this.scheduleStartAfterCountdown(room);
+      return;
+    }
+
+    const nextRoom = applyStart(room, {
+      roomId: room.roomId,
+      requesterParticipantId: room.hostParticipantId,
+      now: Date.now(),
+      quizIds: room.quizIds,
+    });
+
+    this.clearCountdownTimer(room.roomId);
+    this.battleService.saveRoom(nextRoom);
+    this.server.to(nextRoom.roomId).emit('battle:state', {
+      roomId: nextRoom.roomId,
+      status: nextRoom.status,
+      remainingSeconds: nextRoom.settings.timeLimitSeconds,
+      rankings: this.buildRankings(nextRoom),
+      countdownEndsAt: nextRoom.countdownEndsAt,
+    });
+
+    void this.sendCurrentQuiz(nextRoom);
+  }
+
+  /**
+   * 카운트다운 예약 타이머를 해제한다.
+   *
+   * @param roomId 방 ID
+   * @returns 없음
+   */
+  private clearCountdownTimer(roomId: string): void {
+    const timer = this.countdownStartTimers.get(roomId);
+    if (!timer) {
+      return;
+    }
+
+    clearTimeout(timer);
+    this.countdownStartTimers.delete(roomId);
+  }
+
+  /**
+   * 카운트다운 중 인원이 부족하면 대기 상태로 되돌린다.
+   *
+   * @param room 방 상태
+   * @returns 변경된 방 상태
+   */
+  private cancelCountdownIfNeeded(room: BattleRoomState): BattleRoomState {
+    if (room.status !== 'countdown') {
+      return room;
+    }
+
+    const connectedCount = room.participants.filter(participant => participant.isConnected).length;
+    if (connectedCount >= 2) {
+      return room;
+    }
+
+    this.clearCountdownTimer(room.roomId);
+    return applyCancelCountdown(room);
+  }
+
+  /**
    * 게임 종료 처리를 수행한다.
    *
    * @param roomId 방 ID
@@ -954,6 +1094,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       rankings: this.buildRankings(roomWithResultEndsAt),
       resultEndsAt,
       serverTime: Date.now(),
+      countdownEndsAt: roomWithResultEndsAt.countdownEndsAt,
     });
 
     const nextRoom = {
@@ -1068,7 +1209,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   private isAllParticipantsReady(room: BattleRoomState): boolean {
     const connectedParticipants = room.participants.filter(participant => participant.isConnected);
 
-    if (connectedParticipants.length === 0) {
+    if (connectedParticipants.length < 2) {
       return false;
     }
 

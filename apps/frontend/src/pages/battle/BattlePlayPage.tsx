@@ -102,21 +102,19 @@ export const BattlePlayPage = () => {
   };
 
   return (
-    <>
-      <BattlePlayContainer
-        quizInfo={quizInfo}
-        selectedAnswers={selectedAnswers}
-        quizSolutions={quizSolutions}
-        questionStatuses={questionStatuses}
-        isCheckDisabled={isCheckDisabled}
-        isLastQuestion={currentQuizIndex + 1 >= totalQuizzes}
-        isReviewMode={false}
-        handleAnswerChange={handleAnswerChange}
-        handleCheckAnswer={handleCheckAnswer}
-        handleNextQuestion={handleNextQuestion}
-        rankings={rankings}
-        currentParticipantId={socket?.id ?? null}
-      />
-    </>
+    <BattlePlayContainer
+      quizInfo={quizInfo}
+      selectedAnswers={selectedAnswers}
+      quizSolutions={quizSolutions}
+      questionStatuses={questionStatuses}
+      isCheckDisabled={isCheckDisabled}
+      isLastQuestion={currentQuizIndex + 1 >= totalQuizzes}
+      isReviewMode={false}
+      handleAnswerChange={handleAnswerChange}
+      handleCheckAnswer={handleCheckAnswer}
+      handleNextQuestion={handleNextQuestion}
+      rankings={rankings}
+      currentParticipantId={socket?.id ?? null}
+    />
   );
 };

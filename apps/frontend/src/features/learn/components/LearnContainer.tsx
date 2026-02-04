@@ -336,7 +336,7 @@ const overviewButtonStyle = (theme: Theme) => css`
   align-items: center;
   gap: 6px;
   background: ${theme.colors.primary.light}A6;
-  color: ${theme.colors.surface.strong};
+  color: ${theme.colors.grayscale[50]};
   border-radius: ${theme.borderRadius.large};
   padding: 8px 16px;
   font-size: ${theme.typography['16Medium'].fontSize};

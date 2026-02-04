@@ -30,6 +30,7 @@ interface BattleState {
   participants: BattleParticipant[];
   rankings: Ranking[];
   rewards: BattleReward[];
+  countdownEndsAt: number | null;
 
   // 3. 퀴즈 진행 정보
   currentQuizIndex: number;
@@ -75,6 +76,7 @@ export const useBattleStore = create<BattleState>(set => ({
   participants: [],
   rankings: [],
   rewards: [],
+  countdownEndsAt: null,
   currentQuizIndex: 0,
   totalQuizzes: 10,
   remainingSeconds: 0,
@@ -136,6 +138,7 @@ export const useBattleStore = create<BattleState>(set => ({
         participants: [],
         rankings: [],
         rewards: [],
+        countdownEndsAt: null,
         currentQuizIndex: 0,
         totalQuizzes: 10,
         remainingSeconds: 0,
@@ -158,6 +161,7 @@ export const useBattleStore = create<BattleState>(set => ({
         participants: state.participants,
         rankings: [],
         rewards: [],
+        countdownEndsAt: null,
         currentQuizIndex: 0,
         totalQuizzes: state.totalQuizzes,
         remainingSeconds: 0,

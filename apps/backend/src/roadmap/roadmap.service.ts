@@ -354,6 +354,7 @@ export class RoadmapService {
     }
 
     const quizType = quiz.type?.toUpperCase();
+    const isDontKnow = this.isDontKnowSelection(payload);
 
     if (quizType === 'MATCHING') {
       const correctPairs = this.quizResultService.getMatchingAnswer(quiz.answer);
@@ -399,6 +400,7 @@ export class RoadmapService {
         quiz,
         stepAttemptId: payload.step_attempt_id,
         isCorrect,
+        isDontKnow,
       });
 
       return result;
@@ -447,6 +449,7 @@ export class RoadmapService {
       quiz,
       stepAttemptId: payload.step_attempt_id,
       isCorrect,
+      isDontKnow,
     });
 
     return result;
@@ -602,8 +605,9 @@ export class RoadmapService {
     quiz: Quiz;
     stepAttemptId?: number;
     isCorrect: boolean;
+    isDontKnow: boolean;
   }): Promise<void> {
-    const { userId, quiz, stepAttemptId, isCorrect } = params;
+    const { userId, quiz, stepAttemptId, isCorrect, isDontKnow } = params;
 
     if (userId === null || userId === undefined) {
       return;
@@ -641,6 +645,7 @@ export class RoadmapService {
         quiz,
         qualityScore,
         solvedAt,
+        isDontKnow,
       });
       await this.rankingService.assignUserToGroupOnFirstSolveWithManager(manager, {
         userId,
@@ -703,8 +708,9 @@ export class RoadmapService {
     quiz: Quiz;
     qualityScore: number;
     solvedAt: Date;
+    isDontKnow: boolean;
   }): Promise<void> {
-    const { manager, userId, quiz, qualityScore, solvedAt } = params;
+    const { manager, userId, quiz, qualityScore, solvedAt, isDontKnow } = params;
     const userQuizStatusRepository = manager.getRepository(UserQuizStatus);
 
     const existingStatus = await userQuizStatusRepository.findOne({
@@ -728,6 +734,7 @@ export class RoadmapService {
         nextReviewAt: null,
         lastSolvedAt: null,
         isWrong: false,
+        isDontKnow: false,
       });
     }
 
@@ -759,18 +766,21 @@ export class RoadmapService {
     let nextStatus = QuizLearningStatus.LEARNING;
     let nextIsWrong = true;
     let nextLapseCount = baseLapseCount;
+    let nextIsDontKnow = false;
 
     if (isSuccess) {
       nextRepetition = baseRepetition + 1;
       nextInterval = this.calculateInterval(nextRepetition, baseInterval, nextEaseFactor);
       nextStatus = QuizLearningStatus.REVIEW;
       nextIsWrong = false;
+      nextIsDontKnow = false;
     } else {
       nextRepetition = 0;
-      nextInterval = 1;
+      nextInterval = isDontKnow ? 0 : 1;
       nextStatus = QuizLearningStatus.LEARNING;
       nextIsWrong = true;
       nextLapseCount = baseLapseCount + 1;
+      nextIsDontKnow = isDontKnow;
     }
 
     if (isSuccess && nextInterval >= 30) {
@@ -782,6 +792,7 @@ export class RoadmapService {
     baseStatus.interval = nextInterval;
     baseStatus.status = nextStatus;
     baseStatus.isWrong = nextIsWrong;
+    baseStatus.isDontKnow = nextIsDontKnow;
     baseStatus.lastQuality = qualityScore;
     baseStatus.reviewCount = baseReviewCount + 1;
     baseStatus.lapseCount = nextLapseCount;
@@ -802,6 +813,30 @@ export class RoadmapService {
       return 5;
     }
     return 2;
+  }
+
+  /**
+   * "잘 모르겠어요" 제출 여부를 판별한다.
+   * - selection에 option_id와 pairs가 모두 없는 경우로 판단한다.
+   *
+   * @param payload 제출 요청 데이터
+   * @returns 잘 모르겠어요 여부
+   */
+  private isDontKnowSelection(payload: QuizSubmissionRequest): boolean {
+    if (payload.is_dont_know === true) {
+      return true;
+    }
+
+    if (!payload.selection) {
+      return true;
+    }
+
+    const hasOption =
+      typeof payload.selection.option_id === 'string' &&
+      payload.selection.option_id.trim().length > 0;
+    const hasPairs = Array.isArray(payload.selection.pairs) && payload.selection.pairs.length > 0;
+
+    return !hasOption && !hasPairs;
   }
 
   /**

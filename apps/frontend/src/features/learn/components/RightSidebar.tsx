@@ -634,4 +634,8 @@ const boostadZoneOverride = css`
   }
 
   min-height: 107px;
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
 `;

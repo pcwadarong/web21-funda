@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { QuizResultService } from '../common/utils/quiz-result.service';
@@ -25,6 +26,7 @@ import { BattleStore } from './battle.store';
     CodeFormatter,
     QuizContentService,
     QuizResultService,
+    RedisService,
   ],
 })
 export class BattleModule {}

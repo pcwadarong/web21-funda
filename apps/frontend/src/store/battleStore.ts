@@ -39,7 +39,7 @@ interface BattleState {
   currentQuiz: QuizQuestion | null;
   currentQuizId: number;
   quizEndsAt: number;
-  resultEndsAt: number | null;
+  resultEndsAt: number;
   serverTime: number;
   selectedAnswers: AnswerType[];
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
@@ -57,6 +57,7 @@ interface BattleState {
       solution: { correctAnswer: CorrectAnswerType | null; explanation: string },
     ) => void;
     setQuestionStatus: (index: number, status: QuestionStatus) => void;
+    setResultTime: (resultEndsAt: number, serverTime: number) => void;
     reset: () => void;
     resetForRestart: () => void;
   };
@@ -83,7 +84,7 @@ export const useBattleStore = create<BattleState>(set => ({
   currentQuiz: null,
   currentQuizId: 0,
   quizEndsAt: 0,
-  resultEndsAt: null,
+  resultEndsAt: 0,
   serverTime: 0,
   selectedAnswers: [],
   quizSolutions: [],
@@ -128,6 +129,7 @@ export const useBattleStore = create<BattleState>(set => ({
         next[index] = status;
         return { questionStatuses: next };
       }),
+    setResultTime: (resultEndsAt, serverTime) => set({ resultEndsAt, serverTime }),
     reset: () =>
       set({
         roomId: null,

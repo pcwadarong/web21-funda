@@ -90,6 +90,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     setQuizSolution,
     setQuestionStatus,
     setSelectedAnswer,
+    setResultTime,
     reset,
     resetForRestart,
   } = useBattleStore(state => state.actions);
@@ -130,16 +131,12 @@ export function useBattleSocket(): UseBattleSocketReturn {
       status: BattleRoomStatus;
       remainingSeconds: number;
       rankings: Ranking[];
-      resultEndsAt?: number;
-      serverTime?: number;
       countdownEndsAt?: number | null;
     }) => {
       setBattleState({
         status: data.status,
         remainingSeconds: data.remainingSeconds,
         rankings: data.rankings,
-        resultEndsAt: data.resultEndsAt ?? undefined,
-        serverTime: data.serverTime ?? undefined,
         countdownEndsAt: data.countdownEndsAt ?? null,
       });
     };
@@ -162,7 +159,6 @@ export function useBattleSocket(): UseBattleSocketReturn {
     const handleBattleQuiz = (data: BattleQuizData) => {
       setBattleState({
         status: 'in_progress',
-        resultEndsAt: null,
         countdownEndsAt: null,
       });
 
@@ -194,6 +190,10 @@ export function useBattleSocket(): UseBattleSocketReturn {
       setQuestionStatus(currentIndex, 'checked');
     };
 
+    const handleBattleResultTime = (data: { resultEndsAt: number; serverTime: number }) => {
+      setResultTime(data.resultEndsAt, data.serverTime);
+    };
+
     // 4. 게임 종료 및 무효 처리
     const handleBattleFinish = (data: { rankings?: Ranking[]; rewards?: BattleReward[] }) => {
       setBattleState({
@@ -220,6 +220,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     socket.on('battle:roomUpdated', handleRoomUpdated);
     socket.on('battle:quiz', handleBattleQuiz);
     socket.on('battle:result', handleBattleResult);
+    socket.on('battle:resultTime', handleBattleResultTime);
     socket.on('battle:finish', handleBattleFinish);
     socket.on('battle:invalid', handleBattleInvalid);
     socket.on('battle:error', handleBattleError);
@@ -230,6 +231,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       socket.off('battle:roomUpdated', handleRoomUpdated);
       socket.off('battle:quiz', handleBattleQuiz);
       socket.off('battle:result', handleBattleResult);
+      socket.off('battle:resultTime', handleBattleResultTime);
       socket.off('battle:finish', handleBattleFinish);
       socket.off('battle:invalid', handleBattleInvalid);
       socket.off('battle:error', handleBattleError);
@@ -241,6 +243,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     setQuiz,
     setQuizSolution,
     setQuestionStatus,
+    setResultTime,
     showToast,
   ]);
 

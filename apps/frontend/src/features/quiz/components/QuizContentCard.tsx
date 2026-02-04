@@ -34,6 +34,7 @@ interface QuizContentCardProps {
   isBattleMode?: boolean;
   remainingSeconds?: number | null;
   endsAt?: number | null;
+  onSelectPosition?: (position: { x: number; y: number }) => void;
 }
 
 export const QuizContentCard = ({
@@ -51,6 +52,7 @@ export const QuizContentCard = ({
   isLast,
   isReviewMode,
   isBattleMode = false,
+  onSelectPosition,
 }: QuizContentCardProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
@@ -95,6 +97,7 @@ export const QuizContentCard = ({
         selectedAnswer={selectedAnswer}
         correctAnswer={correctAnswer ?? null}
         onAnswerChange={onAnswerChange}
+        onSelectPosition={isBattleMode ? onSelectPosition : undefined}
         showResult={showResult}
         disabled={status !== 'idle'}
       />

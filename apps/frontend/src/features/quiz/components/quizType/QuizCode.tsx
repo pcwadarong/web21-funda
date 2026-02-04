@@ -11,6 +11,7 @@ export const QuizCode = ({
   showResult,
   correctAnswer,
   onAnswerChange,
+  onSelectPosition,
   disabled = false,
 }: QuizComponentProps) => {
   const theme = useTheme();
@@ -44,7 +45,15 @@ export const QuizCode = ({
               isSelected={isSelected}
               isCorrect={isCorrectOption}
               isWrong={isWrongOption}
-              onClick={() => onAnswerChange(option.id)}
+              onClick={event => {
+                onAnswerChange(option.id);
+                if (!onSelectPosition) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                onSelectPosition({
+                  x: rect.left + rect.width / 2,
+                  y: rect.top + rect.height / 2,
+                });
+              }}
               disabled={disabled}
             />
           );

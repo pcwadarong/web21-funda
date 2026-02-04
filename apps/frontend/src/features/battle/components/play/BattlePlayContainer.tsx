@@ -1,4 +1,5 @@
 import { css } from '@emotion/react';
+import { useEffect, useState } from 'react';
 
 import { BattleRankBar } from '@/feat/battle/components/play/BattleRankBar';
 import type { BattleQuizData, Ranking } from '@/feat/battle/types';
@@ -36,41 +37,51 @@ export const BattlePlayContainer = ({
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
-}: BattlePlayContainerProps) => (
-  <div css={containerStyle}>
-    <QuizHeader
-      currentStep={quizInfo.index + 1}
-      totalSteps={quizInfo.total}
-      completedSteps={quizInfo.index}
-      status={questionStatuses[quizInfo.index] ?? 'idle'}
-      isBattleMode
-    />
-    <div css={subHeaderStyle}>
-      <BattleRankBar
-        rankings={rankings}
-        currentParticipantId={currentParticipantId}
-        totalParticipants={rankings.length}
-        scoreDelta={scoreDelta}
-      />
-    </div>
-    <main css={mainStyle}>
-      <QuizContentCard
-        question={quizInfo.question}
+}: BattlePlayContainerProps) => {
+  const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    setSelectionPosition(null);
+  }, [quizInfo.quizId]);
+
+  return (
+    <div css={containerStyle}>
+      <QuizHeader
+        currentStep={quizInfo.index + 1}
+        totalSteps={quizInfo.total}
+        completedSteps={quizInfo.index}
         status={questionStatuses[quizInfo.index] ?? 'idle'}
-        selectedAnswer={selectedAnswers[quizInfo.index] ?? null}
-        correctAnswer={quizSolutions[quizInfo.index]?.correctAnswer ?? null}
-        explanation={quizSolutions[quizInfo.index]?.explanation ?? ''}
-        onAnswerChange={handleAnswerChange}
-        isSubmitDisabled={isCheckDisabled}
-        onCheck={handleCheckAnswer}
-        onNext={handleNextQuestion}
-        isLast={isLastQuestion}
-        isReviewMode={isReviewMode}
         isBattleMode
       />
-    </main>
-  </div>
-);
+      <div css={subHeaderStyle}>
+        <BattleRankBar
+          rankings={rankings}
+          currentParticipantId={currentParticipantId}
+          totalParticipants={rankings.length}
+          scoreDelta={scoreDelta}
+          startPosition={selectionPosition}
+        />
+      </div>
+      <main css={mainStyle}>
+        <QuizContentCard
+          question={quizInfo.question}
+          status={questionStatuses[quizInfo.index] ?? 'idle'}
+          selectedAnswer={selectedAnswers[quizInfo.index] ?? null}
+          correctAnswer={quizSolutions[quizInfo.index]?.correctAnswer ?? null}
+          explanation={quizSolutions[quizInfo.index]?.explanation ?? ''}
+          onAnswerChange={handleAnswerChange}
+          onSelectPosition={setSelectionPosition}
+          isSubmitDisabled={isCheckDisabled}
+          onCheck={handleCheckAnswer}
+          onNext={handleNextQuestion}
+          isLast={isLastQuestion}
+          isReviewMode={isReviewMode}
+          isBattleMode
+        />
+      </main>
+    </div>
+  );
+};
 
 const containerStyle = css`
   display: flex;

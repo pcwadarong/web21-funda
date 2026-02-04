@@ -855,7 +855,8 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       question: quiz,
       index: room.currentQuizIndex,
       total: room.totalQuizzes,
-      endsAt,
+      endsAt: endsAt,
+      serverTime: Date.now(),
     });
 
     const nextRoom: BattleRoomState = {
@@ -952,6 +953,7 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       remainingSeconds: delay,
       rankings: this.buildRankings(roomWithResultEndsAt),
       resultEndsAt,
+      serverTime: Date.now(),
     });
 
     const nextRoom = {

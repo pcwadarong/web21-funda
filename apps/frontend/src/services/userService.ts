@@ -23,6 +23,15 @@ interface UnsubscribeResponse {
   message: string;
 }
 
+interface UpdateEmailSubscriptionRequest {
+  isEmailSubscribed: boolean;
+}
+
+interface UpdateEmailSubscriptionResponse {
+  success: boolean;
+  isEmailSubscribed: boolean;
+}
+
 export const userService = {
   /**
    * 프로필 요약 정보를 가져옵니다.
@@ -104,4 +113,13 @@ export const notificationService = {
    */
   unsubscribe: async (data: UnsubscribeRequest): Promise<UnsubscribeResponse> =>
     apiFetch.patch<UnsubscribeResponse>('/notification/unsubscribe', data),
+  /**
+   * 이메일 알림 설정 변경
+   * @param data 이메일 알림 수신 여부
+   * @returns 변경된 이메일 알림 수신 여부
+   */
+  updateEmailSubscription: async (
+    data: UpdateEmailSubscriptionRequest,
+  ): Promise<UpdateEmailSubscriptionResponse> =>
+    apiFetch.patch<UpdateEmailSubscriptionResponse>('/notification/subscription', data),
 };

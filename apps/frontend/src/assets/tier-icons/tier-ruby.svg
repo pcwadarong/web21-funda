@@ -1,0 +1,29 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rubyGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FF1493" />
+      <stop offset="60%" stop-color="#DC143C" />
+      <stop offset="100%" stop-color="#8B0000" />
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF69B4" stop-opacity="1" />
+      <stop offset="100%" stop-color="#8B0000" stop-opacity="0" />
+    </radialGradient>
+    <filter id="rubyBloom">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 18 -7" result="goo" />
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+  </defs>
+  <g filter="url(#rubyBloom)">
+    <!-- Aggressive Spiked Shape -->
+    <path d="M50 0 L65 25 L95 35 L75 60 L85 95 L50 80 L15 95 L25 60 L5 35 L35 25 L50 0 Z" fill="url(#rubyGradient)" stroke="#FFC0CB" stroke-width="2" />
+    
+    <!-- Inner Core -->
+    <path d="M50 20 L60 40 L80 50 L60 60 L50 80 L40 60 L20 50 L40 40 L50 20 Z" fill="#800000" />
+    <circle cx="50" cy="50" r="10" fill="url(#coreGlow)" />
+    
+    <!-- Highlights -->
+    <path d="M50 5 L55 25 L50 35 L45 25 L50 5 Z" fill="#FFFFFF" opacity="0.4" />
+  </g>
+</svg>

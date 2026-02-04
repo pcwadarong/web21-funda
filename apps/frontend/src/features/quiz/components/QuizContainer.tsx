@@ -17,10 +17,12 @@ interface QuizContainerProps {
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
   questionStatuses: QuestionStatus[];
   isCheckDisabled: boolean;
+  isDontKnowDisabled: boolean;
   isLastQuestion: boolean;
   isReviewMode: boolean;
   handleAnswerChange: (answer: AnswerType) => void;
   handleCheckAnswer: () => Promise<void>;
+  handleDontKnowAnswer: () => Promise<void>;
   handleNextQuestion: () => void;
   heartCount: number;
 }
@@ -33,10 +35,12 @@ export const QuizContainer = ({
   quizSolutions,
   questionStatuses,
   isCheckDisabled,
+  isDontKnowDisabled,
   isLastQuestion,
   isReviewMode,
   handleAnswerChange,
   handleCheckAnswer,
+  handleDontKnowAnswer,
   handleNextQuestion,
   heartCount,
 }: QuizContainerProps) => {
@@ -61,7 +65,9 @@ export const QuizContainer = ({
           explanation={quizSolutions[currentQuizIndex]?.explanation ?? ''}
           onAnswerChange={handleAnswerChange}
           isSubmitDisabled={isCheckDisabled}
+          isDontKnowDisabled={isDontKnowDisabled}
           onCheck={handleCheckAnswer}
+          onDontKnow={handleDontKnowAnswer}
           onNext={handleNextQuestion}
           isLast={isLastQuestion}
           isReviewMode={isReviewMode}

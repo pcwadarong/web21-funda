@@ -51,12 +51,13 @@ const avatarStyle = (theme: Theme, size: string) => css`
   width: ${size};
   height: ${size};
   border-radius: 50%;
-  background: ${theme.colors.surface.default};
+  background: ${theme.colors.surface.bold};
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
+  border: 1px solid ${theme.colors.border.default};
 `;
 
 const avatarImageStyle = css`

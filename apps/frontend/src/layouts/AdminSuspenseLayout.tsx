@@ -71,6 +71,10 @@ const mainContentStyle = css`
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   position: relative;
+
+  @media (max-width: 768px) {
+    padding-bottom: 96px;
+  }
 `;
 
 const headerStyle = (theme: Theme) => css`

@@ -54,6 +54,7 @@ interface HoveredCell {
   solvedCount: number;
   x: number;
   y: number;
+  containerRect: DOMRect;
 }
 
 /**
@@ -115,6 +116,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
         solvedCount,
         x: event.clientX - rect.left,
         y: event.clientY - rect.top,
+        containerRect: rect,
       });
     }
   };
@@ -221,6 +223,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                 x={hoveredCell?.x ?? 0}
                 y={hoveredCell?.y ?? 0}
                 isVisible={hoveredCell !== null}
+                containerRect={hoveredCell?.containerRect ?? null}
                 onMouseEnter={() => hoveredCell && setHoveredCell(hoveredCell)}
                 onMouseLeave={handleCellMouseLeave}
               >

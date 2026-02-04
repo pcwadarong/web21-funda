@@ -1,7 +1,7 @@
 import { css } from '@emotion/react';
 import { motion, type Variants } from 'framer-motion';
 
-import BigStar from '@/assets/star3d.svg?react';
+import BigStar from '@/assets/images/star3d.svg?react';
 import SVGIcon from '@/comp/SVGIcon';
 import type { Theme } from '@/styles/theme';
 

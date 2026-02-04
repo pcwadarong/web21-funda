@@ -5,17 +5,25 @@ import SVGIcon from '@/components/SVGIcon';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 import { colors } from '@/styles/token';
+import { getTierIconName } from '@/utils/tier';
 
 import type { RankingMember } from '../types';
 
 interface RankingRowProps {
   member: RankingMember;
+  showRankZoneIcon?: boolean;
+  xpLabel?: string;
 }
 
-export const RankingRow = ({ member }: RankingRowProps) => {
+export const RankingRow = ({
+  member,
+  showRankZoneIcon = true,
+  xpLabel = 'XP',
+}: RankingRowProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
-  const { isMe, rankZone, rank, profileImageUrl, displayName, xp } = member;
+  const { isMe, rankZone, rank, profileImageUrl, displayName, xp, tierName } = member;
+  const tierIconName = getTierIconName(tierName);
 
   const ZONE_COLORS = {
     PROMOTION: theme.colors.success.main,
@@ -30,6 +38,10 @@ export const RankingRow = ({ member }: RankingRowProps) => {
     : ZONE_COLORS[rankZone] || theme.colors.text.strong;
 
   const renderRankZoneIcon = () => {
+    if (!showRankZoneIcon) {
+      return null;
+    }
+
     switch (rankZone) {
       case 'PROMOTION':
         return (
@@ -68,11 +80,18 @@ export const RankingRow = ({ member }: RankingRowProps) => {
 
       <div css={nameBlockStyle}>
         <span css={memberNameStyle(theme, isMe, isDarkMode)}>{displayName}</span>
+        {tierIconName && (
+          <span css={tierIconWrapperStyle} aria-label={`티어 ${tierName}`}>
+            <SVGIcon icon={tierIconName} size="md" />
+          </span>
+        )}
         {isMe && <span css={meBadgeStyle(theme, isDarkMode)}>나</span>}
       </div>
 
       <div css={xpBlockStyle}>
-        <span css={xpValueStyle(theme, isMe, isDarkMode)}>{xp.toLocaleString()} XP</span>
+        <span css={xpValueStyle(theme, isMe, isDarkMode)}>
+          {xp.toLocaleString()} {xpLabel}
+        </span>
         {renderRankZoneIcon()}
       </div>
     </li>
@@ -147,6 +166,15 @@ const meBadgeStyle = (theme: Theme, isDarkMode: boolean) => css`
   border: 1px solid ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
   padding: 2px 8px;
   border-radius: 999px;
+  flex-shrink: 0;
+`;
+
+const tierIconWrapperStyle = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 `;
 

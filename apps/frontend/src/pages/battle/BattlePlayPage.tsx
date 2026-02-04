@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import correctSound from '@/assets/audio/correct.mp3';
-import timerSound from '@/assets/audio/timer.mp3';
 import wrongSound from '@/assets/audio/wrong.mp3';
 import { Loading } from '@/comp/Loading';
 import { BattlePlayContainer } from '@/feat/battle/components/play/BattlePlayContainer';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { AnswerType } from '@/feat/quiz/types';
-import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useSound } from '@/hooks/useSound';
 
 export const BattlePlayPage = () => {
@@ -26,17 +24,7 @@ export const BattlePlayPage = () => {
     quizSolutions,
     questionStatuses,
     rankings,
-    remainingSeconds,
-    quizEndsAt,
-    resultEndsAt,
   } = battleState;
-
-  const isResultPhase = typeof resultEndsAt === 'number' && resultEndsAt > 0;
-  const timerEndsAt = !isResultPhase && quizEndsAt > 0 ? quizEndsAt : null;
-  const timerSeconds = useCountdownTimer({
-    endsAt: timerEndsAt,
-    remainingSeconds: !isResultPhase ? remainingSeconds : null,
-  });
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -79,23 +67,6 @@ export const BattlePlayPage = () => {
     };
   }, [socket, playSound]);
 
-  const lastTimerSecondsRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (timerSeconds === null) {
-      lastTimerSecondsRef.current = null;
-      return;
-    }
-
-    const prevSeconds = lastTimerSecondsRef.current;
-
-    if (timerSeconds > 0 && timerSeconds <= 3 && timerSeconds !== prevSeconds) {
-      playSound({ src: timerSound, currentTime: 0 });
-    }
-
-    lastTimerSecondsRef.current = timerSeconds;
-  }, [playSound, timerSeconds]);
-
   const handleAnswerChange = useCallback(
     (answer: AnswerType) => {
       setSelectedAnswer(currentQuizIndex, answer);
@@ -131,21 +102,19 @@ export const BattlePlayPage = () => {
   };
 
   return (
-    <>
-      <BattlePlayContainer
-        quizInfo={quizInfo}
-        selectedAnswers={selectedAnswers}
-        quizSolutions={quizSolutions}
-        questionStatuses={questionStatuses}
-        isCheckDisabled={isCheckDisabled}
-        isLastQuestion={currentQuizIndex + 1 >= totalQuizzes}
-        isReviewMode={false}
-        handleAnswerChange={handleAnswerChange}
-        handleCheckAnswer={handleCheckAnswer}
-        handleNextQuestion={handleNextQuestion}
-        rankings={rankings}
-        currentParticipantId={socket?.id ?? null}
-      />
-    </>
+    <BattlePlayContainer
+      quizInfo={quizInfo}
+      selectedAnswers={selectedAnswers}
+      quizSolutions={quizSolutions}
+      questionStatuses={questionStatuses}
+      isCheckDisabled={isCheckDisabled}
+      isLastQuestion={currentQuizIndex + 1 >= totalQuizzes}
+      isReviewMode={false}
+      handleAnswerChange={handleAnswerChange}
+      handleCheckAnswer={handleCheckAnswer}
+      handleNextQuestion={handleNextQuestion}
+      rankings={rankings}
+      currentParticipantId={socket?.id ?? null}
+    />
   );
 };

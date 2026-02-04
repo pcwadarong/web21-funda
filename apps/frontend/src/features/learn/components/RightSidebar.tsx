@@ -238,120 +238,123 @@ export const LearnRightSidebar = ({
 
   return (
     <aside css={rightSectionStyle}>
-      <div css={statsContainerStyle(isLoggedIn)}>
-        <Dropdown
-          options={dropdownOptions}
-          onChange={handleChange}
-          value={fieldSlug}
-          variant="plain"
-          triggerCss={statContainerStyle(theme)}
-          renderTrigger={() => (
+      <div css={rightSectionInnerStyle}>
+        <div css={statsContainerStyle(isLoggedIn)}>
+          <Dropdown
+            options={dropdownOptions}
+            onChange={handleChange}
+            value={fieldSlug}
+            variant="plain"
+            triggerCss={statContainerStyle(theme)}
+            renderTrigger={() => (
+              <>
+                <span css={statIconStyle}>
+                  <SVGIcon icon={selectedField?.icon ?? 'Frontend'} size="md" />
+                </span>
+                <span css={statValueStyle(theme)}>
+                  {selectedField?.slug?.toUpperCase() ?? fieldSlug.toUpperCase()}
+                </span>
+              </>
+            )}
+            renderOption={option => (
+              <>
+                <span css={statIconStyle}>
+                  <SVGIcon icon={option.icon ?? 'Frontend'} size="sm" />
+                </span>
+                <span css={statValueStyle(theme)}>{option.label}</span>
+              </>
+            )}
+          />
+          {isLoggedIn && user && (
             <>
-              <span css={statIconStyle}>
-                <SVGIcon icon={selectedField?.icon ?? 'Frontend'} size="md" />
-              </span>
-              <span css={statValueStyle(theme)}>
-                {selectedField?.slug?.toUpperCase() ?? fieldSlug.toUpperCase()}
-              </span>
-            </>
-          )}
-          renderOption={option => (
-            <>
-              <span css={statIconStyle}>
-                <SVGIcon icon={option.icon ?? 'Frontend'} size="sm" />
-              </span>
-              <span css={statValueStyle(theme)}>{option.label}</span>
-            </>
-          )}
-        />
-        {isLoggedIn && user && (
-          <>
-            <div css={statContainerStyle(theme)}>
-              <span css={statIconStyle}>
-                <SVGIcon icon="Diamond" size="md" />
-              </span>
-              <span css={statValueStyle(theme)}>{diamondCount}</span>
-            </div>
-            <div css={statContainerStyle(theme)}>
-              <span css={statIconStyle}>
-                <SVGIcon icon="Streak" size="md" />
-              </span>
-              <span css={statValueStyle(theme)}>{user.currentStreak}</span>
-            </div>
-          </>
-        )}
-
-        <div css={statContainerStyle(theme)}>
-          <span css={statIconStyle}>
-            <SVGIcon icon="Heart" size="lg" />
-          </span>
-          <span css={statValueStyle(theme)}>{heartCount}</span>
-        </div>
-      </div>
-
-      <div css={cardContainerStyle}>
-        <div css={cardStyle(theme)}>
-          <div css={cardHeaderStyle}>
-            <span css={cardIconStyle}>
-              <SVGIcon icon="Book" size="md" />
-            </span>
-            <span css={cardTitleStyle(theme)}>복습 노트</span>
-          </div>
-          <Button
-            variant="primary"
-            fullWidth={true}
-            onClick={handleReviewClick}
-            css={rightSidebarBtnStyle(theme)}
-            disabled={!isLoggedIn}
-          >
-            복습 시작하기
-          </Button>
-        </div>
-
-        <div css={cardStyle(theme)}>
-          <div css={cardHeaderStyle}>
-            <span css={cardIconStyle}>
-              <SVGIcon icon="Fire" size="md" />
-            </span>
-            <span css={cardTitleStyle(theme)}>오늘의 목표</span>
-          </div>
-          <div css={goalsContentStyle}>
-            {TODAY_GOALS.map(goal => (
-              <div key={goal.id} css={goalItemStyle}>
-                <div css={goalLabelContainerStyle}>
-                  <span css={goalLabelStyle(theme)}>{goal.label}</span>
-                  <span css={goalLabelStyle(theme)}>
-                    {goal.current}/{goal.target}
-                  </span>
-                </div>
-                <div css={progressBarContainerStyle(theme)}>
-                  <div
-                    css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
-                    role="progressbar"
-                  />
-                </div>
+              <div css={statContainerStyle(theme)}>
+                <span css={statIconStyle}>
+                  <SVGIcon icon="Diamond" size="md" />
+                </span>
+                <span css={statValueStyle(theme)}>{diamondCount}</span>
               </div>
-            ))}
+              <div css={statContainerStyle(theme)}>
+                <span css={statIconStyle}>
+                  <SVGIcon icon="Streak" size="md" />
+                </span>
+                <span css={statValueStyle(theme)}>{user.currentStreak}</span>
+              </div>
+            </>
+          )}
+
+          <div css={statContainerStyle(theme)}>
+            <span css={statIconStyle}>
+              <SVGIcon icon="Heart" size="lg" />
+            </span>
+            <span css={statValueStyle(theme)}>{heartCount}</span>
           </div>
         </div>
 
-        <div css={cardStyle(theme)}>
-          <div css={cardHeaderStyle}>
-            <span css={cardIconStyle}>
-              <SVGIcon icon="Search" size="md" />
-            </span>
-            <span css={cardTitleStyle(theme)}>친구 추가</span>
+        <div css={cardContainerStyle}>
+          <div css={cardStyle(theme)}>
+            <div css={cardHeaderStyle}>
+              <span css={cardIconStyle}>
+                <SVGIcon icon="Book" size="md" />
+              </span>
+              <span css={cardTitleStyle(theme)}>복습 노트</span>
+            </div>
+            <Button
+              variant="primary"
+              fullWidth={true}
+              onClick={handleReviewClick}
+              css={rightSidebarBtnStyle(theme)}
+              disabled={!isLoggedIn}
+            >
+              복습 시작하기
+            </Button>
           </div>
-          <Button
-            variant="primary"
-            fullWidth={true}
-            onClick={handleOpenSearchModal}
-            css={rightSidebarBtnStyle(theme)}
-            disabled={!isLoggedIn}
-          >
-            친구 추가하기
-          </Button>
-        </div>
+
+          <div css={cardStyle(theme)}>
+            <div css={cardHeaderStyle}>
+              <span css={cardIconStyle}>
+                <SVGIcon icon="Fire" size="md" />
+              </span>
+              <span css={cardTitleStyle(theme)}>오늘의 목표</span>
+            </div>
+            <div css={goalsContentStyle}>
+              {TODAY_GOALS.map(goal => (
+                <div key={goal.id} css={goalItemStyle}>
+                  <div css={goalLabelContainerStyle}>
+                    <span css={goalLabelStyle(theme)}>{goal.label}</span>
+                    <span css={goalLabelStyle(theme)}>
+                      {goal.current}/{goal.target}
+                    </span>
+                  </div>
+                  <div css={progressBarContainerStyle(theme)}>
+                    <div
+                      css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
+                      role="progressbar"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div css={cardStyle(theme)}>
+            <div css={cardHeaderStyle}>
+              <span css={cardIconStyle}>
+                <SVGIcon icon="Search" size="md" />
+              </span>
+              <span css={cardTitleStyle(theme)}>친구 추가</span>
+            </div>
+            <Button
+              variant="primary"
+              fullWidth={true}
+              onClick={handleOpenSearchModal}
+              css={rightSidebarBtnStyle(theme)}
+              disabled={!isLoggedIn}
+            >
+              친구 추가하기
+            </Button>
+          </div>
+
+        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
 
         {!isLoggedIn && !user && (
           <div css={overlayStyle(theme)}>
@@ -360,48 +363,73 @@ export const LearnRightSidebar = ({
                 로그인하여 학습 기록을 저장하고 친구 추가를 해보세요!
               </span>
             </div>
+          )}
+        </div>
 
-            <Link to="/login" css={rightSidebarLinkStyle}>
-              <Button variant="primary" fullWidth={true} css={rightSidebarBtnStyle(theme)}>
-                로그인
-              </Button>
-            </Link>
-          </div>
+        {isSearchModalOpen && (
+          <Modal
+            title="친구 추가"
+            content={
+              <UserSearchModal
+                keyword={searchKeyword}
+                users={shouldSearch ? resolvedSearchUsers : []}
+                isLoading={shouldSearch && isSearchLoading}
+                pendingUserId={pendingUserId}
+                onKeywordChange={setSearchKeyword}
+                onUserClick={handleSearchUserClick}
+                onFollowToggle={handleFollowToggle}
+              />
+            }
+            onClose={handleCloseSearchModal}
+            maxWidth={560}
+          />
         )}
       </div>
-
-      {isSearchModalOpen && (
-        <Modal
-          title="친구 추가"
-          content={
-            <UserSearchModal
-              keyword={searchKeyword}
-              users={shouldSearch ? resolvedSearchUsers : []}
-              isLoading={shouldSearch && isSearchLoading}
-              pendingUserId={pendingUserId}
-              onKeywordChange={setSearchKeyword}
-              onUserClick={handleSearchUserClick}
-              onFollowToggle={handleFollowToggle}
-            />
-          }
-          onClose={handleCloseSearchModal}
-          maxWidth={560}
-        />
-      )}
     </aside>
   );
 };
 
 const rightSectionStyle = css`
+  position: sticky;
+  bottom: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  align-self: flex-end;
   width: 360px;
   min-width: 360px;
   padding-right: 8px;
+  padding-top: 24px;
 
   @media (max-width: 1024px) {
-    display: none;
+    width: 100%;
+    padding: 0;
+    align-items: center;
+  }
+`;
+
+const rightSectionInnerStyle = css`
+  position: sticky;
+  top: 24px;
+  min-height: calc(100dvh - 48px);
+
+  @media (max-width: 1024px) {
+    width: 100%;
+    max-width: 40rem;
+    min-height: auto;
+    padding: 0 24px;
+    position: fixed;
+    top: 0;
+  }
+
+  @media (min-width: 768px) and (max-width: 1024px) {
+    left: calc(50% + 18px);
+    transform: translateX(-50%);
+  }
+
+  @media (max-width: 768px) {
+    left: 50%;
+    transform: translateX(-50%);
   }
 `;
 
@@ -411,6 +439,11 @@ const statsContainerStyle = (isLoggedIn: boolean) => css`
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 16px;
+
+  @media (max-width: 1024px) {
+    margin: 0;
+  }
 `;
 
 const statContainerStyle = (theme: Theme) => css`
@@ -427,6 +460,12 @@ const statContainerStyle = (theme: Theme) => css`
 
   &:hover {
     background: ${theme.colors.surface.bold};
+  }
+
+  @media (max-width: 768px) {
+    & + div[aria-label='dropdown options'] {
+      transform: translateX(-25%);
+    }
   }
 `;
 
@@ -467,6 +506,10 @@ const cardContainerStyle = css`
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
 `;
 
 const cardStyle = (theme: Theme) => css`
@@ -576,4 +619,12 @@ const progressBarStyle = (theme: Theme, percentage: number) => css`
   background: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.small};
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const boostadZoneOverride = css`
+  &[data-boostad-zone] {
+    margin: 0 !important;
+  }
+
+  min-height: 107px;
 `;

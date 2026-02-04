@@ -7,7 +7,7 @@ import { QuizHeader } from '@/feat/quiz/components/QuizHeader';
 import type { AnswerType, CorrectAnswerType, QuestionStatus } from '@/feat/quiz/types';
 
 interface BattlePlayContainerProps {
-  quizInfo: Omit<BattleQuizData, 'endsAt'>;
+  quizInfo: Omit<BattleQuizData, 'endsAt' | 'serverTime'>;
   selectedAnswers: AnswerType[];
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
   questionStatuses: QuestionStatus[];
@@ -40,6 +40,7 @@ export const BattlePlayContainer = ({
       currentStep={quizInfo.index + 1}
       totalSteps={quizInfo.total}
       completedSteps={quizInfo.index}
+      status={questionStatuses[quizInfo.index] ?? 'idle'}
       isBattleMode
     />
     <main css={mainStyle}>

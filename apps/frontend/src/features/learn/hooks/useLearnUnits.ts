@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type SimpleBarCore from 'simplebar-core';
 
 import type { UnitType } from '@/feat/learn/types';
 import { useStorage } from '@/hooks/useStorage';
@@ -15,7 +16,7 @@ export const useLearnUnits = () => {
   const [fieldSlug, setFieldSlug] = useState(
     () => storageUtil.get().ui_state.last_viewed.field_slug,
   );
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<SimpleBarCore | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const unitRefs = useRef(new Map<number, HTMLElement>());
 
@@ -70,11 +71,13 @@ export const useLearnUnits = () => {
   useEffect(() => {
     const root = scrollContainerRef.current;
     if (!root || units.length === 0) return;
+    const scrollElement = root.getScrollElement();
+    if (!scrollElement) return;
     let ticking = false;
 
     const updateActiveUnit = () => {
       const headerHeight = headerRef.current?.offsetHeight ?? 0;
-      const scrollTop = root.scrollTop + headerHeight + 1;
+      const scrollTop = scrollElement.scrollTop + headerHeight + 1;
       let nextId = units[0]?.id ?? null;
 
       unitRefs.current.forEach((element, id) => {
@@ -97,10 +100,10 @@ export const useLearnUnits = () => {
     };
 
     updateActiveUnit();
-    root.addEventListener('scroll', onScroll, { passive: true });
+    scrollElement.addEventListener('scroll', onScroll, { passive: true });
 
     return () => {
-      root.removeEventListener('scroll', onScroll);
+      scrollElement.removeEventListener('scroll', onScroll);
     };
   }, [units]);
 
@@ -111,6 +114,8 @@ export const useLearnUnits = () => {
     // TODO: 추후 last_solved_unit_id에서 해당하는 field의 유닛 ID로 스크롤 되도록 수정 필요
     const root = scrollContainerRef.current;
     if (!root || units.length === 0) return;
+    const scrollElement = root.getScrollElement();
+    if (!scrollElement) return;
 
     const fallbackUnitId = units[0]?.id;
     if (!fallbackUnitId) return;
@@ -134,7 +139,7 @@ export const useLearnUnits = () => {
     if (!element) return;
 
     const headerHeight = headerRef.current?.offsetHeight ?? 0;
-    root.scrollTo({
+    scrollElement.scrollTo({
       top: Math.max(0, element.offsetTop - headerHeight),
     });
   }, [units, fieldSlug]);

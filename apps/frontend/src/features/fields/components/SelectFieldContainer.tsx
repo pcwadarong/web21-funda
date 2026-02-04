@@ -26,7 +26,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
             onClick={() => onFieldClick(field.slug)}
             css={fieldCardStyle(theme)}
           >
-            <div css={fieldNameWrapper}>
+            <div css={fieldNameWrapper(theme)}>
               <span css={fieldNameStyle(theme)}>{field.name}</span>
               <SVGIcon icon={field.icon} size="lg" />
             </div>
@@ -121,17 +121,17 @@ const fieldCardStyle = (theme: Theme) => css`
   }
 `;
 
-const fieldNameWrapper = css`
+const fieldNameWrapper = (theme: Theme) => css`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  color: ${theme.colors.text.strong};
 `;
 
 const fieldNameStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   font-weight: ${theme.typography['20Bold'].fontWeight};
   line-height: ${theme.typography['20Bold'].lineHeight};
-  color: ${theme.colors.text.strong};
 `;
 
 const fieldDescriptionStyle = (theme: Theme) => css`

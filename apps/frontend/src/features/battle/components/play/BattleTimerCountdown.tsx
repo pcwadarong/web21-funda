@@ -19,9 +19,8 @@ export const BattleTimerCountdown = ({
   const { playSound } = useSound();
 
   const endsAt = useBattleStore(state => (isResultPhase ? state.resultEndsAt : state.quizEndsAt));
-  const remainingSeconds = useBattleStore(state => state.remainingSeconds);
   const serverTime = useBattleStore(state => state.serverTime);
-  const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds, serverTime });
+  const displaySeconds = useCountdownTimer({ endsAt, serverTime });
 
   const lastPlayedSecond = useRef<number | null>(null);
 
@@ -50,20 +49,12 @@ export const BattleTimerCountdown = ({
     prevSecondsRef.current = displaySeconds;
   }, [playSound, displaySeconds, isResultPhase]);
 
-  // useEffect(() => {
-  //   if (displaySeconds === null || isResultPhase) {
-  //     lastPlayedSecond.current = null;
-  //     return;
-  //   }
-
-  //   if (displaySeconds > 0 && displaySeconds <= 3 && lastPlayedSecond.current !== displaySeconds) {
-  //     playSound({ src: timerSound, currentTime: 0, volume: 0.5 });
-  //     lastPlayedSecond.current = displaySeconds;
-  //   }
-  // }, [playSound, displaySeconds, isResultPhase]);
+  if (displaySeconds === null) {
+    return isForHeader ? <div css={timerPlaceholderStyle(theme)}>--:--</div> : null;
+  }
 
   return isForHeader ? (
-    <div css={timerStyle(theme, displaySeconds!)}>{formatTimer(displaySeconds!)}</div>
+    <div css={timerStyle(theme, displaySeconds)}>{formatTimer(displaySeconds)}</div>
   ) : (
     <span>{displaySeconds}</span>
   );
@@ -82,6 +73,13 @@ const timerStyle = (theme: Theme, seconds: number) => css`
   color: ${seconds <= 3 ? theme.colors.error.main : theme.colors.primary.main};
   ${timerJiggleKeyframes};
   ${seconds > 0 && seconds <= 3 ? 'animation: timer-jiggle 0.6s ease-in-out infinite;' : ''}
+`;
+
+const timerPlaceholderStyle = (theme: Theme) => css`
+  min-width: 55px;
+  font-size: ${theme.typography['24Bold'].fontSize};
+  font-weight: ${theme.typography['24Bold'].fontWeight};
+  color: ${theme.colors.text.weak};
 `;
 
 const timerJiggleKeyframes = css`

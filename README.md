@@ -209,7 +209,7 @@ flowchart LR
   </tr>
 </table>
 
-### 🤖 AI 학습 지원
+### 🤖 AI 학습 튜터
 
 퀴즈 풀이 중 **실시간 Q&A**와 정밀 오답 해설로 학습 흐름을 유지합니다.
 
@@ -223,7 +223,7 @@ flowchart LR
   <tr align="center">
     <td>
       <img
-        src="https://placehold.co/1200x675?text=AI+Tutor+GIF+or+Image"
+        src="https://github.com/user-attachments/assets/ac299240-396e-4991-8729-df7085803718"
         alt="AI 학습 화면 이미지"
       />
     </td>

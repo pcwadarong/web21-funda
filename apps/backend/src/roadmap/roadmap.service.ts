@@ -118,6 +118,7 @@ export class RoadmapService {
    */
   async getUnitsByFieldSlug(fieldSlug: string, userId: number | null): Promise<FieldUnitsResponse> {
     let baseResponse = await this.getCachedFieldUnitsBase(fieldSlug);
+    let completedStepIdSet = new Set<number>();
 
     if (!baseResponse) {
       const field = await this.fieldRepository.findOne({
@@ -133,14 +134,19 @@ export class RoadmapService {
       const steps = units.flatMap(unit => unit.steps ?? []);
       const stepIds = steps.map(step => step.id);
       const uniqueStepIds = Array.from(new Set(stepIds));
-      const quizCountByStepId = await this.getQuizCountByStepId(uniqueStepIds);
+
+      const [quizCountByStepId, completedStepSet] = await Promise.all([
+        this.getQuizCountByStepId(uniqueStepIds),
+        this.getCompletedStepIdSet(uniqueStepIds, userId),
+      ]);
 
       baseResponse = this.buildFieldUnitsBaseResponse(field, units, quizCountByStepId);
       await this.setCachedFieldUnitsBase(fieldSlug, baseResponse);
+      completedStepIdSet = completedStepSet;
+    } else {
+      const stepIds = this.extractStepIdsFromFieldUnitsBase(baseResponse);
+      completedStepIdSet = await this.getCompletedStepIdSet(stepIds, userId);
     }
-
-    const stepIds = this.extractStepIdsFromFieldUnitsBase(baseResponse);
-    const completedStepIdSet = await this.getCompletedStepIdSet(stepIds, userId);
 
     return this.applyCompletedStepsToFieldUnitsBase(baseResponse, completedStepIdSet);
   }

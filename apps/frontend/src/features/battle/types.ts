@@ -95,6 +95,7 @@ export interface BattleQuizData {
   index: number; // 현재 문제 번호 (0부터 시작)
   total: number; // 총 문제 수
   endsAt: number; // 문제 종료 서버 시각 (타임스탬프)
+  serverTime: number;
 }
 
 /**

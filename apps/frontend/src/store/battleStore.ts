@@ -39,6 +39,7 @@ interface BattleState {
   currentQuizId: number;
   quizEndsAt: number;
   resultEndsAt: number | null;
+  serverTime: number;
   selectedAnswers: AnswerType[];
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
   questionStatuses: QuestionStatus[];
@@ -81,6 +82,7 @@ export const useBattleStore = create<BattleState>(set => ({
   currentQuizId: 0,
   quizEndsAt: 0,
   resultEndsAt: null,
+  serverTime: 0,
   selectedAnswers: [],
   quizSolutions: [],
   questionStatuses: [],
@@ -100,6 +102,7 @@ export const useBattleStore = create<BattleState>(set => ({
           currentQuizId: data.quizId,
           totalQuizzes: data.total,
           quizEndsAt: data.endsAt,
+          serverTime: data.serverTime,
           selectedAnswers: ensureLength(state.selectedAnswers, data.total, null),
           quizSolutions: ensureLength(state.quizSolutions, data.total, null),
           questionStatuses: ensureLength(state.questionStatuses, data.total, 'idle'),
@@ -140,6 +143,7 @@ export const useBattleStore = create<BattleState>(set => ({
         currentQuizId: 0,
         quizEndsAt: 0,
         resultEndsAt: 0,
+        serverTime: 0,
         selectedAnswers: [],
         quizSolutions: [],
         questionStatuses: [],
@@ -161,6 +165,7 @@ export const useBattleStore = create<BattleState>(set => ({
         currentQuizId: 0,
         quizEndsAt: 0,
         resultEndsAt: 0,
+        serverTime: 0,
         selectedAnswers: [],
         quizSolutions: [],
         questionStatuses: [],

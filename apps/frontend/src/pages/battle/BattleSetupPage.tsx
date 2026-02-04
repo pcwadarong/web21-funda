@@ -34,7 +34,13 @@ export const BattleSetupPage = () => {
   const { data, isLoading, isError, error } = useJoinBattleRoomQuery(inviteToken);
   const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } =
     useBattleSocket();
-  const { roomId, status, participants: battleParticipants, settings } = battleState;
+  const {
+    roomId,
+    status,
+    participants: battleParticipants,
+    settings,
+    countdownEndsAt,
+  } = battleState;
 
   const isHost = battleParticipants.find(p => p.participantId === socket?.id)?.isHost ?? false;
 
@@ -83,7 +89,7 @@ export const BattleSetupPage = () => {
     () => () => {
       if (!roomId || unmountedRef.current) return;
 
-      if (status === 'in_progress' || status === 'finished') return;
+      if (status === 'countdown' || status === 'in_progress' || status === 'finished') return;
 
       const nextPath = latestPathRef.current;
       const isBattleFlowPath = nextPath === '/battle' || nextPath.startsWith('/battle/');
@@ -125,6 +131,7 @@ export const BattleSetupPage = () => {
       roomId={roomId}
       settings={settings}
       participantCount={battleParticipants.length}
+      countdownEndsAt={countdownEndsAt}
       onUpdateRoom={updateRoom}
       onStartBattle={startBattle}
       onCopyLink={handleCopyLink}

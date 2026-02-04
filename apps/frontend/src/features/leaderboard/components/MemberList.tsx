@@ -8,18 +8,30 @@ import { RankingRow } from './RankingRow';
 
 interface MemberListProps {
   members: RankingMember[];
+  emptyMessage?: string;
+  showRankZoneIcon?: boolean;
+  xpLabel?: string;
 }
 
-export const MemberList = ({ members }: MemberListProps) => {
+export const MemberList = ({
+  members,
+  emptyMessage = '해당 구역에 인원이 없습니다.',
+  showRankZoneIcon = true,
+  xpLabel = 'XP',
+}: MemberListProps) => {
   const theme = useTheme();
 
-  if (members.length === 0)
-    return <div css={emptyTextStyle(theme)}>해당 구역에 인원이 없습니다.</div>;
+  if (members.length === 0) return <div css={emptyTextStyle(theme)}>{emptyMessage}</div>;
 
   return (
     <ol css={listStyle}>
       {members.map(member => (
-        <RankingRow key={member.userId} member={member} />
+        <RankingRow
+          key={member.userId}
+          member={member}
+          showRankZoneIcon={showRankZoneIcon}
+          xpLabel={xpLabel}
+        />
       ))}
     </ol>
   );

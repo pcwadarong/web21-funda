@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import type { ProfileSummaryResult } from '@/feat/user/profile/types';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
+import { getTierIconName } from '@/utils/tier';
 
 /**
  * 프로필 헤더 컴포넌트 Props
@@ -49,6 +50,7 @@ export const ProfileHeader = memo(
       () => profileSummary?.tier?.name ?? 'BRONZE',
       [profileSummary?.tier?.name],
     );
+    const tierIconName = getTierIconName(tierName);
     const experience = useMemo(() => profileSummary?.experience ?? 0, [profileSummary?.experience]);
     const profileImageUrl = useMemo(
       () => profileSummary?.profileImageUrl ?? null,
@@ -83,7 +85,10 @@ export const ProfileHeader = memo(
             <div css={nameRowWrapperStyle}>
               <h1 css={nameStyle(theme)}>{displayName}</h1>
             </div>
-            <span css={tierBadgeStyle}>{tierName}</span>
+            <div css={tierRowStyle}>
+              {tierIconName && <SVGIcon icon={tierIconName} size="md" />}
+              <span css={tierBadgeStyle}>{tierName}</span>
+            </div>
             <div css={metaRowWrapperStyle}>
               <div css={metaItemStyle}>
                 <SVGIcon icon="Xp" />
@@ -150,6 +155,12 @@ const nameStyle = (theme: Theme) => css`
   line-height: ${theme.typography['24Bold'].lineHeight};
   font-weight: ${theme.typography['24Bold'].fontWeight};
   color: ${palette.grayscale[50]};
+`;
+
+const tierRowStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 `;
 
 const tierBadgeStyle = css`

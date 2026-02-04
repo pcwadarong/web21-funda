@@ -41,6 +41,12 @@ import Setting from '@/assets/sidebar-icons/setting.svg?react';
 import Streak from '@/assets/sidebar-icons/streak.svg?react';
 import Star from '@/assets/star.svg?react';
 import Start from '@/assets/start.svg?react';
+import TierBronze from '@/assets/tier-icons/tier-bronze.svg?react';
+import TierGold from '@/assets/tier-icons/tier-gold.svg?react';
+import TierMaster from '@/assets/tier-icons/tier-master.svg?react';
+import TierRuby from '@/assets/tier-icons/tier-ruby.svg?react';
+import TierSapphire from '@/assets/tier-icons/tier-sapphire.svg?react';
+import TierSilver from '@/assets/tier-icons/tier-silver.svg?react';
 import Timer from '@/assets/timer.svg?react';
 import Graph from '@/assets/upward-graph.svg?react';
 import Xp from '@/assets/xp.svg?react';
@@ -92,6 +98,12 @@ export const IconMap = {
   Copy,
   Notebook,
   Fire,
+  TierBronze,
+  TierSilver,
+  TierGold,
+  TierSapphire,
+  TierRuby,
+  TierMaster,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

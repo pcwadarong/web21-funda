@@ -1,52 +1,112 @@
 import { css, keyframes, type Theme, useTheme } from '@emotion/react';
+import { useState } from 'react';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
-import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type { OverallRankingResult, WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
+import { getTierIconName } from '@/utils/tier';
 
 interface LeaderboardContainerProps {
   weeklyRanking: WeeklyRankingResult | null;
-  isLoading: boolean;
-  errorMessage: string | null;
+  overallRanking: OverallRankingResult | null;
+  isWeeklyLoading: boolean;
+  isOverallLoading: boolean;
+  weeklyErrorMessage: string | null;
+  overallErrorMessage: string | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
 
+type LeaderboardView = 'MY_LEAGUE' | 'OVERALL';
+
 export const LeaderboardContainer = ({
   weeklyRanking,
-  isLoading,
-  errorMessage,
+  overallRanking,
+  isWeeklyLoading,
+  isOverallLoading,
+  weeklyErrorMessage,
+  overallErrorMessage,
   onRefresh,
   isRefreshing = false,
 }: LeaderboardContainerProps) => {
   const theme = useTheme();
   const { openModal } = useModal();
+  const [activeLeaderboardView, setActiveLeaderboardView] = useState<LeaderboardView>('MY_LEAGUE');
+
+  const isMyLeagueView = activeLeaderboardView === 'MY_LEAGUE';
+  const isOverallView = activeLeaderboardView === 'OVERALL';
+
+  let indicatorTranslateX = '0%';
+  if (isOverallView) {
+    indicatorTranslateX = '100%';
+  }
+
+  const handleSelectMyLeague = () => {
+    setActiveLeaderboardView('MY_LEAGUE');
+  };
+
+  const handleSelectOverall = () => {
+    setActiveLeaderboardView('OVERALL');
+  };
+
+  const activeErrorMessage = isMyLeagueView ? weeklyErrorMessage : overallErrorMessage;
+  const activeRanking = isMyLeagueView ? weeklyRanking : overallRanking;
+  const isLoading = isMyLeagueView ? isWeeklyLoading : isOverallLoading;
 
   // 상태 결정
   let stateType: 'error' | 'empty' | 'unassigned' | 'normal' = 'normal';
   let stateMessage: string | undefined;
 
-  if (errorMessage) {
+  if (activeErrorMessage) {
     stateType = 'error';
-    stateMessage = errorMessage;
-  } else if (!weeklyRanking) {
+    stateMessage = activeErrorMessage;
+  } else if (!activeRanking) {
     stateType = 'empty';
-  } else if (weeklyRanking.groupIndex === null) {
+  } else if (isMyLeagueView && weeklyRanking?.groupIndex === null) {
     stateType = 'unassigned';
   } else {
     stateType = 'normal';
   }
 
-  const leagueTitle =
-    weeklyRanking && weeklyRanking.groupIndex !== null ? `${weeklyRanking.tier.name} 리그` : '';
-  const groupedMembers = weeklyRanking ? groupMembersByZone(weeklyRanking.members) : null;
-  const remainingDaysText = weeklyRanking ? buildRemainingDaysText(weeklyRanking.weekKey) : '';
+  const leagueTitle = isMyLeagueView
+    ? weeklyRanking && weeklyRanking.groupIndex !== null
+      ? `${weeklyRanking.tier.name} 리그`
+      : ''
+    : '전체 순위';
+  const tierIconName = isMyLeagueView ? getTierIconName(weeklyRanking?.tier.name) : null;
+  const groupedMembers =
+    weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
+  const remainingDaysText = activeRanking ? buildRemainingDaysText(activeRanking.weekKey) : '';
+  const summaryDetailText = activeRanking
+    ? isMyLeagueView
+      ? `${activeRanking.weekKey}주차 · 그룹 ${weeklyRanking!.groupIndex} · 총 ${activeRanking.totalMembers}명`
+      : `${activeRanking.weekKey}주차 · 총 ${activeRanking.totalMembers}명`
+    : '';
+  const overallMembers = [...(overallRanking?.members ?? [])]
+    .sort((left, right) => {
+      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
+      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
+
+      if (leftTierOrderIndex !== rightTierOrderIndex) {
+        return rightTierOrderIndex - leftTierOrderIndex;
+      }
+
+      if (left.xp !== right.xp) {
+        return right.xp - left.xp;
+      }
+
+      return left.userId - right.userId;
+    })
+    .map((member, index) => ({
+      ...member,
+      rank: index + 1,
+    }));
 
   return (
     <main css={pageStyle}>
@@ -66,6 +126,31 @@ export const LeaderboardContainer = ({
           )}
         </header>
 
+        <section aria-label="랭킹 보기 전환">
+          <div css={leaderboardSwitchRailStyle(theme)}>
+            <div css={leaderboardSwitchStyle(theme, indicatorTranslateX)} role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isMyLeagueView}
+                onClick={handleSelectMyLeague}
+                css={leaderboardSwitchButtonStyle(theme, isMyLeagueView)}
+              >
+                나의 리그
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isOverallView}
+                onClick={handleSelectOverall}
+                css={leaderboardSwitchButtonStyle(theme, isOverallView)}
+              >
+                전체 순위
+              </button>
+            </div>
+          </div>
+        </section>
+
         {isLoading ? (
           <Loading text="랭킹 정보를 불러오는 중입니다." />
         ) : stateType !== 'normal' ? (
@@ -75,57 +160,74 @@ export const LeaderboardContainer = ({
             <section css={summaryCardStyle(theme)} data-section="summary">
               <div>
                 <div css={summaryMainStyle}>
+                  {tierIconName && (
+                    <span css={summaryTierIconStyle}>
+                      <SVGIcon icon={tierIconName} size="lg" />
+                    </span>
+                  )}
                   <h2 css={summaryTitleStyle(theme)}>{leagueTitle}</h2>
-                  <button
-                    type="button"
-                    aria-label="리더보드 안내 열기"
-                    css={infoButtonStyle(theme)}
-                    onClick={() =>
-                      openModal('리더보드란?', <InfoLeaderBoardModal />, {
-                        maxWidth: 880,
-                      })
-                    }
-                  >
-                    <span>?</span>
-                  </button>
+                  {isMyLeagueView && (
+                    <button
+                      type="button"
+                      aria-label="리더보드 안내 열기"
+                      css={infoButtonStyle(theme)}
+                      onClick={() =>
+                        openModal('리더보드란?', <InfoLeaderBoardModal />, {
+                          maxWidth: 880,
+                        })
+                      }
+                    >
+                      <span>?</span>
+                    </button>
+                  )}
                 </div>
-                <p css={summarySubTextStyle(theme)}>
-                  {weeklyRanking!.weekKey}주차 · 그룹 {weeklyRanking!.groupIndex} · 총{' '}
-                  {weeklyRanking!.totalMembers}명
-                </p>
+                <p css={summarySubTextStyle(theme)}>{summaryDetailText}</p>
               </div>
               <div css={summaryRightStyle(theme)}>{remainingDaysText}</div>
             </section>
 
             <section css={leaderboardCardStyle(theme)} data-section="ranking">
-              {weeklyRanking!.tier.name !== 'MASTER' && (
-                <div css={zoneSectionStyle}>
-                  <MemberList members={groupedMembers!.promotion} />
-                  <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
-                    <SVGIcon
-                      style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
-                      icon="ArrowLeft"
-                      size="sm"
-                    />
-                    <span>승급권</span>
+              {isMyLeagueView ? (
+                <>
+                  {weeklyRanking!.tier.name !== 'MASTER' && (
+                    <div css={zoneSectionStyle}>
+                      <MemberList members={groupedMembers!.promotion} />
+                      <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                        <SVGIcon
+                          style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
+                          icon="ArrowLeft"
+                          size="sm"
+                        />
+                        <span>승급권</span>
+                      </div>
+                    </div>
+                  )}
+                  <div css={zoneSectionStyle}>
+                    <MemberList members={groupedMembers!.maintain} />
                   </div>
-                </div>
-              )}
-              <div css={zoneSectionStyle}>
-                <MemberList members={groupedMembers!.maintain} />
-              </div>
-              {/* BRONZE가 아닐 때만 강등권 표시 */}
-              {weeklyRanking!.tier.name !== 'BRONZE' && (
+                  {/* BRONZE가 아닐 때만 강등권 표시 */}
+                  {weeklyRanking!.tier.name !== 'BRONZE' && (
+                    <div css={zoneSectionStyle}>
+                      <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                        <SVGIcon
+                          icon="ArrowLeft"
+                          style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
+                          size="sm"
+                        />
+                        <span>강등권</span>
+                      </div>
+                      <MemberList members={groupedMembers!.demotion} />
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div css={zoneSectionStyle}>
-                  <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
-                    <SVGIcon
-                      icon="ArrowLeft"
-                      style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
-                      size="sm"
-                    />
-                    <span>강등권</span>
-                  </div>
-                  <MemberList members={groupedMembers!.demotion} />
+                  <MemberList
+                    members={overallMembers}
+                    emptyMessage="이번 주 랭킹에 인원이 없습니다."
+                    showRankZoneIcon={false}
+                    xpLabel="XP"
+                  />
                 </div>
               )}
             </section>
@@ -213,6 +315,16 @@ const summaryMainStyle = css`
   align-items: center;
 `;
 
+const summaryTierIconStyle = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  transform: translateY(-4px);
+`;
+
 const summaryTitleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['20Bold'].fontSize};
   line-height: ${theme.typography['20Bold'].lineHeight};
@@ -252,6 +364,49 @@ const leaderboardCardStyle = (theme: Theme) => css`
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   padding: 20px;
+`;
+
+const leaderboardSwitchRailStyle = (theme: Theme) => css`
+  width: 100%;
+  border-bottom: 1px solid ${theme.colors.border.default};
+`;
+
+const leaderboardSwitchStyle = (theme: Theme, indicatorTranslateX: string) => css`
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  width: min(260px, 100%);
+  padding-bottom: 4px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 50%;
+    height: 2px;
+    background: ${theme.colors.primary.main};
+    transform: translateX(${indicatorTranslateX});
+    transition: transform 200ms ease;
+  }
+`;
+
+const leaderboardSwitchButtonStyle = (theme: Theme, isActive: boolean) => css`
+  border: none;
+  background: transparent;
+  padding: 6px 0 10px;
+  font-size: ${theme.typography['14Medium'].fontSize};
+  line-height: ${theme.typography['14Medium'].lineHeight};
+  font-weight: ${theme.typography['14Medium'].fontWeight};
+  color: ${isActive ? theme.colors.primary.main : theme.colors.text.light};
+  cursor: pointer;
+  transition: color 200ms ease;
+
+  &:focus-visible {
+    outline: 2px solid ${theme.colors.primary.main};
+    outline-offset: 2px;
+  }
 `;
 
 const zoneSectionStyle = css`

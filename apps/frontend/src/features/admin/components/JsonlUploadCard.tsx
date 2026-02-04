@@ -61,7 +61,9 @@ export const JsonlUploadCard = memo(
         <h1 css={titleStyle(theme)}>{title}</h1>
         <p css={descriptionStyle(theme)}>{description}</p>
 
-        {example ? <div css={exampleBoxStyle(theme)}>{example}</div> : null}
+        {example ? (
+          <div css={[exampleBoxStyle(theme), examplePreStyle(theme)]}>{example}</div>
+        ) : null}
 
         <form onSubmit={handleFormSubmit}>
           <label htmlFor="file" css={labelStyle(theme)}>
@@ -88,7 +90,7 @@ export const JsonlUploadCard = memo(
           {status}
         </div>
 
-        <pre css={preStyle(theme)}>{prettyResult}</pre>
+        <pre css={preStyle(theme, 360)}>{prettyResult}</pre>
 
         {tip ? <div css={tipStyle(theme)}>{tip}</div> : null}
       </div>
@@ -125,6 +127,18 @@ const exampleBoxStyle = (theme: Theme) => css`
   margin-bottom: 20px;
   color: ${theme.colors.text.default};
   font-size: 14px;
+`;
+
+const examplePreStyle = (theme: Theme) => css`
+  & pre {
+    margin: 8px 0 0;
+    font-family: 'D2Coding', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: ${theme.colors.text.default};
+  }
 `;
 
 const labelStyle = (theme: Theme) => css`
@@ -176,17 +190,19 @@ const statusDot = (status: string) => css`
       : '#eab308'};
 `;
 
-const preStyle = (theme: Theme) => css`
+const preStyle = (theme: Theme, maxHeight: number) => css`
   margin-top: 16px;
   padding: 16px;
   background: #1e293b;
   color: #f8fafc;
   border-radius: 8px;
-  font-family: monospace;
+  font-family: 'D2Coding', monospace;
   font-size: 14px;
   overflow: auto;
-  max-height: 360px;
+  max-height: ${maxHeight}px;
   border: 1px solid ${theme.colors.border.default};
+  white-space: pre-wrap;
+  word-break: break-word;
 `;
 
 const tipStyle = (theme: Theme) => css`

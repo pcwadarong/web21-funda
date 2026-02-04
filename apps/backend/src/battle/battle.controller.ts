@@ -9,7 +9,7 @@ import {
   JoinBattleRoomResponse,
 } from './dto/battle-room.dto';
 import { BattleService } from './battle.service';
-import { createBattleRoomState } from './battle-state';
+import { clampMaxPlayers, createBattleRoomState } from './battle-state';
 
 @Controller('battles')
 export class BattleController {
@@ -28,7 +28,8 @@ export class BattleController {
     const totalQuizzes = 10;
 
     const fieldSlug = body.fieldSlug ?? 'fe';
-    const maxPlayers = body.maxPlayers ?? 5;
+    const requestedMaxPlayers = body.maxPlayers ?? 5;
+    const maxPlayers = clampMaxPlayers(requestedMaxPlayers);
     const timeLimitType = body.timeLimitType ?? 'recommended';
 
     const roomState = createBattleRoomState({

@@ -10,7 +10,13 @@ vi.mock('@/comp/SVGIcon', () => ({
   default: () => <span data-testid="svg-icon" />,
 }));
 
-const TestWrapper = () => {
+const TestWrapper = ({
+  activeCharacterId,
+  activeCharacterImageUrl,
+}: {
+  activeCharacterId?: number | null;
+  activeCharacterImageUrl?: string | null;
+}) => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   return (
     <ThemeProvider theme={lightTheme}>
@@ -21,7 +27,7 @@ const TestWrapper = () => {
             imageUrl: 'https://placehold.co/140x140?text=01',
             priceDiamonds: 1,
             description: '첫 번째 캐릭터 설명입니다.',
-            isActive: true,
+            isActive: false,
             isOwned: false,
           },
           {
@@ -34,6 +40,8 @@ const TestWrapper = () => {
           },
         ]}
         selectedCharacterId={selectedId}
+        activeCharacterId={activeCharacterId}
+        activeCharacterImageUrl={activeCharacterImageUrl}
         onSelect={setSelectedId}
         onPurchase={vi.fn()}
         onApply={vi.fn()}
@@ -72,5 +80,16 @@ describe('ProfileCharacterContainer', () => {
     fireEvent.mouseEnter(characterCard, { clientX: 120, clientY: 80 });
 
     expect(screen.getByText('첫 번째 캐릭터 설명입니다.')).toBeInTheDocument();
+  });
+
+  it('현재 적용된 캐릭터는 적용됨이 표시되고 적용 버튼이 비활성화된다', () => {
+    render(<TestWrapper activeCharacterId={2} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '캐릭터 2 선택' }));
+
+    const actionButton = screen.getByRole('button', { name: '적용됨' });
+
+    expect(actionButton).toBeDisabled();
+    expect(screen.getByText('적용됨')).toBeInTheDocument();
   });
 });

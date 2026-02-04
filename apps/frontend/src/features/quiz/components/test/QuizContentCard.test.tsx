@@ -53,7 +53,9 @@ const renderCard = (overrides: Partial<React.ComponentProps<typeof QuizContentCa
         explanation="문제 해설 내용이 여기에 노출됩니다."
         onAnswerChange={vi.fn()}
         isSubmitDisabled
+        isDontKnowDisabled={false}
         onCheck={vi.fn()}
+        onDontKnow={vi.fn()}
         onNext={vi.fn()}
         isLast={false}
         isReviewMode={false}
@@ -112,13 +114,12 @@ describe('QuizContentCard', () => {
     expect(screen.getByTestId('quiz-renderer')).toHaveAttribute('data-show', 'true');
   });
 
-  it('status=checked이면 해설 영역과 3개 버튼(해설 보기/다음 문제/AI 질문)이 노출된다', () => {
+  it('status=checked이면 해설 영역과 2개 버튼(다음 문제/AI 질문)이 노출된다', () => {
     const onNext = vi.fn();
     renderCard({ status: 'checked', onNext, isLast: false });
 
     //TODO: 수정
     expect(screen.getByText('문제 해설 내용이 여기에 노출됩니다.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '해설 보기' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다음 문제' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'AI 질문' })).toBeInTheDocument();
 
@@ -136,13 +137,14 @@ describe('QuizContentCard', () => {
     expect(screen.getByRole('button', { name: '복습 완료' })).toBeInTheDocument();
   });
 
-  it('해설 보기/AI 질문 버튼 클릭 시 openModal이 호출된다', () => {
+  it('AI 질문 버튼 클릭 시 openModal이 호출된다', () => {
     renderCard({ status: 'checked' });
-    fireEvent.click(screen.getByRole('button', { name: '해설 보기' }));
-    expect(openModalMock).toHaveBeenCalledWith('해설', expect.anything());
-
     fireEvent.click(screen.getByRole('button', { name: 'AI 질문' }));
-    expect(openModalMock).toHaveBeenCalledWith('AI 질문', expect.anything());
+    expect(openModalMock).toHaveBeenCalledWith(
+      'AI에게 질문하기',
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it('idle 상태에서 정답 확인 버튼 클릭 시 onCheck가 호출된다', () => {
@@ -150,5 +152,28 @@ describe('QuizContentCard', () => {
     renderCard({ isSubmitDisabled: false, onCheck });
     fireEvent.click(screen.getByRole('button', { name: '정답 확인' }));
     expect(onCheck).toHaveBeenCalledTimes(1);
+  });
+
+  it('idle 상태에서 잘 모르겠어요 버튼 클릭 시 onDontKnow가 호출된다', () => {
+    const onDontKnow = vi.fn();
+    renderCard({ onDontKnow });
+    fireEvent.click(screen.getByRole('button', { name: '잘 모르겠어요' }));
+    expect(onDontKnow).toHaveBeenCalledTimes(1);
+  });
+
+  it('isDontKnowDisabled=true이면 잘 모르겠어요 버튼이 비활성화된다', () => {
+    renderCard({ isDontKnowDisabled: true });
+    const btn = screen.getByRole('button', { name: '잘 모르겠어요' });
+    expect(btn).toBeDisabled();
+  });
+
+  it('status=checked이면 잘 모르겠어요 버튼이 노출되지 않는다', () => {
+    renderCard({ status: 'checked' });
+    expect(screen.queryByRole('button', { name: '잘 모르겠어요' })).not.toBeInTheDocument();
+  });
+
+  it('복습 모드이면 잘 모르겠어요 버튼이 노출되지 않는다', () => {
+    renderCard({ isReviewMode: true });
+    expect(screen.queryByRole('button', { name: '잘 모르겠어요' })).not.toBeInTheDocument();
   });
 });

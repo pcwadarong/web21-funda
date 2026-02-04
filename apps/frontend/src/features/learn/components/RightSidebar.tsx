@@ -11,7 +11,6 @@ import { Modal } from '@/components/Modal';
 import { UserSearchModal } from '@/feat/user/profile/components/UserSearchModal';
 import type { ProfileSearchUser } from '@/feat/user/profile/types';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
-import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
 import {
   useFollowUserMutation,
@@ -59,8 +58,7 @@ export const LearnRightSidebar = ({
     },
   );
 
-  const { data: rankingMe } = useRankingMe(isLoggedIn && isAuthReady && !!user);
-  const diamondCount = rankingMe?.diamondCount ?? 0;
+  const diamondCount = user?.diamondCount ?? 0;
 
   const { showToast } = useToast();
   const [isNavigatingReview, setIsNavigatingReview] = useState(false);
@@ -355,6 +353,8 @@ export const LearnRightSidebar = ({
           </Button>
         </div>
 
+        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
+
         {!isLoggedIn && !user && (
           <div css={overlayStyle(theme)}>
             <div css={overlayHeaderStyle}>
@@ -578,4 +578,12 @@ const progressBarStyle = (theme: Theme, percentage: number) => css`
   background: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.small};
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const boostadZoneOverride = css`
+  &[data-boostad-zone] {
+    margin: 0 !important;
+  }
+
+  min-height: 107px;
 `;

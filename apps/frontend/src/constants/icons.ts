@@ -43,6 +43,12 @@ import Ranking from '@/assets/sidebar-icons/ranking.svg?react';
 import Search from '@/assets/sidebar-icons/search.svg?react';
 import Setting from '@/assets/sidebar-icons/setting.svg?react';
 import Streak from '@/assets/sidebar-icons/streak.svg?react';
+import TierBronze from '@/assets/tier-icons/tier-bronze.svg?react';
+import TierGold from '@/assets/tier-icons/tier-gold.svg?react';
+import TierMaster from '@/assets/tier-icons/tier-master.svg?react';
+import TierRuby from '@/assets/tier-icons/tier-ruby.svg?react';
+import TierSapphire from '@/assets/tier-icons/tier-sapphire.svg?react';
+import TierSilver from '@/assets/tier-icons/tier-silver.svg?react';
 
 export const IconMap = {
   ArrowLeft,
@@ -90,6 +96,12 @@ export const IconMap = {
   Copy,
   Notebook,
   Fire,
+  TierBronze,
+  TierSilver,
+  TierGold,
+  TierSapphire,
+  TierRuby,
+  TierMaster,
 } as const;
 
 export type IconMapTypes = keyof typeof IconMap;

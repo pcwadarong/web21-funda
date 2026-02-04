@@ -1,0 +1,32 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="10%" y1="10%" x2="90%" y2="90%">
+      <stop offset="0%" stop-color="#FFF8DC" />
+      <stop offset="40%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#DAA520" />
+    </linearGradient>
+    <linearGradient id="gemGradient" x1="30%" y1="30%" x2="70%" y2="70%">
+      <stop offset="0%" stop-color="#FF6347" />
+      <stop offset="100%" stop-color="#8B0000" />
+    </linearGradient>
+    <filter id="goldShine" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+  </defs>
+  <g>
+    <!-- Winged/Crown Base -->
+    <path d="M20 30 Q 10 10 40 10 L 50 5 L 60 10 Q 90 10 80 30 L 85 60 Q 90 80 50 95 Q 10 80 15 60 L 20 30 Z" fill="url(#goldGradient)" stroke="#B8860B" stroke-width="2" />
+    
+    <!-- Inner Detail -->
+    <path d="M50 15 L 65 25 L 60 55 L 50 65 L 40 55 L 35 25 L 50 15 Z" fill="#FFEC8B" stroke="#DAA520" stroke-width="1" />
+    
+    <!-- Central Gem -->
+    <circle cx="50" cy="40" r="10" fill="url(#gemGradient)" stroke="#800000" stroke-width="1" />
+    <circle cx="50" cy="40" r="10" fill="none" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="4 4" />
+    
+    <!-- Sparkles -->
+    <path d="M50 2 L52 8 L58 10 L52 12 L50 18 L48 12 L42 10 L48 8 Z" fill="#FFFFE0" />
+  </g>
+</svg>

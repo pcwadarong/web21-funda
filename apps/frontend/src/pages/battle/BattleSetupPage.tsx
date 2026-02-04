@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { Loading } from '@/components/Loading';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 import type { Participant } from '@/feat/battle/types';
 import { BattleSetupContainer } from '@/features/battle/components/setup/BattleSetupContainer';
 import { useJoinBattleRoomQuery } from '@/hooks/queries/battleQueries';
+import { useAuthProfileImageUrl, useAuthUser } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 function hashString(str: string): number {
@@ -20,8 +21,9 @@ function hashString(str: string): number {
 export const BattleSetupPage = () => {
   const { inviteToken } = useParams<{ inviteToken: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { showToast } = useToast();
+  const authUser = useAuthUser();
+  const battleProfileImageUrl = useAuthProfileImageUrl() ?? undefined;
 
   if (!inviteToken) {
     throw new Error('inviteToken is required');
@@ -31,7 +33,13 @@ export const BattleSetupPage = () => {
   const { data, isLoading, isError, error } = useJoinBattleRoomQuery(inviteToken);
   const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } =
     useBattleSocket();
-  const { roomId, status, participants: battleParticipants, settings } = battleState;
+  const {
+    roomId,
+    status,
+    participants: battleParticipants,
+    settings,
+    countdownEndsAt,
+  } = battleState;
 
   const isHost = battleParticipants.find(p => p.participantId === socket?.id)?.isHost ?? false;
 
@@ -43,11 +51,21 @@ export const BattleSetupPage = () => {
       return;
     }
 
-    joinBattle(data.roomId, undefined, {
-      inviteToken,
-      settings: data.settings,
-    });
-  }, [data, inviteToken, joinBattle, navigate]);
+    joinBattle(
+      data.roomId,
+      authUser
+        ? {
+            userId: authUser.id,
+            displayName: authUser.displayName,
+            profileImageUrl: battleProfileImageUrl,
+          }
+        : undefined,
+      {
+        inviteToken,
+        settings: data.settings,
+      },
+    );
+  }, [authUser, battleProfileImageUrl, data, inviteToken, joinBattle, navigate]);
 
   useEffect(() => {
     if (!isError) {
@@ -59,30 +77,58 @@ export const BattleSetupPage = () => {
     navigate('/battle');
   }, [isError, error, navigate, showToast]);
 
-  const unmountedRef = useRef(false);
-  const latestPathRef = useRef(location.pathname);
+  const latestStatusRef = useRef(status);
+  const latestRoomIdRef = useRef(roomId);
 
-  useEffect(() => {
-    latestPathRef.current = location.pathname;
-  }, [location.pathname]);
+  latestStatusRef.current = status;
+  latestRoomIdRef.current = roomId;
 
   useEffect(
     () => () => {
-      if (!roomId || unmountedRef.current) return;
+      const currentRoomId = latestRoomIdRef.current;
+      const currentStatus = latestStatusRef.current;
 
-      if (status === 'in_progress' || status === 'finished') return;
-
-      const nextPath = latestPathRef.current;
-      const isBattleFlowPath = nextPath === '/battle' || nextPath.startsWith('/battle/');
-      if (isBattleFlowPath) {
+      if (!currentRoomId) {
         return;
       }
 
-      unmountedRef.current = true;
-      leaveBattle(roomId);
+      const isPlayingStatus =
+        currentStatus === 'countdown' ||
+        currentStatus === 'in_progress' ||
+        currentStatus === 'finished';
+      if (isPlayingStatus) {
+        return;
+      }
+
+      leaveBattle(currentRoomId);
     },
-    [roomId, status, leaveBattle],
+    [leaveBattle],
   );
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const currentRoomId = latestRoomIdRef.current;
+      const currentStatus = latestStatusRef.current;
+
+      if (!currentRoomId) {
+        return;
+      }
+
+      const isPlayingStatus =
+        currentStatus === 'countdown' ||
+        currentStatus === 'in_progress' ||
+        currentStatus === 'finished';
+      if (isPlayingStatus) {
+        return;
+      }
+
+      leaveBattle(currentRoomId);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [leaveBattle]);
 
   const participants: Participant[] = battleParticipants.map(p => ({
     id: p.userId ?? hashString(p.participantId),
@@ -112,6 +158,7 @@ export const BattleSetupPage = () => {
       roomId={roomId}
       settings={settings}
       participantCount={battleParticipants.length}
+      countdownEndsAt={countdownEndsAt}
       onUpdateRoom={updateRoom}
       onStartBattle={startBattle}
       onCopyLink={handleCopyLink}

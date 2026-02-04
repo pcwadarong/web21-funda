@@ -40,6 +40,7 @@ describe('ProgressService', () => {
     where: jest.Mock;
     andWhere: jest.Mock;
     orderBy: jest.Mock;
+    addOrderBy: jest.Mock;
     take: jest.Mock;
     getMany: jest.Mock;
   };
@@ -64,6 +65,7 @@ describe('ProgressService', () => {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
       getMany: jest.fn(),
     };
@@ -322,6 +324,21 @@ describe('ProgressService', () => {
     expect(cutoffParams?.reviewCutoff).toEqual(expectedCutoff);
 
     jest.useRealTimers();
+  });
+
+  it('복습 큐 조회 시 잘 모르겠어요 우선순위로 정렬한다', async () => {
+    userQuizStatusQueryBuilderMock.getMany.mockResolvedValue([]);
+
+    await service.getReviewQueue(10);
+
+    expect(userQuizStatusQueryBuilderMock.orderBy).toHaveBeenCalledWith(
+      'status.isDontKnow',
+      'DESC',
+    );
+    expect(userQuizStatusQueryBuilderMock.addOrderBy).toHaveBeenCalledWith(
+      'status.nextReviewAt',
+      'ASC',
+    );
   });
 
   it('복습 큐 조회 시 퀴즈 응답 형태로 반환한다', async () => {

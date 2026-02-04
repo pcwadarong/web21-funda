@@ -192,9 +192,11 @@ export const QuizMatching = ({
   );
 
   // 리사이즈 감지 및 SVG 라인 재계산
+  const shouldObserveLines = showResult || currentPairs.length > 0;
+
   useEffect(() => {
     isMountedRef.current = true;
-    if (!showResult || !containerRef.current) return;
+    if (!shouldObserveLines || !containerRef.current) return;
 
     // ResizeObserver가 사용 가능한지 확인
     if (typeof ResizeObserver === 'undefined') return;
@@ -218,12 +220,33 @@ export const QuizMatching = ({
       isMountedRef.current = false;
       resizeObserver.disconnect();
     };
-  }, [showResult, currentPairs.length]);
+  }, [showResult, currentPairs.length, shouldObserveLines]);
 
   return (
     <div css={matchingWrapperStyle} ref={containerRef}>
       {renderColumn('left')}
       {renderColumn('right')}
+
+      {!showResult && currentPairs.length > 0 && (
+        <svg css={svgOverlayStyle} key={`user-${lineUpdateTrigger}`}>
+          {currentPairs.map((pair, index) => {
+            const startEl = optionRefs.current.get(`left-${pair.left}`);
+            const endEl = optionRefs.current.get(`right-${pair.right}`);
+
+            if (!startEl || !endEl || !containerRef.current) return null;
+
+            return (
+              <MatchingLine
+                key={`${pair.left}-${pair.right}-${index}`}
+                startEl={startEl}
+                endEl={endEl}
+                containerEl={containerRef.current}
+                variant="neutral"
+              />
+            );
+          })}
+        </svg>
+      )}
 
       {showResult && correctPairs.length > 0 && (
         <svg css={svgOverlayStyle} key={lineUpdateTrigger}>
@@ -244,7 +267,7 @@ export const QuizMatching = ({
                 startEl={startEl}
                 endEl={endEl}
                 containerEl={containerRef.current}
-                isCorrect={isUserCorrect}
+                variant={isUserCorrect ? 'correct' : 'wrong'}
               />
             );
           })}

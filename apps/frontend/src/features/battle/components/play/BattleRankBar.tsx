@@ -5,6 +5,7 @@ import { Avatar } from '@/components/Avatar';
 import type { Ranking } from '@/feat/battle/types';
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumbers';
 import { useBattleStore } from '@/store/battleStore';
+import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 
 interface BattleRankBarProps {
@@ -23,7 +24,7 @@ export const BattleRankBar = ({
   maxVisible = 4,
 }: BattleRankBarProps) => {
   const theme = useTheme();
-
+  const { isDarkMode } = useThemeStore();
   const participants = useBattleStore(state => state.participants);
 
   const { visibleRankings, participantCount } = useMemo(() => {
@@ -123,12 +124,11 @@ export const BattleRankBar = ({
                   css={cardWrapperStyle}
                 >
                   <div css={cardStyle(theme, isMine)}>
-                    <div css={rankBadgeStyle(theme, isMine)}>{ranking.place}</div>
+                    <div css={rankBadgeStyle(theme, isMine, isDarkMode)}>{ranking.place}</div>
                     <Avatar
                       src={ranking.profileImg}
                       name={isMine ? '나' : ranking.displayName}
                       size="sm"
-                      css={avatarStyle(theme)}
                       alt={ranking.displayName}
                     />
                     <div css={infoStyle}>
@@ -198,14 +198,20 @@ const cardStyle = (theme: Theme, isMine: boolean) => css`
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
 `;
 
-const rankBadgeStyle = (theme: Theme, isMine: boolean) => css`
+const rankBadgeStyle = (theme: Theme, isMine: boolean, isDarkMode: boolean) => css`
   position: absolute;
   top: -12px;
   left: -12px;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: ${isMine ? theme.colors.primary.light : theme.colors.grayscale['400']};
+  background: ${isMine
+    ? isDarkMode
+      ? theme.colors.primary.main
+      : theme.colors.primary.light
+    : isDarkMode
+      ? theme.colors.grayscale['600']
+      : theme.colors.grayscale['500']};
   color: white;
   font-weight: ${theme.typography['16Bold'].fontWeight};
   font-size: ${theme.typography['16Bold'].fontSize};
@@ -213,12 +219,6 @@ const rankBadgeStyle = (theme: Theme, isMine: boolean) => css`
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-`;
-
-const avatarStyle = (theme: Theme) => css`
-  flex: 0 0 40px;
-  background: ${theme.colors.surface.bold};
-  border: 1px solid ${theme.colors.border.default};
 `;
 
 const infoStyle = css`

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Like, Repository, SelectQueryBuilder } from 'typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
 import { Field } from '../roadmap/entities/field.entity';
@@ -27,6 +28,9 @@ import { ProfileCharacter } from './entities/profile-character.entity';
 import { UserFollow } from './entities/user-follow.entity';
 import { UserProfileCharacter } from './entities/user-profile-character.entity';
 import { getDateRange, getLast7Days, toDateStringInTimeZone } from './utils/date.utils';
+
+const PROFILE_STATS_CACHE_TTL_SECONDS = 5 * 60;
+const PROFILE_STATS_CACHE_PREFIX = 'profile:stats';
 
 /**
  * 통계 계산용 인터페이스
@@ -82,6 +86,7 @@ export class ProfileService {
     private readonly profileCharacterRepository: Repository<ProfileCharacter>,
     @InjectRepository(UserProfileCharacter)
     private readonly userProfileCharacterRepository: Repository<UserProfileCharacter>,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
@@ -271,6 +276,12 @@ export class ProfileService {
     const timeZoneYear = Number(endDate.slice(0, 4));
     const startDate = `${timeZoneYear}-01-01`;
 
+    const cacheKey = this.buildProfileStatsCacheKey('streaks', userId, normalizedTimeZone);
+    const cached = await this.getCachedProfileStats<ProfileStreakDay[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const solvedCountMap = await this.fetchSolvedCountsByDateRange(
       userId,
       startDate,
@@ -278,11 +289,14 @@ export class ProfileService {
       normalizedTimeZone,
     );
 
-    return Array.from(solvedCountMap.entries()).map(([date, solvedCount]) => ({
+    const result = Array.from(solvedCountMap.entries()).map(([date, solvedCount]) => ({
       userId,
       date,
       solvedCount,
     }));
+
+    await this.setCachedProfileStats(cacheKey, result);
+    return result;
   }
 
   /**
@@ -292,6 +306,12 @@ export class ProfileService {
     await this.findUserOrThrow(userId);
 
     const normalizedTimeZone = this.normalizeTimeZone(timeZone);
+    const cacheKey = this.buildProfileStatsCacheKey('daily', userId, normalizedTimeZone);
+    const cached = await this.getCachedProfileStats<DailyStatsResult>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const allDates = getLast7Days(normalizedTimeZone);
     const { startDate, endDate } = getDateRange(allDates);
 
@@ -311,11 +331,14 @@ export class ProfileService {
     const studySecondsList = dailyData.map(d => d.studySeconds);
     const totalSeconds = studySecondsList.reduce((sum, s) => sum + s, 0);
 
-    return {
+    const result: DailyStatsResult = {
       dailyData,
       periodMaxSeconds: Math.max(...studySecondsList, 0),
       periodAverageSeconds: dailyData.length > 0 ? Math.floor(totalSeconds / dailyData.length) : 0,
     };
+
+    await this.setCachedProfileStats(cacheKey, result);
+    return result;
   }
 
   /**
@@ -325,6 +348,12 @@ export class ProfileService {
     await this.findUserOrThrow(userId);
 
     const normalizedTimeZone = this.normalizeTimeZone(timeZone);
+    const cacheKey = this.buildProfileStatsCacheKey('field-daily', userId, normalizedTimeZone);
+    const cached = await this.getCachedProfileStats<FieldDailyStatsResult>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const allDates = getLast7Days(normalizedTimeZone);
     const { startDate, endDate } = getDateRange(allDates);
 
@@ -335,7 +364,9 @@ export class ProfileService {
     ]);
     const fieldMap = this.initializeFieldStats(roadmapFields, allDates);
     this.applyFieldSolvedCounts(fieldMap, rows);
-    return { fields: this.calculateFieldStatsSummary(fieldMap) };
+    const result: FieldDailyStatsResult = { fields: this.calculateFieldStatsSummary(fieldMap) };
+    await this.setCachedProfileStats(cacheKey, result);
+    return result;
   }
 
   /**
@@ -742,5 +773,29 @@ export class ProfileService {
         return ProfileService.COLLATOR_KO.compare(left.displayName, right.displayName);
       return left.displayName.localeCompare(right.displayName);
     });
+  }
+
+  private buildProfileStatsCacheKey(type: string, userId: number, timeZone: string): string {
+    return `${PROFILE_STATS_CACHE_PREFIX}:${type}:${userId}:${timeZone}`;
+  }
+
+  private async getCachedProfileStats<T>(cacheKey: string): Promise<T | null> {
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached === null || cached === undefined) {
+        return null;
+      }
+      return cached as T;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedProfileStats(cacheKey: string, value: unknown): Promise<void> {
+    try {
+      await this.redisService.set(cacheKey, value, PROFILE_STATS_CACHE_TTL_SECONDS);
+    } catch {
+      return;
+    }
   }
 }

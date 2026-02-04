@@ -65,6 +65,9 @@ export class UserQuizStatus {
   @Column({ name: 'is_wrong', type: 'boolean', default: false })
   isWrong!: boolean;
 
+  @Column({ name: 'is_dont_know', type: 'boolean', default: false })
+  isDontKnow!: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt!: Date;
 

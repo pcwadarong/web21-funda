@@ -31,6 +31,7 @@ export interface AuthUserProfile {
   email?: string | null;
   profileImageUrl?: string | null;
   role: UserRole;
+  isEmailSubscribed: boolean;
   heartCount: number;
   maxHeartCount: number;
   experience: number;
@@ -435,6 +436,7 @@ export class AuthService {
       email: user.email ?? null,
       profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       role: user.role,
+      isEmailSubscribed: user.isEmailSubscribed,
       heartCount: user.heartCount,
       maxHeartCount: user.maxHeartCount,
       experience: user.experience,

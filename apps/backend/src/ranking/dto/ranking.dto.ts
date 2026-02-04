@@ -26,6 +26,26 @@ export interface WeeklyRankingResult {
   members: WeeklyRankingEntry[];
 }
 
+export interface OverallRankingEntry {
+  userId: number;
+  displayName: string;
+  profileImageUrl: string | null;
+  xp: number;
+  rank: number;
+  isMe: boolean;
+  rankZone: RankingZone;
+  tierName: RankingTierName | null;
+  tierOrderIndex: number | null;
+}
+
+export interface OverallRankingResult {
+  weekKey: string;
+  totalMembers: number;
+  myRank: number | null;
+  myWeeklyXp: number;
+  members: OverallRankingEntry[];
+}
+
 export interface MyTierResult {
   tier: RankingTierSummary | null;
   diamondCount: number;

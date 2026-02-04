@@ -847,4 +847,77 @@ describe('RoadmapService', () => {
 
     jest.useRealTimers();
   });
+
+  it('"잘 모르겠어요" 제출 시 최우선 복습 플래그를 설정한다', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+    const quiz = {
+      id: 12,
+      type: 'MCQ',
+      answer: { value: 'c1' },
+      explanation: '설명입니다.',
+      step: { id: 1 },
+    } as Quiz;
+    findQuizMock.mockResolvedValue(quiz);
+    (quizResultService.getOptionAnswer as jest.Mock).mockReturnValue('c1');
+    (quizResultService.isCorrectOption as jest.Mock).mockReturnValue(false);
+
+    const solveLogRepository: Partial<Repository<SolveLog>> = {
+      create: jest.fn().mockImplementation(log => log),
+      save: jest.fn(),
+    };
+    const userQuizStatusRepository: Partial<Repository<UserQuizStatus>> = {
+      findOne: jest.fn().mockResolvedValue({
+        userId: 1,
+        quiz,
+        status: QuizLearningStatus.REVIEW,
+        interval: 6,
+        easeFactor: 2.5,
+        repetition: 2,
+        lastQuality: 5,
+        reviewCount: 3,
+        lapseCount: 1,
+        nextReviewAt: new Date('2026-01-10T00:00:00.000Z'),
+        lastSolvedAt: new Date('2025-12-31T00:00:00.000Z'),
+        isWrong: false,
+        isDontKnow: false,
+      }),
+      save: jest.fn(),
+    };
+    const stepAttemptRepository: Partial<Repository<UserStepAttempt>> = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+    const manager = {
+      getRepository: jest.fn((entity: unknown) => {
+        if (entity === SolveLog) {
+          return solveLogRepository;
+        }
+        if (entity === UserQuizStatus) {
+          return userQuizStatusRepository;
+        }
+        if (entity === UserStepAttempt) {
+          return stepAttemptRepository;
+        }
+        return null;
+      }),
+    };
+    (dataSource.transaction as jest.Mock).mockImplementation(async callback => callback(manager));
+
+    await service.submitQuiz(
+      12,
+      {
+        quiz_id: 12,
+        type: 'MCQ',
+        selection: {},
+        is_dont_know: true,
+      },
+      1,
+    );
+
+    const savedStatus = (userQuizStatusRepository.save as jest.Mock).mock.calls[0][0];
+    expect(savedStatus.isDontKnow).toBe(true);
+    expect(savedStatus.nextReviewAt).toEqual(new Date('2026-01-01T09:00:00.000Z'));
+
+    jest.useRealTimers();
+  });
 });

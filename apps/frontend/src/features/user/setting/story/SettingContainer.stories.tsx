@@ -14,7 +14,8 @@ const meta: Meta<typeof SettingContainer> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component: '설정 컴포넌트입니다. 로그아웃, 다크 모드, 사운드 볼륨 조절을 제공합니다.',
+        component:
+          '설정 컴포넌트입니다. 로그아웃, 다크 모드, 사운드, 이메일 알림 설정을 제공합니다.',
       },
     },
   },
@@ -36,6 +37,10 @@ const meta: Meta<typeof SettingContainer> = {
     onSoundVolumeChange: () => {},
     isDarkMode: false,
     soundVolume: 1,
+    isEmailSubscribed: true,
+    email: 'user@example.com',
+    isEmailToggleDisabled: false,
+    onEmailToggle: () => {},
   },
 };
 
@@ -48,5 +53,6 @@ export const Default: Story = {
     await expect(canvas.getByText('로그아웃')).toBeInTheDocument();
     await expect(canvas.getByText('다크 모드')).toBeInTheDocument();
     await expect(canvas.getByText('효과음')).toBeInTheDocument();
+    await expect(canvas.getByText('이메일 알림')).toBeInTheDocument();
   },
 };

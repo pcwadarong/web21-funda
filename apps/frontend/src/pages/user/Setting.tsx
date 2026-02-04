@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Loading } from '@/comp/Loading';
 import { SettingContainer } from '@/feat/user/setting/SettingContainer';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
+import { useUpdateEmailSubscriptionMutation } from '@/hooks/queries/userQueries';
 import { useStorage } from '@/hooks/useStorage';
+import { useAuthUser } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
@@ -15,8 +17,10 @@ export const Setting = () => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const { soundVolume, setSoundVolume } = useStorage();
   const { confirm } = useModal();
+  const user = useAuthUser();
 
   const logoutMutation = useLogoutMutation();
+  const updateEmailSubscriptionMutation = useUpdateEmailSubscriptionMutation();
 
   /**
    * 다크 모드 토글 핸들러
@@ -57,6 +61,34 @@ export const Setting = () => {
     }
   }, [navigate, showToast, confirm, logoutMutation]);
 
+  /**
+   * 이메일 알림 설정 변경 핸들러
+   *
+   * @param checked 이메일 알림 수신 여부
+   */
+  const handleEmailToggle = useCallback(
+    async (checked: boolean) => {
+      if (!user) {
+        showToast('로그인이 필요합니다.');
+        return;
+      }
+      if (!user.email) {
+        showToast('연결된 이메일이 없습니다.');
+        return;
+      }
+
+      try {
+        await updateEmailSubscriptionMutation.mutateAsync({ isEmailSubscribed: checked });
+        showToast(checked ? '이메일 알림을 켰습니다.' : '이메일 알림을 껐습니다.');
+      } catch {
+        showToast('이메일 알림 설정 변경에 실패했습니다.');
+      }
+    },
+    [showToast, updateEmailSubscriptionMutation, user],
+  );
+
+  const isEmailToggleDisabled = !user?.email || updateEmailSubscriptionMutation.isPending || !user;
+
   return (
     <>
       {logoutMutation.isPending && <Loading />}
@@ -66,6 +98,10 @@ export const Setting = () => {
         soundVolume={soundVolume}
         onSoundVolumeChange={handleSoundVolumeChange}
         onLogout={handleLogout}
+        isEmailSubscribed={user?.isEmailSubscribed ?? false}
+        email={user?.email ?? null}
+        isEmailToggleDisabled={isEmailToggleDisabled}
+        onEmailToggle={handleEmailToggle}
       />
     </>
   );

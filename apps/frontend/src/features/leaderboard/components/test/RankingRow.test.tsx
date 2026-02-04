@@ -39,11 +39,11 @@ const mockMember: RankingMember = {
   rankZone: 'PROMOTION',
 };
 
-const renderRankingRow = (member: RankingMember = mockMember) =>
+const renderRankingRow = (member: RankingMember = mockMember, xpLabel?: string) =>
   render(
     <ThemeStoreProvider>
       <ThemeProvider theme={lightTheme}>
-        <RankingRow member={member} />
+        <RankingRow member={member} xpLabel={xpLabel} />
       </ThemeProvider>
     </ThemeStoreProvider>,
   );
@@ -65,6 +65,15 @@ describe('RankingRow 컴포넌트 테스트', () => {
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('테스트 사용자')).toBeInTheDocument();
     expect(screen.getByText('1,000 XP')).toBeInTheDocument();
+  });
+
+  it('티어 정보가 있으면 표시된다', () => {
+    renderRankingRow({
+      ...mockMember,
+      tierName: 'GOLD',
+    });
+
+    expect(screen.getByTestId('svg-icon-TierGold')).toBeInTheDocument();
   });
 
   it('프로필 이미지가 없을 때 아바타 라벨이 표시된다', () => {
@@ -159,6 +168,18 @@ describe('RankingRow 컴포넌트 테스트', () => {
       });
 
       expect(screen.getByText('0 XP')).toBeInTheDocument();
+    });
+
+    it('XP 라벨을 변경할 수 있다', () => {
+      renderRankingRow(
+        {
+          ...mockMember,
+          xp: 1500,
+        },
+        '주차 XP',
+      );
+
+      expect(screen.getByText('1,500 주차 XP')).toBeInTheDocument();
     });
   });
 

@@ -1,6 +1,6 @@
 import { css } from '@emotion/react';
 import { type ReactNode, Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/layouts/Sidebar';
@@ -9,14 +9,18 @@ interface SidebarLayoutProps {
   children?: ReactNode;
 }
 
-export const SidebarSuspenseLayout = ({ children }: SidebarLayoutProps) => (
-  <div css={containerStyle}>
-    <Sidebar />
-    <main css={mainContentStyle}>
-      <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>
-    </main>
-  </div>
-);
+export const SidebarSuspenseLayout = ({ children }: SidebarLayoutProps) => {
+  const location = useLocation();
+
+  return (
+    <div css={containerStyle}>
+      <Sidebar />
+      <main css={mainContentStyle(location.pathname)}>
+        <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>
+      </main>
+    </div>
+  );
+};
 
 const containerStyle = css`
   display: flex;
@@ -29,11 +33,28 @@ const containerStyle = css`
   }
 `;
 
-const mainContentStyle = css`
+const mainContentStyle = (location: string) => css`
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   position: relative;
+
+  @media (max-width: 768px) {
+    padding-bottom: 96px;
+  }
+
+  ${location === '/learn' &&
+  `
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        padding-bottom: 0;
+      }
+  `}
 `;

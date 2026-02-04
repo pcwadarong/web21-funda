@@ -50,10 +50,12 @@ const meta: Meta<typeof QuizContainer> = {
     quizSolutions: [null],
     questionStatuses: ['idle'],
     isCheckDisabled: true,
+    isDontKnowDisabled: false,
     isLastQuestion: false,
     isReviewMode: false,
     handleAnswerChange: () => {},
     handleCheckAnswer: async () => {},
+    handleDontKnowAnswer: async () => {},
     handleNextQuestion: () => {},
   },
 };

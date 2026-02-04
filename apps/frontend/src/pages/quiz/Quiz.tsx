@@ -322,6 +322,11 @@ export const Quiz = () => {
     return false;
   }, [currentQuiz, currentAnswer, currentQuestionStatus]);
 
+  const isDontKnowDisabled = useMemo(() => {
+    if (!currentQuiz) return true;
+    return currentQuestionStatus !== 'idle';
+  }, [currentQuiz, currentQuestionStatus]);
+
   /**
    * 사용자의 답변 선택 시 실행되는 핸들러
    * * @param answer 선택한 답변
@@ -339,111 +344,159 @@ export const Quiz = () => {
   );
 
   /**
+   * 선택 정보를 서버에 제출하고 결과 상태를 반영한다.
+   *
+   * @param selection 사용자가 선택한 답안 정보
+   */
+  const submitAnswer = useCallback(
+    async (params: { selection: QuizSubmissionRequest['selection']; isDontKnow?: boolean }) => {
+      if (!currentQuiz) return;
+      if (currentQuestionStatus !== 'idle') return;
+      if (isLoggedIn && stepAttemptId === null && !isReviewMode) {
+        setLoadError(true);
+        return;
+      }
+      setCurrentQuestionStatus('checking');
+
+      try {
+        const { selection, isDontKnow } = params;
+        const quizType =
+          currentQuiz.type === 'matching'
+            ? 'MATCHING'
+            : (currentQuiz.type.toUpperCase() as 'MCQ' | 'OX' | 'CODE');
+
+        const payload: QuizSubmissionRequest = {
+          quiz_id: currentQuiz.id,
+          type: quizType,
+          selection,
+          current_step_order_index: uiState.current_step_order_index,
+        };
+
+        if (isDontKnow) {
+          payload.is_dont_know = true;
+        }
+
+        if (isLoggedIn && stepAttemptId !== null) {
+          payload.step_attempt_id = stepAttemptId;
+        }
+
+        const result = await submitQuizMutation.mutateAsync({ quizId: currentQuiz.id, payload });
+        const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
+          ? { pairs: result.solution.correct_pairs }
+          : (result.solution?.correct_option_id ?? null);
+
+        // 정답/오답 효과음 재생
+        if (result.is_correct) playSound({ src: correctSound, currentTime: 0.05 });
+        else playSound({ src: wrongSound, currentTime: 0.05 });
+
+        // heart 차감 처리
+        if (!result.is_correct && showHeart) {
+          if (isLoggedIn && result.user_heart_count !== undefined && user) {
+            // 로그인 사용자: 응답받은 heart count로 user 정보 업데이트
+            setUser({
+              ...user,
+              heartCount: result.user_heart_count,
+            });
+            // 하트가 모두 소진되었을 때 모달 띄우기
+            if (result.user_heart_count <= 0) {
+              setShowHeartExhaustedModal(true);
+            }
+          } else if (!isLoggedIn) {
+            // 미로그인 사용자: localStorage에서 heart 차감
+            const newHeartCount = Math.max(0, (progress.heart ?? 5) - 1);
+            updateProgress({
+              heart: newHeartCount,
+            });
+            // 하트가 모두 소진되었을 때 모달 띄우기
+            if (newHeartCount <= 0) {
+              setShowHeartExhaustedModal(true);
+            }
+          }
+        }
+
+        setQuizSolutions(
+          (
+            prev: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>,
+          ) => {
+            const newSolutions = [...prev];
+            newSolutions[currentQuizIndex] = {
+              correctAnswer,
+              explanation: result.solution?.explanation ?? '',
+            };
+            return newSolutions;
+          },
+        );
+        setCurrentQuestionStatus('checked');
+        setQuestionStatuses((prev: QuestionStatus[]) => {
+          const newStatuses = [...prev];
+          newStatuses[currentQuizIndex] = 'checked';
+          return newStatuses;
+        });
+
+        if (!isLoggedIn) {
+          if (!isReviewMode) {
+            addGuestStepAnswer(step_id, {
+              quiz_id: currentQuiz.id,
+              is_correct: result.is_correct,
+            });
+          }
+        }
+      } catch {
+        // 에러 발생 시에도 다음 문제로 넘어갈 수 있도록 함
+        setCurrentQuestionStatus('checked');
+      }
+    },
+    [
+      addGuestStepAnswer,
+      currentQuestionStatus,
+      currentQuiz,
+      currentQuizIndex,
+      isLoggedIn,
+      isReviewMode,
+      playSound,
+      progress.heart,
+      setUser,
+      showHeart,
+      stepAttemptId,
+      step_id,
+      submitQuizMutation,
+      uiState.current_step_order_index,
+      updateProgress,
+      user,
+    ],
+  );
+
+  /**
    * 정답 확인 버튼 클릭 시 실행되는 핸들러
    * 서버 통신 후 상태를 'checked'로 변경합니다.
    */
   const handleCheckAnswer = useCallback(async () => {
-    if (!currentQuiz || !currentAnswer) return;
-    if (isLoggedIn && stepAttemptId === null && !isReviewMode) {
-      setLoadError(true);
-      return;
-    }
-    setCurrentQuestionStatus('checking');
+    if (!currentQuiz || currentAnswer === null) return;
 
-    try {
-      const payload: QuizSubmissionRequest =
-        currentQuiz.type === 'matching'
-          ? {
-              quiz_id: currentQuiz.id,
-              type: 'MATCHING' as const,
-              selection: { pairs: (currentAnswer as { pairs: MatchingPair[] }).pairs },
-              current_step_order_index: uiState.current_step_order_index,
-            }
-          : {
-              quiz_id: currentQuiz.id,
-              type: currentQuiz.type.toUpperCase() as 'MCQ' | 'OX' | 'CODE',
-              selection: { option_id: currentAnswer as string },
-              current_step_order_index: uiState.current_step_order_index,
-            };
+    const selection =
+      currentQuiz.type === 'matching'
+        ? { pairs: (currentAnswer as { pairs: MatchingPair[] }).pairs }
+        : { option_id: currentAnswer as string };
 
-      if (isLoggedIn && stepAttemptId !== null) {
-        payload.step_attempt_id = stepAttemptId;
-      }
+    await submitAnswer({ selection });
+  }, [currentAnswer, currentQuiz, submitAnswer]);
 
-      const result = await submitQuizMutation.mutateAsync({ quizId: currentQuiz.id, payload });
-      const correctAnswer: CorrectAnswerType | null = result.solution?.correct_pairs
-        ? { pairs: result.solution.correct_pairs }
-        : (result.solution?.correct_option_id ?? null);
+  /**
+   * 잘 모르겠어요 버튼 클릭 시 실행되는 핸들러
+   * 선택한 답변이 있더라도 제출 시에는 빈 선택지로 처리한다.
+   */
+  const handleDontKnowAnswer = useCallback(async () => {
+    if (!currentQuiz) return;
+    if (currentQuestionStatus !== 'idle') return;
 
-      // 정답/오답 효과음 재생
-      if (result.is_correct) playSound({ src: correctSound, currentTime: 0.05 });
-      else playSound({ src: wrongSound, currentTime: 0.05 });
+    setSelectedAnswers((prev: AnswerType[]) => {
+      const newAnswers = [...prev];
+      newAnswers[currentQuizIndex] = null;
+      return newAnswers;
+    });
 
-      // heart 차감 처리
-      if (!result.is_correct && showHeart) {
-        if (isLoggedIn && result.user_heart_count !== undefined && user) {
-          // 로그인 사용자: 응답받은 heart count로 user 정보 업데이트
-          setUser({
-            ...user,
-            heartCount: result.user_heart_count,
-          });
-          // 하트가 모두 소진되었을 때 모달 띄우기
-          if (result.user_heart_count <= 0) {
-            setShowHeartExhaustedModal(true);
-          }
-        } else if (!isLoggedIn) {
-          // 미로그인 사용자: localStorage에서 heart 차감
-          const newHeartCount = Math.max(0, (progress.heart ?? 5) - 1);
-          updateProgress({
-            heart: newHeartCount,
-          });
-          // 하트가 모두 소진되었을 때 모달 띄우기
-          if (newHeartCount <= 0) {
-            setShowHeartExhaustedModal(true);
-          }
-        }
-      }
-
-      setQuizSolutions(
-        (prev: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>) => {
-          const newSolutions = [...prev];
-          newSolutions[currentQuizIndex] = {
-            correctAnswer,
-            explanation: result.solution?.explanation ?? '',
-          };
-          return newSolutions;
-        },
-      );
-      setCurrentQuestionStatus('checked');
-      setQuestionStatuses((prev: QuestionStatus[]) => {
-        const newStatuses = [...prev];
-        newStatuses[currentQuizIndex] = 'checked';
-        return newStatuses;
-      });
-
-      if (!isLoggedIn) {
-        if (!isReviewMode) {
-          addGuestStepAnswer(step_id, {
-            quiz_id: currentQuiz.id,
-            is_correct: result.is_correct,
-          });
-        }
-      }
-    } catch {
-      // 에러 발생 시에도 다음 문제로 넘어갈 수 있도록 함
-      setCurrentQuestionStatus('checked');
-    }
-  }, [
-    addGuestStepAnswer,
-    currentAnswer,
-    currentQuiz,
-    currentQuizIndex,
-    isLoggedIn,
-    playSound,
-    step_id,
-    stepAttemptId,
-    isReviewMode,
-  ]);
+    await submitAnswer({ selection: {}, isDontKnow: true });
+  }, [currentQuestionStatus, currentQuiz, currentQuizIndex, submitAnswer]);
 
   /** 마지막 문제 여부 */
   const isLastQuestion = currentQuizIndex === quizzes.length - 1;
@@ -561,9 +614,11 @@ export const Quiz = () => {
         quizSolutions={quizSolutions}
         questionStatuses={questionStatuses}
         isCheckDisabled={isCheckDisabled}
+        isDontKnowDisabled={isDontKnowDisabled}
         isLastQuestion={isLastQuestion}
         handleAnswerChange={handleAnswerChange}
         handleCheckAnswer={handleCheckAnswer}
+        handleDontKnowAnswer={handleDontKnowAnswer}
         handleNextQuestion={handleNextQuestion}
         heartCount={showHeart ? (heartCount ?? 5) : 0}
         isReviewMode={isReviewMode}

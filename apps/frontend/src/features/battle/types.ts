@@ -3,11 +3,12 @@ import type { QuizQuestion } from '@/feat/quiz/types';
 /**
  * 배틀 방의 현재 상태
  * waiting: 대기실 (설정 변경 가능)
+ * countdown: 게임 시작 카운트다운 중
  * in_progress: 퀴즈 푸는 중
  * finished: 게임 종료 (결과 화면)
  * invalid: 인원 부족 등으로 인한 무효 처리
  */
-export type BattleRoomStatus = 'waiting' | 'in_progress' | 'finished' | 'invalid';
+export type BattleRoomStatus = 'waiting' | 'countdown' | 'in_progress' | 'finished' | 'invalid';
 
 /**
  * 제한 시간 난이도 타입
@@ -80,6 +81,7 @@ export interface BattleRoomState {
   settings: BattleRoomSettings;
   participants: BattleParticipant[];
   inviteToken: string;
+  countdownEndsAt: number | null;
   startedAt: number | null;
   endedAt: number | null;
   currentQuizIndex: number;
@@ -95,6 +97,7 @@ export interface BattleQuizData {
   index: number; // 현재 문제 번호 (0부터 시작)
   total: number; // 총 문제 수
   endsAt: number; // 문제 종료 서버 시각 (타임스탬프)
+  serverTime: number;
 }
 
 /**

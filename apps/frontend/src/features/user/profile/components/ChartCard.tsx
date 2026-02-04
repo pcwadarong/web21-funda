@@ -239,6 +239,8 @@ export const ChartCard = ({
     return { start, end };
   }, [dates, endDate, startDate]);
 
+  const containerRect = containerRef.current?.getBoundingClientRect() ?? null;
+
   return (
     <section css={cardStyle(theme)}>
       <h2 css={sectionTitleStyle(theme)}>{title}</h2>
@@ -387,7 +389,13 @@ export const ChartCard = ({
           )}
         </svg>
         {popoverPosition && activePoint && (
-          <Popover x={popoverPosition.x} y={popoverPosition.y} isVisible offsetY={-56}>
+          <Popover
+            x={popoverPosition.x}
+            y={popoverPosition.y}
+            isVisible
+            offsetY={-56}
+            containerRect={containerRect}
+          >
             {activePoint.label
               ? `${activePoint.label} · ${activePoint.tooltipFormatter(activePoint.value)}`
               : activePoint.tooltipFormatter(activePoint.value)}

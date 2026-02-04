@@ -409,7 +409,7 @@ const overviewButtonStyle = (theme: Theme) => css`
   justify-content: center;
   gap: 6px;
   background: ${theme.colors.primary.light}A6;
-  color: ${theme.colors.surface.strong};
+  color: ${theme.colors.grayscale[50]};
   border-radius: ${theme.borderRadius.large};
   padding: 8px 16px;
   font-size: clamp(12px, 2.6vw, ${theme.typography['16Medium'].fontSize});

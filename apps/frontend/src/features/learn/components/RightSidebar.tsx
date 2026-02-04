@@ -354,19 +354,14 @@ export const LearnRightSidebar = ({
             </Button>
           </div>
 
-          {!isLoggedIn && !user && (
-            <div css={overlayStyle(theme)}>
-              <div css={overlayHeaderStyle}>
-                <span css={overlayTitleStyle(theme)}>
-                  로그인하여 학습 기록을 저장하고 친구 추가를 해보세요!
-                </span>
-              </div>
+        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
 
-              <Link to="/login" css={rightSidebarLinkStyle}>
-                <Button variant="primary" fullWidth={true} css={rightSidebarBtnStyle(theme)}>
-                  로그인
-                </Button>
-              </Link>
+        {!isLoggedIn && !user && (
+          <div css={overlayStyle(theme)}>
+            <div css={overlayHeaderStyle}>
+              <span css={overlayTitleStyle(theme)}>
+                로그인하여 학습 기록을 저장하고 친구 추가를 해보세요!
+              </span>
             </div>
           )}
         </div>
@@ -624,4 +619,12 @@ const progressBarStyle = (theme: Theme, percentage: number) => css`
   background: ${theme.colors.primary.main};
   border-radius: ${theme.borderRadius.small};
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const boostadZoneOverride = css`
+  &[data-boostad-zone] {
+    margin: 0 !important;
+  }
+
+  min-height: 107px;
 `;

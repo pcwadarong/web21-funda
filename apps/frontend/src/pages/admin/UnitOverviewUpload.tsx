@@ -13,16 +13,7 @@ export function AdminUnitOverviewUpload() {
       example={
         <>
           <strong>예시</strong>
-          <pre
-            style={{
-              margin: '8px 0 0',
-              fontFamily: 'monospace',
-              fontSize: '13px',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {'{"unit_title":"HTML","overview":"### 개요\\n- 태그 구조"}'}
-          </pre>
+          <pre>{'{"unit_title":"HTML","overview":"### 개요\\n- 태그 구조"}'}</pre>
         </>
       }
       status={status}

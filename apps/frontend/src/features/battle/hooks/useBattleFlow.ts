@@ -32,6 +32,7 @@ export function useBattleFlow() {
     // status에 따라 적절한 경로로 navigate
     switch (status) {
       case 'waiting':
+      case 'countdown':
         // waiting: inviteToken이 있으면 /battle/${inviteToken}, 없으면 /battle
         if (inviteToken) {
           navigate(`/battle/${inviteToken}`, { replace: true });

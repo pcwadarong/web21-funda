@@ -202,6 +202,7 @@ export const ChartSection = memo(({ dailyStats, fieldDailyStats }: ChartSectionP
             values: timeData.map(item => item.value),
             color: theme.colors.primary.main,
             tooltipFormatter: formatSeconds,
+            disableZeroTooltip: true,
           },
         ]}
         yScale={timeScale}

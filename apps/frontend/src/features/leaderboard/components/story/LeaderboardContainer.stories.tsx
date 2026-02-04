@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { action } from 'storybook/actions';
 
 import { LeaderboardContainer } from '@/feat/leaderboard/components/LeaderboardContainer';
-import type { WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type { OverallRankingResult, WeeklyRankingResult } from '@/feat/leaderboard/types';
 import { ModalProvider } from '@/store/modalStore';
 import { ThemeStoreProvider } from '@/store/themeStore';
 import { lightTheme } from '@/styles/theme';
@@ -113,6 +113,37 @@ const mockWeeklyRanking: WeeklyRankingResult = {
   ],
 };
 
+const mockOverallRanking: OverallRankingResult = {
+  weekKey: '2025-01',
+  totalMembers: 120,
+  myRank: 12,
+  myWeeklyXp: 820,
+  members: [
+    {
+      rank: 1,
+      userId: 31,
+      displayName: 'GoldMaster',
+      profileImageUrl: null,
+      xp: 3200,
+      isMe: false,
+      rankZone: 'MAINTAIN',
+      tierName: 'GOLD',
+      tierOrderIndex: 3,
+    },
+    {
+      rank: 2,
+      userId: 32,
+      displayName: 'SilverAce',
+      profileImageUrl: null,
+      xp: 2100,
+      isMe: false,
+      rankZone: 'MAINTAIN',
+      tierName: 'SILVER',
+      tierOrderIndex: 2,
+    },
+  ],
+};
+
 const meta: Meta<typeof LeaderboardContainer> = {
   title: 'Features/Leaderboard/LeaderboardContainer',
   component: LeaderboardContainer,
@@ -145,8 +176,11 @@ const meta: Meta<typeof LeaderboardContainer> = {
   ],
   args: {
     weeklyRanking: mockWeeklyRanking,
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -158,24 +192,33 @@ export const Default: Story = {};
 export const Loading: Story = {
   args: {
     weeklyRanking: null,
-    isLoading: true,
-    errorMessage: null,
+    overallRanking: null,
+    isWeeklyLoading: true,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
 export const ErrorState: Story = {
   args: {
     weeklyRanking: null,
-    isLoading: false,
-    errorMessage: '랭킹 정보를 불러오지 못했습니다.',
+    overallRanking: null,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: '랭킹 정보를 불러오지 못했습니다.',
+    overallErrorMessage: null,
   },
 };
 
 export const Empty: Story = {
   args: {
     weeklyRanking: null,
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: null,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -185,8 +228,11 @@ export const Unassigned: Story = {
       ...mockWeeklyRanking,
       groupIndex: null,
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -205,8 +251,11 @@ export const WithManyMembers: Story = {
         rankZone: i < 10 ? 'PROMOTION' : i < 20 ? 'MAINTAIN' : 'DEMOTION',
       })),
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -222,8 +271,11 @@ export const SilverTier: Story = {
       },
       myWeeklyXp: 200,
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -238,8 +290,11 @@ export const GoldTier: Story = {
       },
       myWeeklyXp: 350,
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -254,8 +309,11 @@ export const SapphireTier: Story = {
       },
       myWeeklyXp: 500,
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -270,8 +328,11 @@ export const RubyTier: Story = {
       },
       myWeeklyXp: 600,
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
@@ -290,16 +351,22 @@ export const MasterTier: Story = {
         rankZone: index < 2 ? 'MAINTAIN' : 'DEMOTION',
       })),
     },
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
   },
 };
 
 export const WithRefresh: Story = {
   args: {
     weeklyRanking: mockWeeklyRanking,
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
     onRefresh: action('리더보드 새로고침'),
     isRefreshing: false,
   },
@@ -308,8 +375,11 @@ export const WithRefresh: Story = {
 export const Refreshing: Story = {
   args: {
     weeklyRanking: mockWeeklyRanking,
-    isLoading: false,
-    errorMessage: null,
+    overallRanking: mockOverallRanking,
+    isWeeklyLoading: false,
+    isOverallLoading: false,
+    weeklyErrorMessage: null,
+    overallErrorMessage: null,
     onRefresh: action('리더보드 새로고침'),
     isRefreshing: true,
   },

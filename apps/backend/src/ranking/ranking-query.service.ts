@@ -7,6 +7,8 @@ import { User } from '../users/entities/user.entity';
 
 import type {
   MyTierResult,
+  OverallRankingEntry,
+  OverallRankingResult,
   RankingZone,
   WeeklyRankingEntry,
   WeeklyRankingResult,
@@ -179,6 +181,113 @@ export class RankingQueryService {
       weekKey: targetWeekKey,
       tier,
       groupIndex: member.group.groupIndex,
+      totalMembers: members.length,
+      myRank,
+      myWeeklyXp,
+      members,
+    };
+  }
+
+  /**
+   * 주간 전체 랭킹을 조회한다.
+   * - 티어 우선순위(높을수록 상위) → 주간 XP 순으로 정렬한다.
+   *
+   * @param userId 사용자 ID
+   * @param weekKey 조회할 주차 키(없으면 현재 주차)
+   * @returns {Promise<OverallRankingResult>} 주간 전체 랭킹 정보
+   */
+  async getOverallWeeklyRanking(
+    userId: number,
+    weekKey: string | null,
+  ): Promise<OverallRankingResult> {
+    const targetWeekKey = weekKey ?? getKstWeekInfo(getKstNow()).weekKey;
+    const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
+
+    if (!week) {
+      return {
+        weekKey: targetWeekKey,
+        totalMembers: 0,
+        myRank: null,
+        myWeeklyXp: 0,
+        members: [],
+      };
+    }
+
+    const allMembers = await this.memberRepository.find({
+      where: { weekId: week.id },
+      relations: { user: { profileCharacter: true }, tier: true },
+    });
+
+    if (allMembers.length === 0) {
+      return {
+        weekKey: targetWeekKey,
+        totalMembers: 0,
+        myRank: null,
+        myWeeklyXp: 0,
+        members: [],
+      };
+    }
+
+    const memberIds = allMembers.map(member => member.userId);
+    const weeklyXpList = await this.weeklyXpRepository.find({
+      where: { weekId: week.id, userId: In(memberIds) },
+    });
+    const weeklyXpMap = new Map(weeklyXpList.map(item => [item.userId, item]));
+
+    const rankingSeeds = allMembers.map(member => {
+      const weeklyXp = weeklyXpMap.get(member.userId);
+      const lastSolvedAt = weeklyXp?.lastSolvedAt ?? weeklyXp?.firstSolvedAt ?? member.joinedAt;
+
+      return {
+        userId: member.userId,
+        displayName: member.user?.displayName ?? '알 수 없음',
+        profileImageUrl:
+          member.user?.profileCharacter?.imageUrl ?? member.user?.profileImageUrl ?? null,
+        xp: weeklyXp?.xp ?? 0,
+        lastSolvedAt,
+        tierName: member.tier?.name ?? null,
+        tierOrderIndex: member.tier?.orderIndex ?? null,
+      };
+    });
+
+    const sorted = [...rankingSeeds].sort((left, right) => {
+      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
+      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
+
+      if (leftTierOrderIndex !== rightTierOrderIndex) {
+        return rightTierOrderIndex - leftTierOrderIndex;
+      }
+
+      if (left.xp !== right.xp) {
+        return right.xp - left.xp;
+      }
+
+      const leftTime = left.lastSolvedAt.getTime();
+      const rightTime = right.lastSolvedAt.getTime();
+      if (leftTime !== rightTime) {
+        return leftTime - rightTime;
+      }
+
+      return left.userId - right.userId;
+    });
+
+    const members: OverallRankingEntry[] = sorted.map((entry, index) => ({
+      userId: entry.userId,
+      displayName: entry.displayName,
+      profileImageUrl: entry.profileImageUrl,
+      xp: entry.xp,
+      rank: index + 1,
+      isMe: entry.userId === userId,
+      rankZone: 'MAINTAIN',
+      tierName: entry.tierName,
+      tierOrderIndex: entry.tierOrderIndex,
+    }));
+
+    const myRank = members.find(entry => entry.userId === userId)?.rank ?? null;
+    const myWeeklyXp = weeklyXpMap.get(userId)?.xp ?? 0;
+
+    return {
+      weekKey: targetWeekKey,
       totalMembers: members.length,
       myRank,
       myWeeklyXp,

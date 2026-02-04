@@ -43,12 +43,14 @@ export const BattlePlayContainer = ({
       status={questionStatuses[quizInfo.index] ?? 'idle'}
       isBattleMode
     />
-    <main css={mainStyle}>
+    <div css={subHeaderStyle}>
       <BattleRankBar
         rankings={rankings}
         currentParticipantId={currentParticipantId}
         totalParticipants={rankings.length}
       />
+    </div>
+    <main css={mainStyle}>
       <QuizContentCard
         question={quizInfo.question}
         status={questionStatuses[quizInfo.index] ?? 'idle'}
@@ -72,6 +74,13 @@ const containerStyle = css`
   flex-direction: column;
   width: 100vw;
   height: 100vh;
+`;
+
+const subHeaderStyle = css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
 `;
 
 const mainStyle = css`

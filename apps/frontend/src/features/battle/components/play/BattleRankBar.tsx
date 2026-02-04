@@ -130,10 +130,11 @@ export const BattleRankBar = ({
                       name={isMine ? '나' : ranking.displayName}
                       size="sm"
                       alt={ranking.displayName}
+                      className={'avatar-container'}
                     />
                     <div css={infoStyle}>
                       <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
-                      <ScoreText value={ranking.score} color={scoreColor} />
+                      <ScoreText value={ranking.score} color={scoreColor} theme={theme} />
                     </div>
                   </div>
                 </div>
@@ -148,7 +149,6 @@ export const BattleRankBar = ({
 };
 
 const containerStyle = css`
-  position: sticky;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -156,7 +156,13 @@ const containerStyle = css`
   width: 100%;
   max-width: 48rem;
   min-height: fit-content;
+  padding-top: 16px;
   overflow: visible;
+
+  @media (max-width: 768px) {
+    gap: 0px;
+    padding: 12px;
+  }
 `;
 
 const verticalDividerStyle = (theme: Theme) => css`
@@ -170,9 +176,13 @@ const listStyle = css`
   display: flex;
   align-items: center;
   gap: 16px;
-  overflow-x: auto;
   overflow-y: visible;
   padding: 12px;
+
+  @media (max-width: 768px) {
+    gap: 8px;
+    padding: 0px 4px 16px 4px;
+  }
 `;
 
 const cardWrapperStyle = css`
@@ -196,6 +206,28 @@ const cardStyle = (theme: Theme, isMine: boolean) => css`
   background: ${theme.colors.surface.strong};
   border: 2px solid ${isMine ? theme.colors.primary.light : 'transparent'};
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 100%;
+    width: 60px;
+    height: 60px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+
+    & .avatar-container {
+      position: absolute;
+      top: 0;
+      z-index: 0;
+      width: 60px;
+      height: 60px;
+      border: 2px solid ${isMine ? theme.colors.primary.light : theme.colors.border.default};
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+  }
 `;
 
 const rankBadgeStyle = (theme: Theme, isMine: boolean, isDarkMode: boolean) => css`
@@ -219,6 +251,16 @@ const rankBadgeStyle = (theme: Theme, isMine: boolean, isDarkMode: boolean) => c
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    top: -6px;
+    left: -6px;
+    width: 24px;
+    height: 24px;
+    font-weight: ${theme.typography['14Bold'].fontWeight};
+    font-size: ${theme.typography['14Bold'].fontSize};
+    z-index: 1;
+  }
 `;
 
 const infoStyle = css`
@@ -226,6 +268,11 @@ const infoStyle = css`
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+
+  @media (max-width: 768px) {
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
 const nameStyle = (theme: Theme) => css`
@@ -235,12 +282,34 @@ const nameStyle = (theme: Theme) => css`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: 768px) {
+    width: 75px;
+    position: absolute;
+    bottom: -30px;
+    font-size: ${theme.typography['14Medium'].fontSize};
+    font-weight: ${theme.typography['14Medium'].fontWeight};
+    color: ${theme.colors.text.default};
+    text-align: center;
+  }
 `;
 
-const scoreStyle = (color: string) => css`
-  font-size: 14px;
-  font-weight: 700;
+const scoreStyle = (theme: Theme, color: string) => css`
+  font-size: ${theme.typography['16Medium'].fontSize};
+  font-weight: ${theme.typography['16Medium'].fontWeight};
   color: ${color};
+
+  @media (max-width: 768px) {
+    color: white;
+    position: absolute;
+    bottom: -8px;
+    padding: 2px 6px;
+    border-radius: ${theme.borderRadius.small};
+    font-size: ${theme.typography['12Bold'].fontSize};
+    font-weight: ${theme.typography['12Bold'].fontWeight};
+    background: ${color};
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const scoreCountStyle = css`
@@ -254,8 +323,8 @@ const countStyle = (theme: Theme) => css`
   text-align: right;
 `;
 
-const ScoreText = ({ value, color }: { value: number; color: string }) => {
+const ScoreText = ({ value, color, theme }: { value: number; color: string; theme: Theme }) => {
   const displayValue = useAnimatedNumber(value);
   const text = displayValue >= 0 ? `+${displayValue}` : `${displayValue}`;
-  return <div css={[scoreStyle(color), scoreCountStyle]}>{text}</div>;
+  return <div css={[scoreStyle(theme, color), scoreCountStyle]}>{text}</div>;
 };

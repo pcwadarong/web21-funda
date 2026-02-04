@@ -14,7 +14,7 @@ export function UnsubscribeContainer({
   isLoading,
 }: UnsubscribeContainerProps) {
   return (
-    <main css={containerStyle}>
+    <section css={containerStyle} aria-label="이메일 수신 거부">
       <h2>이메일 수신 거부</h2>
       <p>
         대상: <strong>{email ?? '이메일 정보 없음'}</strong>
@@ -23,7 +23,7 @@ export function UnsubscribeContainer({
       <Button onClick={onUnsubscribe} variant="primary" disabled={isLoading}>
         {isLoading ? '처리 중...' : '수신 거부하기'}
       </Button>
-    </main>
+    </section>
   );
 }
 

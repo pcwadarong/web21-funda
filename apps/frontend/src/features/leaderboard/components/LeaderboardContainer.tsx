@@ -109,7 +109,7 @@ export const LeaderboardContainer = ({
     }));
 
   return (
-    <main css={pageStyle}>
+    <section css={pageStyle} aria-label="리더보드">
       <div css={pageContentStyle}>
         <header css={headerStyle}>
           <h1 css={pageTitleStyle(theme)}>LEADERBOARD</h1>
@@ -242,7 +242,7 @@ export const LeaderboardContainer = ({
           </>
         )}
       </div>
-    </main>
+    </section>
   );
 };
 

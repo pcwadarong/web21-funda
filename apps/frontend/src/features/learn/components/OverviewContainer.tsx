@@ -50,7 +50,7 @@ export const OverviewContainer = ({
 
   if (unitId === null) {
     return (
-      <div css={mainStyle} role="region" aria-label="학습 개요">
+      <section css={mainStyle} aria-label="학습 개요">
         <BackButton
           onBack={onBack}
           css={backButtonStyle(theme)}
@@ -59,13 +59,13 @@ export const OverviewContainer = ({
         <div css={messageStyle(theme)} role="alert">
           유닛 정보를 찾지 못했습니다.
         </div>
-      </div>
+      </section>
     );
   }
 
   if (isLoading) {
     return (
-      <div css={mainStyle} role="region" aria-label="학습 개요" aria-busy="true">
+      <section css={mainStyle} aria-label="학습 개요" aria-busy="true">
         <BackButton
           onBack={onBack}
           css={backButtonStyle(theme)}
@@ -74,13 +74,13 @@ export const OverviewContainer = ({
         <div css={loadingStyle} role="status" aria-live="polite">
           <Loading text="학습 개요를 불러오는 중입니다." />
         </div>
-      </div>
+      </section>
     );
   }
 
   if (error) {
     return (
-      <div css={mainStyle} role="region" aria-label="학습 개요">
+      <section css={mainStyle} aria-label="학습 개요">
         <BackButton
           onBack={onBack}
           css={backButtonStyle(theme)}
@@ -90,12 +90,12 @@ export const OverviewContainer = ({
           학습 개요를 불러오지 못했습니다.
           <span css={errorDetailStyle(theme)}>{error.message}</span>
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div css={mainStyle} role="region" aria-label="학습 개요">
+    <section css={mainStyle} aria-label="학습 개요">
       <header css={headerStyle}>
         <BackButton
           onBack={onBack}
@@ -115,7 +115,7 @@ export const OverviewContainer = ({
           </div>
         )}
       </section>
-    </div>
+    </section>
   );
 };
 

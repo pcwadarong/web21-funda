@@ -42,7 +42,7 @@ export const LearnContainer = ({
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   return (
-    <div css={containerStyle} role="region" aria-label="학습 콘텐츠">
+    <section css={containerStyle} aria-label="학습 콘텐츠">
       <SimpleBar css={simpleBarStyle} ref={scrollContainerRef} aria-label="유닛 및 레슨 스크롤">
         <div css={mainStyle}>
           <section css={centerSectionStyle} aria-label="유닛 및 레슨 목록">
@@ -169,7 +169,7 @@ export const LearnContainer = ({
           <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
         </div>
       </SimpleBar>
-    </div>
+    </section>
   );
 };
 

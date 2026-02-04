@@ -68,7 +68,7 @@ export const ProfileCharacterContainer = ({
   };
 
   return (
-    <main css={pageStyle(theme)}>
+    <section css={pageStyle(theme)} aria-label="캐릭터 프로필 설정">
       <div css={contentStyle}>
         <header css={headerStyle}>
           <div css={headerTopRowStyle}>
@@ -171,7 +171,7 @@ export const ProfileCharacterContainer = ({
           </Popover>
         </section>
       </div>
-    </main>
+    </section>
   );
 };
 

@@ -283,6 +283,7 @@ export class AuthController {
             email: 'user@example.com',
             profileImageUrl: 'https://example.com/avatar.png',
             role: 'user',
+            isEmailSubscribed: true,
             heartCount: 5,
             maxHeartCount: 5,
             experience: 0,

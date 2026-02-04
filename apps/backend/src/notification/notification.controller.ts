@@ -1,6 +1,7 @@
-import { Body, Controller, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Patch, Req, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiOkResponse,
   ApiOperation,
@@ -8,8 +9,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import type { Request } from 'express';
+
+import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
+import type { JwtPayload } from '../auth/types/jwt-payload.type';
 
 import { UnsubscribeDto } from './dto/unsubscribe.dto';
+import { UpdateEmailSubscriptionDto } from './dto/update-email-subscription.dto';
 import { NotificationService } from './notification.service';
 
 @ApiTags('Notification')
@@ -59,5 +65,45 @@ export class NotificationController {
     await this.notificationService.unsubscribeUser(email);
 
     return { success: true, message: 'Successfully unsubscribed' };
+  }
+
+  /**
+   * 이메일 알림 수신 여부를 변경한다.
+   */
+  @Patch('subscription')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '이메일 알림 설정 변경',
+    description: '로그인 사용자의 이메일 알림 수신 여부를 변경한다.',
+  })
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    description: '이메일 알림 설정 변경 성공',
+    schema: {
+      example: { success: true, isEmailSubscribed: true },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: '잘못된 요청입니다.',
+  })
+  @ApiUnauthorizedResponse({
+    description: '액세스 토큰이 없거나 유효하지 않음',
+  })
+  @UseGuards(JwtAccessGuard)
+  async updateEmailSubscription(
+    @Body() body: UpdateEmailSubscriptionDto,
+    @Req() req: Request & { user?: JwtPayload },
+  ) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    const isEmailSubscribed = await this.notificationService.updateEmailSubscription(
+      userId,
+      body.isEmailSubscribed,
+    );
+
+    return { success: true, isEmailSubscribed };
   }
 }

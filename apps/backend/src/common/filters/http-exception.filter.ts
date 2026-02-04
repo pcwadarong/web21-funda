@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 
 import { createErrorResponse } from '../response/api-response';
 
@@ -17,11 +18,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = context.getResponse();
     const statusCode = this.getStatusCode(exception);
     const message = this.getMessage(exception);
+
+    this.reportToSentry(exception, statusCode);
     const errorBody = createErrorResponse(statusCode, message);
 
     response.status(statusCode).json(errorBody);
   }
-
+  private reportToSentry(exception: unknown, statusCode: number): void {
+    // 보통 400번대는 유저의 실수이므로 제외
+    // 500번대 이상(Internal Server Error)만 Sentry로 보내기
+    if (statusCode >= 500) {
+      Sentry.captureException(exception);
+    }
+  }
   private getStatusCode(exception: unknown): number {
     if (exception instanceof HttpException) {
       return exception.getStatus();

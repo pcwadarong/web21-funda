@@ -14,6 +14,16 @@ const dirname =
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // 모든 콘솔 로그 제거
+        drop_debugger: true,
+      },
+    },
+  },
+  plugins: [react(), svgr({ include: '**/*.svg?react' })],
   plugins: [
     react(),
     svgr({ include: '**/*.svg?react' }),

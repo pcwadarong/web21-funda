@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { BattleTimerCountdown } from '@/feat/battle/components/play/BattleTimerCountdown';
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
 import type {
   AnswerType,
@@ -11,8 +12,6 @@ import type {
 } from '@/feat/quiz/types';
 import { AiAskModal } from '@/features/ai-ask/components/AiAskModal';
 import ReportModal from '@/features/report/ReportForm';
-import { useCountdownTimer } from '@/hooks/useCountdownTimer';
-import { useBattleStore } from '@/store/battleStore';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
@@ -58,9 +57,6 @@ export const QuizContentCard = ({
   const { openModal } = useModal();
   const showResult = status === 'checked';
   const showDontKnowButton = Boolean(onDontKnow) && !showResult && !isBattleMode && !isReviewMode;
-  const endsAt = useBattleStore(state => (isBattleMode ? state.resultEndsAt : null));
-  const remainingSeconds = useBattleStore(state => (isBattleMode ? state.remainingSeconds : 0));
-  const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
   let nextButtonLabel = '다음 문제';
 
   if (isLast) {
@@ -75,10 +71,11 @@ export const QuizContentCard = ({
   const battleNextButtonLabel = isLast
     ? '자동으로 경기 결과가 나타납니다..'
     : '자동으로 다음 문제로 이동합니다..';
-  const battleNextButtonLabelWithTimer =
-    displaySeconds !== null
-      ? `${displaySeconds}초 뒤 ${battleNextButtonLabel}`
-      : battleNextButtonLabel;
+  const battleNextButtonLabelWithTimer = [
+    <BattleTimerCountdown isResultPhase={status === 'checked'} />,
+    '초 뒤 ',
+    battleNextButtonLabel,
+  ];
 
   return (
     <div css={cardStyle(theme)}>

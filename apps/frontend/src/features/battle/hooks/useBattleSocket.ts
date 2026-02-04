@@ -80,6 +80,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       selectedAnswers: state.selectedAnswers,
       quizSolutions: state.quizSolutions,
       questionStatuses: state.questionStatuses,
+      serverTime: state.serverTime,
     })),
   );
   const {
@@ -130,6 +131,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       remainingSeconds: number;
       rankings: Ranking[];
       resultEndsAt?: number;
+      serverTime?: number;
       countdownEndsAt?: number | null;
     }) => {
       setBattleState({
@@ -137,6 +139,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
         remainingSeconds: data.remainingSeconds,
         rankings: data.rankings,
         resultEndsAt: data.resultEndsAt ?? undefined,
+        serverTime: data.serverTime ?? undefined,
         countdownEndsAt: data.countdownEndsAt ?? null,
       });
     };

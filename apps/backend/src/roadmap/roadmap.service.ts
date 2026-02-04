@@ -31,6 +31,8 @@ const FIELD_LIST_CACHE_KEY = 'fields:list';
 const FIELD_LIST_CACHE_TTL_SECONDS = 24 * 60 * 60;
 const FIELD_UNITS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 const FIRST_UNIT_CACHE_TTL_SECONDS = 24 * 60 * 60;
+const UNIT_OVERVIEW_CACHE_TTL_SECONDS = 24 * 60 * 60;
+const UNIT_OVERVIEW_CACHE_KEY_PREFIX = 'unit:overview';
 
 interface FieldUnitsBaseResponse {
   field: {
@@ -271,6 +273,11 @@ export class RoadmapService {
    * @returns 유닛 개요 정보
    */
   async getUnitOverview(unitId: number): Promise<UnitOverviewResponse> {
+    const cached = await this.getCachedUnitOverview(unitId);
+    if (cached) {
+      return cached;
+    }
+
     const unit = await this.unitRepository.findOne({
       where: { id: unitId },
       select: { id: true, title: true, overview: true },
@@ -280,13 +287,16 @@ export class RoadmapService {
       throw new NotFoundException('Unit not found.');
     }
 
-    return {
+    const response: UnitOverviewResponse = {
       unit: {
         id: unit.id,
         title: unit.title,
         overview: unit.overview ?? null,
       },
     };
+
+    await this.setCachedUnitOverview(unitId, response);
+    return response;
   }
 
   /**
@@ -309,13 +319,16 @@ export class RoadmapService {
 
     const saved = await this.unitRepository.save(unit);
 
-    return {
+    const response: UnitOverviewResponse = {
       unit: {
         id: saved.id,
         title: saved.title,
         overview: saved.overview ?? null,
       },
     };
+
+    await this.deleteCachedUnitOverview(unitId);
+    return response;
   }
 
   /**
@@ -786,6 +799,58 @@ export class RoadmapService {
 
     const record = value as { field?: unknown };
     return Boolean(record.field);
+  }
+
+  private buildUnitOverviewCacheKey(unitId: number): string {
+    return `${UNIT_OVERVIEW_CACHE_KEY_PREFIX}:${unitId}`;
+  }
+
+  private async getCachedUnitOverview(unitId: number): Promise<UnitOverviewResponse | null> {
+    const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isUnitOverviewResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedUnitOverview(unitId: number, value: UnitOverviewResponse): Promise<void> {
+    const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+
+    try {
+      await this.redisService.set(cacheKey, value, UNIT_OVERVIEW_CACHE_TTL_SECONDS);
+    } catch {
+      return;
+    }
+  }
+
+  private async deleteCachedUnitOverview(unitId: number): Promise<void> {
+    const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+
+    try {
+      await this.redisService.del(cacheKey);
+    } catch {
+      return;
+    }
+  }
+
+  private isUnitOverviewResponse(value: unknown): value is UnitOverviewResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { unit?: unknown };
+    if (!record.unit || typeof record.unit !== 'object') {
+      return false;
+    }
+
+    const unitRecord = record.unit as { id?: unknown; title?: unknown };
+    return typeof unitRecord.id === 'number' && typeof unitRecord.title === 'string';
   }
 
   private async saveSolveLog(params: {

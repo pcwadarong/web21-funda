@@ -28,6 +28,7 @@ const FIELD_LIST_CACHE_KEY = 'fields:list';
 const FIELD_UNITS_CACHE_KEY_SUFFIX = 'units';
 const FIRST_UNIT_CACHE_KEY_SUFFIX = 'first_unit';
 const QUIZ_CONTENT_CACHE_KEY_PREFIX = 'quiz_content';
+const UNIT_OVERVIEW_CACHE_KEY_PREFIX = 'unit:overview';
 
 @Injectable()
 export class BackofficeService {
@@ -116,6 +117,8 @@ export class BackofficeService {
       unitsNotFound: 0,
     };
 
+    const updatedUnitIds = new Set<number>();
+
     await this.dataSource.transaction(async manager => {
       const repository = manager.getRepository(Unit);
 
@@ -140,9 +143,12 @@ export class BackofficeService {
           unit.overview = overview;
           await repository.save(unit);
           summary.unitsUpdated += 1;
+          updatedUnitIds.add(unit.id);
         }
       }
     });
+
+    await this.invalidateUnitOverviewCache(updatedUnitIds);
 
     return summary;
   }
@@ -249,6 +255,20 @@ export class BackofficeService {
     }
   }
 
+  /**
+   * 유닛 개요 캐시를 무효화한다.
+   */
+  private async invalidateUnitOverviewCache(unitIds: Set<number>): Promise<void> {
+    if (unitIds.size === 0) {
+      return;
+    }
+
+    for (const unitId of unitIds) {
+      const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+      await this.safeDeleteCacheKey(cacheKey);
+    }
+  }
+
   private buildFieldUnitsCacheKey(fieldSlug: string): string {
     return `fields:${fieldSlug}:${FIELD_UNITS_CACHE_KEY_SUFFIX}`;
   }
@@ -259,6 +279,10 @@ export class BackofficeService {
 
   private buildQuizContentCacheKey(quizId: number): string {
     return `${QUIZ_CONTENT_CACHE_KEY_PREFIX}:${quizId}`;
+  }
+
+  private buildUnitOverviewCacheKey(unitId: number): string {
+    return `${UNIT_OVERVIEW_CACHE_KEY_PREFIX}:${unitId}`;
   }
 
   private async safeDeleteCacheKey(cacheKey: string): Promise<void> {

@@ -1,0 +1,40 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Deep Base Color -->
+    <linearGradient id="sapphireBase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0066FF" />
+      <stop offset="100%" stop-color="#001A66" />
+    </linearGradient>
+    <!-- Bright Reflection -->
+    <linearGradient id="sapphireReflect" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E0FFFF" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#E0FFFF" stop-opacity="0" />
+    </linearGradient>
+    <!-- Glowing Effect -->
+    <filter id="gemGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <g filter="url(#gemGlow)">
+    <!-- Main Diamond Body -->
+    <path d="M50 5 L85 30 L50 95 L15 30 L50 5 Z" fill="url(#sapphireBase)" stroke="#00BFFF" stroke-width="1.5" />
+    
+    <!-- Top Face (Crown) -->
+    <path d="M50 5 L85 30 L50 45 L15 30 L50 5 Z" fill="#4D94FF" opacity="0.6" />
+    <path d="M30 20 L70 20 L50 35 L30 20 Z" fill="#E0FFFF" opacity="0.4" />
+    
+    <!-- Side Facets (Refractions) -->
+    <path d="M50 45 L85 30 L50 95 L50 45 Z" fill="#0047AB" opacity="0.7" />
+    <path d="M50 45 L15 30 L50 95 L50 45 Z" fill="#002366" opacity="0.8" />
+    
+    <!-- Highlight Sparkles -->
+    <path d="M50 5 L60 20 L50 25 L40 20 L50 5 Z" fill="url(#sapphireReflect)" />
+    <circle cx="25" cy="25" r="1.5" fill="white" />
+    <circle cx="75" cy="35" r="1" fill="white" />
+    
+    <!-- Bottom Sharp Edge -->
+    <path d="M50 80 L50 95" stroke="white" stroke-width="1" stroke-opacity="0.5" />
+  </g>
+</svg>

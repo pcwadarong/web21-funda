@@ -12,6 +12,7 @@ import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/auth
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
+import { getTierIconName } from '@/utils/tier';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
@@ -43,6 +44,7 @@ export const Sidebar = () => {
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
+  const tierIconName = getTierIconName(tierName);
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -172,7 +174,10 @@ export const Sidebar = () => {
                 />
                 <div css={userInfoStyle}>
                   <div css={userNameStyle(theme)}>{user.displayName}</div>
-                  <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
+                  <div css={userTierRowStyle}>
+                    {tierIconName && <SVGIcon icon={tierIconName} size="sm" />}
+                    <span css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</span>
+                  </div>
                 </div>
               </div>
             }
@@ -369,6 +374,12 @@ const userLevelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
   text-align: left;
+`;
+
+const userTierRowStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 
 const buildTierLabel = (tierName: string | null) =>

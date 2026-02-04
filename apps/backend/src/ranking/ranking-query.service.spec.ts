@@ -97,6 +97,50 @@ describe('RankingQueryService', () => {
     expect(result.tier?.id).toBe(3);
   });
 
+  it('주간 전체 랭킹을 티어와 XP 기준으로 정렬해 반환한다', async () => {
+    const week = { id: 1, weekKey: '2025-01' } as RankingWeek;
+    const goldTier = { id: 3, name: RankingTierName.GOLD, orderIndex: 3 } as RankingTier;
+    const silverTier = { id: 2, name: RankingTierName.SILVER, orderIndex: 2 } as RankingTier;
+    const members = [
+      {
+        userId: 1,
+        joinedAt: new Date('2025-01-02'),
+        tier: silverTier,
+        user: { displayName: 'SilverHigh' },
+      },
+      {
+        userId: 2,
+        joinedAt: new Date('2025-01-01'),
+        tier: goldTier,
+        user: { displayName: 'GoldLow' },
+      },
+      {
+        userId: 3,
+        joinedAt: new Date('2025-01-03'),
+        tier: goldTier,
+        user: { displayName: 'GoldHigh' },
+      },
+    ] as RankingGroupMember[];
+    const weeklyXpList = [
+      { userId: 1, xp: 900, lastSolvedAt: new Date('2025-01-02') },
+      { userId: 2, xp: 500, lastSolvedAt: new Date('2025-01-01') },
+      { userId: 3, xp: 800, lastSolvedAt: new Date('2025-01-03') },
+    ] as RankingWeeklyXp[];
+
+    (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
+    (memberRepository.find as jest.Mock).mockResolvedValue(members);
+    (weeklyXpRepository.find as jest.Mock).mockResolvedValue(weeklyXpList);
+
+    const result = await service.getOverallWeeklyRanking(3, '2025-01');
+
+    expect(result.members[0]?.displayName).toBe('GoldHigh');
+    expect(result.members[1]?.displayName).toBe('GoldLow');
+    expect(result.members[2]?.displayName).toBe('SilverHigh');
+    expect(result.members[0]?.tierName).toBe(RankingTierName.GOLD);
+    expect(result.members[2]?.tierName).toBe(RankingTierName.SILVER);
+    expect(result.myRank).toBe(1);
+  });
+
   it('관리자 조회에서 티어가 없으면 예외를 발생시킨다', async () => {
     (tierRepository.findOne as jest.Mock).mockResolvedValue(null);
 

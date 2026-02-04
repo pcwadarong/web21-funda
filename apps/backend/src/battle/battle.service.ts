@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
@@ -12,8 +12,13 @@ import { User } from '../users/entities/user.entity';
 import { BattleStore } from './battle.store';
 import { BattleRoomState } from './battle-state';
 
+const ROOM_TTL_MS = 10 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 60 * 1000;
+
 @Injectable()
-export class BattleService {
+export class BattleService implements OnModuleInit, OnModuleDestroy {
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(
     private readonly battleStore: BattleStore,
     @InjectRepository(Quiz)
@@ -23,6 +28,24 @@ export class BattleService {
     private readonly quizContentService: QuizContentService,
     private readonly quizResultService: QuizResultService,
   ) {}
+
+  /**
+   * 메모리 누수를 막기 위해 완료된 방을 주기적으로 정리한다.
+   *
+   * @returns 없음
+   */
+  onModuleInit(): void {
+    this.startRoomCleanupScheduler();
+  }
+
+  /**
+   * 모듈 종료 시 정리 타이머를 해제한다.
+   *
+   * @returns 없음
+   */
+  onModuleDestroy(): void {
+    this.stopRoomCleanupScheduler();
+  }
 
   /**
    * 방 상태를 조회한다.
@@ -61,6 +84,75 @@ export class BattleService {
    */
   getAllRooms(): BattleRoomState[] {
     return this.battleStore.getAllRooms();
+  }
+
+  /**
+   * 방 정리 스케줄러를 시작한다.
+   *
+   * @returns 없음
+   */
+  private startRoomCleanupScheduler(): void {
+    if (this.cleanupTimer) {
+      return;
+    }
+
+    this.cleanupTimer = setInterval(() => {
+      this.cleanupExpiredRooms();
+    }, CLEANUP_INTERVAL_MS);
+  }
+
+  /**
+   * 방 정리 스케줄러를 종료한다.
+   *
+   * @returns 없음
+   */
+  private stopRoomCleanupScheduler(): void {
+    if (!this.cleanupTimer) {
+      return;
+    }
+
+    clearInterval(this.cleanupTimer);
+    this.cleanupTimer = null;
+  }
+
+  /**
+   * finished/invalid 상태로 일정 시간이 지난 방을 정리한다.
+   *
+   * @returns 없음
+   */
+  private cleanupExpiredRooms(): void {
+    const now = Date.now();
+    const rooms = this.battleStore.getAllRooms();
+
+    for (const room of rooms) {
+      if (!this.shouldRemoveRoom(room, now)) {
+        continue;
+      }
+
+      this.battleStore.deleteRoom(room.roomId);
+    }
+  }
+
+  /**
+   * TTL 기준으로 방을 삭제할지 판단한다.
+   *
+   * @param room 방 상태
+   * @param now 현재 시각
+   * @returns 삭제 여부
+   */
+  private shouldRemoveRoom(room: BattleRoomState, now: number): boolean {
+    const isFinished = room.status === 'finished';
+    const isInvalid = room.status === 'invalid';
+
+    if (!isFinished && !isInvalid) {
+      return false;
+    }
+
+    if (room.endedAt === null) {
+      return false;
+    }
+
+    return now - room.endedAt >= ROOM_TTL_MS;
   }
 
   /**

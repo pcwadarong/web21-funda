@@ -10,8 +10,10 @@ import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
+import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
+import { getTierIconName } from '@/utils/tier';
 
 const NAV_ITEMS = [
   { id: 'learn', label: '학습하기', icon: 'Learn', path: '/learn' },
@@ -30,6 +32,7 @@ const ADMIN_NAV_ITEM = {
 
 export const Sidebar = () => {
   const theme = useTheme();
+  const { isDarkMode } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
   const isLoggedIn = useIsLoggedIn();
@@ -43,6 +46,7 @@ export const Sidebar = () => {
   // 사용자 티어 조회
   const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
   const tierName = rankingMe?.tier?.name ?? null;
+  const tierIconName = getTierIconName(tierName);
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -71,9 +75,7 @@ export const Sidebar = () => {
       confirmText: '로그아웃',
     });
 
-    if (!isConfirmed) {
-      return;
-    }
+    if (!isConfirmed) return;
 
     try {
       navigate('/learn', { replace: true });
@@ -105,9 +107,7 @@ export const Sidebar = () => {
         confirmText: '로그인',
       });
 
-      if (!isConfirmed) {
-        return;
-      }
+      if (!isConfirmed) return;
 
       try {
         sessionStorage.setItem('loginRedirectPath', targetPath);
@@ -127,9 +127,7 @@ export const Sidebar = () => {
       {logoutMutation.isPending && <Loading />}
       <aside css={sidebarStyle(theme)}>
         <Link to="/learn" css={logoSectionStyle}>
-          <span css={logoIconStyle}>
-            <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
-          </span>
+          <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
           <span css={logoTextStyle(theme)}>Funda</span>
         </Link>
 
@@ -144,7 +142,10 @@ export const Sidebar = () => {
                 key={item.id}
                 onClick={event => handleLinkClick(event, item.id, targetPath)}
                 to={targetPath}
-                css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
+                css={[
+                  navItemStyle(theme),
+                  activeItemId === item.id && activeNavItemStyle(theme, isDarkMode),
+                ]}
               >
                 <span css={navIconStyle}>
                   <SVGIcon icon={`${item.icon}`} size="md" />
@@ -172,7 +173,10 @@ export const Sidebar = () => {
                 />
                 <div css={userInfoStyle}>
                   <div css={userNameStyle(theme)}>{user.displayName}</div>
-                  <div css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</div>
+                  <div css={userTierRowStyle}>
+                    {tierIconName && <SVGIcon icon={tierIconName} size="sm" />}
+                    <span css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</span>
+                  </div>
                 </div>
               </div>
             }
@@ -201,8 +205,10 @@ const sidebarStyle = (theme: Theme) => css`
   }
 
   @media (max-width: 768px) {
-    position: relative;
+    position: fixed;
+    bottom: 0;
     order: 2;
+    z-index: 99;
 
     width: 100%;
     height: 96px;
@@ -224,15 +230,14 @@ const logoSectionStyle = css`
   margin-bottom: 32px;
   text-decoration: none;
 
+  @media (max-width: 1024px) {
+    align-items: center;
+    justify-content: center;
+  }
+
   @media (max-width: 768px) {
     display: none;
   }
-`;
-
-const logoIconStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
 `;
 
 const logoImageStyle = css`
@@ -293,14 +298,17 @@ const navItemStyle = (theme: Theme) => css`
   }
 `;
 
-const activeNavItemStyle = (theme: Theme) => css`
+const activeNavItemStyle = (theme: Theme, isDarkMode: boolean) => css`
   background: ${theme.colors.primary.surface};
-  color: ${theme.colors.primary.dark};
+  color: ${isDarkMode ? theme.colors.surface.default : theme.colors.primary.main};
   font-weight: 700;
+
+  &:hover {
+    color: ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
+  }
 
   @media (max-width: 768px) {
     background: transparent;
-    color: ${theme.colors.primary.main};
   }
 `;
 
@@ -369,6 +377,12 @@ const userLevelStyle = (theme: Theme) => css`
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
   text-align: left;
+`;
+
+const userTierRowStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 
 const buildTierLabel = (tierName: string | null) =>

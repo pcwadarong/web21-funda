@@ -179,7 +179,8 @@ export class ProgressService {
       .where('status.userId = :userId', { userId })
       .andWhere('status.nextReviewAt IS NOT NULL')
       .andWhere('status.nextReviewAt < :reviewCutoff', { reviewCutoff })
-      .orderBy('status.nextReviewAt', 'ASC');
+      .orderBy('status.isDontKnow', 'DESC')
+      .addOrderBy('status.nextReviewAt', 'ASC');
 
     if (options?.fieldSlug) {
       queryBuilder.andWhere('LOWER(field.slug) = LOWER(:fieldSlug)', {

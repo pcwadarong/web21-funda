@@ -13,7 +13,7 @@ export interface SocketContextValue {
   error: Error | null;
   connect: () => void;
   disconnect: () => void;
-  emitEvent: (event: string, data?: any) => void;
+  emitEvent: (event: string, data?: unknown) => void;
 }
 
 /**
@@ -53,7 +53,7 @@ export function SocketProvider({ children, namespace = '/' }: SocketProviderProp
    * 범용 이벤트 emit 함수
    */
   const emitEvent = useCallback(
-    (event: string, data?: any) => {
+    (event: string, data?: unknown) => {
       if (socket?.connected) {
         socket.emit(event, data);
       }

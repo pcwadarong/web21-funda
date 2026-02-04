@@ -25,7 +25,7 @@ import { AppService } from './app.service';
     SentryModule.forRoot(), // Sentry 초기화
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [`.env.${process.env.NODE_ENV ?? 'local'}`, '.env'],
+      envFilePath: [`.env.${process.env.NODE_ENV ?? 'development'}`, '.env'],
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],

@@ -1,10 +1,11 @@
 import { css, useTheme } from '@emotion/react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { Theme } from '@/styles/theme';
 
 /**
- * Popover Props
+ * Popover 속성
  */
 export interface PopoverProps {
   /** Popover 내용 */
@@ -21,6 +22,8 @@ export interface PopoverProps {
   onMouseLeave?: () => void;
   /** Y 오프셋 (기본값: -50px) */
   offsetY?: number;
+  /** 좌표 계산에 사용할 컨테이너 위치 */
+  containerRect?: DOMRect | null;
 }
 
 /**
@@ -36,6 +39,7 @@ export const Popover = ({
   onMouseEnter,
   onMouseLeave,
   offsetY = -50,
+  containerRect = null,
 }: PopoverProps) => {
   const theme = useTheme();
 
@@ -43,20 +47,28 @@ export const Popover = ({
     return null;
   }
 
-  return (
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const baseLeft = containerRect?.left ?? 0;
+  const baseTop = containerRect?.top ?? 0;
+
+  return createPortal(
     <div
-      css={popoverStyle(x, y, offsetY)}
+      css={popoverStyle(baseLeft + x, baseTop + y, offsetY)}
       role="tooltip"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       <div css={popoverContentStyle(theme)}>{children}</div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
 const popoverStyle = (x: number, y: number, offsetY: number) => css`
-  position: absolute;
+  position: fixed;
   left: ${x}px;
   top: ${y + offsetY}px;
   transform: translateX(-50%);

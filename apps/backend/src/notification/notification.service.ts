@@ -210,4 +210,16 @@ export class NotificationService {
       this.logger.debug('Unsubscribe request for non-existent or already unsubscribed user.');
     }
   }
+
+  /**
+   * 로그인 사용자의 이메일 알림 설정을 변경합니다.
+   *
+   * @param userId 사용자 ID
+   * @param isEmailSubscribed 이메일 알림 수신 여부
+   * @returns 변경된 이메일 알림 수신 여부
+   */
+  async updateEmailSubscription(userId: number, isEmailSubscribed: boolean): Promise<boolean> {
+    await this.userRepository.update(userId, { isEmailSubscribed });
+    return isEmailSubscribed;
+  }
 }

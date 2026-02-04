@@ -9,6 +9,7 @@ export interface QuizSubmissionRequest {
     option_id?: string;
     pairs?: MatchingPair[];
   };
+  is_dont_know?: boolean;
   step_attempt_id?: number;
   current_step_order_index?: number;
 }

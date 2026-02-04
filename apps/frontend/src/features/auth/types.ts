@@ -4,6 +4,7 @@ export interface AuthUser {
   email?: string | null;
   profileImageUrl?: string | null;
   role: 'user' | 'admin';
+  isEmailSubscribed: boolean;
   heartCount: number;
   maxHeartCount: number;
   experience: number;

@@ -30,6 +30,7 @@ interface BattleState {
   participants: BattleParticipant[];
   rankings: Ranking[];
   rewards: BattleReward[];
+  countdownEndsAt: number | null;
 
   // 3. 퀴즈 진행 정보
   currentQuizIndex: number;
@@ -39,6 +40,7 @@ interface BattleState {
   currentQuizId: number;
   quizEndsAt: number;
   resultEndsAt: number | null;
+  serverTime: number;
   selectedAnswers: AnswerType[];
   quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
   questionStatuses: QuestionStatus[];
@@ -74,6 +76,7 @@ export const useBattleStore = create<BattleState>(set => ({
   participants: [],
   rankings: [],
   rewards: [],
+  countdownEndsAt: null,
   currentQuizIndex: 0,
   totalQuizzes: 10,
   remainingSeconds: 0,
@@ -81,6 +84,7 @@ export const useBattleStore = create<BattleState>(set => ({
   currentQuizId: 0,
   quizEndsAt: 0,
   resultEndsAt: null,
+  serverTime: 0,
   selectedAnswers: [],
   quizSolutions: [],
   questionStatuses: [],
@@ -100,6 +104,7 @@ export const useBattleStore = create<BattleState>(set => ({
           currentQuizId: data.quizId,
           totalQuizzes: data.total,
           quizEndsAt: data.endsAt,
+          serverTime: data.serverTime,
           selectedAnswers: ensureLength(state.selectedAnswers, data.total, null),
           quizSolutions: ensureLength(state.quizSolutions, data.total, null),
           questionStatuses: ensureLength(state.questionStatuses, data.total, 'idle'),
@@ -133,6 +138,7 @@ export const useBattleStore = create<BattleState>(set => ({
         participants: [],
         rankings: [],
         rewards: [],
+        countdownEndsAt: null,
         currentQuizIndex: 0,
         totalQuizzes: 10,
         remainingSeconds: 0,
@@ -140,6 +146,7 @@ export const useBattleStore = create<BattleState>(set => ({
         currentQuizId: 0,
         quizEndsAt: 0,
         resultEndsAt: 0,
+        serverTime: 0,
         selectedAnswers: [],
         quizSolutions: [],
         questionStatuses: [],
@@ -154,6 +161,7 @@ export const useBattleStore = create<BattleState>(set => ({
         participants: state.participants,
         rankings: [],
         rewards: [],
+        countdownEndsAt: null,
         currentQuizIndex: 0,
         totalQuizzes: state.totalQuizzes,
         remainingSeconds: 0,
@@ -161,6 +169,7 @@ export const useBattleStore = create<BattleState>(set => ({
         currentQuizId: 0,
         quizEndsAt: 0,
         resultEndsAt: 0,
+        serverTime: 0,
         selectedAnswers: [],
         quizSolutions: [],
         questionStatuses: [],

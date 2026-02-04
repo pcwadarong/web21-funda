@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { ConfirmModal } from '@/comp/ConfirmModal';
 import SVGIcon from '@/comp/SVGIcon';
+import { BattleTimerCountdown } from '@/feat/battle/components/play/BattleTimerCountdown';
+import type { QuestionStatus } from '@/feat/quiz/types';
 import { useBattleSocket } from '@/features/battle/hooks/useBattleSocket';
-import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {
@@ -13,8 +14,7 @@ interface QuizHeaderProps {
   totalSteps: number;
   completedSteps: number;
   heartCount?: number;
-  remainingSeconds?: number;
-  endsAt?: number;
+  status?: QuestionStatus;
   isBattleMode?: boolean;
 }
 
@@ -23,6 +23,7 @@ export const QuizHeader = ({
   totalSteps,
   completedSteps,
   heartCount,
+  status,
   isBattleMode = false,
 }: QuizHeaderProps) => {
   const theme = useTheme();
@@ -31,10 +32,7 @@ export const QuizHeader = ({
 
   const { battleState, leaveBattle, disconnect } = useBattleSocket();
   const roomId = isBattleMode ? battleState.roomId : null;
-  const remainingSeconds = isBattleMode ? battleState.remainingSeconds : 0;
-  const resultEndsAt = isBattleMode ? battleState.resultEndsAt : null;
-  const quizEndsAt = isBattleMode ? battleState.quizEndsAt : 0;
-  const endsAt = resultEndsAt ?? quizEndsAt;
+  const displaySeconds = [<BattleTimerCountdown isResultPhase={true} />];
 
   const handleCloseClick = useCallback(() => {
     if (isBattleMode) {
@@ -62,7 +60,6 @@ export const QuizHeader = ({
   }, [navigate, leaveBattle, disconnect, roomId, isBattleMode]);
 
   const progress = (completedSteps / totalSteps) * 100;
-  const displaySeconds = useCountdownTimer({ endsAt, remainingSeconds });
 
   return (
     <>
@@ -87,7 +84,7 @@ export const QuizHeader = ({
         {isBattleMode && displaySeconds !== null && (
           <>
             <div css={verticalDividerStyle(theme)}></div>
-            <div css={timerStyle(theme, displaySeconds)}>{formatTimer(displaySeconds)}</div>
+            <BattleTimerCountdown isResultPhase={status === 'checked'} isForHeader={true} />
           </>
         )}
       </header>
@@ -164,12 +161,6 @@ const progressTextStyle = (theme: Theme) => css`
   text-align: center;
 `;
 
-const formatTimer = (totalSeconds: number): string => {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.max(0, totalSeconds % 60);
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};
-
 const heartContainerStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
@@ -182,36 +173,4 @@ const heartValueStyle = (theme: Theme) => css`
   font-size: ${theme.typography['16Bold'].fontSize};
   font-weight: ${theme.typography['16Bold'].fontWeight};
   color: ${theme.colors.text.default};
-`;
-
-const timerStyle = (theme: Theme, seconds: number) => css`
-  min-width: 55px;
-  font-size: ${theme.typography['24Bold'].fontSize};
-  font-weight: ${theme.typography['24Bold'].fontWeight};
-  color: ${seconds <= 3 ? theme.colors.error.main : theme.colors.primary.main};
-  ${timerJiggleKeyframes};
-  ${seconds > 0 && seconds <= 3 ? 'animation: timer-jiggle 0.6s ease-in-out infinite;' : ''}
-`;
-
-const timerJiggleKeyframes = css`
-  @keyframes timer-jiggle {
-    0% {
-      transform: translateX(0);
-    }
-    20% {
-      transform: translateX(-2px);
-    }
-    40% {
-      transform: translateX(2px);
-    }
-    60% {
-      transform: translateX(-2px);
-    }
-    80% {
-      transform: translateX(2px);
-    }
-    100% {
-      transform: translateX(0);
-    }
-  }
 `;

@@ -278,5 +278,5 @@ const countStyle = (theme: Theme) => css`
 const ScoreText = ({ value, color }: { value: number; color: string }) => {
   const displayValue = useAnimatedNumber(value);
   const text = displayValue >= 0 ? `+${displayValue}` : `${displayValue}`;
-  return <div css={[scoreStyle(color), scoreCountStyle]}>{text}</div>;
+  return <output css={[scoreStyle(color), scoreCountStyle]}>{text}</output>;
 };

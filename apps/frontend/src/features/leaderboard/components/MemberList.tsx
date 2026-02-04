@@ -29,7 +29,7 @@ export const MemberList = ({
     );
 
   return (
-    <ol css={listStyle} role="list" aria-label="랭킹 목록">
+    <ol css={listStyle} aria-label="랭킹 목록">
       {members.map(member => (
         <RankingRow
           key={member.userId}

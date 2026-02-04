@@ -74,7 +74,6 @@ export const RankingRow = ({
   return (
     <li
       css={rankingRowStyle(theme, isMe, isDarkMode)}
-      role="listitem"
       aria-label={`${displayName}${isMe ? ', 나' : ''}, ${rank}위, ${xp.toLocaleString()} ${xpLabel}, ${zoneLabel}`}
     >
       <span css={rankNumberStyle(theme, activeColor)}>{rank}</span>
@@ -102,9 +101,9 @@ export const RankingRow = ({
       </div>
 
       <div css={xpBlockStyle}>
-        <span css={xpValueStyle(theme, isMe, isDarkMode)}>
+        <output css={xpValueStyle(theme, isMe, isDarkMode)}>
           {xp.toLocaleString()} {xpLabel}
-        </span>
+        </output>
         {renderRankZoneIcon()}
       </div>
     </li>

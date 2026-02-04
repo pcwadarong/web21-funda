@@ -94,13 +94,16 @@ export const LearnContainer = ({
                     <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
                     <span css={unitDividerLineStyle(theme)} />
                   </div>
-                  <div css={lessonsContainerStyle(unit.steps.length)} role="list">
+                  <ul
+                    css={lessonsContainerStyle(unit.steps.length)}
+                    aria-label={`${unit.title} 레슨 목록`}
+                  >
                     {unit.steps.map((step, index) => {
                       const positionStyle = lessonPositionStyle(index, unitIndex);
 
                       if (step.isLocked) {
                         return (
-                          <div key={step.id} css={positionStyle} role="listitem">
+                          <li key={step.id} css={positionStyle}>
                             <div css={lessonStackStyle}>
                               <div
                                 css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}
@@ -110,7 +113,7 @@ export const LearnContainer = ({
                               </div>
                               <div css={lessonNamePillStyle(theme)}>{step.title}</div>
                             </div>
-                          </div>
+                          </li>
                         );
                       }
 
@@ -127,7 +130,7 @@ export const LearnContainer = ({
                           ? '잠김'
                           : '시작 가능';
                       return (
-                        <div key={step.id} css={positionStyle} role="listitem">
+                        <li key={step.id} css={positionStyle}>
                           <div css={lessonStackStyle}>
                             <div
                               onClick={handleStepSelection}
@@ -157,10 +160,10 @@ export const LearnContainer = ({
                             </div>
                             <div css={lessonNamePillStyle(theme)}>{step.title}</div>
                           </div>
-                        </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </section>
               ))}
             </div>
@@ -454,8 +457,10 @@ const overviewButtonStyle = (theme: Theme) => css`
 
 const lessonsContainerStyle = (count: number) => css`
   position: relative;
-  min-height: ${count * 130}px;
+  list-style: none;
+  margin: 0;
   padding: 8px 0 24px;
+  min-height: ${count * 130}px;
 `;
 
 const lessonStackStyle = css`

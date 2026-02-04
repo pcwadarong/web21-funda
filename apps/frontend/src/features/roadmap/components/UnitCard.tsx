@@ -80,7 +80,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
               <div css={progressLabelWrapStyle}>
                 <div css={progressLabelGroupStyle}>
                   <span>진행률</span>
-                  <span css={progressValueStyle(theme, effectiveStatus)}>{progressValue}%</span>
+                  <output css={progressValueStyle(theme, effectiveStatus)}>{progressValue}%</output>
                 </div>
               </div>
               <span css={scoreTitleStyle}>정답률</span>
@@ -89,7 +89,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
               <div css={progressTrackStyle(theme)}>
                 <span css={progressFillStyle(theme, effectiveStatus, progressValue)} />
               </div>
-              <span css={scoreBadgeStyle(theme, effectiveStatus)}>{scoreValue}%</span>
+              <output css={scoreBadgeStyle(theme, effectiveStatus)}>{scoreValue}%</output>
             </div>
           </div>
         </>

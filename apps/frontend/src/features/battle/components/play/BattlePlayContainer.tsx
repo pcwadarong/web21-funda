@@ -16,6 +16,7 @@ interface BattlePlayContainerProps {
   isReviewMode: boolean;
   rankings: Ranking[];
   currentParticipantId?: string | null;
+  scoreDelta: number;
   handleAnswerChange: (answer: AnswerType) => void;
   handleCheckAnswer: () => void;
   handleNextQuestion: () => void;
@@ -31,6 +32,7 @@ export const BattlePlayContainer = ({
   isReviewMode,
   rankings,
   currentParticipantId,
+  scoreDelta,
   handleAnswerChange,
   handleCheckAnswer,
   handleNextQuestion,
@@ -48,6 +50,7 @@ export const BattlePlayContainer = ({
         rankings={rankings}
         currentParticipantId={currentParticipantId}
         totalParticipants={rankings.length}
+        scoreDelta={scoreDelta}
       />
     </div>
     <main css={mainStyle}>

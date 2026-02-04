@@ -81,6 +81,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
       quizSolutions: state.quizSolutions,
       questionStatuses: state.questionStatuses,
       serverTime: state.serverTime,
+      isCorrect: state.isCorrect,
+      scoreDelta: state.scoreDelta,
     })),
   );
   const {
@@ -160,6 +162,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
       setBattleState({
         status: 'in_progress',
         countdownEndsAt: null,
+        isCorrect: null,
+        scoreDelta: 0,
       });
 
       setQuiz(data);
@@ -173,6 +177,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
           correct_pairs?: MatchingPair[];
         };
       };
+      isCorrect: boolean;
+      scoreDelta: number;
     }) => {
       const currentIndex = useBattleStore.getState().currentQuizIndex;
       const solution = data.quizResult?.solution ?? {};
@@ -183,10 +189,15 @@ export function useBattleSocket(): UseBattleSocketReturn {
             ? String(solution.correct_option_id)
             : null;
 
-      setQuizSolution(currentIndex, {
-        correctAnswer,
-        explanation: solution.explanation ?? '',
-      });
+      setQuizSolution(
+        currentIndex,
+        {
+          correctAnswer,
+          explanation: solution.explanation ?? '',
+        },
+        data.isCorrect,
+        data.scoreDelta,
+      );
       setQuestionStatus(currentIndex, 'checked');
     };
 

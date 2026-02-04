@@ -42,7 +42,12 @@ interface BattleState {
   resultEndsAt: number;
   serverTime: number;
   selectedAnswers: AnswerType[];
-  quizSolutions: Array<{ correctAnswer: CorrectAnswerType | null; explanation: string } | null>;
+  quizSolutions: Array<{
+    correctAnswer: CorrectAnswerType | null;
+    explanation: string;
+  } | null>;
+  isCorrect: boolean | null;
+  scoreDelta: number;
   questionStatuses: QuestionStatus[];
 
   actions: {
@@ -55,6 +60,8 @@ interface BattleState {
     setQuizSolution: (
       index: number,
       solution: { correctAnswer: CorrectAnswerType | null; explanation: string },
+      isCorrect: boolean,
+      scoreDelta: number,
     ) => void;
     setQuestionStatus: (index: number, status: QuestionStatus) => void;
     setResultTime: (resultEndsAt: number, serverTime: number) => void;
@@ -89,6 +96,8 @@ export const useBattleStore = create<BattleState>(set => ({
   selectedAnswers: [],
   quizSolutions: [],
   questionStatuses: [],
+  isCorrect: null,
+  scoreDelta: 0,
 
   actions: {
     setBattleState: data => set(state => ({ ...state, ...data })),
@@ -117,11 +126,11 @@ export const useBattleStore = create<BattleState>(set => ({
         next[index] = answer;
         return { selectedAnswers: next };
       }),
-    setQuizSolution: (index, solution) =>
+    setQuizSolution: (index, solution, isCorrect, scoreDelta) =>
       set(state => {
         const next = [...state.quizSolutions];
         next[index] = solution;
-        return { quizSolutions: next };
+        return { quizSolutions: next, isCorrect, scoreDelta };
       }),
     setQuestionStatus: (index, status) =>
       set(state => {
@@ -152,6 +161,8 @@ export const useBattleStore = create<BattleState>(set => ({
         selectedAnswers: [],
         quizSolutions: [],
         questionStatuses: [],
+        isCorrect: null,
+        scoreDelta: 0,
       }),
     resetForRestart: () =>
       set(state => ({
@@ -175,6 +186,8 @@ export const useBattleStore = create<BattleState>(set => ({
         selectedAnswers: [],
         quizSolutions: [],
         questionStatuses: [],
+        isCorrect: null,
+        scoreDelta: 0,
       })),
   },
 }));

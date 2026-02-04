@@ -47,6 +47,12 @@ interface FieldUnitsBaseResponse {
   }>;
 }
 
+interface UserStepStatusSummary {
+  stepId: number;
+  isCompleted: boolean;
+  successRate: number | null;
+}
+
 @Injectable()
 export class RoadmapService {
   constructor(
@@ -161,31 +167,31 @@ export class RoadmapService {
     }
 
     const units = field.units ?? [];
+    const stepIds = this.collectStepIdsFromUnits(units);
+    const userStepStatusMap = await this.getUserStepStatusMapByStepIds(userId, stepIds);
 
-    const calculatedUnits = await Promise.all(
-      units.map(async unit => {
-        const totalSteps = unit.steps?.length || 0;
-        const userSteps = await this.getUserStepsByUnit(unit.id, userId);
-        const completedSteps = userSteps.filter(step => step.isCompleted);
-        const progress = Math.round((completedSteps.length / (totalSteps + 2)) * 100) || 0; // +2는 체크포인트 고려 (DB에 없어서 +2를 추가)
-        const successRateArray = userSteps.map(step => step.successRate || 0);
-        const successRate =
-          successRateArray.length > 0
-            ? Math.round(
-                successRateArray.reduce((acc, cur) => acc + cur, 0) / successRateArray.length,
-              )
-            : 0;
+    const calculatedUnits = units.map(unit => {
+      const totalSteps = unit.steps?.length || 0;
+      const userSteps = this.collectUserStepsForUnit(unit, userStepStatusMap);
+      const completedCount = userSteps.filter(step => step.isCompleted).length;
+      const progress = Math.round((completedCount / (totalSteps + 2)) * 100) || 0; // +2는 체크포인트 고려 (DB에 없어서 +2를 추가)
 
-        return {
-          id: unit.id,
-          title: unit.title,
-          description: unit.description ?? '',
-          orderIndex: unit.orderIndex,
-          progress,
-          successRate,
-        };
-      }),
-    );
+      let successRateSum = 0;
+      for (const step of userSteps) {
+        successRateSum += step.successRate ?? 0;
+      }
+
+      const successRate = userSteps.length > 0 ? Math.round(successRateSum / userSteps.length) : 0;
+
+      return {
+        id: unit.id,
+        title: unit.title,
+        description: unit.description ?? '',
+        orderIndex: unit.orderIndex,
+        progress,
+        successRate,
+      };
+    });
 
     return {
       field: {
@@ -196,18 +202,75 @@ export class RoadmapService {
     };
   }
 
-  private async getUserStepsByUnit(
-    unitId: number,
+  /**
+   * 특정 유저의 스텝 상태를 stepId 기준으로 묶어 반환한다.
+   */
+  private async getUserStepStatusMapByStepIds(
     userId: number | null,
-  ): Promise<UserStepStatus[]> {
-    if (userId === null || userId === undefined) {
-      return [];
+    stepIds: number[],
+  ): Promise<Map<number, UserStepStatusSummary>> {
+    if (userId === null || userId === undefined || stepIds.length === 0) {
+      return new Map();
     }
 
-    const userSteps = await this.stepStatusRepository.find({
-      where: { userId, step: { unit: { id: unitId } } },
-      relations: { step: true },
-    });
+    const uniqueStepIds = Array.from(new Set(stepIds));
+
+    const rows = await this.stepStatusRepository
+      .createQueryBuilder('status')
+      .select('status.step_id', 'stepId')
+      .addSelect('status.is_completed', 'isCompleted')
+      .addSelect('status.success_rate', 'successRate')
+      .where('status.user_id = :userId', { userId })
+      .andWhere('status.step_id IN (:...stepIds)', { stepIds: uniqueStepIds })
+      .getRawMany<{
+        stepId: number | string;
+        isCompleted: boolean | number;
+        successRate: number | string | null;
+      }>();
+
+    const result = new Map<number, UserStepStatusSummary>();
+
+    for (const row of rows) {
+      const stepId = Number(row.stepId);
+      const isCompleted = Boolean(row.isCompleted);
+      const successRate = row.successRate === null ? null : Number(row.successRate);
+
+      result.set(stepId, {
+        stepId,
+        isCompleted,
+        successRate,
+      });
+    }
+
+    return result;
+  }
+
+  private collectStepIdsFromUnits(units: Unit[]): number[] {
+    const stepIds: number[] = [];
+
+    for (const unit of units) {
+      const steps = unit.steps ?? [];
+      for (const step of steps) {
+        stepIds.push(step.id);
+      }
+    }
+
+    return stepIds;
+  }
+
+  private collectUserStepsForUnit(
+    unit: Unit,
+    userStepStatusMap: Map<number, UserStepStatusSummary>,
+  ): UserStepStatusSummary[] {
+    const steps = unit.steps ?? [];
+    const userSteps: UserStepStatusSummary[] = [];
+
+    for (const step of steps) {
+      const status = userStepStatusMap.get(step.id);
+      if (status) {
+        userSteps.push(status);
+      }
+    }
 
     return userSteps;
   }

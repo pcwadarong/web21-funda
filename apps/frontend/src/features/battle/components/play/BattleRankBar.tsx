@@ -105,7 +105,7 @@ export const BattleRankBar = ({
   }, [visibleRankings]);
 
   return (
-    <div css={containerStyle} role="region" aria-label="실시간 순위">
+    <section css={containerStyle} aria-label="실시간 순위">
       <div css={countStyle(theme)} role="status" aria-live="polite">
         {participantCount}명 참여 중
       </div>
@@ -154,7 +154,7 @@ export const BattleRankBar = ({
           })}
         </ul>
       </section>
-    </div>
+    </section>
   );
 };
 

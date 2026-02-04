@@ -192,7 +192,6 @@ export const LeaderboardContainer = ({
             <section
               css={leaderboardCardStyle(theme)}
               data-section="ranking"
-              role="region"
               aria-label="주간 랭킹"
             >
               {isMyLeagueView ? (

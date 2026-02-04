@@ -21,7 +21,7 @@ export const LoginCallback = () => {
 
   // 리다이렉트가 처리되는 동안 로딩 화면을 보여줌
   return (
-    <div role="status" aria-live="polite" aria-label="로그인 처리 중">
+    <div role="status" aria-label="로그인 처리 중">
       <Loading />
     </div>
   );

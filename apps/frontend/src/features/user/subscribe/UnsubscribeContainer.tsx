@@ -1,4 +1,5 @@
 import { css } from '@emotion/react';
+import { useId } from 'react';
 
 import { Button } from '@/components/Button';
 
@@ -13,9 +14,10 @@ export function UnsubscribeContainer({
   onUnsubscribe,
   isLoading,
 }: UnsubscribeContainerProps) {
+  const headingId = useId();
   return (
-    <section css={containerStyle} aria-label="이메일 수신 거부">
-      <h2>이메일 수신 거부</h2>
+    <section css={containerStyle} aria-labelledby={headingId}>
+      <h2 id={headingId}>이메일 수신 거부</h2>
       <p>
         대상: <strong>{email ?? '이메일 정보 없음'}</strong>
       </p>

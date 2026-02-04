@@ -90,7 +90,7 @@ export const RankListSection = ({
       </p>
 
       <div css={buttonGroupStyle} role="group" aria-label="결과 액션">
-        <Button variant="secondary" fullWidth onClick={onRestart} aria-label="한 번 더 하기">
+        <Button variant="secondary" fullWidth onClick={onRestart}>
           한 번 더 하기
         </Button>
         <Button fullWidth onClick={onLeave} aria-label="게임 종료하고 대기실로 이동">

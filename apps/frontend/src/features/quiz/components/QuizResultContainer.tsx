@@ -109,7 +109,7 @@ export const QuizResultContainer = ({
   };
 
   return (
-    <div role="region" aria-label="퀴즈 결과" aria-live="polite">
+    <section aria-label="퀴즈 결과" aria-live="polite">
       <AnimatePresence mode="wait">
         {showPointEffect && hasXP ? (
           <PointEffect key="point-effect" points={xpValue!} />
@@ -124,6 +124,6 @@ export const QuizResultContainer = ({
           />
         ) : null}
       </AnimatePresence>
-    </div>
+    </section>
   );
 };

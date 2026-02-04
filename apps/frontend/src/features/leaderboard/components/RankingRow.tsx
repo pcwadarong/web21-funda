@@ -94,7 +94,7 @@ export const RankingRow = ({
           </span>
         )}
         {isMe && (
-          <span css={meBadgeStyle(theme, isDarkMode)} aria-label="내 순위">
+          <span css={meBadgeStyle(theme, isDarkMode)} aria-hidden="true">
             나
           </span>
         )}

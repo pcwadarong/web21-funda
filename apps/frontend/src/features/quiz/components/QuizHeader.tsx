@@ -88,10 +88,10 @@ export const QuizHeader = ({
           </div>
         </div>
         {typeof heartCount === 'number' && heartCount > 0 && (
-          <div css={heartContainerStyle(theme)} role="status" aria-label={`하트 ${heartCount}개`}>
+          <output css={heartContainerStyle(theme)} aria-label={`하트 ${heartCount}개`}>
             <SVGIcon icon="Heart" size="lg" aria-hidden="true" />
             <span css={heartValueStyle(theme)}>{heartCount}</span>
-          </div>
+          </output>
         )}
         {isBattleMode && displaySeconds !== null && (
           <>

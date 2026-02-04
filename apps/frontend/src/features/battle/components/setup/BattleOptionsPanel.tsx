@@ -158,7 +158,7 @@ export const BattleOptionsPanel = ({
   const collapsibleId = 'battle-settings-panel';
 
   return (
-    <div css={containerStyle} role="region" aria-label="배틀 설정">
+    <section css={containerStyle} aria-label="배틀 설정">
       <BattleStartCountdown isVisible={isStartCountdownVisible} label={startCountdownLabel} />
       <div css={headerWrapper}>
         <h2 css={titleStyle(theme)} id="battle-settings-heading">
@@ -185,13 +185,13 @@ export const BattleOptionsPanel = ({
         css={collapsibleStyle(isExpanded)}
         aria-hidden={isDesktop ? false : !isExpanded}
       >
-        <div css={contentCardStyle(theme)} role="group" aria-labelledby="battle-settings-heading">
+        <div css={contentCardStyle(theme)} aria-labelledby="battle-settings-heading">
           {Object.entries(BATTLE_CONFIG).map(([key, config]) => (
-            <section key={key} css={sectionStyle} role="group" aria-label={config.label}>
-              <div css={sectionLabelStyle(theme)} id={`setting-${key}-label`}>
+            <fieldset key={key} css={fieldsetStyle}>
+              <legend id={`setting-${key}-label`} css={legendStyle(theme)}>
                 {config.label}
-              </div>
-              <div css={buttonGroupStyle} role="group" aria-labelledby={`setting-${key}-label`}>
+              </legend>
+              <div css={buttonGroupStyle}>
                 {config.options.map(opt => {
                   const isMaxPlayers = key === 'maxPlayers';
                   const isLowerThanCurrent =
@@ -218,7 +218,7 @@ export const BattleOptionsPanel = ({
                   );
                 })}
               </div>
-            </section>
+            </fieldset>
           ))}
         </div>
       </div>
@@ -246,7 +246,7 @@ export const BattleOptionsPanel = ({
           {startButtonLabel}
         </Button>
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -320,16 +320,20 @@ const contentCardStyle = (theme: Theme) => css`
   border: 1px solid ${theme.colors.border.default};
 `;
 
-const sectionStyle = css`
+const fieldsetStyle = css`
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: none;
 `;
 
-const sectionLabelStyle = (theme: Theme) => css`
+const legendStyle = (theme: Theme) => css`
   font-size: 13px;
   font-weight: 600;
   color: ${theme.colors.text.weak};
+  padding: 0;
 `;
 
 const buttonGroupStyle = css`

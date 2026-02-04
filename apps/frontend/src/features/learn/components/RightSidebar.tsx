@@ -251,9 +251,9 @@ export const LearnRightSidebar = ({
                 <span css={statIconStyle}>
                   <SVGIcon icon={selectedField?.icon ?? 'Frontend'} size="md" />
                 </span>
-                <output css={statValueStyle(theme)}>
+                <span css={statValueStyle(theme)}>
                   {selectedField?.slug?.toUpperCase() ?? fieldSlug.toUpperCase()}
-                </output>
+                </span>
               </>
             )}
             renderOption={option => (
@@ -329,6 +329,11 @@ export const LearnRightSidebar = ({
                     <div
                       css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
                       role="progressbar"
+                      aria-valuenow={Math.round(
+                        Math.min(100, Math.max(0, (goal.current / goal.target) * 100)),
+                      )}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
                     />
                   </div>
                 </li>

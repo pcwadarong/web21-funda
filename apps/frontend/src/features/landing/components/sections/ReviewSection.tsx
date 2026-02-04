@@ -144,7 +144,7 @@ export const ReviewSection = React.memo(() => {
             <div css={reviewListQuestionStyle}>빈 칸에 들어갈 배열 메서드는?</div>
           </div>
           <div css={reviewListHintStyle}>이 개념을 얼마나 잘 기억하고 있나요?</div>
-          <ul css={reviewScoreListStyle} aria-label="기억 정도 선택">
+          <ul css={reviewScoreListStyle} aria-label="데모 — 선택 불가: 기억 정도 표시">
             {reviewScores.map(score => (
               <li
                 key={score.value}

@@ -14,7 +14,7 @@ export const AuthCheckContainer = ({ from, onLogin, onContinue }: AuthCheckConta
   const theme = useTheme();
 
   return (
-    <div css={containerStyle()} role="region" aria-label="로그인 유도">
+    <section css={containerStyle()} aria-label="로그인 유도">
       <div css={contentStyle(theme)}>
         <div css={placeholderStyle(theme)} aria-hidden="true">
           <span css={emojiStyle} />
@@ -23,9 +23,7 @@ export const AuthCheckContainer = ({ from, onLogin, onContinue }: AuthCheckConta
           <h1 css={titleStyle(theme)} id="auth-check-title">
             프로필을 생성하세요!
           </h1>
-          <p css={descriptionStyle(theme)} aria-describedby="auth-check-title">
-            프로필을 만들어 학습 진도를 저장하고 계속 학습하세요!
-          </p>
+          <p css={descriptionStyle(theme)}>프로필을 만들어 학습 진도를 저장하고 계속 학습하세요!</p>
         </div>
         <div css={buttonGroupStyle} role="group" aria-label="로그인 선택">
           <Button variant="primary" onClick={onLogin} fullWidth aria-label="로그인하기">
@@ -43,7 +41,7 @@ export const AuthCheckContainer = ({ from, onLogin, onContinue }: AuthCheckConta
           </Button>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

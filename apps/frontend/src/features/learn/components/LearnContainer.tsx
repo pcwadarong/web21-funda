@@ -103,11 +103,11 @@ export const LearnContainer = ({
 
                       if (step.isLocked) {
                         return (
-                          <li key={step.id} css={positionStyle}>
+                          <li key={step.id} css={positionStyle} aria-label={`${step.title}, 잠김`}>
                             <div css={lessonStackStyle}>
                               <div
                                 css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}
-                                aria-label={`${step.title}, 잠김`}
+                                aria-hidden="true"
                               >
                                 <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
                               </div>

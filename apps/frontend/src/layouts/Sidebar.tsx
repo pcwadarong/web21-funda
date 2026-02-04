@@ -10,6 +10,7 @@ import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
 import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
+import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
 import { getTierIconName } from '@/utils/tier';
@@ -31,6 +32,7 @@ const ADMIN_NAV_ITEM = {
 
 export const Sidebar = () => {
   const theme = useTheme();
+  const { isDarkMode } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
   const isLoggedIn = useIsLoggedIn();
@@ -73,9 +75,7 @@ export const Sidebar = () => {
       confirmText: '로그아웃',
     });
 
-    if (!isConfirmed) {
-      return;
-    }
+    if (!isConfirmed) return;
 
     try {
       navigate('/learn', { replace: true });
@@ -107,9 +107,7 @@ export const Sidebar = () => {
         confirmText: '로그인',
       });
 
-      if (!isConfirmed) {
-        return;
-      }
+      if (!isConfirmed) return;
 
       try {
         sessionStorage.setItem('loginRedirectPath', targetPath);
@@ -129,9 +127,7 @@ export const Sidebar = () => {
       {logoutMutation.isPending && <Loading />}
       <aside css={sidebarStyle(theme)}>
         <Link to="/learn" css={logoSectionStyle}>
-          <span css={logoIconStyle}>
-            <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
-          </span>
+          <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
           <span css={logoTextStyle(theme)}>Funda</span>
         </Link>
 
@@ -146,7 +142,10 @@ export const Sidebar = () => {
                 key={item.id}
                 onClick={event => handleLinkClick(event, item.id, targetPath)}
                 to={targetPath}
-                css={[navItemStyle(theme), activeItemId === item.id && activeNavItemStyle(theme)]}
+                css={[
+                  navItemStyle(theme),
+                  activeItemId === item.id && activeNavItemStyle(theme, isDarkMode),
+                ]}
               >
                 <span css={navIconStyle}>
                   <SVGIcon icon={`${item.icon}`} size="md" />
@@ -229,15 +228,14 @@ const logoSectionStyle = css`
   margin-bottom: 32px;
   text-decoration: none;
 
+  @media (max-width: 1024px) {
+    align-items: center;
+    justify-content: center;
+  }
+
   @media (max-width: 768px) {
     display: none;
   }
-`;
-
-const logoIconStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
 `;
 
 const logoImageStyle = css`
@@ -298,14 +296,17 @@ const navItemStyle = (theme: Theme) => css`
   }
 `;
 
-const activeNavItemStyle = (theme: Theme) => css`
+const activeNavItemStyle = (theme: Theme, isDarkMode: boolean) => css`
   background: ${theme.colors.primary.surface};
-  color: ${theme.colors.primary.dark};
+  color: ${isDarkMode ? theme.colors.surface.default : theme.colors.primary.main};
   font-weight: 700;
+
+  &:hover {
+    color: ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
+  }
 
   @media (max-width: 768px) {
     background: transparent;
-    color: ${theme.colors.primary.main};
   }
 `;
 

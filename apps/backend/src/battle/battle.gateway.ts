@@ -107,19 +107,28 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     // 퇴장할 참가자 정보 미리 보관
     const leavingParticipant = room.participants.find(p => p.participantId === client.id) ?? null;
 
-    const nextRoom: BattleRoomState =
-      room.status === 'in_progress'
-        ? applyLeave(room, {
-            roomId,
-            participantId: client.id,
-            now,
-            penaltyScore: -999,
-          })
-        : applyDisconnect(room, {
-            roomId,
-            participantId: client.id,
-            now,
-          });
+    let nextRoom: BattleRoomState;
+    if (room.status === 'in_progress') {
+      nextRoom = applyLeave(room, {
+        roomId,
+        participantId: client.id,
+        now,
+        penaltyScore: -999,
+      });
+    } else if (room.status === 'waiting' || room.status === 'countdown') {
+      nextRoom = applyLeave(room, {
+        roomId,
+        participantId: client.id,
+        now,
+        penaltyScore: 0,
+      });
+    } else {
+      nextRoom = applyDisconnect(room, {
+        roomId,
+        participantId: client.id,
+        now,
+      });
+    }
 
     const normalizedRoom = this.cancelCountdownIfNeeded(nextRoom);
 

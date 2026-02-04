@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { QuizResultContainer } from '@/feat/quiz/components/QuizResultContainer';
 import type { QuizResultState } from '@/feat/quiz/components/QuizResultContainer';
+import { QuizResultContainer } from '@/feat/quiz/components/QuizResultContainer';
 import { useStorage } from '@/hooks/useStorage';
 import { useIsLoggedIn } from '@/store/authStore';
 

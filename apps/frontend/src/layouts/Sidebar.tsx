@@ -205,8 +205,10 @@ const sidebarStyle = (theme: Theme) => css`
   }
 
   @media (max-width: 768px) {
-    position: relative;
+    position: fixed;
+    bottom: 0;
     order: 2;
+    z-index: 99;
 
     width: 100%;
     height: 96px;

@@ -94,7 +94,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({container=~\".+\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\" [5m]))",
+          "expr": "sum(count_over_time({service=~\"$service\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\" [5m]))",
           "queryType": "range",
           "refId": "A"
         }
@@ -181,8 +181,8 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum by (container) (rate({container=~\".+\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\" [1m]))",
-          "legendFormat": "{{container}}",
+          "expr": "sum by (service) (rate({service=~\"$service\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\" [1m]))",
+          "legendFormat": "{{service}}",
           "queryType": "range",
           "refId": "A"
         }
@@ -219,7 +219,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "{container=~\".+\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\"",
+          "expr": "{service=~\"$service\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\"",
           "queryType": "range",
           "refId": "A"
         }
@@ -288,13 +288,13 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "topk(10, sum by (container) (count_over_time({container=~\".+\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\" [1h])))",
+          "expr": "topk(10, sum by (container) (count_over_time({container=~\".+\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" |~ \"$search_keyword\" [30m])))",
           "legendFormat": "{{container}}",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "에러 발생 Top 10 컨테이너",
+      "title": "30분간 에러 발생 Top 10 컨테이너",
       "transformations": [
         {
           "id": "reduce",
@@ -434,7 +434,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum by (level) (count_over_time({container=~\".+\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" [5m]))",
+          "expr": "sum by (level) (count_over_time({service=~\"$service\"} | logfmt | level=~\"(?i)error|warn|fatal|panic\" [5m]))",
           "legendFormat": "{{level}}",
           "queryType": "range",
           "refId": "A"
@@ -457,22 +457,22 @@
       {
         "current": {
           "selected": true,
-          "text": ".+",
-          "value": ".+"
+          "text": "funda-backend",
+          "value": "funda-backend"
         },
         "hide": 0,
         "includeAll": false,
-        "label": "컨테이너",
+        "label": "서비스",
         "multi": false,
-        "name": "container",
+        "name": "service",
         "options": [
           {
             "selected": true,
-            "text": ".+",
-            "value": ".+"
+            "text": "backend",
+            "value": "backend"
           }
         ],
-        "query": ".+",
+        "query": "backend",
         "skipUrlSync": false,
         "type": "textbox"
       },

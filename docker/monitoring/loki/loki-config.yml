@@ -34,6 +34,7 @@ common:
   ring:
     kvstore:
       store: inmemory
+    instance_addr: "funda-loki"
 
 # ============================================================
 # Schema Configuration

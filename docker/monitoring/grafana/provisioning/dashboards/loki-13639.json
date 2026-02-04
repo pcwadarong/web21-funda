@@ -29,7 +29,7 @@
       "targetBlank": true,
       "title": "View In Explore",
       "type": "link",
-      "url": "/explore?orgId=1&left=[\"now-1h\",\"now\",\"Loki\",{\"expr\":\"{container=~\\\"$app\\\"}\"},{\"ui\":[true,true,true,\"none\"]}]"
+      "url": "/explore?orgId=1&left=[\"now-1h\",\"now\",\"Loki\",{\"expr\":\"{service=~\\\"$app\\\"}\"},{\"ui\":[true,true,true,\"none\"]}]"
     },
     {
       "icon": "external link",
@@ -97,7 +97,7 @@
             "type": "loki",
             "uid": "${DS_LOKI}"
           },
-          "expr": "sum(count_over_time({container=~\"$app\"} |= \"$search\" [$__interval]))",
+          "expr": "sum(count_over_time({service=~\"$app\"} |= \"$search\" [$__interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -160,7 +160,7 @@
             "type": "loki",
             "uid": "${DS_LOKI}"
           },
-          "expr": "{container=~\"$app\"} |= \"$search\"",
+          "expr": "{service=~\"$app\"} |= \"$search\"",
           "hide": false,
           "legendFormat": "",
           "refId": "A"
@@ -196,23 +196,23 @@
       {
         "allValue": ".+",
         "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": "backend",
+          "value": "backend"
         },
         "datasource": {
           "type": "loki",
           "uid": "${DS_LOKI}"
         },
-        "definition": "label_values(container)",
+        "definition": "label_values(service)",
         "hide": 0,
         "includeAll": true,
-        "label": "Container",
+        "label": "Service",
         "multi": false,
         "name": "app",
         "options": [],
         "query": {
-          "label": "container",
+          "label": "service",
           "refId": "LokiVariableQueryEditor-VariableQuery",
           "stream": "",
           "type": 1
@@ -225,7 +225,7 @@
       },
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "",
           "value": ""
         },

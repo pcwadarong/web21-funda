@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { type RefObject, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import type { Ranking } from '@/feat/battle/types';
@@ -13,6 +13,8 @@ interface BattleRankBarProps {
   currentParticipantId?: string | null;
   totalParticipants?: number;
   maxVisible?: number;
+  scoreDelta: number;
+  startPosition?: { x: number; y: number } | null;
 }
 
 type RankingWithPlace = Ranking & { place: number; profileImg?: string };
@@ -22,6 +24,8 @@ export const BattleRankBar = ({
   currentParticipantId,
   totalParticipants,
   maxVisible = 4,
+  scoreDelta,
+  startPosition,
 }: BattleRankBarProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
@@ -69,6 +73,9 @@ export const BattleRankBar = ({
 
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const prevPositionsRef = useRef<Map<string, DOMRect>>(new Map());
+  const myCardRef = useRef<HTMLDivElement | null>(null);
+  const myScoreRef = useRef<HTMLDivElement | null>(null);
+  const prevScoreDeltaRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     const nextPositions = new Map<string, DOMRect>();
@@ -104,6 +111,84 @@ export const BattleRankBar = ({
     prevPositionsRef.current = nextPositions;
   }, [visibleRankings]);
 
+  useLayoutEffect(() => {
+    if (scoreDelta === 0) {
+      prevScoreDeltaRef.current = 0;
+      return;
+    }
+
+    // 동일 결과로 여러 번 렌더링되는 경우(StrictMode/dev 포함) 중복 실행 방지
+    if (prevScoreDeltaRef.current === scoreDelta) return;
+    prevScoreDeltaRef.current = scoreDelta;
+
+    const cardEl = myCardRef.current;
+    const scoreEl = myScoreRef.current;
+    if (!cardEl || !scoreEl) return;
+
+    const scoreRect = scoreEl.getBoundingClientRect();
+
+    const startX = startPosition?.x ?? window.innerWidth / 2;
+    const startY = startPosition?.y ?? window.innerHeight / 2;
+    const endX = scoreRect.left + scoreRect.width / 2;
+    const endY = scoreRect.top + scoreRect.height / 2;
+
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+    const bubble = document.createElement('div');
+    bubble.textContent = scoreDelta > 0 ? `+${scoreDelta}` : `${scoreDelta}`;
+
+    bubble.style.position = 'fixed';
+    bubble.style.left = `${startX}px`;
+    bubble.style.top = `${startY}px`;
+    bubble.style.transform = 'translate(-50%, -50%)';
+    bubble.style.padding = '6px 10px';
+    bubble.style.color = scoreDelta > 0 ? theme.colors.success.main : theme.colors.error.main;
+    bubble.style.background = 'transparent';
+    bubble.style.fontWeight = String(theme.typography['32Bold'].fontWeight);
+    bubble.style.fontSize = theme.typography['32Bold'].fontSize;
+    bubble.style.lineHeight = '1';
+    bubble.style.pointerEvents = 'none';
+    bubble.style.zIndex = '9999';
+    bubble.style.willChange = 'transform, opacity, filter';
+
+    document.body.appendChild(bubble);
+
+    const anim = bubble.animate(
+      [
+        {
+          transform: 'translate(-50%, -50%) translate(0px, 0px) scale(2.4)',
+          opacity: 1,
+          filter: 'blur(0px)',
+        },
+        {
+          transform: 'translate(-50%, -50%) translate(0px, -24px) scale(1.8)',
+          opacity: 1,
+          filter: 'blur(0px)',
+          offset: 0.7,
+        },
+        {
+          transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(0.6)`,
+          opacity: 0,
+          filter: 'blur(1px)',
+        },
+      ],
+      {
+        duration: 1500,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        fill: 'forwards',
+      },
+    );
+
+    const cleanup = () => bubble.remove();
+    anim.onfinish = cleanup;
+    anim.oncancel = cleanup;
+
+    return () => {
+      anim.cancel();
+    };
+  }, [scoreDelta, startPosition, theme]);
+
   return (
     <div css={containerStyle}>
       <div css={countStyle(theme)}>{participantCount}명 참여 중</div>
@@ -112,7 +197,11 @@ export const BattleRankBar = ({
           {visibleRankings.map((ranking, index) => {
             const isMine = ranking.participantId === currentParticipantId;
             const scoreColor =
-              ranking.score >= 0 ? theme.colors.success.main : theme.colors.error.main;
+              ranking.score > 0
+                ? theme.colors.success.main
+                : ranking.score < 0
+                  ? theme.colors.error.main
+                  : theme.colors.text.default;
 
             return (
               <>
@@ -120,6 +209,7 @@ export const BattleRankBar = ({
                   key={ranking.participantId}
                   ref={node => {
                     cardRefs.current[ranking.participantId] = node;
+                    if (isMine) myCardRef.current = node;
                   }}
                   css={cardWrapperStyle}
                 >
@@ -134,7 +224,12 @@ export const BattleRankBar = ({
                     />
                     <div css={infoStyle}>
                       <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
-                      <ScoreText value={ranking.score} color={scoreColor} theme={theme} />
+                      <ScoreText
+                        value={ranking.score}
+                        color={scoreColor}
+                        theme={theme}
+                        containerRef={isMine ? myScoreRef : undefined}
+                      />
                     </div>
                   </div>
                 </div>
@@ -300,14 +395,14 @@ const scoreStyle = (theme: Theme, color: string) => css`
   color: ${color};
 
   @media (max-width: 768px) {
-    color: white;
     position: absolute;
     bottom: -8px;
     padding: 2px 6px;
     border-radius: ${theme.borderRadius.small};
     font-size: ${theme.typography['12Bold'].fontSize};
     font-weight: ${theme.typography['12Bold'].fontWeight};
-    background: ${color};
+    background: ${theme.colors.surface.strong};
+    border: 1px solid ${color};
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 `;
@@ -323,8 +418,22 @@ const countStyle = (theme: Theme) => css`
   text-align: right;
 `;
 
-const ScoreText = ({ value, color, theme }: { value: number; color: string; theme: Theme }) => {
+const ScoreText = ({
+  value,
+  color,
+  theme,
+  containerRef,
+}: {
+  value: number;
+  color: string;
+  theme: Theme;
+  containerRef?: RefObject<HTMLDivElement | null>;
+}) => {
   const displayValue = useAnimatedNumber(value);
-  const text = displayValue >= 0 ? `+${displayValue}` : `${displayValue}`;
-  return <div css={[scoreStyle(theme, color), scoreCountStyle]}>{text}</div>;
+  const text = displayValue > 0 ? `+${displayValue}` : `${displayValue}`;
+  return (
+    <div ref={containerRef} css={[scoreStyle(theme, color), scoreCountStyle]}>
+      {text}
+    </div>
+  );
 };

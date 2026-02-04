@@ -286,6 +286,10 @@ const cardWrapperStyle = css`
   gap: 16px;
   flex: 0 0 calc((100% - 65px) / 4);
   min-width: 0;
+
+  @media (max-width: 768px) {
+    justify-content: center;
+  }
 `;
 
 const cardStyle = (theme: Theme, isMine: boolean) => css`

@@ -13,7 +13,11 @@ contactPoints:
           message: |
             {{ range .Alerts }}
             *{{ .Status | toUpper }}* {{ .Labels.alertname }} ({{ .Labels.severity }})
-            container={{ .Labels.container }}
-            value={{ index .Values "C" }}
+            service={{ .Labels.service }} container={{ .Labels.container }}
+            {{ if .Annotations.summary }}summary={{ .Annotations.summary }}{{ end }}
+            {{ if .Annotations.description }}detail={{ .Annotations.description }}{{ end }}
+            value={{ index .Values "B" }}
             {{ if .DashboardURL }}dashboard={{ .DashboardURL }}{{ end }}
+            {{ if .SilenceURL }}silence={{ .SilenceURL }}{{ end }}
+            guide={{ if eq .Labels.severity "critical" }}1) 최근 배포/설정 변경 확인 2) backend 로그에서 error/warn 확인 3) 필요 시 롤백 및 공지{{ else }}1) backend 로그에서 error/warn 확인 2) 급증 원인 확인 3) 필요 시 슬랙에 상태 공유{{ end }}
             {{ end }}

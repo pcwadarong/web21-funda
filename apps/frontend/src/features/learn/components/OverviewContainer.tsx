@@ -1,10 +1,33 @@
-import { css, useTheme } from '@emotion/react';
+import { css, type SerializedStyles, useTheme } from '@emotion/react';
 
 import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import type { UnitOverviewResponse } from '@/services/unitService';
 import type { Theme } from '@/styles/theme';
+
+interface BackButtonProps {
+  onBack: () => void;
+  css: SerializedStyles;
+  'aria-label': string;
+  children?: React.ReactNode;
+}
+
+const BackButton = ({
+  onBack,
+  css: cssProp,
+  'aria-label': ariaLabel,
+  children,
+}: BackButtonProps) => (
+  <button type="button" css={cssProp} onClick={onBack} aria-label={ariaLabel}>
+    {children ?? (
+      <>
+        <SVGIcon icon="ArrowLeft" size="sm" aria-hidden="true" />
+        돌아가기
+      </>
+    )}
+  </button>
+);
 
 export interface OverviewContainerProps {
   unitId: number | null;
@@ -28,15 +51,11 @@ export const OverviewContainer = ({
   if (unitId === null) {
     return (
       <div css={mainStyle} role="region" aria-label="학습 개요">
-        <button
-          type="button"
+        <BackButton
+          onBack={onBack}
           css={backButtonStyle(theme)}
-          onClick={onBack}
           aria-label="이전 페이지로 돌아가기"
-        >
-          <SVGIcon icon="ArrowLeft" size="sm" aria-hidden="true" />
-          돌아가기
-        </button>
+        />
         <div css={messageStyle(theme)} role="alert">
           유닛 정보를 찾지 못했습니다.
         </div>
@@ -47,15 +66,11 @@ export const OverviewContainer = ({
   if (isLoading) {
     return (
       <div css={mainStyle} role="region" aria-label="학습 개요" aria-busy="true">
-        <button
-          type="button"
+        <BackButton
+          onBack={onBack}
           css={backButtonStyle(theme)}
-          onClick={onBack}
           aria-label="이전 페이지로 돌아가기"
-        >
-          <SVGIcon icon="ArrowLeft" size="sm" aria-hidden="true" />
-          돌아가기
-        </button>
+        />
         <div css={loadingStyle} role="status" aria-live="polite">
           <Loading text="학습 개요를 불러오는 중입니다." />
         </div>
@@ -66,15 +81,11 @@ export const OverviewContainer = ({
   if (error) {
     return (
       <div css={mainStyle} role="region" aria-label="학습 개요">
-        <button
-          type="button"
+        <BackButton
+          onBack={onBack}
           css={backButtonStyle(theme)}
-          onClick={onBack}
           aria-label="이전 페이지로 돌아가기"
-        >
-          <SVGIcon icon="ArrowLeft" size="sm" aria-hidden="true" />
-          돌아가기
-        </button>
+        />
         <div css={messageStyle(theme)} role="alert">
           학습 개요를 불러오지 못했습니다.
           <span css={errorDetailStyle(theme)}>{error.message}</span>
@@ -86,15 +97,11 @@ export const OverviewContainer = ({
   return (
     <div css={mainStyle} role="region" aria-label="학습 개요">
       <header css={headerStyle}>
-        <button
-          type="button"
+        <BackButton
+          onBack={onBack}
           css={backButtonStyle(theme)}
-          onClick={onBack}
           aria-label="이전 페이지로 돌아가기"
-        >
-          <SVGIcon icon="ArrowLeft" size="sm" aria-hidden="true" />
-          돌아가기
-        </button>
+        />
         <h1 css={titleStyle(theme)} id="overview-title">
           {data?.unit.title ?? '학습 개요'}
         </h1>

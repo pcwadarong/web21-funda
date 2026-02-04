@@ -90,9 +90,8 @@ export function FoxAnimation() {
   const speedValue = animation.speedMultiplier ?? 1;
 
   return (
-    <div
+    <section
       style={{ width: '100vw', height: '100vh', position: 'relative' }}
-      role="region"
       aria-label="Fox 캐릭터 애니메이션 컨트롤"
     >
       <ControlPanel role="group" aria-label="Fox Controller">
@@ -168,7 +167,7 @@ export function FoxAnimation() {
         </Suspense>
         {process.env.NODE_ENV === 'development' && <Stats />}
       </Canvas>
-    </div>
+    </section>
   );
 }
 

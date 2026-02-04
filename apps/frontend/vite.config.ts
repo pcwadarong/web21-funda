@@ -23,7 +23,6 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react(), svgr({ include: '**/*.svg?react' })],
   plugins: [
     react(),
     svgr({ include: '**/*.svg?react' }),

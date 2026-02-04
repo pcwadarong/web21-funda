@@ -16,6 +16,7 @@ import { StepAttemptStatus, UserStepAttempt } from './entities/user-step-attempt
 import { UserStepStatus } from './entities/user-step-status.entity';
 
 const DEFAULT_REVIEW_QUEUE_LIMIT = 10;
+const DAILY_GOAL_DIAMOND_REWARD = 1;
 
 @Injectable()
 export class ProgressService {
@@ -454,6 +455,10 @@ export class ProgressService {
 
     const totalEarnedXP = this.calculateScore(logs);
 
+    const hasReachedGoals =
+      perfectScoreSteps >= DEFAULT_TODAY_GOALS.perfectScore.target &&
+      totalEarnedXP >= DEFAULT_TODAY_GOALS.totalXP.target;
+
     const result: TodayGoalsParams = {
       perfectScore: {
         ...DEFAULT_TODAY_GOALS.perfectScore,
@@ -465,6 +470,28 @@ export class ProgressService {
       },
       rewardGranted: false,
     };
+
+    if (hasReachedGoals) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (user) {
+        const lastRewardedAt = user.lastDailyGoalRewardedAt;
+        const isRewardedToday =
+          lastRewardedAt !== null &&
+          lastRewardedAt !== undefined &&
+          lastRewardedAt >= start &&
+          lastRewardedAt <= end;
+
+        if (!isRewardedToday) {
+          await this.userRepository.increment(
+            { id: userId },
+            'diamondCount',
+            DAILY_GOAL_DIAMOND_REWARD,
+          );
+          await this.userRepository.update({ id: userId }, { lastDailyGoalRewardedAt: now });
+          result.rewardGranted = true;
+        }
+      }
+    }
 
     return result;
   }

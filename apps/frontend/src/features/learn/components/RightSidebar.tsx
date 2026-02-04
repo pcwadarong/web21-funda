@@ -11,7 +11,7 @@ import { Modal } from '@/components/Modal';
 import { UserSearchModal } from '@/feat/user/profile/components/UserSearchModal';
 import type { ProfileSearchUser } from '@/feat/user/profile/types';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
-import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
+import { useReviewQueueQuery, useTodayGoalsQuery } from '@/hooks/queries/progressQueries';
 import {
   useFollowUserMutation,
   useProfileSearchUsers,
@@ -22,12 +22,6 @@ import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
-
-// TODO: 오늘의 목표 추가
-const TODAY_GOALS = [
-  { id: 'xp', label: '50 XP 획득하기', current: 0, target: 50 },
-  { id: 'lessons', label: '2개의 퀴즈 만점 받기', current: 0, target: 2 },
-] as const;
 
 export const LearnRightSidebar = ({
   fieldSlug,
@@ -57,6 +51,9 @@ export const LearnRightSidebar = ({
       enabled: isLoggedIn && isAuthReady,
     },
   );
+
+  const { data: todayGoalsData } = useTodayGoalsQuery({ enabled: isLoggedIn && isAuthReady });
+  const TODAY_GOALS = todayGoalsData ? [todayGoalsData.totalXP, todayGoalsData.perfectScore] : [];
 
   const diamondCount = user?.diamondCount ?? 0;
 
@@ -142,6 +139,15 @@ export const LearnRightSidebar = ({
   useEffect(() => {
     setFollowOverrides({});
   }, [debouncedKeyword]);
+
+  useEffect(() => {
+    if (!todayGoalsData?.rewardGranted) {
+      return;
+    }
+
+    // 오늘의 목표 달성했을 때, 다이아 바로 반영하기 위해 currentUser refetch
+    queryClient.refetchQueries({ queryKey: ['current-user'], type: 'active' });
+  }, [queryClient, todayGoalsData?.rewardGranted]);
 
   const shouldSearch = isSearchModalOpen && isLoggedIn && debouncedKeyword.length >= 1;
   const { data: searchUsers = [], isLoading: isSearchLoading } = useProfileSearchUsers(

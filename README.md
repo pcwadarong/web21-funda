@@ -1,3 +1,5 @@
+<div align="center">
+
   <img src="https://github.com/user-attachments/assets/a063f0bf-37f6-49fc-99b5-15f34c39210f" alt="Funda 히어로 UI" />
 
   <h1>Funda</h1>

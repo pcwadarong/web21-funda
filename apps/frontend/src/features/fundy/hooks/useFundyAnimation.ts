@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
-import type { FoxAnimationConfig, FoxNodes } from '../types';
+import type { FundyAnimationConfig, FundyNodes } from '../types';
 
 /**
  * 표정 및 입 모양 구성 데이터
@@ -68,15 +68,13 @@ function setMorphTarget(mesh: any, targetName: string, value: number, smooth: bo
   }
 }
 
-export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}) {
+export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfig = {}) {
   const {
-    waveHand = false,
     blink = false,
     lookAt = false,
     speedMultiplier = 1,
     smile = false,
     bigSmile = false,
-    wagTail = false,
     wink = false,
     openMouth = false,
   } = config;
@@ -85,45 +83,38 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
   const blinkState = useRef({ timer: 0, next: Math.random() * 3 + 2, isBlinking: false });
   const mouseLerp = useRef(new THREE.Vector2());
 
-  const refs = useMemo(
-    () => ({
+  const refs = useMemo(() => {
+    const asBone = (node?: THREE.Object3D | null) =>
+      node && (node as THREE.Bone).isBone ? (node as THREE.Bone) : undefined;
+    const pick = <T>(...values: Array<T | undefined | null>) =>
+      values.find(Boolean) as T | undefined;
+
+    return {
       bones: {
-        defHead: nodes['DEF-spine.006'] as THREE.Bone,
-
-        // 몸통
-        torso: nodes.torso as THREE.Bone,
-        spine: nodes.spine_fk as THREE.Bone,
-
-        // 꼬리
-        tail: nodes.tail as THREE.Bone,
-        tail1: nodes.tail001 as THREE.Bone,
-        tail2: nodes.tail002 as THREE.Bone,
-        tail3: nodes.tail003 as THREE.Bone,
-        tail4: nodes.tail004 as THREE.Bone,
-
-        // 눈썹
-        browTL: nodes['brow.T.L'] as THREE.Bone,
-        browTR: nodes['brow.T.R'] as THREE.Bone,
-        browBL: nodes['brow.B.L'] as THREE.Bone,
-        browBR: nodes['brow.B.R'] as THREE.Bone,
+        defHead: asBone(
+          pick(
+            nodes['DEF-spine.006'],
+            nodes['DEF-spine006'],
+            nodes['DEF-spine005'],
+            nodes['DEF-spine'],
+          ),
+        ),
       },
       morphs: {
         eyelash: nodes.eyelash,
-        head: nodes.head_1,
+        head: pick(nodes.head_1, nodes.head),
         eyebrow: nodes.eyebrow,
         teeth: nodes.teeth,
-        tongue: nodes.tongue_1,
+        tongue: pick(nodes.tongue_1, nodes.tongue),
       },
-    }),
-    [nodes],
-  );
+    };
+  }, [nodes]);
 
   useFrame((state, delta) => {
     const { bones, morphs } = refs;
-    if (!bones || !morphs) return;
+    if (!morphs) return;
 
     clockRef.current += delta * speedMultiplier;
-    const time = clockRef.current;
 
     // ==========================================
     // 얼굴 애니메이션 및 입 모양
@@ -147,19 +138,6 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
         setMorphTarget(mesh, targetName, value as number, true);
       });
     });
-
-    // ==========================================
-    // 제스처
-    // ==========================================
-
-    // 꼬리 흔들기
-    if (wagTail) {
-      const wag = Math.sin(time * 4);
-      [bones.tail, bones.tail1, bones.tail2, bones.tail3, bones.tail4].forEach((b, i) => {
-        if (b) b.rotation.y = wag * (0.3 - i * 0.05);
-        b.updateMatrixWorld(true);
-      });
-    }
 
     // ==========================================
     // 눈 깜빡임
@@ -215,9 +193,8 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
       bones.defHead.updateMatrixWorld(true);
     }
 
-    // 5. SkinnedMesh 업데이트 강제
+    // SkinnedMesh 업데이트 강제
     Object.values(nodes).forEach(node => {
-      // node가 존재하고, SkinnedMesh 타입이며, skeleton 객체가 실제로 있을 때만 호출
       if (node && (node as any).isSkinnedMesh && (node as any).skeleton) {
         (node as any).skeleton.update();
       }
@@ -225,15 +202,6 @@ export function useFoxAnimation(nodes: FoxNodes, config: FoxAnimationConfig = {}
   });
 
   return {
-    isAnimating: !!(
-      waveHand ||
-      blink ||
-      lookAt ||
-      smile ||
-      bigSmile ||
-      wagTail ||
-      wink ||
-      openMouth
-    ),
+    isAnimating: !!(blink || lookAt || smile || bigSmile || wink || openMouth),
   };
 }

@@ -42,21 +42,23 @@ export const LearnContainer = ({
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   return (
-    <div css={containerStyle}>
-      <SimpleBar css={simpleBarStyle} ref={scrollContainerRef}>
+    <div css={containerStyle} role="region" aria-label="학습 콘텐츠">
+      <SimpleBar css={simpleBarStyle} ref={scrollContainerRef} aria-label="유닛 및 레슨 스크롤">
         <div css={mainStyle}>
-          <div css={centerSectionStyle}>
-            <div css={spaceFillerStyle(isDarkMode)}></div>
+          <div css={centerSectionStyle} aria-label="유닛 및 레슨 목록">
+            <div css={spaceFillerStyle(isDarkMode)} aria-hidden="true"></div>
             {activeUnit && (
               <div css={stickyHeaderWrapperStyle} ref={headerRef}>
                 <div
                   key={activeUnit.id}
                   css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
+                  role="banner"
+                  aria-label={`현재 유닛: ${activeUnit.title}`}
                 >
                   <div css={headerContentStyle}>
-                    <Link to="/learn/roadmap">
+                    <Link to="/learn/roadmap" aria-label={`전체 ${fieldName} 로드맵으로 이동`}>
                       <div css={unitTextStyle(theme)}>
-                        <SVGIcon icon="ArrowLeft" size="md" />
+                        <SVGIcon icon="ArrowLeft" size="md" aria-hidden="true" />
                         전체 {fieldName} 로드맵
                       </div>
                     </Link>
@@ -70,8 +72,9 @@ export const LearnContainer = ({
                     to={`overview/${activeUnit.id}`}
                     onClick={() => onOverviewClick(activeUnit.id)}
                     css={overviewButtonStyle(theme)}
+                    aria-label={`${activeUnit.title} 학습 개요 보기`}
                   >
-                    <SVGIcon icon="Notebook" />
+                    <SVGIcon icon="Notebook" aria-hidden="true" />
                     <span>학습 개요</span>
                   </Link>
                 </div>
@@ -85,8 +88,9 @@ export const LearnContainer = ({
                   css={sectionBlockStyle}
                   ref={registerUnitRef(unit.id)}
                   data-unit-id={unit.id}
+                  aria-label={`유닛: ${unit.title}`}
                 >
-                  <div css={unitDividerStyle(theme)}>
+                  <div css={unitDividerStyle(theme)} aria-hidden="true">
                     <span css={unitDividerLineStyle(theme)} />
                     <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
                     <span css={unitDividerLineStyle(theme)} />
@@ -97,9 +101,12 @@ export const LearnContainer = ({
 
                       if (step.isLocked) {
                         return (
-                          <div key={step.id} css={positionStyle}>
+                          <div key={step.id} css={positionStyle} role="listitem">
                             <div css={lessonStackStyle}>
-                              <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                              <div
+                                css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}
+                                aria-label={`${step.title}, 잠김`}
+                              >
                                 <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
                               </div>
                               <div css={lessonNamePillStyle(theme)}>{step.title}</div>
@@ -115,8 +122,13 @@ export const LearnContainer = ({
                         onStepClick(step);
                       };
 
+                      const stepStatus = step.isCompleted
+                        ? '완료'
+                        : step.isLocked
+                          ? '잠김'
+                          : '시작 가능';
                       return (
-                        <div key={step.id} css={positionStyle}>
+                        <div key={step.id} css={positionStyle} role="listitem">
                           <div css={lessonStackStyle}>
                             <div
                               onClick={handleStepSelection}
@@ -128,6 +140,15 @@ export const LearnContainer = ({
                                 !step.isCompleted && !step.isLocked && activeLessonStyle(theme),
                               ]}
                               style={{ cursor: step.isLocked ? 'not-allowed' : 'pointer' }}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleStepSelection();
+                                }
+                              }}
+                              aria-label={`${step.title}, ${stepStatus}`}
                             >
                               <SVGIcon
                                 icon={step.isCompleted ? 'Check' : step.isLocked ? 'Lock' : 'Start'}

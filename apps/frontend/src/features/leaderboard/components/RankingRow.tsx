@@ -49,6 +49,7 @@ export const RankingRow = ({
             icon="ArrowLeft"
             size="sm"
             style={{ transform: 'rotate(90deg)', color: activeColor }}
+            aria-hidden="true"
           />
         );
       case 'DEMOTION':
@@ -57,17 +58,25 @@ export const RankingRow = ({
             icon="ArrowLeft"
             size="sm"
             style={{ transform: 'rotate(270deg)', color: activeColor }}
+            aria-hidden="true"
           />
         );
       case 'MAINTAIN':
-        return <SVGIcon icon="Minus" size="sm" style={{ color: activeColor }} />;
+        return <SVGIcon icon="Minus" size="sm" style={{ color: activeColor }} aria-hidden="true" />;
       default:
         return null;
     }
   };
 
+  const zoneLabel =
+    rankZone === 'PROMOTION' ? '승급권' : rankZone === 'DEMOTION' ? '강등권' : '유지';
+
   return (
-    <li css={rankingRowStyle(theme, isMe, isDarkMode)}>
+    <li
+      css={rankingRowStyle(theme, isMe, isDarkMode)}
+      role="listitem"
+      aria-label={`${displayName}${isMe ? ', 나' : ''}, ${rank}위, ${xp.toLocaleString()} ${xpLabel}, ${zoneLabel}`}
+    >
       <span css={rankNumberStyle(theme, activeColor)}>{rank}</span>
 
       <Avatar
@@ -85,7 +94,11 @@ export const RankingRow = ({
             <SVGIcon icon={tierIconName} size="md" />
           </span>
         )}
-        {isMe && <span css={meBadgeStyle(theme, isDarkMode)}>나</span>}
+        {isMe && (
+          <span css={meBadgeStyle(theme, isDarkMode)} aria-label="내 순위">
+            나
+          </span>
+        )}
       </div>
 
       <div css={xpBlockStyle}>

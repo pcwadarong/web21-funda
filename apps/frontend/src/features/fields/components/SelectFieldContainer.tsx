@@ -13,25 +13,30 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
   const theme = useTheme();
 
   return (
-    <div css={contentWrapperStyle}>
+    <div css={contentWrapperStyle} role="region" aria-label="학습 분야 선택">
       <header css={headerStyle}>
-        <h1 css={title(theme)}>학습 분야 선택</h1>
-        <span css={subtitle(theme)}>어떤 분야를 선택하시겠어요?</span>
+        <h1 css={title(theme)} id="field-select-title">
+          학습 분야 선택
+        </h1>
+        <span css={subtitle(theme)} id="field-select-subtitle">
+          어떤 분야를 선택하시겠어요?
+        </span>
       </header>
 
-      <section css={gridStyle}>
+      <section css={gridStyle} aria-labelledby="field-select-title" aria-label="분야 카드 목록">
         {fields.map(field => (
           <button
             key={field.slug}
             onClick={() => onFieldClick(field.slug)}
             css={fieldCardStyle(theme)}
+            aria-label={`${field.name}, ${field.description}, 로드맵 보기`}
           >
             <div css={fieldNameWrapper(theme)}>
               <span css={fieldNameStyle(theme)}>{field.name}</span>
-              <SVGIcon icon={field.icon} size="lg" />
+              <SVGIcon icon={field.icon} size="lg" aria-hidden="true" />
             </div>
             <p css={fieldDescriptionStyle(theme)}>{field.description}</p>
-            <div css={goRoadmap(theme)}>
+            <div css={goRoadmap(theme)} aria-hidden="true">
               <span>로드맵 보기</span>
               <SVGIcon icon={'NextArrow'} size="sm" />
             </div>

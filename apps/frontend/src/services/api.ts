@@ -23,6 +23,10 @@ async function tryRefreshToken(): Promise<boolean> {
       method: 'POST',
       credentials: 'include', // 쿠키 전달 필수
     });
+    if (response.status === 400) {
+      return false;
+    }
+
     return response.ok;
   } catch (error) {
     console.error('[Auth] Token refresh failed:', error);

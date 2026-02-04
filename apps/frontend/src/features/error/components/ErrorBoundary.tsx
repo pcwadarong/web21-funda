@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import type { JSX } from 'react';
 import * as React from 'react';
 
@@ -42,6 +43,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
    * @param errorInfo 오류 발생 위치 정보
    */
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    Sentry.captureException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack,
+      },
+    });
     console.error('Error caught by componentDidCatch:', error, errorInfo);
   }
 

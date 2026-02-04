@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
+import { CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { ProfileCharacter } from '../profile/entities/profile-character.entity';
 import { Field } from '../roadmap/entities/field.entity';
@@ -23,12 +24,6 @@ interface UpsertResult<T> {
   created: boolean;
   updated?: boolean;
 }
-
-const FIELD_LIST_CACHE_KEY = 'fields:list';
-const FIELD_UNITS_CACHE_KEY_SUFFIX = 'units';
-const FIRST_UNIT_CACHE_KEY_SUFFIX = 'first_unit';
-const QUIZ_CONTENT_CACHE_KEY_PREFIX = 'quiz_content';
-const UNIT_OVERVIEW_CACHE_KEY_PREFIX = 'unit:overview';
 
 @Injectable()
 export class BackofficeService {
@@ -231,11 +226,11 @@ export class BackofficeService {
       return;
     }
 
-    await this.safeDeleteCacheKey(FIELD_LIST_CACHE_KEY);
+    await this.safeDeleteCacheKey(CacheKeys.fieldList());
 
     for (const slug of fieldSlugs) {
-      const unitsKey = this.buildFieldUnitsCacheKey(slug);
-      const firstUnitKey = this.buildFirstUnitCacheKey(slug);
+      const unitsKey = CacheKeys.fieldUnits(slug);
+      const firstUnitKey = CacheKeys.firstUnit(slug);
       await this.safeDeleteCacheKey(unitsKey);
       await this.safeDeleteCacheKey(firstUnitKey);
     }
@@ -250,7 +245,7 @@ export class BackofficeService {
     }
 
     for (const quizId of quizIds) {
-      const cacheKey = this.buildQuizContentCacheKey(quizId);
+      const cacheKey = CacheKeys.quizContent(quizId);
       await this.safeDeleteCacheKey(cacheKey);
     }
   }
@@ -264,25 +259,9 @@ export class BackofficeService {
     }
 
     for (const unitId of unitIds) {
-      const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+      const cacheKey = CacheKeys.unitOverview(unitId);
       await this.safeDeleteCacheKey(cacheKey);
     }
-  }
-
-  private buildFieldUnitsCacheKey(fieldSlug: string): string {
-    return `fields:${fieldSlug}:${FIELD_UNITS_CACHE_KEY_SUFFIX}`;
-  }
-
-  private buildFirstUnitCacheKey(fieldSlug: string): string {
-    return `fields:${fieldSlug}:${FIRST_UNIT_CACHE_KEY_SUFFIX}`;
-  }
-
-  private buildQuizContentCacheKey(quizId: number): string {
-    return `${QUIZ_CONTENT_CACHE_KEY_PREFIX}:${quizId}`;
-  }
-
-  private buildUnitOverviewCacheKey(unitId: number): string {
-    return `${UNIT_OVERVIEW_CACHE_KEY_PREFIX}:${unitId}`;
   }
 
   private async safeDeleteCacheKey(cacheKey: string): Promise<void> {

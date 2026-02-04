@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Like, Repository, SelectQueryBuilder } from 'typeorm';
 
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
@@ -28,9 +29,6 @@ import { ProfileCharacter } from './entities/profile-character.entity';
 import { UserFollow } from './entities/user-follow.entity';
 import { UserProfileCharacter } from './entities/user-profile-character.entity';
 import { getDateRange, getLast7Days, toDateStringInTimeZone } from './utils/date.utils';
-
-const PROFILE_STATS_CACHE_TTL_SECONDS = 5 * 60;
-const PROFILE_STATS_CACHE_PREFIX = 'profile:stats';
 
 /**
  * 통계 계산용 인터페이스
@@ -276,7 +274,7 @@ export class ProfileService {
     const timeZoneYear = Number(endDate.slice(0, 4));
     const startDate = `${timeZoneYear}-01-01`;
 
-    const cacheKey = this.buildProfileStatsCacheKey('streaks', userId, normalizedTimeZone);
+    const cacheKey = CacheKeys.profileStats('streaks', userId, normalizedTimeZone);
     const cached = await this.getCachedProfileStats<ProfileStreakDay[]>(cacheKey);
     if (cached) {
       return cached;
@@ -306,7 +304,7 @@ export class ProfileService {
     await this.findUserOrThrow(userId);
 
     const normalizedTimeZone = this.normalizeTimeZone(timeZone);
-    const cacheKey = this.buildProfileStatsCacheKey('daily', userId, normalizedTimeZone);
+    const cacheKey = CacheKeys.profileStats('daily', userId, normalizedTimeZone);
     const cached = await this.getCachedProfileStats<DailyStatsResult>(cacheKey);
     if (cached) {
       return cached;
@@ -348,7 +346,7 @@ export class ProfileService {
     await this.findUserOrThrow(userId);
 
     const normalizedTimeZone = this.normalizeTimeZone(timeZone);
-    const cacheKey = this.buildProfileStatsCacheKey('field-daily', userId, normalizedTimeZone);
+    const cacheKey = CacheKeys.profileStats('field-daily', userId, normalizedTimeZone);
     const cached = await this.getCachedProfileStats<FieldDailyStatsResult>(cacheKey);
     if (cached) {
       return cached;
@@ -775,10 +773,6 @@ export class ProfileService {
     });
   }
 
-  private buildProfileStatsCacheKey(type: string, userId: number, timeZone: string): string {
-    return `${PROFILE_STATS_CACHE_PREFIX}:${type}:${userId}:${timeZone}`;
-  }
-
   private async getCachedProfileStats<T>(cacheKey: string): Promise<T | null> {
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -793,7 +787,7 @@ export class ProfileService {
 
   private async setCachedProfileStats(cacheKey: string, value: unknown): Promise<void> {
     try {
-      await this.redisService.set(cacheKey, value, PROFILE_STATS_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.profileStats);
     } catch {
       return;
     }

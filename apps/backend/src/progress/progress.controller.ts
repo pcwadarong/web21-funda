@@ -25,6 +25,7 @@ import type { Request } from 'express';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 
@@ -241,7 +242,7 @@ export class ProgressController {
     }
 
     // Redis에서 기존 step_ids 조회
-    const currentStepsData = await this.redisService.get(`step_ids:${clientId}`);
+    const currentStepsData = await this.redisService.get(CacheKeys.guestStepIds(clientId));
     const stepIds = currentStepsData ? (currentStepsData as number[]) : [];
 
     // 중복 확인 후 추가
@@ -250,7 +251,11 @@ export class ProgressController {
     }
 
     // Redis에 저장 (30일 TTL)
-    await this.redisService.set(`step_ids:${clientId}`, stepIds, 30 * 24 * 60 * 60);
+    await this.redisService.set(
+      CacheKeys.guestStepIds(clientId),
+      stepIds,
+      CACHE_TTL_SECONDS.guestProgress,
+    );
 
     return { success: true };
   }

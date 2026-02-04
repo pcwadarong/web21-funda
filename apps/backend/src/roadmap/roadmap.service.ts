@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { getKstNow } from '../common/utils/kst-date';
@@ -26,13 +27,6 @@ import type { QuizResponse } from './dto/quiz-list.dto';
 import type { QuizSubmissionRequest, QuizSubmissionResponse } from './dto/quiz-submission.dto';
 import type { UnitOverviewResponse } from './dto/unit-overview.dto';
 import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
-
-const FIELD_LIST_CACHE_KEY = 'fields:list';
-const FIELD_LIST_CACHE_TTL_SECONDS = 24 * 60 * 60;
-const FIELD_UNITS_CACHE_TTL_SECONDS = 24 * 60 * 60;
-const FIRST_UNIT_CACHE_TTL_SECONDS = 24 * 60 * 60;
-const UNIT_OVERVIEW_CACHE_TTL_SECONDS = 24 * 60 * 60;
-const UNIT_OVERVIEW_CACHE_KEY_PREFIX = 'unit:overview';
 
 interface FieldUnitsBaseResponse {
   field: {
@@ -441,9 +435,13 @@ export class RoadmapService {
           }
         } else if (clientId) {
           // 비로그인 사용자: Redis에 저장
-          const currentHeart = await this.redisService.get(`heart:${clientId}`);
+          const currentHeart = await this.redisService.get(CacheKeys.guestHeart(clientId));
           const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
-          await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
+          await this.redisService.set(
+            CacheKeys.guestHeart(clientId),
+            newHeart,
+            CACHE_TTL_SECONDS.guestProgress,
+          );
         }
       }
 
@@ -490,9 +488,13 @@ export class RoadmapService {
         }
       } else if (clientId) {
         // 비로그인 사용자: Redis에 저장
-        const currentHeart = await this.redisService.get(`heart:${clientId}`);
+        const currentHeart = await this.redisService.get(CacheKeys.guestHeart(clientId));
         const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
-        await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
+        await this.redisService.set(
+          CacheKeys.guestHeart(clientId),
+          newHeart,
+          CACHE_TTL_SECONDS.guestProgress,
+        );
       }
     }
 
@@ -691,17 +693,9 @@ export class RoadmapService {
     return Array.from(new Set(stepIds));
   }
 
-  private buildFieldUnitsCacheKey(fieldSlug: string): string {
-    return `fields:${fieldSlug}:units`;
-  }
-
-  private buildFirstUnitCacheKey(fieldSlug: string): string {
-    return `fields:${fieldSlug}:first_unit`;
-  }
-
   private async getCachedFieldList(): Promise<FieldListResponse | null> {
     try {
-      const cached = await this.redisService.get(FIELD_LIST_CACHE_KEY);
+      const cached = await this.redisService.get(CacheKeys.fieldList());
       if (!this.isFieldListResponse(cached)) {
         return null;
       }
@@ -713,14 +707,14 @@ export class RoadmapService {
 
   private async setCachedFieldList(value: FieldListResponse): Promise<void> {
     try {
-      await this.redisService.set(FIELD_LIST_CACHE_KEY, value, FIELD_LIST_CACHE_TTL_SECONDS);
+      await this.redisService.set(CacheKeys.fieldList(), value, CACHE_TTL_SECONDS.fieldList);
     } catch {
       return;
     }
   }
 
   private async getCachedFieldUnitsBase(fieldSlug: string): Promise<FieldUnitsBaseResponse | null> {
-    const cacheKey = this.buildFieldUnitsCacheKey(fieldSlug);
+    const cacheKey = CacheKeys.fieldUnits(fieldSlug);
 
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -737,17 +731,17 @@ export class RoadmapService {
     fieldSlug: string,
     value: FieldUnitsBaseResponse,
   ): Promise<void> {
-    const cacheKey = this.buildFieldUnitsCacheKey(fieldSlug);
+    const cacheKey = CacheKeys.fieldUnits(fieldSlug);
 
     try {
-      await this.redisService.set(cacheKey, value, FIELD_UNITS_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.fieldUnits);
     } catch {
       return;
     }
   }
 
   private async getCachedFirstUnit(fieldSlug: string): Promise<FirstUnitResponse | null> {
-    const cacheKey = this.buildFirstUnitCacheKey(fieldSlug);
+    const cacheKey = CacheKeys.firstUnit(fieldSlug);
 
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -761,10 +755,10 @@ export class RoadmapService {
   }
 
   private async setCachedFirstUnit(fieldSlug: string, value: FirstUnitResponse): Promise<void> {
-    const cacheKey = this.buildFirstUnitCacheKey(fieldSlug);
+    const cacheKey = CacheKeys.firstUnit(fieldSlug);
 
     try {
-      await this.redisService.set(cacheKey, value, FIRST_UNIT_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.firstUnit);
     } catch {
       return;
     }
@@ -801,12 +795,8 @@ export class RoadmapService {
     return Boolean(record.field);
   }
 
-  private buildUnitOverviewCacheKey(unitId: number): string {
-    return `${UNIT_OVERVIEW_CACHE_KEY_PREFIX}:${unitId}`;
-  }
-
   private async getCachedUnitOverview(unitId: number): Promise<UnitOverviewResponse | null> {
-    const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+    const cacheKey = CacheKeys.unitOverview(unitId);
 
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -820,17 +810,17 @@ export class RoadmapService {
   }
 
   private async setCachedUnitOverview(unitId: number, value: UnitOverviewResponse): Promise<void> {
-    const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+    const cacheKey = CacheKeys.unitOverview(unitId);
 
     try {
-      await this.redisService.set(cacheKey, value, UNIT_OVERVIEW_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.unitOverview);
     } catch {
       return;
     }
   }
 
   private async deleteCachedUnitOverview(unitId: number): Promise<void> {
-    const cacheKey = this.buildUnitOverviewCacheKey(unitId);
+    const cacheKey = CacheKeys.unitOverview(unitId);
 
     try {
       await this.redisService.del(cacheKey);

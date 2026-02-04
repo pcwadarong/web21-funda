@@ -10,6 +10,7 @@ import {
 import type { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
+import { CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 
 import { GithubAuthGuard } from './guards/github.guard';
@@ -125,7 +126,7 @@ export class AuthController {
       return { heartCount: 5 }; // 기본값
     }
 
-    const heartFromRedis = await this.redisService.get(`heart:${clientId}`);
+    const heartFromRedis = await this.redisService.get(CacheKeys.guestHeart(clientId));
     const heartCount = (heartFromRedis as number) ?? 5;
 
     return { heartCount };

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { getKstNow, getKstWeekInfo } from '../common/utils/kst-date';
 import { User } from '../users/entities/user.entity';
@@ -23,10 +24,6 @@ import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
 import { buildRankingSnapshots } from './ranking-evaluation.utils';
-
-const RANKING_CACHE_TTL_SECONDS = 60;
-const WEEKLY_RANKING_CACHE_PREFIX = 'ranking:weekly';
-const OVERALL_RANKING_CACHE_PREFIX = 'ranking:overall';
 
 @Injectable()
 export class RankingQueryService {
@@ -535,19 +532,11 @@ export class RankingQueryService {
     return result;
   }
 
-  private buildWeeklyRankingCacheKey(userId: number, weekKey: string): string {
-    return `${WEEKLY_RANKING_CACHE_PREFIX}:${weekKey}:${userId}`;
-  }
-
-  private buildOverallWeeklyRankingCacheKey(userId: number, weekKey: string): string {
-    return `${OVERALL_RANKING_CACHE_PREFIX}:${weekKey}:${userId}`;
-  }
-
   private async getCachedWeeklyRanking(
     userId: number,
     weekKey: string,
   ): Promise<WeeklyRankingResult | null> {
-    const cacheKey = this.buildWeeklyRankingCacheKey(userId, weekKey);
+    const cacheKey = CacheKeys.rankingWeekly(weekKey, userId);
 
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -565,10 +554,10 @@ export class RankingQueryService {
     weekKey: string,
     result: WeeklyRankingResult,
   ): Promise<void> {
-    const cacheKey = this.buildWeeklyRankingCacheKey(userId, weekKey);
+    const cacheKey = CacheKeys.rankingWeekly(weekKey, userId);
 
     try {
-      await this.redisService.set(cacheKey, result, RANKING_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
     } catch {
       return;
     }
@@ -578,7 +567,7 @@ export class RankingQueryService {
     userId: number,
     weekKey: string,
   ): Promise<OverallRankingResult | null> {
-    const cacheKey = this.buildOverallWeeklyRankingCacheKey(userId, weekKey);
+    const cacheKey = CacheKeys.rankingOverall(weekKey, userId);
 
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -596,10 +585,10 @@ export class RankingQueryService {
     weekKey: string,
     result: OverallRankingResult,
   ): Promise<void> {
-    const cacheKey = this.buildOverallWeeklyRankingCacheKey(userId, weekKey);
+    const cacheKey = CacheKeys.rankingOverall(weekKey, userId);
 
     try {
-      await this.redisService.set(cacheKey, result, RANKING_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
     } catch {
       return;
     }

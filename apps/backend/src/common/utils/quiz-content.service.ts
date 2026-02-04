@@ -2,12 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import type { QuizContent, QuizResponse } from '../../roadmap/dto/quiz-list.dto';
 import { Quiz } from '../../roadmap/entities';
+import { CACHE_TTL_SECONDS, CacheKeys } from '../cache/cache-keys';
 import { RedisService } from '../redis/redis.service';
 
 import { CodeFormatter } from './code-formatter';
-
-const QUIZ_CONTENT_CACHE_TTL_SECONDS = 24 * 60 * 60;
-const QUIZ_CONTENT_CACHE_KEY_PREFIX = 'quiz_content';
 
 @Injectable()
 export class QuizContentService {
@@ -327,7 +325,7 @@ export class QuizContentService {
   }
 
   private async getCachedQuizContent(quizId: number): Promise<QuizContent | null> {
-    const cacheKey = this.buildQuizContentCacheKey(quizId);
+    const cacheKey = CacheKeys.quizContent(quizId);
 
     try {
       const cached = await this.redisService.get(cacheKey);
@@ -342,17 +340,13 @@ export class QuizContentService {
   }
 
   private async setCachedQuizContent(quizId: number, content: QuizContent): Promise<void> {
-    const cacheKey = this.buildQuizContentCacheKey(quizId);
+    const cacheKey = CacheKeys.quizContent(quizId);
 
     try {
-      await this.redisService.set(cacheKey, content, QUIZ_CONTENT_CACHE_TTL_SECONDS);
+      await this.redisService.set(cacheKey, content, CACHE_TTL_SECONDS.quizContent);
     } catch {
       // 캐시 저장 실패는 응답을 막지 않도록 무시한다.
     }
-  }
-
-  private buildQuizContentCacheKey(quizId: number): string {
-    return `${QUIZ_CONTENT_CACHE_KEY_PREFIX}:${quizId}`;
   }
 
   private isQuizContent(value: unknown): value is QuizContent {

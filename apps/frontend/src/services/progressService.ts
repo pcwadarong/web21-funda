@@ -18,7 +18,7 @@ interface GoalInfoParams {
   target: number;
 }
 
-interface TodayGoalsParams {
+export interface TodayGoalsParams {
   perfectScore: GoalInfoParams;
   totalXP: GoalInfoParams;
   rewardGranted: boolean;

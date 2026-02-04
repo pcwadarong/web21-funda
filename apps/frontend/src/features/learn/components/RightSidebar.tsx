@@ -354,8 +354,6 @@ export const LearnRightSidebar = ({
             </Button>
           </div>
 
-          <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
-
           {!isLoggedIn && !user && (
             <div css={overlayStyle(theme)}>
               <div css={overlayHeaderStyle}>
@@ -372,6 +370,8 @@ export const LearnRightSidebar = ({
             </div>
           )}
         </div>
+
+        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
 
         {isSearchModalOpen && (
           <Modal
@@ -630,7 +630,7 @@ const progressBarStyle = (theme: Theme, percentage: number) => css`
 
 const boostadZoneOverride = css`
   &[data-boostad-zone] {
-    margin: 0 !important;
+    margin: 24px 0 0 !important;
   }
 
   min-height: 107px;

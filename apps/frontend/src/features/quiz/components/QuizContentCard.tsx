@@ -78,16 +78,17 @@ export const QuizContentCard = ({
   ];
 
   return (
-    <div css={cardStyle(theme)}>
+    <article css={cardStyle(theme)} role="region" aria-label="퀴즈 문제">
       <div css={headerStyle}>
-        <h2 css={titleStyle(theme)}>
+        <h2 css={titleStyle(theme)} id="quiz-question-title">
           Q. <TextWithCodeStyle text={question.content.question} />
         </h2>
         <button
           css={reportButtonStyle(theme, isDarkMode)}
           onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
+          aria-label="오류 신고"
         >
-          <SVGIcon icon="Report" size="sm" />
+          <SVGIcon icon="Report" size="sm" aria-hidden="true" />
           <span>신고</span>
         </button>
       </div>
@@ -102,8 +103,10 @@ export const QuizContentCard = ({
       />
 
       {showResult && explanation && (
-        <div css={explanationStyle(theme)}>
-          <span style={{ marginRight: '8px' }}>💡</span>
+        <div css={explanationStyle(theme)} role="region" aria-label="해설">
+          <span style={{ marginRight: '8px' }} aria-hidden="true">
+            💡
+          </span>
           <span css={explanationTextStyle(theme)}>{<TextWithCodeStyle text={explanation} />}</span>
         </div>
       )}
@@ -115,13 +118,14 @@ export const QuizContentCard = ({
             css={dontKnowButtonStyle(theme, isDarkMode)}
             onClick={onDontKnow}
             disabled={isDontKnowDisabled}
+            aria-label="잘 모르겠어요, 정답 건너뛰기"
           >
             잘 모르겠어요
           </button>
         </div>
       )}
 
-      <div css={footerStyle(theme)}>
+      <div css={footerStyle(theme)} role="group" aria-label="퀴즈 액션">
         {showResult ? (
           <>
             {!isBattleMode && (
@@ -138,17 +142,37 @@ export const QuizContentCard = ({
                   )
                 }
                 css={flexBtn}
+                aria-label="AI에게 이 문제 질문하기"
               >
                 AI 질문
               </Button>
             )}
 
-            <Button variant="primary" onClick={onNext} css={flexBtn} disabled={isBattleMode}>
+            <Button
+              variant="primary"
+              onClick={onNext}
+              css={flexBtn}
+              disabled={isBattleMode}
+              aria-label={isBattleMode ? undefined : nextButtonLabel}
+            >
               {isBattleMode ? battleNextButtonLabelWithTimer : nextButtonLabel}
             </Button>
           </>
         ) : (
-          <Button variant="primary" onClick={onCheck} disabled={isSubmitDisabled} css={flexBtn}>
+          <Button
+            variant="primary"
+            onClick={onCheck}
+            disabled={isSubmitDisabled}
+            css={flexBtn}
+            aria-label={
+              isBattleMode
+                ? battleSubmitButtonLabel
+                : status === 'checking'
+                  ? '확인 중'
+                  : '정답 확인'
+            }
+            aria-busy={status === 'checking'}
+          >
             {isBattleMode
               ? battleSubmitButtonLabel
               : status === 'checking'
@@ -157,7 +181,7 @@ export const QuizContentCard = ({
           </Button>
         )}
       </div>
-    </div>
+    </article>
   );
 };
 

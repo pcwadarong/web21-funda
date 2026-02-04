@@ -47,6 +47,7 @@ export const UnitCard = ({ unit, isLoggedIn, onClick }: UnitCardProps) => {
       onClick={onClick}
       role={isInteractive ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
+      aria-label={isInteractive ? `${unit.title}, ${unit.description}` : undefined}
       onKeyDown={
         isInteractive
           ? event => {

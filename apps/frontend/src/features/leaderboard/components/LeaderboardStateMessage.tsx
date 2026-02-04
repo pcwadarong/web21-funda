@@ -30,10 +30,12 @@ export const LeaderboardStateMessage = ({ state, message }: LeaderboardStateMess
 
   return (
     <>
-      <div css={stateCardStyle(theme)}>{displayMessage}</div>
+      <div css={stateCardStyle(theme)} role="status" aria-live="polite">
+        {displayMessage}
+      </div>
 
       {showSkeleton && (
-        <div css={skeletonListStyle}>
+        <div css={skeletonListStyle} aria-hidden="true">
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} css={skeletonRowStyle}>
               <div css={skeletonRankStyle(theme)} />

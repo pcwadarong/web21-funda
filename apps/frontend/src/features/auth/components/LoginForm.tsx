@@ -24,15 +24,16 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: Lo
         <h1 css={titleStyle(theme)}>Funda</h1>
         <p css={taglineStyle(theme)}>재미있게 배우는 개발 지식</p>
 
-        <div css={buttonGroupStyle}>
+        <div css={buttonGroupStyle} role="group" aria-label="로그인">
           <Button
             variant="secondary"
             onClick={onGoogleLogin}
             fullWidth
             css={loginButtonStyle}
             disabled
+            aria-label="Google로 로그인 (현재 비활성)"
           >
-            <SVGIcon icon="Google" size="md" />
+            <SVGIcon icon="Google" size="md" aria-hidden="true" />
             <span>Google로 계속하기</span>
           </Button>
           <Button
@@ -41,8 +42,10 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: Lo
             fullWidth
             css={loginButtonStyle}
             disabled={isLoggingIn}
+            aria-label={isLoggingIn ? 'GitHub 로그인 중' : 'GitHub로 로그인'}
+            aria-busy={isLoggingIn}
           >
-            <SVGIcon icon="Github" size="md" />
+            <SVGIcon icon="Github" size="md" aria-hidden="true" />
             <span>GitHub로 {isLoggingIn ? '로그인 중..' : '계속하기'}</span>
           </Button>
         </div>

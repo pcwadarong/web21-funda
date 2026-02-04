@@ -33,11 +33,19 @@ export const FollowListModal = ({
   const emptyText =
     activeTab === 'following' ? '팔로잉한 사용자가 없습니다.' : '팔로워가 없습니다.';
 
+  const followingTabId = 'follow-tab-following';
+  const followersTabId = 'follow-tab-followers';
+  const panelId = 'follow-list-panel';
+
   return (
     <div css={containerStyle} role="dialog" aria-label="팔로잉/팔로워 목록">
-      <div css={tabRowStyle(theme, activeTab)}>
+      <div css={tabRowStyle(theme, activeTab)} role="tablist" aria-label="팔로잉·팔로워 탭">
         <button
           type="button"
+          role="tab"
+          id={followingTabId}
+          aria-selected={activeTab === 'following'}
+          aria-controls={panelId}
           css={tabStyle(theme, activeTab === 'following')}
           onClick={() => setActiveTab('following')}
         >
@@ -45,15 +53,33 @@ export const FollowListModal = ({
         </button>
         <button
           type="button"
+          role="tab"
+          id={followersTabId}
+          aria-selected={activeTab === 'followers'}
+          aria-controls={panelId}
           css={tabStyle(theme, activeTab === 'followers')}
           onClick={() => setActiveTab('followers')}
         >
           팔로워 {followerCount}
         </button>
       </div>
-      <div css={listWrapperStyle}>
-        {isLoading && <p css={emptyTextStyle(theme)}>로딩 중...</p>}
-        {!isLoading && list.length === 0 && <p css={emptyTextStyle(theme)}>{emptyText}</p>}
+      <div
+        id={panelId}
+        css={listWrapperStyle}
+        role="tabpanel"
+        aria-labelledby={activeTab === 'following' ? followingTabId : followersTabId}
+        aria-busy={isLoading}
+      >
+        {isLoading && (
+          <p css={emptyTextStyle(theme)} role="status" aria-live="polite">
+            로딩 중...
+          </p>
+        )}
+        {!isLoading && list.length === 0 && (
+          <p css={emptyTextStyle(theme)} role="status">
+            {emptyText}
+          </p>
+        )}
         {!isLoading &&
           list.map(member => (
             <button
@@ -61,6 +87,7 @@ export const FollowListModal = ({
               type="button"
               css={listItemButtonStyle(theme)}
               onClick={() => onUserClick(member.userId)}
+              aria-label={`${member.displayName} 프로필 보기`}
             >
               <div css={listItemStyle(theme)}>
                 <Avatar

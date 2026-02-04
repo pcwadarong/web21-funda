@@ -27,6 +27,30 @@ import type { QuizSubmissionRequest, QuizSubmissionResponse } from './dto/quiz-s
 import type { UnitOverviewResponse } from './dto/unit-overview.dto';
 import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
 
+const FIELD_LIST_CACHE_KEY = 'fields:list';
+const FIELD_LIST_CACHE_TTL_SECONDS = 24 * 60 * 60;
+const FIELD_UNITS_CACHE_TTL_SECONDS = 24 * 60 * 60;
+const FIRST_UNIT_CACHE_TTL_SECONDS = 24 * 60 * 60;
+
+interface FieldUnitsBaseResponse {
+  field: {
+    name: string;
+    slug: string;
+  };
+  units: Array<{
+    id: number;
+    title: string;
+    orderIndex: number;
+    steps: Array<{
+      id: number;
+      title: string;
+      orderIndex: number;
+      quizCount: number;
+      isCheckpoint: boolean;
+    }>;
+  }>;
+}
+
 @Injectable()
 export class RoadmapService {
   constructor(
@@ -61,12 +85,17 @@ export class RoadmapService {
    * @returns 분야 리스트
    */
   async getFields(): Promise<FieldListResponse> {
+    const cached = await this.getCachedFieldList();
+    if (cached) {
+      return cached;
+    }
+
     const fields = await this.fieldRepository.find({
       select: ['slug', 'name', 'description'],
       order: { id: 'ASC' },
     });
 
-    return {
+    const response: FieldListResponse = {
       fields: fields.map(field => ({
         slug: field.slug,
         name: field.name,
@@ -74,6 +103,9 @@ export class RoadmapService {
         icon: this.getFieldIconBySlug(field.slug),
       })),
     };
+
+    await this.setCachedFieldList(response);
+    return response;
   }
 
   /**
@@ -83,23 +115,32 @@ export class RoadmapService {
    * @returns 필드와 유닛/스텝 정보
    */
   async getUnitsByFieldSlug(fieldSlug: string, userId: number | null): Promise<FieldUnitsResponse> {
-    const field = await this.fieldRepository.findOne({
-      where: { slug: fieldSlug },
-      relations: { units: { steps: true } }, // 유닛과 스텝까지 함께 로딩
-    });
+    let baseResponse = await this.getCachedFieldUnitsBase(fieldSlug);
 
-    if (!field) {
-      throw new NotFoundException('Field not found.'); // 존재하지 않으면 404
+    if (!baseResponse) {
+      const field = await this.fieldRepository.findOne({
+        where: { slug: fieldSlug },
+        relations: { units: { steps: true } }, // 유닛과 스텝까지 함께 로딩
+      });
+
+      if (!field) {
+        throw new NotFoundException('Field not found.'); // 존재하지 않으면 404
+      }
+
+      const units = field.units ?? [];
+      const steps = units.flatMap(unit => unit.steps ?? []);
+      const stepIds = steps.map(step => step.id);
+      const uniqueStepIds = Array.from(new Set(stepIds));
+      const quizCountByStepId = await this.getQuizCountByStepId(uniqueStepIds);
+
+      baseResponse = this.buildFieldUnitsBaseResponse(field, units, quizCountByStepId);
+      await this.setCachedFieldUnitsBase(fieldSlug, baseResponse);
     }
 
-    const units = field.units ?? [];
-    const steps = units.flatMap(unit => unit.steps ?? []);
-    const stepIds = steps.map(step => step.id);
-    const uniqueStepIds = Array.from(new Set(stepIds));
-    const quizCountByStepId = await this.getQuizCountByStepId(uniqueStepIds);
-    const completedStepIdSet = await this.getCompletedStepIdSet(uniqueStepIds, userId);
+    const stepIds = this.extractStepIdsFromFieldUnitsBase(baseResponse);
+    const completedStepIdSet = await this.getCompletedStepIdSet(stepIds, userId);
 
-    return this.buildFieldUnitsResponse(field, units, quizCountByStepId, completedStepIdSet);
+    return this.applyCompletedStepsToFieldUnitsBase(baseResponse, completedStepIdSet);
   }
 
   /**
@@ -181,6 +222,11 @@ export class RoadmapService {
    * @returns 필드 정보와 첫 유닛
    */
   async getFirstUnitByFieldSlug(fieldSlug: string): Promise<FirstUnitResponse> {
+    const cached = await this.getCachedFirstUnit(fieldSlug);
+    if (cached) {
+      return cached;
+    }
+
     const field = await this.fieldRepository
       .createQueryBuilder('field')
       .leftJoinAndSelect('field.units', 'unit')
@@ -207,13 +253,16 @@ export class RoadmapService {
       };
     }
 
-    return {
+    const response: FirstUnitResponse = {
       field: {
         name: field.name,
         slug: field.slug,
       },
       unit: unitSummary,
     };
+
+    await this.setCachedFirstUnit(fieldSlug, response);
+    return response;
   }
 
   /**
@@ -534,38 +583,6 @@ export class RoadmapService {
   }
 
   /**
-   * 엔티티를 응답 DTO 형태로 변환한다.
-   * @param field 필드 엔티티
-   * @param units 유닛 엔티티 목록
-   * @param quizCountByStepId stepId -> quizCount 매핑
-   * @param completedStepIdSet 완료된 스텝 ID 집합
-   * @returns 응답 DTO
-   */
-  private buildFieldUnitsResponse(
-    field: Field,
-    units: NonNullable<Field['units']> = [],
-    quizCountByStepId: Map<number, number>,
-    completedStepIdSet: Set<number>,
-  ): FieldUnitsResponse {
-    return {
-      field: {
-        name: field.name,
-        slug: field.slug,
-      },
-      units: this.sortByOrderIndex(units).map(unit => ({
-        id: unit.id,
-        title: unit.title,
-        orderIndex: unit.orderIndex,
-        steps: this.buildUnitStepsWithCheckpoints(
-          unit.steps ?? [],
-          quizCountByStepId,
-          completedStepIdSet,
-        ),
-      })),
-    };
-  }
-
-  /**
    * 유닛의 스텝을 orderIndex 기준으로 정렬해 응답 형태로 변환한다.
    * 체크포인트 스텝은 DB에 저장된 값을 그대로 사용한다.
    */
@@ -598,6 +615,177 @@ export class RoadmapService {
    */
   private sortByOrderIndex<T extends { orderIndex: number }>(items: T[]): T[] {
     return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  private buildFieldUnitsBaseResponse(
+    field: Field,
+    units: NonNullable<Field['units']> = [],
+    quizCountByStepId: Map<number, number>,
+  ): FieldUnitsBaseResponse {
+    return {
+      field: {
+        name: field.name,
+        slug: field.slug,
+      },
+      units: this.sortByOrderIndex(units).map(unit => ({
+        id: unit.id,
+        title: unit.title,
+        orderIndex: unit.orderIndex,
+        steps: this.sortByOrderIndex(unit.steps ?? []).map(step => ({
+          id: step.id,
+          title: step.title,
+          orderIndex: step.orderIndex,
+          quizCount: quizCountByStepId.get(step.id) ?? 0,
+          isCheckpoint: step.isCheckpoint,
+        })),
+      })),
+    };
+  }
+
+  private applyCompletedStepsToFieldUnitsBase(
+    base: FieldUnitsBaseResponse,
+    completedStepIdSet: Set<number>,
+  ): FieldUnitsResponse {
+    return {
+      field: base.field,
+      units: base.units.map(unit => ({
+        id: unit.id,
+        title: unit.title,
+        orderIndex: unit.orderIndex,
+        steps: unit.steps.map(step => {
+          const isCompleted = completedStepIdSet.has(step.id);
+          const isLocked = step.isCheckpoint && !isCompleted;
+
+          return {
+            ...step,
+            isCompleted,
+            isLocked,
+          };
+        }),
+      })),
+    };
+  }
+
+  private extractStepIdsFromFieldUnitsBase(base: FieldUnitsBaseResponse): number[] {
+    const stepIds: number[] = [];
+
+    for (const unit of base.units) {
+      for (const step of unit.steps) {
+        stepIds.push(step.id);
+      }
+    }
+
+    return Array.from(new Set(stepIds));
+  }
+
+  private buildFieldUnitsCacheKey(fieldSlug: string): string {
+    return `fields:${fieldSlug}:units`;
+  }
+
+  private buildFirstUnitCacheKey(fieldSlug: string): string {
+    return `fields:${fieldSlug}:first_unit`;
+  }
+
+  private async getCachedFieldList(): Promise<FieldListResponse | null> {
+    try {
+      const cached = await this.redisService.get(FIELD_LIST_CACHE_KEY);
+      if (!this.isFieldListResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedFieldList(value: FieldListResponse): Promise<void> {
+    try {
+      await this.redisService.set(FIELD_LIST_CACHE_KEY, value, FIELD_LIST_CACHE_TTL_SECONDS);
+    } catch {
+      return;
+    }
+  }
+
+  private async getCachedFieldUnitsBase(fieldSlug: string): Promise<FieldUnitsBaseResponse | null> {
+    const cacheKey = this.buildFieldUnitsCacheKey(fieldSlug);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isFieldUnitsBaseResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedFieldUnitsBase(
+    fieldSlug: string,
+    value: FieldUnitsBaseResponse,
+  ): Promise<void> {
+    const cacheKey = this.buildFieldUnitsCacheKey(fieldSlug);
+
+    try {
+      await this.redisService.set(cacheKey, value, FIELD_UNITS_CACHE_TTL_SECONDS);
+    } catch {
+      return;
+    }
+  }
+
+  private async getCachedFirstUnit(fieldSlug: string): Promise<FirstUnitResponse | null> {
+    const cacheKey = this.buildFirstUnitCacheKey(fieldSlug);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isFirstUnitResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedFirstUnit(fieldSlug: string, value: FirstUnitResponse): Promise<void> {
+    const cacheKey = this.buildFirstUnitCacheKey(fieldSlug);
+
+    try {
+      await this.redisService.set(cacheKey, value, FIRST_UNIT_CACHE_TTL_SECONDS);
+    } catch {
+      return;
+    }
+  }
+
+  private isFieldListResponse(value: unknown): value is FieldListResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { fields?: unknown };
+    return Array.isArray(record.fields);
+  }
+
+  private isFieldUnitsBaseResponse(value: unknown): value is FieldUnitsBaseResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { field?: unknown; units?: unknown };
+    if (!record.field || !record.units) {
+      return false;
+    }
+
+    return Array.isArray(record.units);
+  }
+
+  private isFirstUnitResponse(value: unknown): value is FirstUnitResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { field?: unknown };
+    return Boolean(record.field);
   }
 
   private async saveSolveLog(params: {

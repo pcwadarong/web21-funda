@@ -307,4 +307,28 @@ export class ProgressController {
       limit: query.limit,
     });
   }
+
+  @Get('goals')
+  @ApiOperation({
+    summary: '오늘 목표 현황 조회',
+    description: '오늘 기준으로 만점 스텝 수와 획득 경험치를 반환한다.',
+  })
+  @ApiOkResponse({
+    description: '오늘 목표 현황 조회 성공',
+    schema: {
+      example: {
+        perfectScoreSteps: 2,
+        totalEarnedXP: 45,
+      },
+    },
+  })
+  @UseGuards(JwtAccessGuard)
+  async getTodayGoals(@Req() req: Request & { user?: JwtPayload }) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    return this.progressService.getTodayGoals(userId);
+  }
 }

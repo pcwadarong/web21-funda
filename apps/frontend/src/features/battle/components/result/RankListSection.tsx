@@ -39,25 +39,25 @@ export const RankListSection = ({
   };
 
   return (
-    <div css={contentSideStyle} role="region" aria-label="배틀 결과 순위">
+    <section css={contentSideStyle} aria-label="배틀 결과 순위">
       <h1 css={titleStyle} id="rank-list-title">
         참여 인원
       </h1>
 
-      <div css={tableHeaderStyle} role="row" aria-hidden="true">
+      <div css={tableHeaderStyle} aria-hidden="true">
         <span>등수</span>
         <span>참가자</span>
         <span>점수</span>
       </div>
 
       <section css={listContainerStyle} aria-labelledby="rank-list-title">
-        <ul css={participantListStyle} role="list" aria-label="순위 목록">
+        <ul css={participantListStyle}>
           {rankings.map((ranking, index) => {
             const participant = participantMap[ranking.participantId];
             const rank = index + 1;
 
             return (
-              <li key={ranking.participantId} css={itemStyle} role="listitem">
+              <li key={ranking.participantId} css={itemStyle}>
                 <div css={rankBadgeAreaStyle} aria-hidden="true">
                   {renderRankBadge(rank)}
                 </div>
@@ -73,12 +73,12 @@ export const RankListSection = ({
                   </div>
                   <span css={userNameStyle}>{ranking.displayName}</span>
                 </div>
-                <div
+                <output
                   css={scoreValueStyle}
                   aria-label={`${ranking.displayName} 점수: ${ranking.score}`}
                 >
                   {ranking.score}
-                </div>
+                </output>
               </li>
             );
           })}
@@ -97,7 +97,7 @@ export const RankListSection = ({
           게임 종료하기
         </Button>
       </div>
-    </div>
+    </section>
   );
 };
 

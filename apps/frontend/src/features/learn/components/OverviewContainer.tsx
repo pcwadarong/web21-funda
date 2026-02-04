@@ -99,7 +99,7 @@ export const OverviewContainer = ({
           {data?.unit.title ?? '학습 개요'}
         </h1>
       </header>
-      <section css={contentStyle(theme)} aria-labelledby="overview-title" aria-label="개요 본문">
+      <section css={contentStyle(theme)} aria-labelledby="overview-title">
         {hasOverview ? (
           <MarkdownRenderer text={overviewText} />
         ) : (

@@ -5,7 +5,7 @@ import { ErrorView } from '@/feat/error/components/ErrorView';
 export const NotFound = () => {
   const navigate = useNavigate();
   return (
-    <div role="region" aria-label="페이지 없음">
+    <section aria-label="페이지 없음">
       <ErrorView
         title="페이지를 찾을 수 없습니다."
         description={
@@ -18,6 +18,6 @@ export const NotFound = () => {
         primaryButtonText="학습 메인으로 이동"
         onPrimaryButtonClick={() => navigate('/learn')}
       />
-    </div>
+    </section>
   );
 };

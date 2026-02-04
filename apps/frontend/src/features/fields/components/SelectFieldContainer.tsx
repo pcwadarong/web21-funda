@@ -13,7 +13,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
   const theme = useTheme();
 
   return (
-    <div css={contentWrapperStyle} role="region" aria-label="학습 분야 선택">
+    <section css={contentWrapperStyle} aria-label="학습 분야 선택">
       <header css={headerStyle}>
         <h1 css={title(theme)} id="field-select-title">
           학습 분야 선택
@@ -23,9 +23,10 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
         </span>
       </header>
 
-      <section css={gridStyle} aria-labelledby="field-select-title" aria-label="분야 카드 목록">
+      <section css={gridStyle} aria-labelledby="field-select-title">
         {fields.map(field => (
           <button
+            type="button"
             key={field.slug}
             onClick={() => onFieldClick(field.slug)}
             css={fieldCardStyle(theme)}
@@ -43,7 +44,7 @@ export const SelectFieldContainer = ({ fields, onFieldClick }: SelectFieldContai
           </button>
         ))}
       </section>
-    </div>
+    </section>
   );
 };
 

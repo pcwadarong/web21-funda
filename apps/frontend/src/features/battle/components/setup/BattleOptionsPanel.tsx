@@ -66,6 +66,9 @@ export const BattleOptionsPanel = ({
   const theme = useTheme();
   const { playSound } = useSound();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1200px)').matches : false,
+  );
   const startSoundTimerRef = useRef<number | null>(null);
   const startSoundPlayedRef = useRef(false);
   const canStartBattle = isHost && participantCount > 1;
@@ -137,6 +140,13 @@ export const BattleOptionsPanel = ({
     [],
   );
 
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1200px)');
+    const handler = () => setIsDesktop(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   const handleStartBattleClick = useCallback(() => {
     if (!roomId || !canStartBattle || hasCountdownStarted) {
       return;
@@ -155,6 +165,7 @@ export const BattleOptionsPanel = ({
           SETTING
         </h2>
         <button
+          type="button"
           css={toggleButtonStyle(theme)}
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
@@ -169,7 +180,11 @@ export const BattleOptionsPanel = ({
       </div>
 
       {/* 1. 설정 카드 영역: isExpanded에 따라 노출 여부 결정 */}
-      <div id={collapsibleId} css={collapsibleStyle(isExpanded)} aria-hidden={!isExpanded}>
+      <div
+        id={collapsibleId}
+        css={collapsibleStyle(isExpanded)}
+        aria-hidden={isDesktop ? false : !isExpanded}
+      >
         <div css={contentCardStyle(theme)} role="group" aria-labelledby="battle-settings-heading">
           {Object.entries(BATTLE_CONFIG).map(([key, config]) => (
             <section key={key} css={sectionStyle} role="group" aria-label={config.label}>

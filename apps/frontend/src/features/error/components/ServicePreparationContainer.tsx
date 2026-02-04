@@ -11,22 +11,22 @@ export const ServicePreparationContainer = ({ onGoMain }: ServicePreparationCont
   const theme = useTheme();
 
   return (
-    <div css={containerStyle()} role="region" aria-label="서비스 준비 안내" aria-live="polite">
+    <section css={containerStyle()} aria-label="서비스 준비 안내" aria-live="polite">
       <div css={placeholderStyle(theme)} aria-hidden="true" />
       <h1 css={titleStyle(theme)} id="service-prep-title">
         서비스 준비 중입니다.
       </h1>
-      <p css={descriptionStyle(theme)} aria-describedby="service-prep-title">
+      <p css={descriptionStyle(theme)}>
         보다 나은 서비스 제공을 위하여 페이지 준비 중에 있습니다.
         <br />
         가능한 빠른 시일 내에 준비하여 찾아 뵙겠습니다.
       </p>
-      <div css={buttonWrapperStyle} role="group" aria-label="이동">
-        <Button variant="primary" onClick={onGoMain} fullWidth aria-label="메인 페이지로 이동">
+      <div css={buttonWrapperStyle}>
+        <Button variant="primary" onClick={onGoMain} fullWidth>
           메인 페이지로 이동
         </Button>
       </div>
-    </div>
+    </section>
   );
 };
 

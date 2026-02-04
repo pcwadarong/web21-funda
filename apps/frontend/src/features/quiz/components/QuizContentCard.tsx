@@ -78,7 +78,7 @@ export const QuizContentCard = ({
   ];
 
   return (
-    <article css={cardStyle(theme)} role="region" aria-label="퀴즈 문제">
+    <article css={cardStyle(theme)} aria-label="퀴즈 문제">
       <div css={headerStyle}>
         <h2 css={titleStyle(theme)} id="quiz-question-title">
           Q. <TextWithCodeStyle text={question.content.question} />
@@ -153,7 +153,7 @@ export const QuizContentCard = ({
               onClick={onNext}
               css={flexBtn}
               disabled={isBattleMode}
-              aria-label={isBattleMode ? undefined : nextButtonLabel}
+              aria-label={isBattleMode ? battleNextButtonLabel : nextButtonLabel}
             >
               {isBattleMode ? battleNextButtonLabelWithTimer : nextButtonLabel}
             </Button>

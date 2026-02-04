@@ -45,14 +45,13 @@ export const LearnContainer = ({
     <div css={containerStyle} role="region" aria-label="학습 콘텐츠">
       <SimpleBar css={simpleBarStyle} ref={scrollContainerRef} aria-label="유닛 및 레슨 스크롤">
         <div css={mainStyle}>
-          <div css={centerSectionStyle} aria-label="유닛 및 레슨 목록">
+          <section css={centerSectionStyle} aria-label="유닛 및 레슨 목록">
             <div css={spaceFillerStyle(isDarkMode)} aria-hidden="true"></div>
             {activeUnit && (
               <div css={stickyHeaderWrapperStyle} ref={headerRef}>
-                <div
+                <header
                   key={activeUnit.id}
                   css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
-                  role="banner"
                   aria-label={`현재 유닛: ${activeUnit.title}`}
                 >
                   <div css={headerContentStyle}>
@@ -77,7 +76,7 @@ export const LearnContainer = ({
                     <SVGIcon icon="Notebook" aria-hidden="true" />
                     <span>학습 개요</span>
                   </Link>
-                </div>
+                </header>
               </div>
             )}
 
@@ -95,7 +94,7 @@ export const LearnContainer = ({
                     <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
                     <span css={unitDividerLineStyle(theme)} />
                   </div>
-                  <div css={lessonsContainerStyle(unit.steps.length)}>
+                  <div css={lessonsContainerStyle(unit.steps.length)} role="list">
                     {unit.steps.map((step, index) => {
                       const positionStyle = lessonPositionStyle(index, unitIndex);
 
@@ -165,7 +164,7 @@ export const LearnContainer = ({
                 </section>
               ))}
             </div>
-          </div>
+          </section>
 
           <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
         </div>

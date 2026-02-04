@@ -63,9 +63,10 @@ export const QuizHeader = ({
 
   return (
     <>
-      <header css={headerStyle(theme)} role="banner" aria-label="퀴즈 진행 헤더">
+      <header css={headerStyle(theme)} aria-label="퀴즈 진행 헤더">
         <div css={headerContentStyle(heartCount, isBattleMode)}>
           <button
+            type="button"
             css={closeButtonStyle(theme)}
             onClick={handleCloseClick}
             aria-label={isBattleMode ? '배틀 종료' : '퀴즈 종료'}
@@ -78,7 +79,7 @@ export const QuizHeader = ({
             aria-valuenow={completedSteps}
             aria-valuemin={0}
             aria-valuemax={totalSteps}
-            aria-label={`진행률: ${currentStep}번째 중 ${totalSteps}문제`}
+            aria-label={`진행률: ${completedSteps}완료 / ${totalSteps}문제`}
           >
             <div css={progressBarStyle(theme, progress)} aria-hidden="true" />
           </div>

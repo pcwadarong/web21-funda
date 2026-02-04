@@ -110,26 +110,27 @@ export const BattleRankBar = ({
         {participantCount}명 참여 중
       </div>
       <section aria-label="현재 순위 막대">
-        <div css={listStyle} role="list" aria-label="참가자 순위">
+        <ul css={listStyle} aria-label="참가자 순위">
           {visibleRankings.map((ranking, index) => {
             const isMine = ranking.participantId === currentParticipantId;
             const scoreColor =
               ranking.score >= 0 ? theme.colors.success.main : theme.colors.error.main;
 
             return (
-              <>
+              <li
+                key={ranking.participantId}
+                css={listItemStyle}
+                aria-label={
+                  isMine
+                    ? `나, ${ranking.place}등, 점수 ${ranking.score}`
+                    : `${ranking.displayName}, ${ranking.place}등, 점수 ${ranking.score}`
+                }
+              >
                 <div
-                  key={ranking.participantId}
                   ref={node => {
                     cardRefs.current[ranking.participantId] = node;
                   }}
                   css={cardWrapperStyle}
-                  role="listitem"
-                  aria-label={
-                    isMine
-                      ? `나, ${ranking.place}등, 점수 ${ranking.score}`
-                      : `${ranking.displayName}, ${ranking.place}등, 점수 ${ranking.score}`
-                  }
                 >
                   <div css={cardStyle(theme, isMine)}>
                     <div css={rankBadgeStyle(theme, isMine, isDarkMode)} aria-hidden="true">
@@ -148,10 +149,10 @@ export const BattleRankBar = ({
                   </div>
                 </div>
                 {index === 0 && <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>}
-              </>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </section>
     </div>
   );
@@ -176,20 +177,30 @@ const verticalDividerStyle = (theme: Theme) => css`
 `;
 
 const listStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 12px;
   height: 114px;
   display: flex;
   align-items: center;
   gap: 16px;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 12px;
+`;
+
+const listItemStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 0 0 calc((100% - 65px) / 4);
+  min-width: 0;
 `;
 
 const cardWrapperStyle = css`
   display: flex;
   align-items: center;
   gap: 16px;
-  flex: 0 0 calc((100% - 65px) / 4);
+  width: 100%;
   min-width: 0;
 `;
 

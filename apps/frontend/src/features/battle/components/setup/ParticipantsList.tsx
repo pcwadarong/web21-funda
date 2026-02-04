@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useId } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import type { Participant } from '@/feat/battle/types';
@@ -12,32 +13,27 @@ interface ParticipantsListProps {
 
 export const ParticipantsList = ({ participants, currentParticipantId }: ParticipantsListProps) => {
   const theme = useTheme();
+  const headingId = useId();
 
   return (
-    <div css={containerStyle} role="region" aria-label="참가자 목록">
-      <h2 css={titleStyle(theme)} id="participants-heading">
+    <section css={containerStyle} aria-label="참가자 목록">
+      <h2 css={titleStyle(theme)} id={headingId}>
         PARTICIPANTS
       </h2>
       {!Array.isArray(participants) ? (
-        <div css={containerStyle} role="status" aria-live="polite">
+        <output css={containerStyle} aria-live="polite">
           참여자 목록을 불러오는 중...
-        </div>
+        </output>
       ) : (
         <div css={gridWrapperStyle}>
-          <div
-            css={gridStyle}
-            role="list"
-            aria-labelledby="participants-heading"
-            aria-label="참가자 카드 목록"
-          >
+          <ul css={gridStyle} aria-labelledby={headingId}>
             {participants.map((participant, index) => {
               const isCurrentUser = participant.participantId === currentParticipantId;
               const isHost = index === 0;
               return (
-                <div
+                <li
                   key={participant.id}
                   css={cardStyle(theme, isCurrentUser)}
-                  role="listitem"
                   aria-label={
                     isHost
                       ? `${participant.name}, 호스트${isCurrentUser ? ', 나' : ''}`
@@ -58,17 +54,17 @@ export const ParticipantsList = ({ participants, currentParticipantId }: Partici
                     <div css={nameStyle(theme)}>{participant.name}</div>
                   </div>
                   {index === 0 && (
-                    <span css={crownStyle} aria-label="방장">
+                    <span css={crownStyle} aria-hidden="true">
                       👑
                     </span>
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
@@ -94,6 +90,9 @@ const gridWrapperStyle = css`
 `;
 
 const gridStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 15px;

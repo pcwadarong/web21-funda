@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import type { ProfileFollowUser } from '@/feat/user/profile/types';
@@ -33,32 +33,90 @@ export const FollowListModal = ({
   const emptyText =
     activeTab === 'following' ? '팔로잉한 사용자가 없습니다.' : '팔로워가 없습니다.';
 
-  const followingTabId = 'follow-tab-following';
-  const followersTabId = 'follow-tab-followers';
-  const panelId = 'follow-list-panel';
+  const id = useId();
+  const followingTabId = `${id}-following`;
+  const followersTabId = `${id}-followers`;
+  const panelId = `${id}-panel`;
+
+  const followingRef = useRef<HTMLButtonElement>(null);
+  const followersRef = useRef<HTMLButtonElement>(null);
+
+  const focusActiveTab = useCallback(() => {
+    if (activeTab === 'following') {
+      followingRef.current?.focus();
+    } else {
+      followersRef.current?.focus();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    focusActiveTab();
+  }, [activeTab, focusActiveTab]);
+
+  const handleTabClick = useCallback((tab: 'following' | 'followers') => {
+    setActiveTab(tab);
+  }, []);
+
+  const handleTabKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const next =
+          e.key === 'ArrowRight'
+            ? activeTab === 'following'
+              ? 'followers'
+              : 'following'
+            : activeTab === 'followers'
+              ? 'following'
+              : 'followers';
+        setActiveTab(next);
+        return;
+      }
+      if (e.key === 'Home') {
+        e.preventDefault();
+        setActiveTab('following');
+        return;
+      }
+      if (e.key === 'End') {
+        e.preventDefault();
+        setActiveTab('followers');
+        return;
+      }
+    },
+    [activeTab],
+  );
 
   return (
     <div css={containerStyle} role="dialog" aria-label="팔로잉/팔로워 목록">
-      <div css={tabRowStyle(theme, activeTab)} role="tablist" aria-label="팔로잉·팔로워 탭">
+      <div
+        css={tabRowStyle(theme, activeTab)}
+        role="tablist"
+        aria-label="팔로잉·팔로워 탭"
+        onKeyDown={handleTabKeyDown}
+      >
         <button
+          ref={followingRef}
           type="button"
           role="tab"
           id={followingTabId}
           aria-selected={activeTab === 'following'}
           aria-controls={panelId}
+          tabIndex={activeTab === 'following' ? 0 : -1}
           css={tabStyle(theme, activeTab === 'following')}
-          onClick={() => setActiveTab('following')}
+          onClick={() => handleTabClick('following')}
         >
           팔로잉 {followingCount}
         </button>
         <button
+          ref={followersRef}
           type="button"
           role="tab"
           id={followersTabId}
           aria-selected={activeTab === 'followers'}
           aria-controls={panelId}
+          tabIndex={activeTab === 'followers' ? 0 : -1}
           css={tabStyle(theme, activeTab === 'followers')}
-          onClick={() => setActiveTab('followers')}
+          onClick={() => handleTabClick('followers')}
         >
           팔로워 {followerCount}
         </button>
@@ -71,14 +129,14 @@ export const FollowListModal = ({
         aria-busy={isLoading}
       >
         {isLoading && (
-          <p css={emptyTextStyle(theme)} role="status" aria-live="polite">
+          <output css={emptyTextStyle(theme)} aria-live="polite">
             로딩 중...
-          </p>
+          </output>
         )}
         {!isLoading && list.length === 0 && (
-          <p css={emptyTextStyle(theme)} role="status">
+          <output css={emptyTextStyle(theme)} aria-live="polite">
             {emptyText}
-          </p>
+          </output>
         )}
         {!isLoading &&
           list.map(member => (
@@ -203,6 +261,7 @@ const rankStyle = (theme: Theme) => css`
 `;
 
 const emptyTextStyle = (theme: Theme) => css`
+  display: block;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.light};
 `;

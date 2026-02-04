@@ -342,6 +342,7 @@ const weekDayLabelRowStyle = css`
   display: flex;
   flex-direction: column;
   margin-top: -0.2rem;
+  gap: 0.2rem;
 `;
 
 const weekDayLabelStyle = (theme: Theme) => css`

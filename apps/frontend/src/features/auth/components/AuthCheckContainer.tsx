@@ -20,13 +20,11 @@ export const AuthCheckContainer = ({ from, onLogin, onContinue }: AuthCheckConta
           <span css={emojiStyle} />
         </div>
         <div>
-          <h1 css={titleStyle(theme)} id="auth-check-title">
-            프로필을 생성하세요!
-          </h1>
+          <h1 css={titleStyle(theme)}>프로필을 생성하세요!</h1>
           <p css={descriptionStyle(theme)}>프로필을 만들어 학습 진도를 저장하고 계속 학습하세요!</p>
         </div>
         <div css={buttonGroupStyle} role="group" aria-label="로그인 선택">
-          <Button variant="primary" onClick={onLogin} fullWidth aria-label="로그인하기">
+          <Button variant="primary" onClick={onLogin} fullWidth>
             로그인하기
           </Button>
           <Button

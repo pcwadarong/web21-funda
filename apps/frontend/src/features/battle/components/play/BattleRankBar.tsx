@@ -106,9 +106,9 @@ export const BattleRankBar = ({
 
   return (
     <section css={containerStyle} aria-label="실시간 순위">
-      <div css={countStyle(theme)} role="status" aria-live="polite">
+      <output css={countStyle(theme)} aria-live="polite">
         {participantCount}명 참여 중
-      </div>
+      </output>
       <section aria-label="현재 순위 막대">
         <ul css={listStyle} aria-label="참가자 순위">
           {visibleRankings.map((ranking, index) => {

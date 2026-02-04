@@ -85,18 +85,18 @@ export const RankListSection = ({
         </ul>
       </section>
 
-      <p css={timerTextStyle} role="status" aria-live="polite" aria-atomic="true">
+      <output css={timerTextStyle} role="status" aria-live="polite" aria-atomic="true">
         {timeLeft}초 뒤 자동으로 대기실로 이동합니다
-      </p>
+      </output>
 
-      <div css={buttonGroupStyle} role="group" aria-label="결과 액션">
+      <fieldset css={buttonGroupStyle} aria-label="결과 액션">
         <Button variant="secondary" fullWidth onClick={onRestart}>
           한 번 더 하기
         </Button>
         <Button fullWidth onClick={onLeave} aria-label="게임 종료하고 대기실로 이동">
           게임 종료하기
         </Button>
-      </div>
+      </fieldset>
     </section>
   );
 };

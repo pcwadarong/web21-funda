@@ -224,7 +224,7 @@ export const BattleOptionsPanel = ({
       </div>
 
       {/* 2. 버튼 영역: 설정창의 상태와 상관없이 항상 노출 */}
-      <div css={actionButtonsStyle} role="group" aria-label="배틀 액션">
+      <section css={actionButtonsStyle} aria-label="배틀 액션">
         <Button
           variant="secondary"
           fullWidth
@@ -245,7 +245,7 @@ export const BattleOptionsPanel = ({
         >
           {startButtonLabel}
         </Button>
-      </div>
+      </section>
     </section>
   );
 };

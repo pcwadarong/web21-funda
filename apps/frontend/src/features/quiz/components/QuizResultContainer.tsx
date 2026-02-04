@@ -62,7 +62,9 @@ export const QuizResultContainer = ({
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   useEffect(() => {
-    if (guestStepId !== undefined) removeGuestStepAttempt(guestStepId);
+    if (typeof guestStepId === 'number' && !Number.isNaN(guestStepId)) {
+      removeGuestStepAttempt(guestStepId);
+    }
   }, [guestStepId, removeGuestStepAttempt]);
 
   useEffect(() => {

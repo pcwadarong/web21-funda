@@ -52,6 +52,7 @@ export const LearnContainer = ({
                 <header
                   key={activeUnit.id}
                   css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
+                  role="banner"
                   aria-label={`현재 유닛: ${activeUnit.title}`}
                 >
                   <div css={headerContentStyle}>
@@ -124,11 +125,7 @@ export const LearnContainer = ({
                         onStepClick(step);
                       };
 
-                      const stepStatus = step.isCompleted
-                        ? '완료'
-                        : step.isLocked
-                          ? '잠김'
-                          : '시작 가능';
+                      const stepStatus = step.isCompleted ? '완료' : '시작 가능';
                       return (
                         <li key={step.id} css={positionStyle}>
                           <div css={lessonStackStyle}>

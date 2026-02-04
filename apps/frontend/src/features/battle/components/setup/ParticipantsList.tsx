@@ -14,19 +14,40 @@ export const ParticipantsList = ({ participants, currentParticipantId }: Partici
   const theme = useTheme();
 
   return (
-    <div css={containerStyle}>
-      <h2 css={titleStyle(theme)}>PARTICIPANTS</h2>
+    <div css={containerStyle} role="region" aria-label="참가자 목록">
+      <h2 css={titleStyle(theme)} id="participants-heading">
+        PARTICIPANTS
+      </h2>
       {!Array.isArray(participants) ? (
-        <div css={containerStyle}>참여자 목록을 불러오는 중...</div>
+        <div css={containerStyle} role="status" aria-live="polite">
+          참여자 목록을 불러오는 중...
+        </div>
       ) : (
         <div css={gridWrapperStyle}>
-          <div css={gridStyle}>
+          <div
+            css={gridStyle}
+            role="list"
+            aria-labelledby="participants-heading"
+            aria-label="참가자 카드 목록"
+          >
             {participants.map((participant, index) => {
               const isCurrentUser = participant.participantId === currentParticipantId;
+              const isHost = index === 0;
               return (
-                <div key={participant.id} css={cardStyle(theme, isCurrentUser)}>
+                <div
+                  key={participant.id}
+                  css={cardStyle(theme, isCurrentUser)}
+                  role="listitem"
+                  aria-label={
+                    isHost
+                      ? `${participant.name}, 호스트${isCurrentUser ? ', 나' : ''}`
+                      : `${participant.name}${isCurrentUser ? ', 나' : ''}`
+                  }
+                >
                   <div css={leftInfoStyle}>
-                    <span css={numberStyle(theme)}>{index + 1}</span>
+                    <span css={numberStyle(theme)} aria-hidden="true">
+                      {index + 1}
+                    </span>
                     <Avatar
                       src={participant.profileImageUrl}
                       name={participant.name}
@@ -36,7 +57,11 @@ export const ParticipantsList = ({ participants, currentParticipantId }: Partici
                     />
                     <div css={nameStyle(theme)}>{participant.name}</div>
                   </div>
-                  {index === 0 && <span css={crownStyle}>👑</span>}
+                  {index === 0 && (
+                    <span css={crownStyle} aria-label="방장">
+                      👑
+                    </span>
+                  )}
                 </div>
               );
             })}

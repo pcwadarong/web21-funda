@@ -145,40 +145,52 @@ export const BattleOptionsPanel = ({
     onStartBattle(roomId);
   }, [canStartBattle, hasCountdownStarted, onStartBattle, roomId]);
 
+  const collapsibleId = 'battle-settings-panel';
+
   return (
-    <div css={containerStyle}>
+    <div css={containerStyle} role="region" aria-label="배틀 설정">
       <BattleStartCountdown isVisible={isStartCountdownVisible} label={startCountdownLabel} />
       <div css={headerWrapper}>
-        <h2 css={titleStyle(theme)}>SETTING</h2>
-        <button css={toggleButtonStyle(theme)} onClick={() => setIsExpanded(!isExpanded)}>
+        <h2 css={titleStyle(theme)} id="battle-settings-heading">
+          SETTING
+        </h2>
+        <button
+          css={toggleButtonStyle(theme)}
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-controls={collapsibleId}
+          aria-label={isExpanded ? '설정 접기' : '설정 펼치기'}
+        >
           <span css={toggleTextStyle(theme)}>{isExpanded ? '접기' : '펼치기'}</span>
-          <div css={iconWrapperStyle(isExpanded)}>
+          <div css={iconWrapperStyle(isExpanded)} aria-hidden="true">
             <SVGIcon icon="ArrowLeft" size="sm" />
           </div>
         </button>
       </div>
 
       {/* 1. 설정 카드 영역: isExpanded에 따라 노출 여부 결정 */}
-      <div css={collapsibleStyle(isExpanded)}>
-        <div css={contentCardStyle(theme)}>
+      <div id={collapsibleId} css={collapsibleStyle(isExpanded)} aria-hidden={!isExpanded}>
+        <div css={contentCardStyle(theme)} role="group" aria-labelledby="battle-settings-heading">
           {Object.entries(BATTLE_CONFIG).map(([key, config]) => (
-            <section key={key} css={sectionStyle}>
-              <div css={sectionLabelStyle(theme)}>{config.label}</div>
-              <div css={buttonGroupStyle}>
+            <section key={key} css={sectionStyle} role="group" aria-label={config.label}>
+              <div css={sectionLabelStyle(theme)} id={`setting-${key}-label`}>
+                {config.label}
+              </div>
+              <div css={buttonGroupStyle} role="group" aria-labelledby={`setting-${key}-label`}>
                 {config.options.map(opt => {
                   const isMaxPlayers = key === 'maxPlayers';
                   const isLowerThanCurrent =
                     isMaxPlayers && typeof opt.value === 'number' && participantCount > opt.value;
                   const isDisabled = !isHost || isLowerThanCurrent;
+                  const isSelected = settings?.[key as keyof typeof settings] === opt.value;
 
                   return (
                     <button
                       key={opt.value}
-                      css={pillButtonStyle(
-                        theme,
-                        settings?.[key as keyof typeof settings] === opt.value,
-                      )}
+                      css={pillButtonStyle(theme, isSelected)}
                       disabled={isDisabled}
+                      aria-pressed={isSelected}
+                      aria-label={`${config.label}: ${opt.label}${isSelected ? ', 선택됨' : ''}`}
                       onClick={() =>
                         roomId &&
                         settings &&
@@ -197,9 +209,15 @@ export const BattleOptionsPanel = ({
       </div>
 
       {/* 2. 버튼 영역: 설정창의 상태와 상관없이 항상 노출 */}
-      <div css={actionButtonsStyle}>
-        <Button variant="secondary" fullWidth onClick={onCopyLink} css={flexBtn}>
-          <SVGIcon icon="Copy" size="md" /> 초대 링크 복사
+      <div css={actionButtonsStyle} role="group" aria-label="배틀 액션">
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={onCopyLink}
+          css={flexBtn}
+          aria-label="초대 링크 복사"
+        >
+          <SVGIcon icon="Copy" size="md" aria-hidden="true" /> 초대 링크 복사
         </Button>
         <Button
           variant="primary"
@@ -207,6 +225,8 @@ export const BattleOptionsPanel = ({
           disabled={!canStartBattle || hasCountdownStarted}
           onClick={handleStartBattleClick}
           css={flexBtn}
+          aria-label={startButtonLabel}
+          aria-disabled={!canStartBattle || hasCountdownStarted}
         >
           {startButtonLabel}
         </Button>

@@ -105,10 +105,12 @@ export const BattleRankBar = ({
   }, [visibleRankings]);
 
   return (
-    <div css={containerStyle}>
-      <div css={countStyle(theme)}>{participantCount}명 참여 중</div>
-      <section>
-        <div css={listStyle}>
+    <div css={containerStyle} role="region" aria-label="실시간 순위">
+      <div css={countStyle(theme)} role="status" aria-live="polite">
+        {participantCount}명 참여 중
+      </div>
+      <section aria-label="현재 순위 막대">
+        <div css={listStyle} role="list" aria-label="참가자 순위">
           {visibleRankings.map((ranking, index) => {
             const isMine = ranking.participantId === currentParticipantId;
             const scoreColor =
@@ -122,9 +124,17 @@ export const BattleRankBar = ({
                     cardRefs.current[ranking.participantId] = node;
                   }}
                   css={cardWrapperStyle}
+                  role="listitem"
+                  aria-label={
+                    isMine
+                      ? `나, ${ranking.place}등, 점수 ${ranking.score}`
+                      : `${ranking.displayName}, ${ranking.place}등, 점수 ${ranking.score}`
+                  }
                 >
                   <div css={cardStyle(theme, isMine)}>
-                    <div css={rankBadgeStyle(theme, isMine, isDarkMode)}>{ranking.place}</div>
+                    <div css={rankBadgeStyle(theme, isMine, isDarkMode)} aria-hidden="true">
+                      {ranking.place}
+                    </div>
                     <Avatar
                       src={ranking.profileImg}
                       name={isMine ? '나' : ranking.displayName}
@@ -137,7 +147,7 @@ export const BattleRankBar = ({
                     </div>
                   </div>
                 </div>
-                {index === 0 && <div css={verticalDividerStyle(theme)}></div>}
+                {index === 0 && <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>}
               </>
             );
           })}

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 
 import { getKstNextDayStart, getKstNow } from '../common/utils/kst-date';
 import { QuizContentService } from '../common/utils/quiz-content.service';
 import { DEFAULT_SCORE_WEIGHTS } from '../common/utils/score-weights';
+import { DEFAULT_TODAY_GOALS, TodayGoalsParams } from '../common/utils/today-goals';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
@@ -281,14 +282,11 @@ export class ProgressService {
   /**
    * 스텝 시도에 해당하는 퀴즈 풀이 로그를 기반으로 점수를 계산한다.
    * @param stepAttemptId 계산 대상 스텝 시도 ID
-   * @param options 점수 가중치 설정(없으면 기본값 사용)
    */
   async calculateStepAttemptScore(
     stepAttemptId: number,
     options?: Partial<ScoreCalculationOptions>,
   ): Promise<StepAttemptScore> {
-    const weights = this.mergeScoreWeights(options);
-
     const logs = await this.solveLogRepository.find({
       where: { stepAttempt: { id: stepAttemptId } },
     });
@@ -306,15 +304,7 @@ export class ProgressService {
     const correctCount = logs.filter(log => log.isCorrect).length;
 
     // 기본 3점 + 정답 보너스(기본 1점) + 기타 보너스(확장 시)
-    const score = logs.reduce((accumulator, log) => {
-      const baseScore = weights.baseScorePerQuiz;
-      // TODO: 추후 난이도/시간 가중치 반영 시 아래 보너스 값을 채운다.
-      const correctnessBonus = log.isCorrect ? weights.correctBonus : weights.wrongBonus;
-      const difficultyBonus = 0; // weights.difficultyMultiplier * (log.quiz?.difficulty ?? 0);
-      const speedBonus = 0; // 시간 기반 보너스/페널티
-
-      return accumulator + baseScore + correctnessBonus + difficultyBonus + speedBonus;
-    }, 0);
+    const score = this.calculateScore(logs, options);
 
     const successRate = totalQuizzes === 0 ? 0 : (correctCount / totalQuizzes) * 100;
 
@@ -324,6 +314,27 @@ export class ProgressService {
       totalQuizzes,
       successRate,
     };
+  }
+
+  /**
+   * 풀이 로그 배열로부터 점수를 계산한다.
+   *
+   * @param logs 점수 계산 대상 풀이 로그 목록
+   * @param options 점수 가중치 옵션(기본값은 DEFAULT_SCORE_WEIGHTS)
+   * @returns 계산된 총 점수
+   */
+  calculateScore(logs: SolveLog[], options?: Partial<ScoreCalculationOptions>) {
+    const weights = this.mergeScoreWeights(options);
+
+    return logs.reduce((accumulator, log) => {
+      const baseScore = weights.baseScorePerQuiz;
+      // TODO: 추후 난이도/시간 가중치 반영 시 아래 보너스 값을 채운다.
+      const correctnessBonus = log.isCorrect ? weights.correctBonus : weights.wrongBonus;
+      const difficultyBonus = 0; // weights.difficultyMultiplier * (log.quiz?.difficulty ?? 0);
+      const speedBonus = 0; // 시간 기반 보너스/페널티
+
+      return accumulator + baseScore + correctnessBonus + difficultyBonus + speedBonus;
+    }, 0);
   }
 
   private mergeScoreWeights(options?: Partial<ScoreCalculationOptions>): ScoreCalculationOptions {
@@ -415,6 +426,47 @@ export class ProgressService {
     await this.userRepository.save(user);
 
     return { isFirstSolveToday: true, currentStreak: nextStreak };
+  }
+
+  /**
+   * 오늘 달성한 목표 지표(만점 스텝 수, 획득 경험치)를 조회한다. (만점 스텝 수는 반복해도 증가 안하는 상태)
+   * 만약 목표를 달성했다면, 다이아몬드 1개 지급
+   *
+   * @param userId 사용자 ID
+   * @returns 오늘의 목표 달성 데이터
+   */
+  async getTodayGoals(userId: number): Promise<TodayGoalsParams> {
+    const now = getKstNow();
+
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+
+    const perfectScoreSteps = await this.stepStatusRepository.count({
+      where: { userId, successRate: 100, createdAt: Between(start, end) },
+    });
+
+    const logs = await this.solveLogRepository.find({
+      where: { userId, createdAt: Between(start, end) },
+    });
+
+    const totalEarnedXP = this.calculateScore(logs);
+
+    const result: TodayGoalsParams = {
+      perfectScore: {
+        ...DEFAULT_TODAY_GOALS.perfectScore,
+        current: perfectScoreSteps,
+      },
+      totalXP: {
+        ...DEFAULT_TODAY_GOALS.totalXP,
+        current: totalEarnedXP,
+      },
+      rewardGranted: false,
+    };
+
+    return result;
   }
 }
 

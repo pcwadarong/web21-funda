@@ -28,6 +28,11 @@ export class LoggingInterceptor implements NestInterceptor {
     const userAgent = request.get('user-agent') || '';
     const { ip, method, path: url } = request;
 
+    // 메트릭 수집 엔드포인트는 로그에서 제외 (Prometheus 스크랩 노이즈 방지)
+    if (url.startsWith('/api/metrics') || url === '/metrics') {
+      return next.handle();
+    }
+
     // [중요] Correlation ID 생성: 단일 요청에 대한 시작 로그와 종료 로그를 하나로 묶어주는 고유 키
     const correlationKey = randomUUID();
 

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { Loading } from '@/comp/Loading';
@@ -19,5 +20,9 @@ export const AdminGuard = () => {
     return <Navigate to="/learn" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <Suspense fallback={<Loading />}>
+      <Outlet />
+    </Suspense>
+  );
 };

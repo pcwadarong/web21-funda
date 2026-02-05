@@ -10,6 +10,11 @@ export const MOUTH_OPTIONS = [
   { key: 'openMouth', value: 'o', label: '"오" 발음', icon: '⭕' },
 ] as const;
 
+export const LOOKAT_OPTIONS = [
+  { value: 'head+eyes', label: '헤드 + 눈알', icon: '👀' },
+  { value: 'eyes', label: '눈알만', icon: '👁️' },
+] as const;
+
 export const CONTROL_CATEGORIES = [
   {
     title: '얼굴 애니메이션',
@@ -21,9 +26,6 @@ export const CONTROL_CATEGORIES = [
   },
   {
     title: '기타 설정',
-    items: [
-      { key: 'blink', value: true, label: '눈 깜빡임 자동', icon: '👁️' },
-      { key: 'lookAt', value: true, label: '시선 추적', icon: '👀' },
-    ],
+    items: [{ key: 'blink', value: true, label: '눈 깜빡임 자동', icon: '👁️' }],
   },
 ] as const;

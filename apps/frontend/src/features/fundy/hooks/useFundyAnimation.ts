@@ -82,6 +82,12 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
   const clockRef = useRef(0);
   const blinkState = useRef({ timer: 0, next: Math.random() * 3 + 2, isBlinking: false });
   const mouseLerp = useRef(new THREE.Vector2());
+  const restRotations = useRef<{
+    ready: boolean;
+    head?: THREE.Euler;
+    eyeL?: THREE.Euler;
+    eyeR?: THREE.Euler;
+  }>({ ready: false });
 
   const refs = useMemo(() => {
     const asBone = (node?: THREE.Object3D | null) =>
@@ -91,21 +97,16 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
 
     return {
       bones: {
-        defHead: asBone(
-          pick(
-            nodes['DEF-spine.006'],
-            nodes['DEF-spine006'],
-            nodes['DEF-spine005'],
-            nodes['DEF-spine'],
-          ),
-        ),
+        defHead: asBone(nodes['DEF-spine']),
+        eyeL: asBone(pick(nodes['DEF-eye_masterL'], nodes['DEF-eyeL'])),
+        eyeR: asBone(pick(nodes['DEF-eye_masterR'], nodes['DEF-eyeR'])),
       },
       morphs: {
         eyelash: nodes.eyelash,
-        head: pick(nodes.head_1, nodes.head),
+        head: nodes.head,
         eyebrow: nodes.eyebrow,
         teeth: nodes.teeth,
-        tongue: pick(nodes.tongue_1, nodes.tongue),
+        tongue: nodes.tongue,
       },
     };
   }, [nodes]);
@@ -172,32 +173,110 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     // 시선 추적
     // ==========================================
 
-    if (lookAt && bones.defHead) {
+    const lookAtMode =
+      lookAt === true
+        ? 'head+eyes'
+        : lookAt === false
+          ? false
+          : (lookAt as 'head' | 'eyes' | 'head+eyes');
+    const trackHead = lookAtMode === 'head' || lookAtMode === 'head+eyes';
+    const trackEyes = lookAtMode === 'eyes' || lookAtMode === 'head+eyes';
+
+    if (!restRotations.current.ready) {
+      if (bones.defHead || bones.eyeL || bones.eyeR) {
+        restRotations.current = {
+          ready: true,
+          head: bones.defHead?.rotation.clone(),
+          eyeL: bones.eyeL?.rotation.clone(),
+          eyeR: bones.eyeR?.rotation.clone(),
+        };
+      }
+    }
+
+    if (lookAtMode) {
       const { pointer } = state;
       mouseLerp.current.lerp(pointer, 0.1);
 
-      const targetRotationY = -mouseLerp.current.x * 0.6; // 좌우
-      const targetRotationX = mouseLerp.current.y * 0.4; // 상하
+      const headRotationY = mouseLerp.current.x * 0.6; // 좌우 (방향 반전)
+      const headRotationX = -mouseLerp.current.y * 0.4; // 상하 (방향 반전)
+      const eyeRotationY = mouseLerp.current.x * 0.9;
+      const eyeRotationX = -mouseLerp.current.y * 0.6;
 
-      bones.defHead.rotation.y = THREE.MathUtils.lerp(
-        bones.defHead.rotation.y,
-        targetRotationY,
-        0.1,
-      );
-      bones.defHead.rotation.x = THREE.MathUtils.lerp(
-        bones.defHead.rotation.x,
-        targetRotationX,
-        0.1,
-      );
+      if (trackHead && bones.defHead) {
+        bones.defHead.rotation.y = THREE.MathUtils.lerp(
+          bones.defHead.rotation.y,
+          headRotationY,
+          0.1,
+        );
+        bones.defHead.rotation.x = THREE.MathUtils.lerp(
+          bones.defHead.rotation.x,
+          headRotationX,
+          0.1,
+        );
+        bones.defHead.updateMatrixWorld(true);
+      }
 
-      bones.defHead.updateMatrixWorld(true);
+      if (trackEyes) {
+        if (bones.eyeL) {
+          bones.eyeL.rotation.y = THREE.MathUtils.lerp(bones.eyeL.rotation.y, eyeRotationY, 0.15);
+          bones.eyeL.rotation.x = THREE.MathUtils.lerp(bones.eyeL.rotation.x, eyeRotationX, 0.15);
+          bones.eyeL.updateMatrixWorld(true);
+        }
+        if (bones.eyeR) {
+          bones.eyeR.rotation.y = THREE.MathUtils.lerp(bones.eyeR.rotation.y, eyeRotationY, 0.15);
+          bones.eyeR.rotation.x = THREE.MathUtils.lerp(bones.eyeR.rotation.x, eyeRotationX, 0.15);
+          bones.eyeR.updateMatrixWorld(true);
+        }
+      }
+    } else {
+      if (bones.defHead && restRotations.current.head) {
+        bones.defHead.rotation.y = THREE.MathUtils.lerp(
+          bones.defHead.rotation.y,
+          restRotations.current.head.y,
+          0.1,
+        );
+        bones.defHead.rotation.x = THREE.MathUtils.lerp(
+          bones.defHead.rotation.x,
+          restRotations.current.head.x,
+          0.1,
+        );
+        bones.defHead.updateMatrixWorld(true);
+      }
+      if (bones.eyeL && restRotations.current.eyeL) {
+        bones.eyeL.rotation.y = THREE.MathUtils.lerp(
+          bones.eyeL.rotation.y,
+          restRotations.current.eyeL.y,
+          0.15,
+        );
+        bones.eyeL.rotation.x = THREE.MathUtils.lerp(
+          bones.eyeL.rotation.x,
+          restRotations.current.eyeL.x,
+          0.15,
+        );
+        bones.eyeL.updateMatrixWorld(true);
+      }
+      if (bones.eyeR && restRotations.current.eyeR) {
+        bones.eyeR.rotation.y = THREE.MathUtils.lerp(
+          bones.eyeR.rotation.y,
+          restRotations.current.eyeR.y,
+          0.15,
+        );
+        bones.eyeR.rotation.x = THREE.MathUtils.lerp(
+          bones.eyeR.rotation.x,
+          restRotations.current.eyeR.x,
+          0.15,
+        );
+        bones.eyeR.updateMatrixWorld(true);
+      }
     }
 
     // SkinnedMesh 업데이트 강제
     Object.values(nodes).forEach(node => {
-      if (node && (node as any).isSkinnedMesh && (node as any).skeleton) {
-        (node as any).skeleton.update();
-      }
+      if (!node) return;
+      const skinned = node as THREE.SkinnedMesh;
+      if (!skinned.isSkinnedMesh) return;
+      if (!skinned.skeleton || typeof skinned.skeleton.update !== 'function') return;
+      skinned.skeleton.update();
     });
   });
 

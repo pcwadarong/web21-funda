@@ -1,6 +1,11 @@
 import styled from '@emotion/styled';
 
-import { type AnimKey, CONTROL_CATEGORIES, MOUTH_OPTIONS } from '@/feat/fundy/constants';
+import {
+  type AnimKey,
+  CONTROL_CATEGORIES,
+  LOOKAT_OPTIONS,
+  MOUTH_OPTIONS,
+} from '@/feat/fundy/constants';
 import type { FundyAnimationConfig } from '@/feat/fundy/types';
 
 type FundyControllerProps = {
@@ -9,6 +14,7 @@ type FundyControllerProps = {
   onSetMouth: (value: FundyAnimationConfig['openMouth']) => void;
   onSpeedChange: (value: number) => void;
   onPlayHello: () => void;
+  onSetLookAt: (value: FundyAnimationConfig['lookAt']) => void;
 };
 
 export function FundyController({
@@ -17,7 +23,13 @@ export function FundyController({
   onSetMouth,
   onSpeedChange,
   onPlayHello,
+  onSetLookAt,
 }: FundyControllerProps) {
+  const lookAtMode =
+    animation.lookAt === true ? 'head+eyes' : animation.lookAt === false ? false : animation.lookAt;
+  const isHeadEyes = lookAtMode === 'head+eyes';
+  const isEyesOnly = lookAtMode === 'eyes';
+
   return (
     <ControlPanel>
       <Title>Fundy Controller</Title>
@@ -51,6 +63,23 @@ export function FundyController({
             {opt.icon} {opt.label}
           </ControlLabel>
         ))}
+      </Section>
+
+      <Section>
+        <SectionTitle>시선 추적</SectionTitle>
+        {LOOKAT_OPTIONS.map(option => {
+          const isChecked = option.value === 'head+eyes' ? isHeadEyes : isEyesOnly;
+          return (
+            <ControlLabel key={option.value}>
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={e => onSetLookAt(e.target.checked ? option.value : false)}
+              />
+              {option.icon} {option.label}
+            </ControlLabel>
+          );
+        })}
       </Section>
 
       <Section>

@@ -16,6 +16,7 @@ export const Button = ({
   variant = 'primary',
   fullWidth = false,
   children,
+  type = 'button',
   css: customCss,
   ...props
 }: ButtonProps) => {
@@ -29,6 +30,7 @@ export const Button = ({
         props.disabled && disabledStyle,
         customCss,
       ]}
+      type={type}
       {...props}
     >
       {children}

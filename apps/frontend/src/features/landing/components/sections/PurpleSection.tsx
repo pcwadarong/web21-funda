@@ -25,9 +25,9 @@ const featureCards = [
 export const PurpleSection = React.memo(() => {
   const purpleReveal = useScrollReveal<HTMLDivElement>();
   const featureCardReveals = [
-    useScrollReveal<HTMLDivElement>(),
-    useScrollReveal<HTMLDivElement>(),
-    useScrollReveal<HTMLDivElement>(),
+    useScrollReveal<HTMLElement>(),
+    useScrollReveal<HTMLElement>(),
+    useScrollReveal<HTMLElement>(),
   ];
 
   return (
@@ -49,7 +49,7 @@ export const PurpleSection = React.memo(() => {
         </div>
         <div css={featureCardRowStyle}>
           {featureCards.map((card, index) => (
-            <div
+            <figure
               key={card.title}
               ref={featureCardReveals[index]?.ref}
               css={[
@@ -59,11 +59,11 @@ export const PurpleSection = React.memo(() => {
                 featureCardReveals[index]?.revealed && slideFromRightVisibleStyle,
               ]}
             >
-              <div css={featureCardTitleStyle}>{card.title}</div>
+              <figcaption css={featureCardTitleStyle}>{card.title}</figcaption>
               <div css={featureCardImageStyle}>
                 <img src={card.image} alt={card.alt} />
               </div>
-            </div>
+            </figure>
           ))}
         </div>
       </div>
@@ -95,6 +95,7 @@ const featureCardRowStyle = css`
 
 const featureCardStyle = css`
   height: 310px;
+  margin: 0;
   background: #f7f7fc;
   border-radius: 16px;
   padding: 18px;
@@ -109,6 +110,7 @@ const featureCardStyle = css`
 const featureCardTitleStyle = css`
   font-size: 1rem;
   color: #4a5565;
+  margin: 0;
 `;
 
 const featureCardImageStyle = css`

@@ -20,5 +20,9 @@ export const LoginCallback = () => {
   }, [navigate]);
 
   // 리다이렉트가 처리되는 동안 로딩 화면을 보여줌
-  return <Loading />;
+  return (
+    <div role="status" aria-label="로그인 처리 중">
+      <Loading />
+    </div>
+  );
 };

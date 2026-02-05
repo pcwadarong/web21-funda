@@ -16,6 +16,10 @@ vi.mock('@/comp/MarkdownRenderer', () => ({
   MarkdownRenderer: ({ text }: { text: string }) => <div data-testid="markdown">{text}</div>,
 }));
 
+vi.mock('@/comp/SVGIcon', () => ({
+  default: () => null,
+}));
+
 const renderOverview = (route: string) =>
   render(
     <ThemeProvider theme={lightTheme}>

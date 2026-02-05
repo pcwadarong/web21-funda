@@ -17,8 +17,8 @@ interface LandingContainerProps {
 }
 
 export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContainerProps) => (
-  <div css={pageStyle}>
-    <SimpleBar css={simpleBarStyle}>
+  <main css={pageStyle} aria-label="펀다 랜딩">
+    <SimpleBar css={simpleBarStyle} role="region" aria-label="랜딩 페이지 스크롤 영역" tabIndex={0}>
       <HeroSection onStart={onStart} onLogin={onLogin} />
       <DarkSection />
       <ReviewSection />
@@ -26,7 +26,7 @@ export const LandingContainer = React.memo(({ onStart, onLogin }: LandingContain
       <NeedsSection />
       <CtaSection onStart={onStart} />
     </SimpleBar>
-  </div>
+  </main>
 ));
 
 const pageStyle = css`

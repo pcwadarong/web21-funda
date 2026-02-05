@@ -28,34 +28,39 @@ export const RankListSection = ({
   const renderRankBadge = (rank: number) => {
     switch (rank) {
       case 1:
-        return <img src={GoldMedal} alt="1st" css={medalStyle} />;
+        return <img src={GoldMedal} alt="1등" css={medalStyle} />;
       case 2:
-        return <img src={SilverMedal} alt="2nd" css={medalStyle} />;
+        return <img src={SilverMedal} alt="2등" css={medalStyle} />;
       case 3:
-        return <img src={BronzeMedal} alt="3rd" css={medalStyle} />;
+        return <img src={BronzeMedal} alt="3등" css={medalStyle} />;
       default:
         return <span css={rankNumberStyle}>{rank}</span>;
     }
   };
 
   return (
-    <div css={contentSideStyle}>
-      <h1 css={titleStyle}>참여 인원</h1>
+    <section css={contentSideStyle} aria-label="배틀 결과 순위">
+      <h1 css={titleStyle} id="rank-list-title">
+        참여 인원
+      </h1>
 
-      <div css={tableHeaderStyle}>
+      <div css={tableHeaderStyle} aria-hidden="true">
         <span>등수</span>
         <span>참가자</span>
         <span>점수</span>
       </div>
 
-      <section css={listContainerStyle}>
+      <section css={listContainerStyle} aria-labelledby="rank-list-title">
         <ul css={participantListStyle}>
           {rankings.map((ranking, index) => {
             const participant = participantMap[ranking.participantId];
+            const rank = index + 1;
 
             return (
               <li key={ranking.participantId} css={itemStyle}>
-                <div css={rankBadgeAreaStyle}>{renderRankBadge(index + 1)}</div>
+                <div css={rankBadgeAreaStyle} aria-hidden="true">
+                  {renderRankBadge(rank)}
+                </div>
                 <div css={userInfoStyle}>
                   <div css={avatarCircleStyle}>
                     <Avatar
@@ -68,24 +73,31 @@ export const RankListSection = ({
                   </div>
                   <span css={userNameStyle}>{ranking.displayName}</span>
                 </div>
-                <div css={scoreValueStyle}>{ranking.score}</div>
+                <output
+                  css={scoreValueStyle}
+                  aria-label={`${ranking.displayName} 점수: ${ranking.score}`}
+                >
+                  {ranking.score}
+                </output>
               </li>
             );
           })}
         </ul>
       </section>
 
-      <p css={timerTextStyle}>{timeLeft}초 뒤 자동으로 대기실로 이동합니다</p>
+      <output css={timerTextStyle} role="status" aria-live="polite" aria-atomic="true">
+        {timeLeft}초 뒤 자동으로 대기실로 이동합니다
+      </output>
 
-      <div css={buttonGroupStyle}>
+      <fieldset css={buttonGroupStyle} aria-label="결과 액션">
         <Button variant="secondary" fullWidth onClick={onRestart}>
           한 번 더 하기
         </Button>
-        <Button fullWidth onClick={onLeave}>
+        <Button fullWidth onClick={onLeave} aria-label="게임 종료하고 대기실로 이동">
           게임 종료하기
         </Button>
-      </div>
-    </div>
+      </fieldset>
+    </section>
   );
 };
 

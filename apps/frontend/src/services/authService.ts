@@ -32,8 +32,7 @@ export const authService = {
     try {
       const response = await apiFetch.get<MeResponse>('/auth/me');
       return response.user;
-    } catch (error) {
-      console.error('Failed to get current user:', error);
+    } catch {
       return null;
     }
   },
@@ -45,8 +44,7 @@ export const authService = {
     try {
       const response = await apiFetch.post<RefreshResponse>('/auth/refresh');
       return response;
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
+    } catch {
       return null;
     }
   },

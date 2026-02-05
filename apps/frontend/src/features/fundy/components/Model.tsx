@@ -1,15 +1,15 @@
 import { useAnimations, useGLTF, useTexture } from '@react-three/drei';
 import { type ThreeElements, useGraph } from '@react-three/fiber';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import * as THREE from 'three';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import type * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { useApplyEyeMaterials } from '@/feat/fundy/hooks/useApplyEyeMaterials';
 import { useFixSkinnedMesh } from '@/feat/fundy/hooks/useFixSkinnedMesh';
 import { useFundyEyeMaterial } from '@/feat/fundy/hooks/useFundyEyeMaterial';
+import { useFundyHelloAction } from '@/feat/fundy/hooks/useFundyHelloAction';
 import { useMorphAnimation } from '@/feat/fundy/hooks/useMorphAnimation';
 import type { FundyAnimationConfig, GLTFResult } from '@/feat/fundy/types';
-import { useFundyStore } from '@/store/fundyStore';
 
 export type FundyModelProps = ThreeElements['group'] & {
   animation?: FundyAnimationConfig;
@@ -19,8 +19,6 @@ export type FundyModelProps = ThreeElements['group'] & {
 export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
   ({ animation, enhancedEyes = true, ...props }, ref) => {
     const group = useRef<THREE.Group>(null!);
-    const { setActionLocked, setSystemAnimation } = useFundyStore(state => state.actions);
-    const prevLookAtRef = useRef<boolean | undefined>(undefined);
 
     // ref 전달
     useImperativeHandle(ref, () => group.current);
@@ -31,7 +29,19 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     // 씬 복제 (인스턴스마다 독립적인 애니메이션을 위해)
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const { nodes, materials } = useGraph(clone) as unknown as GLTFResult;
-    const { actions } = useAnimations(animations, group);
+    const { actions, clips, mixer } = useAnimations(animations, group);
+    const [helloActionClip, setHelloActionClip] = useState<THREE.AnimationAction | null>(null);
+
+    useEffect(() => {
+      if (actions?.hello_action) {
+        setHelloActionClip(actions.hello_action);
+        return;
+      }
+      if (!mixer || !clips || !group.current) return;
+      const clip = clips.find(item => item.name === 'hello_action');
+      if (!clip) return;
+      setHelloActionClip(mixer.clipAction(clip, group.current));
+    }, [actions, clips, mixer]);
 
     // 눈알 반짝이는 재질
     const eyeTextures = useTexture(
@@ -53,64 +63,11 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     // 애니메이션 컨트롤러
     useMorphAnimation(nodes, animation);
 
-    const prevHelloRef = useRef<number | undefined>(undefined);
-    useEffect(() => {
-      const hello = actions?.hello_action;
-      if (!hello) return;
-
-      const trigger = animation?.helloAction ?? 0;
-      if (prevHelloRef.current === trigger) return;
-      prevHelloRef.current = trigger;
-      if (trigger === 0) return;
-
-      setActionLocked(true);
-      prevLookAtRef.current = animation?.lookAt;
-      setSystemAnimation({ lookAt: false });
-      setSystemAnimation({ smileSoft: false });
-
-      hello.reset();
-      hello.setLoop(THREE.LoopOnce, 1);
-      hello.clampWhenFinished = true;
-      hello.fadeIn(0.15);
-      hello.play();
-
-      const mixer = hello.getMixer();
-      let smileTimer: ReturnType<typeof setTimeout> | null = null;
-      let safetyUnlockTimer: ReturnType<typeof setTimeout> | null = null;
-      const handleFinished = (event: THREE.Event & { action?: THREE.AnimationAction }) => {
-        if (event.action !== hello) return;
-        if (smileTimer) clearTimeout(smileTimer);
-        if (safetyUnlockTimer) clearTimeout(safetyUnlockTimer);
-        setActionLocked(false);
-        if (prevLookAtRef.current !== undefined) {
-          setSystemAnimation({ lookAt: prevLookAtRef.current });
-        }
-        setSystemAnimation({ smileSoft: false });
-        mixer.removeEventListener('finished', handleFinished);
-      };
-      mixer.addEventListener('finished', handleFinished);
-
-      smileTimer = setTimeout(() => {
-        setSystemAnimation({ smileSoft: true });
-      }, 300);
-
-      safetyUnlockTimer = setTimeout(
-        () => {
-          setActionLocked(false);
-          if (prevLookAtRef.current !== undefined) {
-            setSystemAnimation({ lookAt: prevLookAtRef.current });
-          }
-          setSystemAnimation({ smileSoft: false });
-        },
-        (hello.getClip().duration ?? 0) * 1000 + 200,
-      );
-
-      return () => {
-        if (smileTimer) clearTimeout(smileTimer);
-        if (safetyUnlockTimer) clearTimeout(safetyUnlockTimer);
-        mixer.removeEventListener('finished', handleFinished);
-      };
-    }, [actions, animation?.helloAction, setActionLocked, setSystemAnimation]);
+    useFundyHelloAction({
+      helloAction: animation?.helloAction,
+      lookAt: animation?.lookAt,
+      helloActionClip,
+    });
 
     return (
       <group ref={group} {...props} dispose={null}>

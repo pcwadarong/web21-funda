@@ -23,7 +23,7 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: Lo
           <FundyPreviewCanvas
             initialAnimation={{ lookAt: true }}
             idleExpression="smileSoft"
-            idleExpressionHold
+            idleExpressionHold={false}
             idleExpressionDelayMs={300}
             autoHello
           />

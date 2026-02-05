@@ -166,7 +166,7 @@ flowchart LR
 
 <table>
   <tr align="center">
-    <td><strong>실시간 배틀 화면</strong></td>
+    <td colspan="2"><strong>실시간 배틀 화면</strong></td>
   </tr>
   <tr align="center">
     <td>

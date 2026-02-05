@@ -1,8 +1,7 @@
 import { css, Global, ThemeProvider } from '@emotion/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { type ReactNode, Suspense } from 'react';
+import type { ReactNode } from 'react';
 
-import { Loading } from '@/components/Loading';
 import ErrorBoundary from '@/features/error/components/ErrorBoundary';
 import { ErrorView } from '@/features/error/components/ErrorView';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -49,15 +48,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       <ThemeStoreProvider>
         <ThemeWrapper>
           <ErrorBoundary fallback={<ErrorView {...APP_ERROR_FALLBACK} />}>
-            <Suspense fallback={<Loading />}>
-              <AuthProvider>
-                <SocketProvider namespace="/battle">
-                  <ToastProvider>
-                    <ModalProvider>{children}</ModalProvider>
-                  </ToastProvider>
-                </SocketProvider>
-              </AuthProvider>
-            </Suspense>
+            <AuthProvider>
+              <SocketProvider namespace="/battle">
+                <ToastProvider>
+                  <ModalProvider>{children}</ModalProvider>
+                </ToastProvider>
+              </SocketProvider>
+            </AuthProvider>
           </ErrorBoundary>
         </ThemeWrapper>
       </ThemeStoreProvider>

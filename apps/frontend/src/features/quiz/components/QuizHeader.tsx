@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ConfirmModal } from '@/comp/ConfirmModal';
@@ -18,6 +18,30 @@ interface QuizHeaderProps {
   isBattleMode?: boolean;
 }
 
+<<<<<<< refactor/lighthouse-fix
+export const QuizHeader = memo(
+  ({
+    currentStep,
+    totalSteps,
+    completedSteps,
+    heartCount,
+    status,
+    isBattleMode = false,
+  }: QuizHeaderProps) => {
+    const theme = useTheme();
+    const navigate = useNavigate();
+    const [showExitModal, setShowExitModal] = useState(false);
+
+    const { battleState, leaveBattle, disconnect } = useBattleSocket();
+    const roomId = isBattleMode ? battleState.roomId : null;
+
+    const handleCloseClick = useCallback(() => {
+      if (isBattleMode) {
+        setShowExitModal(true);
+      } else {
+        if (completedSteps > 0) setShowExitModal(true);
+        else navigate('/learn');
+=======
 export const QuizHeader = ({
   currentStep,
   totalSteps,
@@ -52,69 +76,84 @@ export const QuizHeader = ({
         leaveBattle(roomId);
         disconnect();
         navigate('/battle');
+>>>>>>> develop
       }
-    } else {
-      navigate('/learn');
-    }
-  }, [navigate, leaveBattle, disconnect, roomId, isBattleMode]);
+    }, [completedSteps, navigate, isBattleMode]);
 
-  const progress = (completedSteps / totalSteps) * 100;
+    const handleContinue = useCallback(() => {
+      setShowExitModal(false);
+    }, []);
 
-  return (
-    <>
-      <header css={headerStyle(theme)} aria-label="퀴즈 진행 헤더">
-        <div css={headerContentStyle(heartCount, isBattleMode)}>
-          <button
-            type="button"
-            css={closeButtonStyle(theme)}
-            onClick={handleCloseClick}
-            aria-label={isBattleMode ? '배틀 종료' : '퀴즈 종료'}
-          >
-            <span aria-hidden="true">✕</span>
-          </button>
-          <div
-            css={progressContainerStyle(theme)}
-            role="progressbar"
-            aria-valuenow={completedSteps}
-            aria-valuemin={0}
-            aria-valuemax={totalSteps}
-            aria-label={`진행률: ${completedSteps}완료 / ${totalSteps}문제`}
-          >
-            <div css={progressBarStyle(theme, progress)} aria-hidden="true" />
+    const handleExit = useCallback(() => {
+      if (isBattleMode) {
+        if (roomId) {
+          leaveBattle(roomId);
+          disconnect();
+          navigate('/battle');
+        }
+      } else {
+        navigate('/learn');
+      }
+    }, [navigate, leaveBattle, disconnect, roomId, isBattleMode]);
+
+    const progress = (completedSteps / totalSteps) * 100;
+
+    return (
+      <>
+        <header css={headerStyle(theme)} aria-label="퀴즈 진행 헤더">
+          <div css={headerContentStyle(heartCount, isBattleMode)}>
+            <button
+              type="button"
+              css={closeButtonStyle(theme)}
+              onClick={handleCloseClick}
+              aria-label={isBattleMode ? '배틀 종료' : '퀴즈 종료'}
+            >
+              <span aria-hidden="true">✕</span>
+            </button>
+            <div
+              css={progressContainerStyle(theme)}
+              role="progressbar"
+              aria-valuenow={completedSteps}
+              aria-valuemin={0}
+              aria-valuemax={totalSteps}
+              aria-label={`진행률: ${completedSteps}완료 / ${totalSteps}문제`}
+            >
+              <div css={progressBarStyle(theme, progress)} aria-hidden="true" />
+            </div>
+            <div css={progressTextStyle(theme)} aria-hidden="true">
+              {currentStep}/{totalSteps}
+            </div>
           </div>
-          <div css={progressTextStyle(theme)} aria-hidden="true">
-            {currentStep}/{totalSteps}
-          </div>
-        </div>
-        {typeof heartCount === 'number' && heartCount > 0 && (
-          <output css={heartContainerStyle(theme)} aria-label={`하트 ${heartCount}개`}>
-            <SVGIcon icon="Heart" size="lg" aria-hidden="true" />
-            <span css={heartValueStyle(theme)}>{heartCount}</span>
-          </output>
-        )}
-        {isBattleMode && (
-          <>
-            <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>
-            <BattleTimerCountdown isResultPhase={status === 'checked'} isForHeader={true} />
-          </>
-        )}
-      </header>
+          {typeof heartCount === 'number' && heartCount > 0 && (
+            <output css={heartContainerStyle(theme)} aria-label={`하트 ${heartCount}개`}>
+              <SVGIcon icon="Heart" size="lg" aria-hidden="true" />
+              <span css={heartValueStyle(theme)}>{heartCount}</span>
+            </output>
+          )}
+          {isBattleMode && (
+            <>
+              <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>
+              <BattleTimerCountdown isResultPhase={status === 'checked'} isForHeader={true} />
+            </>
+          )}
+        </header>
 
-      {showExitModal && (
-        <ConfirmModal
-          isOpen={showExitModal}
-          onClose={handleContinue}
-          onConfirm={handleExit}
-          title={`${isBattleMode ? '배틀' : '학습'} 종료`}
-          cancelText={`${isBattleMode ? '배틀 계속하기' : '계속 학습하기'}`}
-          confirmText={`${isBattleMode ? '배틀' : '학습'} 종료하기`}
-        >
-          진행 중인 {isBattleMode ? '배틀' : '학습'}을 종료하시겠습니까?
-        </ConfirmModal>
-      )}
-    </>
-  );
-};
+        {showExitModal && (
+          <ConfirmModal
+            isOpen={showExitModal}
+            onClose={handleContinue}
+            onConfirm={handleExit}
+            title={`${isBattleMode ? '배틀' : '학습'} 종료`}
+            cancelText={`${isBattleMode ? '배틀 계속하기' : '계속 학습하기'}`}
+            confirmText={`${isBattleMode ? '배틀' : '학습'} 종료하기`}
+          >
+            진행 중인 {isBattleMode ? '배틀' : '학습'}을 종료하시겠습니까?
+          </ConfirmModal>
+        )}
+      </>
+    );
+  },
+);
 
 const headerStyle = (theme: Theme) => css`
   display: flex;

@@ -31,8 +31,9 @@ export const BattleSetupPage = () => {
 
   // 방 참가 가능 여부 확인
   const { data, isLoading, isError, error } = useJoinBattleRoomQuery(inviteToken);
-  const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } =
-    useBattleSocket();
+  const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } = useBattleSocket(
+    { listen: false },
+  );
   const {
     roomId,
     status,
@@ -79,12 +80,17 @@ export const BattleSetupPage = () => {
 
   const latestStatusRef = useRef(status);
   const latestRoomIdRef = useRef(roomId);
+  const isUnloadingRef = useRef(false);
 
   latestStatusRef.current = status;
   latestRoomIdRef.current = roomId;
 
   useEffect(
     () => () => {
+      if (isUnloadingRef.current) {
+        return;
+      }
+
       const currentRoomId = latestRoomIdRef.current;
       const currentStatus = latestStatusRef.current;
 
@@ -107,22 +113,7 @@ export const BattleSetupPage = () => {
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      const currentRoomId = latestRoomIdRef.current;
-      const currentStatus = latestStatusRef.current;
-
-      if (!currentRoomId) {
-        return;
-      }
-
-      const isPlayingStatus =
-        currentStatus === 'countdown' ||
-        currentStatus === 'in_progress' ||
-        currentStatus === 'finished';
-      if (isPlayingStatus) {
-        return;
-      }
-
-      leaveBattle(currentRoomId);
+      isUnloadingRef.current = true;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -135,6 +126,7 @@ export const BattleSetupPage = () => {
     name: p.displayName,
     participantId: p.participantId,
     profileImageUrl: p.avatar,
+    isHost: p.isHost,
   }));
 
   const handleCopyLink = useCallback(async () => {

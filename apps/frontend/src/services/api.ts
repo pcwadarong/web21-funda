@@ -28,8 +28,7 @@ async function tryRefreshToken(): Promise<boolean> {
     }
 
     return response.ok;
-  } catch (error) {
-    console.error('[Auth] Token refresh failed:', error);
+  } catch {
     return false;
   }
 }

@@ -30,6 +30,11 @@ const AdminLeaderboard = lazy(() =>
 const AdminProfileCharacters = lazy(() =>
   import('@/pages/admin/ProfileCharacters').then(m => ({ default: m.AdminProfileCharacters })),
 );
+const AdminProfileCharacterManagement = lazy(() =>
+  import('@/pages/admin/ProfileCharacterManagement').then(m => ({
+    default: m.AdminProfileCharacterManagement,
+  })),
+);
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 
 const Leaderboard = lazy(() =>
@@ -74,7 +79,7 @@ const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: 
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
 );
-const Animation = lazy(() => import('@/pages/Animation').then(m => ({ default: m.FoxAnimation })));
+const Fundy = lazy(() => import('@/pages/Fundy').then(m => ({ default: m.PlayWithFundy })));
 
 const APP_ERROR_FALLBACK = {
   title: '서비스 이용에 불편을 드려 죄송합니다.',
@@ -113,7 +118,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
-          { path: 'animation', element: <Animation /> },
+          { path: 'fundy', element: <Fundy /> },
         ],
       },
 
@@ -180,6 +185,10 @@ export const router = createBrowserRouter([
                   { path: 'quizzes/upload', element: <AdminQuizUpload /> },
                   { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
                   { path: 'quizzes/reports', element: <Reports /> },
+                  {
+                    path: 'profile-characters/manage',
+                    element: <AdminProfileCharacterManagement />,
+                  },
                   { path: 'profile-characters', element: <AdminProfileCharacters /> },
                 ],
               },

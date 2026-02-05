@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 import { ReviewCompletionEffect } from '@/feat/quiz/components/ReviewCompletionEffect';
+import { useSound } from '@/hooks/useSound';
 import { lightTheme } from '@/styles/theme';
 
 const meta: Meta<typeof ReviewCompletionEffect> = {
@@ -29,11 +30,17 @@ type Story = StoryObj<typeof ReviewCompletionEffect>;
 export const Default: Story = {
   render: () => {
     const [key, setKey] = useState(0);
+    const { resumeAudioContext } = useSound();
+
+    const handleReplay = async () => {
+      await resumeAudioContext();
+      setKey(prev => prev + 1);
+    };
 
     return (
       <div>
         <button
-          onClick={() => setKey(prev => prev + 1)}
+          onClick={handleReplay}
           style={{
             position: 'absolute',
             bottom: '40px',

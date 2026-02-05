@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@emotion/react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RankingRow } from '@/feat/leaderboard/components/RankingRow';
@@ -39,11 +39,15 @@ const mockMember: RankingMember = {
   rankZone: 'PROMOTION',
 };
 
-const renderRankingRow = (member: RankingMember = mockMember, xpLabel?: string) =>
+const renderRankingRow = (
+  member: RankingMember = mockMember,
+  xpLabel?: string,
+  onClick?: () => void,
+) =>
   render(
     <ThemeStoreProvider>
       <ThemeProvider theme={lightTheme}>
-        <RankingRow member={member} xpLabel={xpLabel} />
+        <RankingRow member={member} xpLabel={xpLabel} onClick={onClick} />
       </ThemeProvider>
     </ThemeStoreProvider>,
   );
@@ -224,6 +228,38 @@ describe('RankingRow 컴포넌트 테스트', () => {
       });
 
       expect(screen.getByText('??')).toBeInTheDocument();
+    });
+  });
+
+  describe('프로필 이동 클릭', () => {
+    it('행을 클릭하면 onClick이 호출된다', () => {
+      const handleClick = vi.fn();
+
+      renderRankingRow(mockMember, undefined, handleClick);
+
+      fireEvent.click(screen.getByRole('button'));
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('Enter 키를 누르면 onClick이 호출된다', () => {
+      const handleClick = vi.fn();
+
+      renderRankingRow(mockMember, undefined, handleClick);
+
+      fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' });
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('Space 키를 누르면 onClick이 호출된다', () => {
+      const handleClick = vi.fn();
+
+      renderRankingRow(mockMember, undefined, handleClick);
+
+      fireEvent.keyDown(screen.getByRole('button'), { key: ' ' });
+
+      expect(handleClick).toHaveBeenCalledTimes(1);
     });
   });
 });

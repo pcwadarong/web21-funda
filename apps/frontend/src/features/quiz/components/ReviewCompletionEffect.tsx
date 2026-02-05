@@ -1,7 +1,10 @@
 import { css } from '@emotion/react';
 import { motion, type Variants } from 'framer-motion';
+import { useEffect } from 'react';
 
+import shineSound from '@/assets/audio/shine.mp3';
 import SVGIcon from '@/comp/SVGIcon';
+import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 
@@ -10,6 +13,15 @@ const ANIMATION_DELAY = 0.5; // 메인 배지 등장 시점
 const STAR_COUNT = 5;
 
 export const ReviewCompletionEffect = () => {
+  const { playSound, stopSound } = useSound();
+
+  useEffect(() => {
+    void playSound({ src: shineSound });
+    return () => {
+      stopSound(shineSound);
+    };
+  }, [playSound, stopSound]);
+
   // ==========================================
   // 1. 데이터 생성 (파티클 등)
   // ==========================================

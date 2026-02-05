@@ -29,7 +29,7 @@ export const ParticipantsList = ({ participants, currentParticipantId }: Partici
           <ul css={gridStyle} aria-labelledby={headingId}>
             {participants.map((participant, index) => {
               const isCurrentUser = participant.participantId === currentParticipantId;
-              const isHost = index === 0;
+              const isHost = participant.isHost;
               return (
                 <li
                   key={participant.id}

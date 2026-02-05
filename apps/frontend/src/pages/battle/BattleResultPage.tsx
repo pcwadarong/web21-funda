@@ -6,7 +6,9 @@ import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 
 export const BattleResultPage = () => {
   const navigate = useNavigate();
-  const { battleState, restartBattle, leaveBattle, disconnect } = useBattleSocket();
+  const { battleState, restartBattle, leaveBattle, disconnect } = useBattleSocket({
+    listen: false,
+  });
 
   const { rankings, participants, rewards, roomId, inviteToken } = battleState;
 

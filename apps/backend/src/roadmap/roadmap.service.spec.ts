@@ -125,7 +125,15 @@ describe('RoadmapService', () => {
     codeFormatter = {
       format: formatMock,
     };
-    quizContentService = new QuizContentService(codeFormatter as CodeFormatter);
+    redisService = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+    };
+    quizContentService = new QuizContentService(
+      codeFormatter as CodeFormatter,
+      redisService as RedisService,
+    );
     rankingService = {
       assignUserToGroupOnFirstSolveWithManager: jest.fn(),
       addWeeklyXpOnSolveWithManager: jest.fn(),
@@ -147,12 +155,6 @@ describe('RoadmapService', () => {
       toCleanString: jest.fn(),
       toStringArray: jest.fn(),
     };
-    redisService = {
-      get: jest.fn(),
-      set: jest.fn(),
-      del: jest.fn(),
-    };
-
     service = new RoadmapService(
       fieldRepository as Repository<Field>,
       quizRepository as Repository<Quiz>,

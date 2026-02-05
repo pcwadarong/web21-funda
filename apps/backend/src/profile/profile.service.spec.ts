@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import type { DataSource, Repository } from 'typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { StepAttemptStatus, UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
 import { Field } from '../roadmap/entities/field.entity';
@@ -22,6 +23,7 @@ describe('ProfileService', () => {
   let followRepository: Partial<Repository<UserFollow>>;
   let profileCharacterRepository: Partial<Repository<ProfileCharacter>>;
   let userProfileCharacterRepository: Partial<Repository<UserProfileCharacter>>;
+  let redisService: Partial<RedisService>;
   let userFindOneMock: jest.Mock;
   let followCountMock: jest.Mock;
   let followFindOneMock: jest.Mock;
@@ -111,6 +113,7 @@ describe('ProfileService', () => {
     dataSource = {};
     profileCharacterRepository = {};
     userProfileCharacterRepository = {};
+    redisService = { get: jest.fn(), set: jest.fn() };
 
     service = new ProfileService(
       dataSource as DataSource,
@@ -121,6 +124,7 @@ describe('ProfileService', () => {
       followRepository as Repository<UserFollow>,
       profileCharacterRepository as Repository<ProfileCharacter>,
       userProfileCharacterRepository as Repository<UserProfileCharacter>,
+      redisService as RedisService,
     );
   });
 

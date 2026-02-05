@@ -2,12 +2,17 @@ import { Injectable } from '@nestjs/common';
 
 import type { QuizContent, QuizResponse } from '../../roadmap/dto/quiz-list.dto';
 import { Quiz } from '../../roadmap/entities';
+import { CACHE_TTL_SECONDS, CacheKeys } from '../cache/cache-keys';
+import { RedisService } from '../redis/redis.service';
 
 import { CodeFormatter } from './code-formatter';
 
 @Injectable()
 export class QuizContentService {
-  constructor(private readonly codeFormatter: CodeFormatter) {}
+  constructor(
+    private readonly codeFormatter: CodeFormatter,
+    private readonly redisService: RedisService,
+  ) {}
 
   /**
    * 퀴즈 조회 응답과 동일한 구조를 유지하기 위해 퀴즈 엔티티를 변환한다.
@@ -16,7 +21,17 @@ export class QuizContentService {
    * @returns 응답용 퀴즈 객체
    */
   async toQuizResponse(quiz: Quiz): Promise<QuizResponse> {
-    const content = await this.normalizeQuizContent(quiz);
+    const cachedContent = await this.getCachedQuizContent(quiz.id);
+    let baseContent: QuizContent;
+
+    if (cachedContent) {
+      baseContent = cachedContent;
+    } else {
+      baseContent = await this.buildQuizContentBase(quiz);
+      await this.setCachedQuizContent(quiz.id, baseContent);
+    }
+
+    const content = this.buildShuffledContent(baseContent);
 
     return {
       id: quiz.id,
@@ -31,7 +46,7 @@ export class QuizContentService {
    * @param quiz 퀴즈 엔티티
    * @returns 정규화된 content
    */
-  private async normalizeQuizContent(quiz: Quiz): Promise<QuizContent> {
+  private async buildQuizContentBase(quiz: Quiz): Promise<QuizContent> {
     const rawObject = this.toContentObject(quiz.content);
     if (!rawObject) {
       return { question: quiz.question };
@@ -42,9 +57,9 @@ export class QuizContentService {
       question = rawObject.question;
     }
 
-    const options = this.normalizeOptions(rawObject.options);
+    const options = this.normalizeOptions(rawObject.options, false);
     const codeMetadata = await this.normalizeCodeMetadata(rawObject);
-    const matchingMetadata = this.normalizeMatchingMetadata(rawObject);
+    const matchingMetadata = this.normalizeMatchingMetadata(rawObject, false);
 
     const content: QuizContent = { question };
 
@@ -62,12 +77,43 @@ export class QuizContentService {
   }
 
   /**
+   * 캐시된 기본 콘텐츠를 기반으로 보기 순서를 매 요청마다 섞어 반환한다.
+   */
+  private buildShuffledContent(baseContent: QuizContent): QuizContent {
+    const content: QuizContent = {
+      question: baseContent.question,
+    };
+
+    if (baseContent.options) {
+      content.options = this.shuffleArray(baseContent.options);
+    }
+
+    if (baseContent.code_metadata) {
+      content.code_metadata = {
+        ...baseContent.code_metadata,
+      };
+    }
+
+    if (baseContent.matching_metadata) {
+      content.matching_metadata = {
+        left: this.shuffleArray(baseContent.matching_metadata.left),
+        right: this.shuffleArray(baseContent.matching_metadata.right),
+      };
+    }
+
+    return content;
+  }
+
+  /**
    * 프론트 렌더러가 기대하는 id/text 구조로 통일하기 위해 정규화한다.
    *
    * @param value options 원본 값
    * @returns 정규화된 options (없으면 undefined)
    */
-  private normalizeOptions(value: unknown): Array<{ id: string; text: string }> | undefined {
+  private normalizeOptions(
+    value: unknown,
+    shouldShuffle: boolean,
+  ): Array<{ id: string; text: string }> | undefined {
     if (!Array.isArray(value)) {
       return undefined;
     }
@@ -96,7 +142,11 @@ export class QuizContentService {
       return undefined;
     }
 
-    return this.shuffleArray(options);
+    if (shouldShuffle) {
+      return this.shuffleArray(options);
+    }
+
+    return options;
   }
 
   /**
@@ -132,6 +182,7 @@ export class QuizContentService {
    */
   private normalizeMatchingMetadata(
     value: unknown,
+    shouldShuffle: boolean,
   ):
     | { left: Array<{ id: string; text: string }>; right: Array<{ id: string; text: string }> }
     | undefined {
@@ -140,14 +191,21 @@ export class QuizContentService {
     }
 
     const record = value as Record<string, unknown>;
-    const left = this.shuffleArray(this.normalizeMatchingItems(record.left));
-    const right = this.shuffleArray(this.normalizeMatchingItems(record.right));
+    const leftItems = this.normalizeMatchingItems(record.left);
+    const rightItems = this.normalizeMatchingItems(record.right);
 
-    if (left.length === 0 || right.length === 0) {
+    if (leftItems.length === 0 || rightItems.length === 0) {
       return undefined;
     }
 
-    return { left, right };
+    if (shouldShuffle) {
+      return {
+        left: this.shuffleArray(leftItems),
+        right: this.shuffleArray(rightItems),
+      };
+    }
+
+    return { left: leftItems, right: rightItems };
   }
 
   /**
@@ -264,5 +322,34 @@ export class QuizContentService {
     }
 
     return shuffled;
+  }
+
+  private async getCachedQuizContent(quizId: number): Promise<QuizContent | null> {
+    const cacheKey = CacheKeys.quizContent(quizId);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isQuizContent(cached)) {
+        return null;
+      }
+
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedQuizContent(quizId: number, content: QuizContent): Promise<void> {
+    const cacheKey = CacheKeys.quizContent(quizId);
+
+    try {
+      await this.redisService.set(cacheKey, content, CACHE_TTL_SECONDS.quizContent);
+    } catch {
+      // 캐시 저장 실패는 응답을 막지 않도록 무시한다.
+    }
+  }
+
+  private isQuizContent(value: unknown): value is QuizContent {
+    return typeof value === 'object' && value !== null && 'question' in value;
   }
 }

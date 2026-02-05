@@ -33,6 +33,22 @@ export interface ProfileCharacterCreateRequest {
   isActive?: boolean;
 }
 
+export interface AdminProfileCharacterItem {
+  id: number;
+  name: string;
+  imageUrl: string;
+  priceDiamonds: number;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminProfileCharacterUpdateRequest {
+  priceDiamonds: number;
+  isActive: boolean;
+}
+
 export type ProfileCharacterCreateResponse =
   | { id: number; created: boolean; updated: boolean }
   | { error: string };
@@ -84,6 +100,28 @@ export const adminService = {
     payload: ProfileCharacterCreateRequest,
   ): Promise<ProfileCharacterCreateResponse> {
     return apiFetch.post<ProfileCharacterCreateResponse>('/admin/profile-characters', payload);
+  },
+
+  /**
+   * 관리자용 프로필 캐릭터 목록을 조회합니다.
+   */
+  async getProfileCharacters(): Promise<AdminProfileCharacterItem[]> {
+    return apiFetch.get<AdminProfileCharacterItem[]>('/admin/profile-characters');
+  },
+
+  /**
+   * 관리자용 프로필 캐릭터 정보를 수정합니다.
+   * @param characterId 수정할 캐릭터 ID
+   * @param payload 수정할 값
+   */
+  async updateProfileCharacter(
+    characterId: number,
+    payload: AdminProfileCharacterUpdateRequest,
+  ): Promise<{ id: number; updated: boolean }> {
+    return apiFetch.patch<{ id: number; updated: boolean }>(
+      `/admin/profile-characters/${characterId}`,
+      payload,
+    );
   },
 
   /**

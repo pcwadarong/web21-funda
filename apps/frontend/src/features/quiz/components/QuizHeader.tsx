@@ -30,7 +30,7 @@ export const QuizHeader = ({
   const navigate = useNavigate();
   const [showExitModal, setShowExitModal] = useState(false);
 
-  const { battleState, leaveBattle, disconnect } = useBattleSocket();
+  const { battleState, leaveBattle, disconnect } = useBattleSocket({ listen: false });
   const roomId = isBattleMode ? battleState.roomId : null;
 
   const handleCloseClick = useCallback(() => {

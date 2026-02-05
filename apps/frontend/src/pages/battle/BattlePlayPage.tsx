@@ -10,7 +10,7 @@ import { useSound } from '@/hooks/useSound';
 
 export const BattlePlayPage = () => {
   const { battleState, socket, setSelectedAnswer, setQuestionStatus, submitAnswer } =
-    useBattleSocket();
+    useBattleSocket({ listen: false });
   const { playSound } = useSound();
 
   // battleState에서 필요한 상태 추출

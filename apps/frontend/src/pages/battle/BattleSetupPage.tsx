@@ -31,8 +31,9 @@ export const BattleSetupPage = () => {
 
   // 방 참가 가능 여부 확인
   const { data, isLoading, isError, error } = useJoinBattleRoomQuery(inviteToken);
-  const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } =
-    useBattleSocket();
+  const { socket, battleState, joinBattle, leaveBattle, updateRoom, startBattle } = useBattleSocket(
+    { listen: false },
+  );
   const {
     roomId,
     status,

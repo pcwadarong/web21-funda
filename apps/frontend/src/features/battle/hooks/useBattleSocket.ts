@@ -48,10 +48,11 @@ export interface UseBattleSocketReturn extends SocketContextValue {
   setQuestionStatus: (index: number, status: QuestionStatus) => void;
 }
 
-export function useBattleSocket(): UseBattleSocketReturn {
+export function useBattleSocket(options?: { listen?: boolean }): UseBattleSocketReturn {
   const socketContext = useSocketContext();
   const { socket, status: socketStatus, connect } = socketContext;
   const { showToast } = useToast();
+  const listen = options?.listen ?? true;
 
   // 인증 정보
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
@@ -115,6 +116,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
   } | null>(null);
 
   useEffect(() => {
+    if (!listen) return;
     if (!socket) return;
 
     // 1. 참가자 명단 업데이트 (입장/퇴장 시)
@@ -248,6 +250,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       socket.off('battle:error', handleBattleError);
     };
   }, [
+    listen,
     socket,
     setBattleState,
     setParticipants,
@@ -260,22 +263,25 @@ export function useBattleSocket(): UseBattleSocketReturn {
 
   // roomId 변경 시 readySentRef 리셋
   useEffect(() => {
+    if (!listen) return;
     readySentRef.current = false;
     lastCountdownEndsAtRef.current = null;
-  }, [battleState.roomId]);
+  }, [battleState.roomId, listen]);
 
   // 대기 상태로 돌아가면 ready 상태를 초기화
   useEffect(() => {
+    if (!listen) return;
     if (battleState.status !== 'waiting') {
       return;
     }
 
     readySentRef.current = false;
     lastCountdownEndsAtRef.current = null;
-  }, [battleState.status]);
+  }, [battleState.status, listen]);
 
   // 카운트다운 종료 시점에 자동으로 ready 신호 전송
   useEffect(() => {
+    if (!listen) return;
     if (!socket || !battleState.roomId) {
       return;
     }
@@ -305,7 +311,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     }, delayMs);
 
     return () => window.clearTimeout(timerId);
-  }, [battleState.countdownEndsAt, battleState.roomId, socket]);
+  }, [battleState.countdownEndsAt, battleState.roomId, socket, listen]);
 
   const disconnect = useCallback(() => {
     socketContext.disconnect();

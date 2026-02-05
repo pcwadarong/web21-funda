@@ -6,7 +6,7 @@ import { useCreateBattleRoomMutation } from '@/hooks/queries/battleQueries';
 
 export const BattleLobbyPage = () => {
   const createBattleRoom = useCreateBattleRoomMutation();
-  const { battleState, leaveBattle } = useBattleSocket();
+  const { battleState, leaveBattle } = useBattleSocket({ listen: false });
   const { roomId } = battleState;
 
   useEffect(() => {

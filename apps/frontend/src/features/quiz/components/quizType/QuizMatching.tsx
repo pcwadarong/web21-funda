@@ -19,6 +19,7 @@ export const QuizMatching = ({
   selectedAnswer,
   correctAnswer,
   onAnswerChange,
+  onSelectPosition,
   showResult,
   disabled = false,
 }: QuizComponentProps) => {
@@ -181,7 +182,15 @@ export const QuizMatching = ({
             option={item.text}
             isMatched={isAlreadyPaired}
             isSelected={isWaiting}
-            onClick={() => handleOptionClick(side, index)}
+            onClick={event => {
+              handleOptionClick(side, index);
+              if (!onSelectPosition) return;
+              const rect = event.currentTarget.getBoundingClientRect();
+              onSelectPosition({
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              });
+            }}
             disabled={disabled}
             isCorrect={isCorrect}
             isWrong={isWrong}

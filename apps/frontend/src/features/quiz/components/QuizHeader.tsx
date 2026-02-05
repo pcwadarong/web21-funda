@@ -32,7 +32,6 @@ export const QuizHeader = ({
 
   const { battleState, leaveBattle, disconnect } = useBattleSocket();
   const roomId = isBattleMode ? battleState.roomId : null;
-  const displaySeconds = [<BattleTimerCountdown isResultPhase={true} />];
 
   const handleCloseClick = useCallback(() => {
     if (isBattleMode) {
@@ -93,7 +92,7 @@ export const QuizHeader = ({
             <span css={heartValueStyle(theme)}>{heartCount}</span>
           </output>
         )}
-        {isBattleMode && displaySeconds !== null && (
+        {isBattleMode && (
           <>
             <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>
             <BattleTimerCountdown isResultPhase={status === 'checked'} isForHeader={true} />

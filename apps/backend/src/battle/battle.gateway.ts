@@ -1142,13 +1142,17 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       });
     });
 
+    this.server.to(roomWithResultEndsAt.roomId).emit('battle:resultTime', {
+      roomId: roomWithResultEndsAt.roomId,
+      resultEndsAt,
+      serverTime: Date.now(),
+    });
+
     this.server.to(roomWithResultEndsAt.roomId).emit('battle:state', {
       roomId: roomWithResultEndsAt.roomId,
       status: roomWithResultEndsAt.status,
       remainingSeconds: delay,
       rankings: this.buildRankings(roomWithResultEndsAt),
-      resultEndsAt,
-      serverTime: Date.now(),
       countdownEndsAt: roomWithResultEndsAt.countdownEndsAt,
     });
 

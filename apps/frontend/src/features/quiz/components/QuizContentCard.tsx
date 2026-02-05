@@ -34,6 +34,7 @@ interface QuizContentCardProps {
   isBattleMode?: boolean;
   remainingSeconds?: number | null;
   endsAt?: number | null;
+  onSelectPosition?: (position: { x: number; y: number }) => void;
 }
 
 export const QuizContentCard = ({
@@ -51,6 +52,7 @@ export const QuizContentCard = ({
   isLast,
   isReviewMode,
   isBattleMode = false,
+  onSelectPosition,
 }: QuizContentCardProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
@@ -71,11 +73,9 @@ export const QuizContentCard = ({
   const battleNextButtonLabel = isLast
     ? '자동으로 경기 결과가 나타납니다..'
     : '자동으로 다음 문제로 이동합니다..';
-  const battleNextButtonLabelWithTimer = [
-    <BattleTimerCountdown isResultPhase={status === 'checked'} />,
-    '초 뒤 ',
-    battleNextButtonLabel,
-  ];
+  const battleNextButtonLabelWithTimer = showResult
+    ? [<BattleTimerCountdown isResultPhase={true} />, '초 뒤 ', battleNextButtonLabel]
+    : battleNextButtonLabel;
 
   return (
     <article css={cardStyle(theme)} aria-label="퀴즈 문제">
@@ -98,6 +98,7 @@ export const QuizContentCard = ({
         selectedAnswer={selectedAnswer}
         correctAnswer={correctAnswer ?? null}
         onAnswerChange={onAnswerChange}
+        onSelectPosition={isBattleMode ? onSelectPosition : undefined}
         showResult={showResult}
         disabled={status !== 'idle'}
       />

@@ -1,3 +1,5 @@
+import type { MouseEvent } from 'react';
+
 /** 문제 풀이 상태 */
 export type QuestionStatus = 'idle' | 'checking' | 'checked';
 
@@ -101,6 +103,7 @@ export interface QuizComponentProps {
   selectedAnswer: AnswerType | null;
   correctAnswer: CorrectAnswerType | null;
   onAnswerChange: (answer: AnswerType) => void;
+  onSelectPosition?: (position: { x: number; y: number }) => void;
   showResult: boolean;
   disabled: boolean;
 }
@@ -113,6 +116,6 @@ export interface QuizOptionProps {
   isMatched?: boolean;
   isCorrect?: boolean;
   isWrong?: boolean;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
 }

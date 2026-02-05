@@ -18,6 +18,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
   ({ animation, enhancedEyes = true, ...props }, ref) => {
     const group = useRef<THREE.Group>(null!);
     const { setActionLocked, setSystemAnimation } = useFundyStore(state => state.actions);
+    const prevLookAtRef = useRef<boolean | undefined>(undefined);
 
     // ref 전달
     useImperativeHandle(ref, () => group.current);
@@ -97,6 +98,8 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       if (trigger === 0) return;
 
       setActionLocked(true);
+      prevLookAtRef.current = animation?.lookAt;
+      setSystemAnimation({ lookAt: false });
       setSystemAnimation({ smileSoft: false });
 
       hello.reset();
@@ -107,10 +110,15 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
 
       const mixer = hello.getMixer();
       let smileTimer: ReturnType<typeof setTimeout> | null = null;
+      let safetyUnlockTimer: ReturnType<typeof setTimeout> | null = null;
       const handleFinished = (event: THREE.Event & { action?: THREE.AnimationAction }) => {
         if (event.action !== hello) return;
         if (smileTimer) clearTimeout(smileTimer);
+        if (safetyUnlockTimer) clearTimeout(safetyUnlockTimer);
         setActionLocked(false);
+        if (prevLookAtRef.current !== undefined) {
+          setSystemAnimation({ lookAt: prevLookAtRef.current });
+        }
         setSystemAnimation({ smileSoft: false });
         mixer.removeEventListener('finished', handleFinished);
       };
@@ -120,8 +128,20 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
         setSystemAnimation({ smileSoft: true });
       }, 300);
 
+      safetyUnlockTimer = setTimeout(
+        () => {
+          setActionLocked(false);
+          if (prevLookAtRef.current !== undefined) {
+            setSystemAnimation({ lookAt: prevLookAtRef.current });
+          }
+          setSystemAnimation({ smileSoft: false });
+        },
+        (hello.getClip().duration ?? 0) * 1000 + 200,
+      );
+
       return () => {
         if (smileTimer) clearTimeout(smileTimer);
+        if (safetyUnlockTimer) clearTimeout(safetyUnlockTimer);
         mixer.removeEventListener('finished', handleFinished);
       };
     }, [actions, animation?.helloAction, setActionLocked, setSystemAnimation]);

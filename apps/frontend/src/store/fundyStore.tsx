@@ -50,16 +50,12 @@ const createFundyStore = (initial?: Partial<FundyAnimationConfig>) =>
         set(state => ({ animation: { ...state.animation, ...update } })),
       setActionLocked: locked => set({ isActionLocked: locked }),
       triggerHello: () =>
-        set(state => {
-          if (state.isActionLocked) return state;
-          return {
-            isActionLocked: true,
-            animation: {
-              ...state.animation,
-              helloAction: (state.animation.helloAction ?? 0) + 1,
-            },
-          };
-        }),
+        set(state => ({
+          animation: {
+            ...state.animation,
+            helloAction: (state.animation.helloAction ?? 0) + 1,
+          },
+        })),
       reset: () => set({ animation: defaultAnimation, isActionLocked: false }),
     },
   }));

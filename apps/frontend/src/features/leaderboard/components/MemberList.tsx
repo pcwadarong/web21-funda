@@ -11,6 +11,7 @@ interface MemberListProps {
   emptyMessage?: string;
   showRankZoneIcon?: boolean;
   xpLabel?: string;
+  onMemberClick?: (member: RankingMember) => void;
 }
 
 export const MemberList = ({
@@ -18,8 +19,10 @@ export const MemberList = ({
   emptyMessage = '해당 구역에 인원이 없습니다.',
   showRankZoneIcon = true,
   xpLabel = 'XP',
+  onMemberClick,
 }: MemberListProps) => {
   const theme = useTheme();
+  const canClickMember = typeof onMemberClick === 'function';
 
   if (members.length === 0)
     return (
@@ -36,6 +39,13 @@ export const MemberList = ({
           member={member}
           showRankZoneIcon={showRankZoneIcon}
           xpLabel={xpLabel}
+          onClick={
+            canClickMember
+              ? () => {
+                  onMemberClick(member);
+                }
+              : undefined
+          }
         />
       ))}
     </ol>

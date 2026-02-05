@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/Button';
 import {
-  adminService,
   type AdminProfileCharacterItem,
   type AdminProfileCharacterUpdateRequest,
+  adminService,
 } from '@/services/adminService';
 import type { Theme } from '@/styles/theme';
 

@@ -1,16 +1,13 @@
-import { css, useTheme } from '@emotion/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { Button } from '@/comp/Button';
+import { AuthCheckContainer } from '@/feat/auth/components/AuthCheckContainer';
 import { useStorage } from '@/hooks/useStorage';
-import type { Theme } from '@/styles/theme';
 
 export const AuthCheck = () => {
   const { updateUIState, uiState } = useStorage();
   const location = useLocation();
-  const { from } = location.state || {};
-  const theme = useTheme();
   const navigate = useNavigate();
+  const { from } = (location.state as { from?: string } | undefined) ?? {};
 
   const handleLogin = () => {
     navigate('/login');
@@ -27,79 +24,5 @@ export const AuthCheck = () => {
     }
   };
 
-  return (
-    <div css={containerStyle()}>
-      <div css={contentStyle(theme)}>
-        <div css={placeholderStyle(theme)}>
-          <span css={emojiStyle}></span>
-        </div>
-        <div>
-          <h1 css={titleStyle(theme)}>프로필을 생성하세요!</h1>
-          <p css={descriptionStyle(theme)}>프로필을 만들어 학습 진도를 저장하고 계속 학습하세요!</p>
-        </div>
-        <div css={buttonGroupStyle}>
-          <Button variant="primary" onClick={handleLogin} fullWidth>
-            로그인하기
-          </Button>
-          <Button variant="secondary" onClick={handleContinue} fullWidth>
-            그냥 사용할래요
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+  return <AuthCheckContainer from={from} onLogin={handleLogin} onContinue={handleContinue} />;
 };
-
-const containerStyle = () => css`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  text-align: center;
-`;
-
-const contentStyle = (theme: Theme) => css`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-  max-width: 500px;
-  width: 100%;
-  color: ${theme.colors.text.light};
-`;
-
-const placeholderStyle = (theme: Theme) => css`
-  width: 200px;
-  height: 200px;
-  background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.large};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const emojiStyle = css`
-  font-size: 100px;
-`;
-
-const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['24Bold'].fontSize};
-  line-height: ${theme.typography['24Bold'].lineHeight};
-  font-weight: ${theme.typography['24Bold'].fontWeight};
-  margin-bottom: 0.5rem;
-`;
-
-const descriptionStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['20Medium'].fontSize};
-  line-height: ${theme.typography['20Medium'].lineHeight};
-  font-weight: ${theme.typography['20Medium'].fontWeight};
-`;
-
-const buttonGroupStyle = css`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  margin-top: 8px;
-`;

@@ -87,15 +87,23 @@ export function FoxAnimation() {
     });
   }, []);
 
+  const speedValue = animation.speedMultiplier ?? 1;
+
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      <ControlPanel>
-        <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '20px' }}>
+    <section
+      style={{ width: '100vw', height: '100vh', position: 'relative' }}
+      aria-label="Fox 캐릭터 애니메이션 컨트롤"
+    >
+      <ControlPanel role="group" aria-label="Fox Controller">
+        <div
+          style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '20px' }}
+          aria-hidden="true"
+        >
           🦊 Fox Controller
         </div>
 
         {CATEGORIES.map(cat => (
-          <Section key={cat.title}>
+          <Section key={cat.title} role="group" aria-label={cat.title}>
             <SectionTitle>{cat.title}</SectionTitle>
             {cat.items.map(item => (
               <ControlLabel key={item.key}>
@@ -103,6 +111,7 @@ export function FoxAnimation() {
                   type="checkbox"
                   checked={!!animation[item.key]}
                   onChange={e => updateAnim(item.key, e.target.checked)}
+                  aria-label={item.label}
                 />
                 {item.icon} {item.label}
               </ControlLabel>
@@ -110,7 +119,7 @@ export function FoxAnimation() {
           </Section>
         ))}
 
-        <Section>
+        <Section role="group" aria-label="입 모양">
           <SectionTitle>입 모양</SectionTitle>
           {MOUTH_OPTIONS.map(opt => (
             <ControlLabel key={String(opt.value)}>
@@ -119,22 +128,27 @@ export function FoxAnimation() {
                 name="mouth"
                 checked={animation.openMouth === opt.value}
                 onChange={() => updateAnim('openMouth', opt.value)}
+                aria-label={opt.label}
               />
               {opt.icon} {opt.label}
             </ControlLabel>
           ))}
         </Section>
 
-        <Section>
+        <Section role="group" aria-label="속도 조절">
           <SectionTitle>속도 조절 ({(animation.speedMultiplier ?? 1).toFixed(1)}x)</SectionTitle>
           <input
             type="range"
             min="0.1"
             max="2"
             step="0.1"
-            value={animation.speedMultiplier ?? 1}
+            value={speedValue}
             onChange={e => updateAnim('speedMultiplier', parseFloat(e.target.value))}
             style={{ width: '100%' }}
+            aria-valuenow={speedValue}
+            aria-valuemin={0.1}
+            aria-valuemax={2}
+            aria-label={`속도 ${speedValue.toFixed(1)}배`}
           />
         </Section>
       </ControlPanel>
@@ -153,7 +167,7 @@ export function FoxAnimation() {
         </Suspense>
         {process.env.NODE_ENV === 'development' && <Stats />}
       </Canvas>
-    </div>
+    </section>
   );
 }
 

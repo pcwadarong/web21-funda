@@ -271,13 +271,13 @@ export const LearnRightSidebar = ({
                 <span css={statIconStyle}>
                   <SVGIcon icon="Diamond" size="md" />
                 </span>
-                <span css={statValueStyle(theme)}>{diamondCount}</span>
+                <output css={statValueStyle(theme)}>{diamondCount}</output>
               </div>
               <div css={statContainerStyle(theme)}>
                 <span css={statIconStyle}>
                   <SVGIcon icon="Streak" size="md" />
                 </span>
-                <span css={statValueStyle(theme)}>{user.currentStreak}</span>
+                <output css={statValueStyle(theme)}>{user.currentStreak}</output>
               </div>
             </>
           )}
@@ -286,7 +286,7 @@ export const LearnRightSidebar = ({
             <span css={statIconStyle}>
               <SVGIcon icon="Heart" size="lg" />
             </span>
-            <span css={statValueStyle(theme)}>{heartCount}</span>
+            <output css={statValueStyle(theme)}>{heartCount}</output>
           </div>
         </div>
 
@@ -316,24 +316,29 @@ export const LearnRightSidebar = ({
               </span>
               <span css={cardTitleStyle(theme)}>오늘의 목표</span>
             </div>
-            <div css={goalsContentStyle}>
+            <ul css={goalsListStyle}>
               {TODAY_GOALS.map(goal => (
-                <div key={goal.id} css={goalItemStyle}>
+                <li key={goal.id} css={goalItemStyle}>
                   <div css={goalLabelContainerStyle}>
                     <span css={goalLabelStyle(theme)}>{goal.label}</span>
-                    <span css={goalLabelStyle(theme)}>
+                    <output css={goalLabelStyle(theme)}>
                       {goal.current}/{goal.target}
-                    </span>
+                    </output>
                   </div>
                   <div css={progressBarContainerStyle(theme)}>
                     <div
                       css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
                       role="progressbar"
+                      aria-valuenow={Math.round(
+                        Math.min(100, Math.max(0, (goal.current / goal.target) * 100)),
+                      )}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
                     />
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
           <div css={cardStyle(theme)}>
@@ -590,7 +595,10 @@ const overlayTitleStyle = (theme: Theme) => css`
   color: ${theme.colors.text.strong};
 `;
 
-const goalsContentStyle = css`
+const goalsListStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -636,4 +644,8 @@ const boostadZoneOverride = css`
   }
 
   min-height: 107px;
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
 `;

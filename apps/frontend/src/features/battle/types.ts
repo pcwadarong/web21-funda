@@ -70,6 +70,7 @@ export interface Participant {
   avatar?: string;
   participantId: string;
   profileImageUrl?: string; // 로그인 사용자 프로필 이미지
+  isHost: boolean;
 }
 
 /**

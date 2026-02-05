@@ -119,11 +119,10 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         penaltyScore: -999,
       });
     } else if (room.status === 'waiting' || room.status === 'countdown') {
-      nextRoom = applyLeave(room, {
+      nextRoom = applyDisconnect(room, {
         roomId,
         participantId: client.id,
         now,
-        penaltyScore: 0,
       });
     } else {
       nextRoom = applyDisconnect(room, {
@@ -949,6 +948,13 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     clearTimeout(timer);
     this.resultNextQuizTimers.delete(roomId);
   }
+
+  /**
+   * 방장 재할당 예약 타이머를 해제한다.
+   *
+   * @param roomId 방 ID
+   * @returns 없음
+   */
 
   /**
    * 방과 관련된 모든 예약 타이머를 해제한다.

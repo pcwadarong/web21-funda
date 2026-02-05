@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
+import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import type { Theme } from '@/styles/theme';
 
 export const ServicePreparation = () => {
@@ -15,7 +16,9 @@ export const ServicePreparation = () => {
 
   return (
     <div css={containerStyle()}>
-      <div css={placeholderStyle(theme)} />
+      <div css={placeholderStyle}>
+        <FundyPreviewCanvas initialAnimation={{ lookAt: true }} autoHello />
+      </div>
       <h1 css={titleStyle(theme)}>서비스 준비 중입니다.</h1>
       <p css={descriptionStyle(theme)}>
         보다 나은 서비스 제공을 위하여 페이지 준비 중에 있습니다.
@@ -41,11 +44,10 @@ const containerStyle = () => css`
   gap: 32px;
 `;
 
-const placeholderStyle = (theme: Theme) => css`
-  width: 200px;
-  height: 200px;
-  background: ${theme.colors.surface.bold};
-  border-radius: ${theme.borderRadius.large};
+const placeholderStyle = css`
+  width: 800px;
+  height: 400px;
+  overflow: hidden;
 `;
 
 const titleStyle = (theme: Theme) => css`

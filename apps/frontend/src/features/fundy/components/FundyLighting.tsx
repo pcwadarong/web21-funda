@@ -19,7 +19,7 @@ export function FundyLighting() {
       />
 
       {/* 부드러운 그림자 */}
-      <ContactShadows opacity={0.25} scale={10} blur={3} far={4} />
+      <ContactShadows opacity={0.2} scale={8} blur={2.5} far={4} />
     </>
   );
 }

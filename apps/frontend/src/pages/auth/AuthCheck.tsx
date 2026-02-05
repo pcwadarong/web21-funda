@@ -2,6 +2,7 @@ import { css, useTheme } from '@emotion/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
+import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import { useStorage } from '@/hooks/useStorage';
 import type { Theme } from '@/styles/theme';
 
@@ -30,8 +31,8 @@ export const AuthCheck = () => {
   return (
     <div css={containerStyle()}>
       <div css={contentStyle(theme)}>
-        <div css={placeholderStyle(theme)}>
-          <span css={emojiStyle}></span>
+        <div css={placeholderStyle}>
+          <FundyPreviewCanvas initialAnimation={{ lookAt: true }} autoHello />
         </div>
         <div>
           <h1 css={titleStyle(theme)}>프로필을 생성하세요!</h1>
@@ -69,18 +70,10 @@ const contentStyle = (theme: Theme) => css`
   color: ${theme.colors.text.light};
 `;
 
-const placeholderStyle = (theme: Theme) => css`
-  width: 200px;
-  height: 200px;
-  background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.large};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const emojiStyle = css`
-  font-size: 100px;
+const placeholderStyle = css`
+  width: 800px;
+  height: 400px;
+  overflow: hidden;
 `;
 
 const titleStyle = (theme: Theme) => css`

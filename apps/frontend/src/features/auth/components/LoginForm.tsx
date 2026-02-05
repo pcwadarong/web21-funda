@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import type { Theme } from '@/styles/theme';
 
 interface LoginFormProps {
@@ -18,8 +19,8 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: Lo
   return (
     <div css={containerStyle()}>
       <div css={contentStyle()}>
-        <div css={logoPlaceholderStyle(theme)}>
-          <span css={emojiStyle}>📚</span>
+        <div css={placeholderStyle}>
+          <FundyPreviewCanvas initialAnimation={{ lookAt: true }} autoHello />
         </div>
         <h1 css={titleStyle(theme)}>Funda</h1>
         <p css={taglineStyle(theme)}>재미있게 배우는 개발 지식</p>
@@ -81,19 +82,10 @@ const contentStyle = () => css`
   width: 100%;
 `;
 
-const logoPlaceholderStyle = (theme: Theme) => css`
-  width: 120px;
-  height: 120px;
-  background: ${theme.colors.surface.bold};
-  border-radius: ${theme.borderRadius.large};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-`;
-
-const emojiStyle = css`
-  font-size: 60px;
+const placeholderStyle = css`
+  width: 800px;
+  height: 400px;
+  overflow: hidden;
 `;
 
 const titleStyle = (theme: Theme) => css`

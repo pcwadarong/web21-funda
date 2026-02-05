@@ -102,7 +102,7 @@ function setMorphTarget(mesh: any, targetName: string, value: number, smooth: bo
  * @param nodes - 모델 노드들
  * @param config - 애니메이션 설정
  */
-export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfig = {}) {
+export function useMorphAnimation(nodes: FundyNodes, config: FundyAnimationConfig = {}) {
   const {
     blink = false,
     lookAt = false,

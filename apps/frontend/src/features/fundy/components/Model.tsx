@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { useFixSkinnedMesh } from '@/feat/fundy/hooks/useFixSkinnedMesh';
-import { useFundyAnimation } from '@/feat/fundy/hooks/useFundyAnimation';
+import { useMorphAnimation } from '@/feat/fundy/hooks/useMorphAnimation';
 import type { FundyAnimationConfig, GLTFResult } from '@/feat/fundy/types';
 import { useFundyStore } from '@/store/fundyStore';
 
@@ -85,7 +85,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     // SkinnedMesh 수정
     useFixSkinnedMesh(clone);
     // 애니메이션 컨트롤러
-    useFundyAnimation(nodes, animation);
+    useMorphAnimation(nodes, animation);
 
     const prevHelloRef = useRef<number | undefined>(undefined);
     useEffect(() => {

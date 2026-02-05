@@ -167,13 +167,12 @@ describe('BattleSetupPage 페이지', () => {
     expect(mockLeaveBattle).not.toHaveBeenCalled();
   });
 
-  it('대기실에서 beforeunload가 발생하면 leaveBattle을 호출한다', () => {
+  it('대기실에서 beforeunload가 발생하면 leaveBattle을 호출하지 않는다', () => {
     renderBattleSetupPage('/battle/invite-123');
 
     window.dispatchEvent(new Event('beforeunload'));
 
-    expect(mockLeaveBattle).toHaveBeenCalledTimes(1);
-    expect(mockLeaveBattle).toHaveBeenCalledWith('room-1');
+    expect(mockLeaveBattle).not.toHaveBeenCalled();
   });
 
   it('진행 중 상태에서는 beforeunload가 발생해도 leaveBattle을 호출하지 않는다', () => {

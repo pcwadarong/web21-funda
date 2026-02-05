@@ -15,6 +15,7 @@ const ADMIN_TABS = [
   { label: '퀴즈 리포트', path: '/admin/quizzes/reports' },
   { label: '퀴즈 업로드', path: '/admin/quizzes/upload' },
   { label: '유닛 개요 업로드', path: '/admin/units/overview/upload' },
+  { label: '프로필 캐릭터 관리', path: '/admin/profile-characters/manage' },
   { label: '프로필 캐릭터 등록', path: '/admin/profile-characters' },
 ] as const;
 

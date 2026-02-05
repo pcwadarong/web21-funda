@@ -79,12 +79,17 @@ export const BattleSetupPage = () => {
 
   const latestStatusRef = useRef(status);
   const latestRoomIdRef = useRef(roomId);
+  const isUnloadingRef = useRef(false);
 
   latestStatusRef.current = status;
   latestRoomIdRef.current = roomId;
 
   useEffect(
     () => () => {
+      if (isUnloadingRef.current) {
+        return;
+      }
+
       const currentRoomId = latestRoomIdRef.current;
       const currentStatus = latestStatusRef.current;
 
@@ -107,22 +112,7 @@ export const BattleSetupPage = () => {
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      const currentRoomId = latestRoomIdRef.current;
-      const currentStatus = latestStatusRef.current;
-
-      if (!currentRoomId) {
-        return;
-      }
-
-      const isPlayingStatus =
-        currentStatus === 'countdown' ||
-        currentStatus === 'in_progress' ||
-        currentStatus === 'finished';
-      if (isPlayingStatus) {
-        return;
-      }
-
-      leaveBattle(currentRoomId);
+      isUnloadingRef.current = true;
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -135,6 +125,7 @@ export const BattleSetupPage = () => {
     name: p.displayName,
     participantId: p.participantId,
     profileImageUrl: p.avatar,
+    isHost: p.isHost,
   }));
 
   const handleCopyLink = useCallback(async () => {

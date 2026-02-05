@@ -1,12 +1,17 @@
 import { css, keyframes, type Theme, useTheme } from '@emotion/react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
-import type { OverallRankingResult, WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type {
+  OverallRankingResult,
+  RankingMember,
+  WeeklyRankingResult,
+} from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
@@ -38,6 +43,7 @@ export const LeaderboardContainer = ({
   const theme = useTheme();
   const { openModal } = useModal();
   const [activeLeaderboardView, setActiveLeaderboardView] = useState<LeaderboardView>('MY_LEAGUE');
+  const navigate = useNavigate();
 
   const isMyLeagueView = activeLeaderboardView === 'MY_LEAGUE';
   const isOverallView = activeLeaderboardView === 'OVERALL';
@@ -53,6 +59,9 @@ export const LeaderboardContainer = ({
 
   const handleSelectOverall = () => {
     setActiveLeaderboardView('OVERALL');
+  };
+  const handleMoveToProfile = (member: RankingMember) => {
+    navigate(`/profile/${member.userId}`);
   };
 
   const activeErrorMessage = isMyLeagueView ? weeklyErrorMessage : overallErrorMessage;
@@ -92,13 +101,6 @@ export const LeaderboardContainer = ({
     : '';
   const overallMembers = [...(overallRanking?.members ?? [])]
     .sort((left, right) => {
-      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
-      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
-
-      if (leftTierOrderIndex !== rightTierOrderIndex) {
-        return rightTierOrderIndex - leftTierOrderIndex;
-      }
-
       if (left.xp !== right.xp) {
         return right.xp - left.xp;
       }
@@ -200,7 +202,10 @@ export const LeaderboardContainer = ({
                 <>
                   {weeklyRanking!.tier.name !== 'MASTER' && (
                     <div css={zoneSectionStyle} role="region" aria-label="승급권 구역">
-                      <MemberList members={groupedMembers!.promotion} />
+                      <MemberList
+                        members={groupedMembers!.promotion}
+                        onMemberClick={handleMoveToProfile}
+                      />
                       <div css={zoneHeaderStyle(theme, 'PROMOTION')} aria-hidden="true">
                         <SVGIcon
                           style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
@@ -212,7 +217,10 @@ export const LeaderboardContainer = ({
                     </div>
                   )}
                   <div css={zoneSectionStyle} role="region" aria-label="유지 구역">
-                    <MemberList members={groupedMembers!.maintain} />
+                    <MemberList
+                      members={groupedMembers!.maintain}
+                      onMemberClick={handleMoveToProfile}
+                    />
                   </div>
                   {/* BRONZE가 아닐 때만 강등권 표시 */}
                   {weeklyRanking!.tier.name !== 'BRONZE' && (
@@ -225,7 +233,10 @@ export const LeaderboardContainer = ({
                         />
                         <span>강등권</span>
                       </div>
-                      <MemberList members={groupedMembers!.demotion} />
+                      <MemberList
+                        members={groupedMembers!.demotion}
+                        onMemberClick={handleMoveToProfile}
+                      />
                     </div>
                   )}
                 </>
@@ -236,6 +247,7 @@ export const LeaderboardContainer = ({
                     emptyMessage="이번 주 랭킹에 인원이 없습니다."
                     showRankZoneIcon={false}
                     xpLabel="XP"
+                    onMemberClick={handleMoveToProfile}
                   />
                 </div>
               )}

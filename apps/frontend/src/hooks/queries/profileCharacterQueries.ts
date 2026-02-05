@@ -16,6 +16,7 @@ export const useProfileCharacters = () =>
     queryKey: profileCharacterKeys.list(),
     queryFn: () => profileCharacterService.getMyProfileCharacters(),
     staleTime: 1000 * 60,
+    refetchOnMount: 'always',
   });
 
 export const useProfileCharacterPurchase = () => {

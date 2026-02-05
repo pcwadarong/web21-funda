@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
 import { CacheKeys } from '../common/cache/cache-keys';
@@ -9,6 +9,10 @@ import { Quiz } from '../roadmap/entities/quiz.entity';
 import { Step } from '../roadmap/entities/step.entity';
 import { Unit } from '../roadmap/entities/unit.entity';
 
+import type {
+  AdminProfileCharacterItem,
+  AdminProfileCharacterUpdateRequest,
+} from './dto/profile-character-admin.dto';
 import type {
   ProfileCharacterJsonlRow,
   ProfileCharacterUploadSummary,
@@ -216,6 +220,65 @@ export class BackofficeService {
       created: result.created,
       updated: !!result.updated,
     };
+  }
+
+  /**
+   * 관리자용 프로필 캐릭터 목록을 조회한다.
+   *
+   * @returns 관리자용 프로필 캐릭터 목록
+   */
+  async getProfileCharactersForAdmin(): Promise<AdminProfileCharacterItem[]> {
+    const repository = this.dataSource.getRepository(ProfileCharacter);
+    const characters = await repository.find({ order: { id: 'ASC' } });
+
+    return characters.map(character => ({
+      id: character.id,
+      name: character.name,
+      imageUrl: character.imageUrl,
+      priceDiamonds: character.priceDiamonds,
+      description: character.description ?? null,
+      isActive: character.isActive,
+      createdAt: character.createdAt,
+      updatedAt: character.updatedAt,
+    }));
+  }
+
+  /**
+   * 관리자용 프로필 캐릭터 정보를 수정한다.
+   *
+   * @param characterId 수정할 캐릭터 ID
+   * @param payload 수정할 값
+   * @returns 수정 결과
+   */
+  async updateProfileCharacterForAdmin(
+    characterId: number,
+    payload: AdminProfileCharacterUpdateRequest,
+  ): Promise<{ id: number; updated: boolean }> {
+    if (!Number.isInteger(characterId) || characterId <= 0) {
+      throw new BadRequestException('유효한 캐릭터 ID가 필요합니다.');
+    }
+
+    if (!Number.isFinite(payload.priceDiamonds) || payload.priceDiamonds < 0) {
+      throw new BadRequestException('가격은 0 이상의 숫자여야 합니다.');
+    }
+
+    if (typeof payload.isActive !== 'boolean') {
+      throw new BadRequestException('노출 여부 값이 올바르지 않습니다.');
+    }
+
+    const repository = this.dataSource.getRepository(ProfileCharacter);
+    const character = await repository.findOne({ where: { id: characterId } });
+
+    if (!character) {
+      throw new NotFoundException('프로필 캐릭터를 찾을 수 없습니다.');
+    }
+
+    character.priceDiamonds = payload.priceDiamonds;
+    character.isActive = payload.isActive;
+
+    const saved = await repository.save(character);
+
+    return { id: saved.id, updated: true };
   }
 
   /**

@@ -201,7 +201,7 @@ export class RankingQueryService {
 
   /**
    * 주간 전체 랭킹을 조회한다.
-   * - 티어 우선순위(높을수록 상위) → 주간 XP 순으로 정렬한다.
+   * - 주간 XP 순으로 정렬한다.
    *
    * @param userId 사용자 ID
    * @param weekKey 조회할 주차 키(없으면 현재 주차)
@@ -275,13 +275,6 @@ export class RankingQueryService {
     });
 
     const sorted = [...rankingSeeds].sort((left, right) => {
-      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
-      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
-
-      if (leftTierOrderIndex !== rightTierOrderIndex) {
-        return rightTierOrderIndex - leftTierOrderIndex;
-      }
-
       if (left.xp !== right.xp) {
         return right.xp - left.xp;
       }

@@ -92,13 +92,6 @@ export const LeaderboardContainer = ({
     : '';
   const overallMembers = [...(overallRanking?.members ?? [])]
     .sort((left, right) => {
-      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
-      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
-
-      if (leftTierOrderIndex !== rightTierOrderIndex) {
-        return rightTierOrderIndex - leftTierOrderIndex;
-      }
-
       if (left.xp !== right.xp) {
         return right.xp - left.xp;
       }

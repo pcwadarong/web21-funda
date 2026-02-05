@@ -203,49 +203,51 @@ export const BattleRankBar = ({
                 ? theme.colors.success.main
                 : ranking.score < 0
                   ? theme.colors.error.main
-                  : theme.colors.text.default;
+                  : theme.colors.text.weak;
 
             return (
-              <li
-                key={ranking.participantId}
-                css={listItemStyle}
-                aria-label={
-                  isMine
-                    ? `나, ${ranking.place}등, 점수 ${ranking.score}`
-                    : `${ranking.displayName}, ${ranking.place}등, 점수 ${ranking.score}`
-                }
-              >
-                <div
-                  ref={node => {
-                    cardRefs.current[ranking.participantId] = node;
-                    if (isMine) myCardRef.current = node;
-                  }}
-                  css={cardWrapperStyle}
+              <>
+                <li
+                  key={ranking.participantId}
+                  aria-label={
+                    isMine
+                      ? `나, ${ranking.place}등, 점수 ${ranking.score}`
+                      : `${ranking.displayName}, ${ranking.place}등, 점수 ${ranking.score}`
+                  }
+                  css={listItemStyle}
                 >
-                  <div css={cardStyle(theme, isMine)}>
-                    <div css={rankBadgeStyle(theme, isMine, isDarkMode)} aria-hidden="true">
-                      {ranking.place}
-                    </div>
-                    <Avatar
-                      src={ranking.profileImg}
-                      name={isMine ? '나' : ranking.displayName}
-                      size="sm"
-                      alt={ranking.displayName}
-                      className={'avatar-container'}
-                    />
-                    <div css={infoStyle}>
-                      <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
-                      <ScoreText
-                        value={ranking.score}
-                        color={scoreColor}
-                        theme={theme}
-                        containerRef={isMine ? myScoreRef : undefined}
+                  <div
+                    ref={node => {
+                      cardRefs.current[ranking.participantId] = node;
+                      if (isMine) myCardRef.current = node;
+                    }}
+                    css={cardWrapperStyle}
+                  >
+                    <div css={cardStyle(theme, isMine)}>
+                      <div css={rankBadgeStyle(theme, isMine, isDarkMode)} aria-hidden="true">
+                        {ranking.place}
+                      </div>
+                      <Avatar
+                        src={ranking.profileImg}
+                        name={isMine ? '나' : ranking.displayName}
+                        size="sm"
+                        alt={ranking.displayName}
+                        className={'avatar-container'}
                       />
+                      <div css={infoStyle}>
+                        <div css={nameStyle(theme)}>{isMine ? '나' : ranking.displayName}</div>
+                        <ScoreText
+                          value={ranking.score}
+                          color={scoreColor}
+                          theme={theme}
+                          containerRef={isMine ? myScoreRef : undefined}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                </li>
                 {index === 0 && <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>}
-              </li>
+              </>
             );
           })}
         </ul>
@@ -306,11 +308,10 @@ const listItemStyle = css`
 `;
 
 const cardWrapperStyle = css`
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 16px;
-  width: 100%;
-  min-width: 0;
+  justify-content: center;
 `;
 
 const cardStyle = (theme: Theme, isMine: boolean) => css`

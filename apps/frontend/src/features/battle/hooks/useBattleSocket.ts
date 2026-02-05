@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { useCallback, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 
@@ -216,12 +217,30 @@ export function useBattleSocket(options?: { listen?: boolean }): UseBattleSocket
       });
     };
     const handleBattleInvalid = (data: { reason: string }) => {
+      Sentry.captureMessage(`Battle Invalid: ${data.reason}`, {
+        level: 'warning',
+        tags: { type: 'battle-invalid' },
+        extra: { roomId: battleState.roomId },
+      });
+
       setBattleState({ status: 'invalid' });
       showToast(`${data.reason}`);
     };
 
     // 5. 에러 처리
     const handleBattleError = (error: { code: string; message: string }) => {
+      Sentry.captureException(new Error(`Battle Socket Error: ${error.code}`), {
+        level: 'error',
+        tags: {
+          type: 'socket-error',
+          errorCode: error.code,
+        },
+        extra: {
+          message: error.message,
+          roomId: battleState.roomId,
+        },
+      });
+
       if (error.code === 'ROOM_FULL' || error.code === 'ROOM_NOT_JOINABLE') {
         showToast('방에 입장할 수 없습니다. 다른 방을 이용해 주세요.');
         setBattleState({ status: 'invalid' });

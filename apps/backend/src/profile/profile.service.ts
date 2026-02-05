@@ -380,11 +380,8 @@ export class ProfileService {
     const ownedIds = ownedRows.map(row => row.characterId);
     const ownedSet = new Set(ownedIds);
 
-    const whereClause =
-      ownedIds.length > 0 ? [{ isActive: true }, { id: In(ownedIds) }] : [{ isActive: true }];
-
     const characters = await this.profileCharacterRepository.find({
-      where: whereClause,
+      where: { isActive: true },
       order: { id: 'ASC' },
     });
 

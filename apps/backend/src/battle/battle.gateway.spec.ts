@@ -71,4 +71,63 @@ describe('BattleGateway', () => {
     const savedRoom = (battleService.saveRoom as jest.Mock).mock.calls[0][0] as BattleRoomState;
     expect(savedRoom.participants).toHaveLength(0);
   });
+
+  it('인원 부족으로 invalid 상태가 되면 예약 타이머를 정리해야 한다', () => {
+    const room = createRoom({
+      status: 'in_progress',
+      participants: [
+        {
+          participantId: 'participant-1',
+          userId: 1,
+          displayName: 'player-1',
+          score: 0,
+          submissions: [],
+          isConnected: true,
+          isHost: true,
+          joinedAt: Date.now(),
+          leftAt: null,
+        },
+        {
+          participantId: 'participant-2',
+          userId: 2,
+          displayName: 'player-2',
+          score: 0,
+          submissions: [],
+          isConnected: true,
+          isHost: false,
+          joinedAt: Date.now(),
+          leftAt: null,
+        },
+      ],
+    });
+    const battleService = {
+      getRoom: jest.fn().mockReturnValue(room),
+      saveRoom: jest.fn(),
+    } as unknown as BattleService;
+
+    const gateway = new BattleGateway(battleService);
+    const emitMock = jest.fn();
+    const serverMock = {
+      to: jest.fn().mockReturnValue({ emit: emitMock }),
+    } as unknown as Server;
+
+    (gateway as unknown as { server: Server }).server = serverMock;
+
+    const clearRoomTimersSpy = jest.spyOn(
+      gateway as unknown as { clearRoomTimers: (roomId: string) => void },
+      'clearRoomTimers',
+    );
+
+    const client = {
+      id: 'participant-1',
+      leave: jest.fn(),
+      emit: jest.fn(),
+    } as unknown as Socket;
+
+    gateway.handleLeave({ roomId: room.roomId }, client);
+
+    expect(clearRoomTimersSpy).toHaveBeenCalledWith(room.roomId);
+    const savedRoom = (battleService.saveRoom as jest.Mock).mock.calls[0][0] as BattleRoomState;
+    expect(savedRoom.status).toBe('invalid');
+  });
 });

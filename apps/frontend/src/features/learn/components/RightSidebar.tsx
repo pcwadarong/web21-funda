@@ -376,7 +376,9 @@ export const LearnRightSidebar = ({
           )}
         </div>
 
-        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
+        {!import.meta.env.DEV && (
+          <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
+        )}
 
         {isSearchModalOpen && (
           <Modal

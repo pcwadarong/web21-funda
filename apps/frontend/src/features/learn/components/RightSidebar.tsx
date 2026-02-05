@@ -338,6 +338,7 @@ export const LearnRightSidebar = ({
                       aria-valuenow={Math.round(
                         Math.min(100, Math.max(0, (goal.current / goal.target) * 100)),
                       )}
+                      aria-label="오늘의 목표 진행률"
                       aria-valuemin={0}
                       aria-valuemax={100}
                     />

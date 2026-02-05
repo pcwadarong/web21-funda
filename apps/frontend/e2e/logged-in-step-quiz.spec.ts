@@ -1,26 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-type ApiResponse<T> = {
-  success: boolean;
-  code: number;
-  message: string;
-  result: T;
-};
-
-type AuthUser = {
-  id: number;
-  displayName: string;
-  email?: string | null;
-  profileImageUrl?: string | null;
-  role: 'user' | 'admin';
-  isEmailSubscribed: boolean;
-  heartCount: number;
-  maxHeartCount: number;
-  experience: number;
-  diamondCount: number;
-  currentStreak: number;
-  provider: 'github' | 'google';
-};
+import { buildAuthUser, createFailureResponse, createSuccessResponse } from './helpers';
 
 const sampleFieldSlug = 'FE';
 const sampleFieldName = '프론트엔드';
@@ -31,45 +11,9 @@ const sampleStepTitle = '전송 계층 입문';
 const sampleQuizId = 9001;
 const sampleQuestionText = '네트워크에서 TCP는 신뢰성을 제공한다.';
 const sampleExplanation = 'TCP는 순서 보장과 재전송으로 신뢰성을 제공합니다.';
-const sampleReviewQuestionText = 'HTTP는 무상태 프로토콜이다.';
-
-function createSuccessResponse<T>(result: T): ApiResponse<T> {
-  return {
-    success: true,
-    code: 200,
-    message: 'OK',
-    result,
-  };
-}
-
-function createFailureResponse(message: string): ApiResponse<null> {
-  return {
-    success: false,
-    code: 400,
-    message,
-    result: null,
-  };
-}
-
-function buildAuthUser(): AuthUser {
-  return {
-    id: 1,
-    displayName: '테스트 사용자',
-    email: 'test@example.com',
-    profileImageUrl: null,
-    role: 'user',
-    isEmailSubscribed: false,
-    heartCount: 5,
-    maxHeartCount: 5,
-    experience: 1200,
-    diamondCount: 3,
-    currentStreak: 2,
-    provider: 'github',
-  };
-}
 
 /**
- * 로그인 사용자 기준으로 학습 흐름을 안정적으로 재현하기 위해 API를 고정한다.
+ * 로그인 사용자 기준으로 스텝 풀이 흐름을 재현하기 위해 API를 고정한다.
  *
  * @param page - 테스트 페이지 객체
  */
@@ -80,6 +24,19 @@ async function applyLoggedInApiMocks(page: Page): Promise<void> {
 
     if (pathname === '/api/auth/me') {
       const body = createSuccessResponse({ user: buildAuthUser() });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
+      return;
+    }
+
+    if (pathname === '/api/ranking/me') {
+      const body = createSuccessResponse({
+        tier: { id: 1, name: 'BRONZE', orderIndex: 1 },
+        diamondCount: 3,
+      });
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -141,19 +98,7 @@ async function applyLoggedInApiMocks(page: Page): Promise<void> {
     }
 
     if (pathname === '/api/progress/reviews') {
-      const body = createSuccessResponse([
-        {
-          id: 9101,
-          type: 'ox',
-          content: {
-            question: sampleReviewQuestionText,
-            options: [
-              { id: 'o', text: 'O' },
-              { id: 'x', text: 'X' },
-            ],
-          },
-        },
-      ]);
+      const body = createSuccessResponse([]);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -235,22 +180,6 @@ async function applyLoggedInApiMocks(page: Page): Promise<void> {
       return;
     }
 
-    if (pathname === `/api/progress/steps/${sampleStepId}/complete`) {
-      const body = createSuccessResponse({
-        successRate: 100,
-        xpGained: 0,
-        durationMs: 12000,
-        currentStreak: 3,
-        isFirstSolveToday: false,
-      });
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(body),
-      });
-      return;
-    }
-
     const body = createFailureResponse('mock not found');
     await route.fulfill({
       status: 404,
@@ -297,46 +226,5 @@ test.describe('로그인 사용자 스텝 풀이', () => {
 
     const resultButton = page.getByRole('button', { name: '결과 보기' });
     await expect(resultButton).toBeVisible();
-  });
-
-  test('정답 제출 후 결과 화면으로 이동된다', async ({ page }) => {
-    await goToQuizByStepSelection(page);
-
-    await page.getByRole('button', { name: 'O' }).click();
-
-    const submitButton = page.getByRole('button', { name: '정답 확인' });
-    await submitButton.click();
-
-    await page.getByRole('button', { name: '결과 보기' }).click();
-
-    await expect(page).toHaveURL(/\/quiz\/result$/);
-
-    const keepLearningButton = page.getByRole('button', { name: '학습 계속하기' });
-    await expect(keepLearningButton).toBeVisible();
-  });
-
-  test('복습 시작하기를 누르면 복습 퀴즈가 열린다', async ({ page }) => {
-    await page.goto('/learn');
-
-    const reviewButton = page.getByRole('button', { name: '복습 시작하기' });
-    await expect(reviewButton).toBeEnabled();
-    await reviewButton.click();
-
-    await expect(page).toHaveURL(/\/quiz\?mode=review/);
-
-    const reviewQuestionHeading = page.getByRole('heading', {
-      name: new RegExp(sampleReviewQuestionText),
-    });
-    await expect(reviewQuestionHeading).toBeVisible();
-  });
-
-  test('퀴즈 신고 모달이 열린다', async ({ page }) => {
-    await goToQuizByStepSelection(page);
-
-    const reportButton = page.getByRole('button', { name: '오류 신고' });
-    await reportButton.click();
-
-    await expect(page.getByRole('heading', { name: '오류 신고' })).toBeVisible();
-    await expect(page.getByText('신고 유형', { exact: true })).toBeVisible();
   });
 });

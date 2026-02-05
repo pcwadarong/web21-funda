@@ -4,7 +4,9 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'rea
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { useApplyEyeMaterials } from '@/feat/fundy/hooks/useApplyEyeMaterials';
 import { useFixSkinnedMesh } from '@/feat/fundy/hooks/useFixSkinnedMesh';
+import { useFundyEyeMaterial } from '@/feat/fundy/hooks/useFundyEyeMaterial';
 import { useMorphAnimation } from '@/feat/fundy/hooks/useMorphAnimation';
 import type { FundyAnimationConfig, GLTFResult } from '@/feat/fundy/types';
 import { useFundyStore } from '@/store/fundyStore';
@@ -42,45 +44,9 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
         : [],
     );
 
-    const eyeMaterial = useMemo(() => {
-      if (eyeTextures.length !== 3) return undefined;
-      const [colorMap, roughnessMap, transmissionMap] = eyeTextures;
-      return new THREE.MeshPhysicalMaterial({
-        map: colorMap,
-        roughnessMap: roughnessMap,
-        transmissionMap: transmissionMap,
-        transmission: 0.95,
-        ior: 1.2, // 유리 굴절률
-        thickness: 0.1,
-        roughness: 0.1,
-        metalness: 0,
-        clearcoat: 1, // 코팅 효과
-        clearcoatRoughness: 0.1,
-      });
-    }, [eyeTextures]);
-
-    useEffect(() => () => eyeMaterial?.dispose(), [eyeMaterial]);
-
-    useEffect(() => {
-      const eyeMat = enhancedEyes && eyeMaterial ? eyeMaterial : materials.eye;
-      const irisMat = materials.iris;
-
-      const eyeMeshes = [nodes.Sphere001, nodes.Sphere003].filter(
-        (mesh): mesh is THREE.Mesh => !!mesh && (mesh as THREE.Mesh).isMesh,
-      );
-      const irisMeshes = [nodes.Sphere001_1, nodes.Sphere003_1].filter(
-        (mesh): mesh is THREE.Mesh => !!mesh && (mesh as THREE.Mesh).isMesh,
-      );
-
-      eyeMeshes.forEach(mesh => {
-        mesh.material = eyeMat;
-        mesh.material.needsUpdate = true;
-      });
-
-      irisMeshes.forEach(mesh => {
-        mesh.material = irisMat;
-      });
-    }, [enhancedEyes, eyeMaterial, materials.eye, materials.iris, nodes]);
+    // 눈알 재질 대체
+    const eyeMaterial = useFundyEyeMaterial(eyeTextures);
+    useApplyEyeMaterials({ enhancedEyes, eyeMaterial, nodes, materials });
 
     // SkinnedMesh 수정
     useFixSkinnedMesh(clone);

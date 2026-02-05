@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { memo } from 'react';
 
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
@@ -17,115 +18,123 @@ import { useThemeStore } from '@/store/themeStore';
 import type { Theme } from '@/styles/theme';
 import { TextWithCodeStyle } from '@/utils/textParser';
 
-interface QuizContentCardProps {
-  question: QuizQuestion;
-  status: QuestionStatus;
-  selectedAnswer: AnswerType | null;
-  correctAnswer: CorrectAnswerType | null;
-  explanation: string;
-  onAnswerChange: (answer: AnswerType) => void;
-  isSubmitDisabled: boolean;
-  isDontKnowDisabled?: boolean;
-  onCheck: () => void;
-  onDontKnow?: () => void;
-  onNext: () => void;
-  isLast: boolean;
-  isReviewMode: boolean;
-  isBattleMode?: boolean;
-  remainingSeconds?: number | null;
-  endsAt?: number | null;
-  onSelectPosition?: (position: { x: number; y: number }) => void;
+// 1. 퀴즈 질문 헤더 (문제 제목 + 신고 버튼)
+interface QuizQuestionHeaderProps {
+  questionText: string;
+  quizId: number;
 }
 
-export const QuizContentCard = ({
-  question,
-  status,
-  selectedAnswer,
-  onAnswerChange,
-  isSubmitDisabled,
-  isDontKnowDisabled = false,
-  correctAnswer,
-  explanation,
-  onCheck,
-  onDontKnow,
-  onNext,
-  isLast,
-  isReviewMode,
-  isBattleMode = false,
-  onSelectPosition,
-}: QuizContentCardProps) => {
+const QuizQuestionHeader = memo(({ questionText, quizId }: QuizQuestionHeaderProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { openModal } = useModal();
-  const showResult = status === 'checked';
-  const showDontKnowButton = Boolean(onDontKnow) && !showResult && !isBattleMode && !isReviewMode;
-  let nextButtonLabel = '다음 문제';
-
-  if (isLast) {
-    if (isReviewMode) {
-      nextButtonLabel = '복습 완료';
-    } else {
-      nextButtonLabel = '결과 보기';
-    }
-  }
-
-  const battleSubmitButtonLabel = status === 'checking' ? '다른 사람 기다리는 중..' : '제출하기';
-  const battleNextButtonLabel = isLast
-    ? '자동으로 경기 결과가 나타납니다..'
-    : '자동으로 다음 문제로 이동합니다..';
-  const battleNextButtonLabelWithTimer = showResult
-    ? [<BattleTimerCountdown isResultPhase={true} />, '초 뒤 ', battleNextButtonLabel]
-    : battleNextButtonLabel;
 
   return (
-    <article css={cardStyle(theme)} aria-label="퀴즈 문제">
-      <div css={headerStyle}>
-        <h2 css={titleStyle(theme)} id="quiz-question-title">
-          Q. <TextWithCodeStyle text={question.content.question} />
-        </h2>
-        <button
-          css={reportButtonStyle(theme, isDarkMode)}
-          onClick={() => openModal('오류 신고', <ReportModal quizId={question.id} />)}
-          aria-label="오류 신고"
-        >
-          <SVGIcon icon="Report" size="sm" aria-hidden="true" />
-          <span>신고</span>
-        </button>
-      </div>
+    <div css={headerStyle}>
+      <h2 css={titleStyle(theme)} id="quiz-question-title">
+        Q. <TextWithCodeStyle text={questionText} />
+      </h2>
+      <button
+        css={reportButtonStyle(theme, isDarkMode)}
+        onClick={() => openModal('오류 신고', <ReportModal quizId={quizId} />)}
+        aria-label="오류 신고"
+      >
+        <SVGIcon icon="Report" size="sm" aria-hidden="true" />
+        <span>신고</span>
+      </button>
+    </div>
+  );
+});
 
-      <QuizRenderer
-        question={question}
-        selectedAnswer={selectedAnswer}
-        correctAnswer={correctAnswer ?? null}
-        onAnswerChange={onAnswerChange}
-        onSelectPosition={isBattleMode ? onSelectPosition : undefined}
-        showResult={showResult}
-        disabled={status !== 'idle'}
-      />
+// 2. 퀴즈 해설
+interface QuizExplanationProps {
+  explanation: string;
+}
 
-      {showResult && explanation && (
-        <div css={explanationStyle(theme)} role="region" aria-label="해설">
-          <span style={{ marginRight: '8px' }} aria-hidden="true">
-            💡
-          </span>
-          <span css={explanationTextStyle(theme)}>{<TextWithCodeStyle text={explanation} />}</span>
-        </div>
-      )}
+const QuizExplanation = memo(({ explanation }: QuizExplanationProps) => {
+  const theme = useTheme();
 
-      {showDontKnowButton && (
-        <div css={dontKnowWrapperStyle}>
-          <button
-            type="button"
-            css={dontKnowButtonStyle(theme, isDarkMode)}
-            onClick={onDontKnow}
-            disabled={isDontKnowDisabled}
-            aria-label="잘 모르겠어요, 정답 건너뛰기"
-          >
-            잘 모르겠어요
-          </button>
-        </div>
-      )}
+  return (
+    <div css={explanationStyle(theme)} role="region" aria-label="해설">
+      <span style={{ marginRight: '8px' }} aria-hidden="true">
+        💡
+      </span>
+      <span css={explanationTextStyle(theme)}>
+        <TextWithCodeStyle text={explanation} />
+      </span>
+    </div>
+  );
+});
 
+// 3. "잘 모르겠어요" 버튼
+interface QuizDontKnowButtonProps {
+  onDontKnow: () => void;
+  isDontKnowDisabled: boolean;
+}
+
+const QuizDontKnowButton = memo(({ onDontKnow, isDontKnowDisabled }: QuizDontKnowButtonProps) => {
+  const theme = useTheme();
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <div css={dontKnowWrapperStyle}>
+      <button
+        type="button"
+        css={dontKnowButtonStyle(theme, isDarkMode)}
+        onClick={onDontKnow}
+        disabled={isDontKnowDisabled}
+        aria-label="잘 모르겠어요, 정답 건너뛰기"
+      >
+        잘 모르겠어요
+      </button>
+    </div>
+  );
+});
+
+// 4. 퀴즈 액션 버튼들
+interface QuizActionButtonsProps {
+  showResult: boolean;
+  status: QuestionStatus;
+  isLast: boolean;
+  isReviewMode: boolean;
+  isBattleMode: boolean;
+  isSubmitDisabled: boolean;
+  question: QuizQuestion;
+  correctAnswer: CorrectAnswerType | null;
+  onCheck: () => void;
+  onNext: () => void;
+}
+
+const QuizActionButtons = memo(
+  ({
+    showResult,
+    status,
+    isLast,
+    isReviewMode,
+    isBattleMode,
+    isSubmitDisabled,
+    question,
+    correctAnswer,
+    onCheck,
+    onNext,
+  }: QuizActionButtonsProps) => {
+    const theme = useTheme();
+    const { openModal } = useModal();
+
+    let nextButtonLabel = '다음 문제';
+    if (isLast) {
+      nextButtonLabel = isReviewMode ? '복습 완료' : '결과 보기';
+    }
+
+    const battleSubmitButtonLabel = status === 'checking' ? '다른 사람 기다리는 중..' : '제출하기';
+    const battleNextButtonLabel = isLast
+      ? '자동으로 경기 결과가 나타납니다..'
+      : '자동으로 다음 문제로 이동합니다..';
+    const battleNextButtonLabelWithTimer = showResult
+      ? [<BattleTimerCountdown key="timer" isResultPhase={true} />, '초 뒤 ', battleNextButtonLabel]
+      : battleNextButtonLabel;
+
+    return (
       <div css={footerStyle(theme)} role="group" aria-label="퀴즈 액션">
         {showResult ? (
           <>
@@ -182,6 +191,85 @@ export const QuizContentCard = ({
           </Button>
         )}
       </div>
+    );
+  },
+);
+
+// ========== 메인 컴포넌트 ==========
+
+interface QuizContentCardProps {
+  question: QuizQuestion;
+  status: QuestionStatus;
+  selectedAnswer: AnswerType | null;
+  correctAnswer: CorrectAnswerType | null;
+  explanation: string;
+  onAnswerChange: (answer: AnswerType) => void;
+  isSubmitDisabled: boolean;
+  isDontKnowDisabled?: boolean;
+  onCheck: () => void;
+  onDontKnow?: () => void;
+  onNext: () => void;
+  isLast: boolean;
+  isReviewMode: boolean;
+  isBattleMode?: boolean;
+  remainingSeconds?: number | null;
+  endsAt?: number | null;
+  onSelectPosition?: (position: { x: number; y: number }) => void;
+}
+
+export const QuizContentCard = ({
+  question,
+  status,
+  selectedAnswer,
+  onAnswerChange,
+  isSubmitDisabled,
+  isDontKnowDisabled = false,
+  correctAnswer,
+  explanation,
+  onCheck,
+  onDontKnow,
+  onNext,
+  isLast,
+  isReviewMode,
+  isBattleMode = false,
+  onSelectPosition,
+}: QuizContentCardProps) => {
+  const theme = useTheme();
+  const showResult = status === 'checked';
+  const showDontKnowButton = Boolean(onDontKnow) && !showResult && !isBattleMode && !isReviewMode;
+
+  return (
+    <article css={cardStyle(theme)} aria-label="퀴즈 문제">
+      <QuizQuestionHeader questionText={question.content.question} quizId={question.id} />
+
+      <QuizRenderer
+        question={question}
+        selectedAnswer={selectedAnswer}
+        correctAnswer={correctAnswer ?? null}
+        onAnswerChange={onAnswerChange}
+        onSelectPosition={isBattleMode ? onSelectPosition : undefined}
+        showResult={showResult}
+        disabled={status !== 'idle'}
+      />
+
+      {showResult && explanation && <QuizExplanation explanation={explanation} />}
+
+      {showDontKnowButton && (
+        <QuizDontKnowButton onDontKnow={onDontKnow!} isDontKnowDisabled={isDontKnowDisabled} />
+      )}
+
+      <QuizActionButtons
+        showResult={showResult}
+        status={status}
+        isLast={isLast}
+        isReviewMode={isReviewMode}
+        isBattleMode={isBattleMode}
+        isSubmitDisabled={isSubmitDisabled}
+        question={question}
+        correctAnswer={correctAnswer}
+        onCheck={onCheck}
+        onNext={onNext}
+      />
     </article>
   );
 };

@@ -9,6 +9,7 @@ type FundyControllerProps = {
   onSetMouth: (value: FundyAnimationConfig['openMouth']) => void;
   onSpeedChange: (value: number) => void;
   onPlayHello: () => void;
+  disabled?: boolean;
 };
 
 export function FundyController({
@@ -17,6 +18,7 @@ export function FundyController({
   onSetMouth,
   onSpeedChange,
   onPlayHello,
+  disabled = false,
 }: FundyControllerProps) {
   return (
     <ControlPanel>
@@ -31,6 +33,7 @@ export function FundyController({
                 type="checkbox"
                 checked={!!animation[item.key]}
                 onChange={e => onToggle(item.key, e.target.checked)}
+                disabled={disabled}
               />
               {item.icon} {item.label}
             </ControlLabel>
@@ -47,6 +50,7 @@ export function FundyController({
               name="mouth"
               checked={animation.openMouth === opt.value}
               onChange={() => onSetMouth(opt.value)}
+              disabled={disabled}
             />
             {opt.icon} {opt.label}
           </ControlLabel>
@@ -63,12 +67,13 @@ export function FundyController({
           value={animation.speedMultiplier ?? 1}
           onChange={e => onSpeedChange(parseFloat(e.target.value))}
           style={{ width: '100%' }}
+          disabled={disabled}
         />
       </Section>
 
       <Section>
         <SectionTitle>액션</SectionTitle>
-        <PlayButton type="button" onClick={onPlayHello}>
+        <PlayButton type="button" onClick={onPlayHello} disabled={disabled}>
           ▶ Hello 액션 재생
         </PlayButton>
       </Section>
@@ -130,6 +135,9 @@ const ControlLabel = styled.label`
     cursor: pointer;
     margin: 0;
   }
+  input:disabled {
+    cursor: not-allowed;
+  }
 `;
 
 const PlayButton = styled.button`
@@ -142,6 +150,11 @@ const PlayButton = styled.button`
   cursor: pointer;
   font-weight: 600;
   transition: 0.2s;
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
   &:hover {
     border-color: #666;
     transform: translateY(-1px);

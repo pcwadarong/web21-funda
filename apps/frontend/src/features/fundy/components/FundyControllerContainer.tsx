@@ -1,21 +1,17 @@
 import { useCallback } from 'react';
 
 import { type AnimKey, FACE_EXPRESSIONS } from '@/feat/fundy/constants';
-import type { FundyAnimationConfig } from '@/feat/fundy/types';
+import { useFundyStore } from '@/store/fundyStore';
 
 import { FundyController } from './FundyController';
 
-type FundyControllerContainerProps = {
-  animation: FundyAnimationConfig;
-  setAnimation: React.Dispatch<React.SetStateAction<FundyAnimationConfig>>;
-};
+export function FundyControllerContainer() {
+  const animation = useFundyStore(state => state.animation);
+  const isActionLocked = useFundyStore(state => state.isActionLocked);
+  const { setAnimation, triggerHello } = useFundyStore(state => state.actions);
 
-export function FundyControllerContainer({
-  animation,
-  setAnimation,
-}: FundyControllerContainerProps) {
   const updateAnim = useCallback(
-    (key: AnimKey, value: FundyAnimationConfig[AnimKey]) => {
+    (key: AnimKey, value: (typeof animation)[AnimKey]) => {
       setAnimation(prev => {
         const next = { ...prev, [key]: value };
         const setFaceExpression = (k: AnimKey, val: boolean) => {
@@ -43,15 +39,13 @@ export function FundyControllerContainer({
   );
 
   const handlePlayHello = useCallback(() => {
-    setAnimation(prev => ({
-      ...prev,
-      helloAction: (prev.helloAction ?? 0) + 1,
-    }));
-  }, [setAnimation]);
+    triggerHello();
+  }, [triggerHello]);
 
   return (
     <FundyController
       animation={animation}
+      disabled={isActionLocked}
       onToggle={(key, value) => updateAnim(key, value)}
       onSetMouth={value => updateAnim('openMouth', value)}
       onSpeedChange={value => updateAnim('speedMultiplier', value)}

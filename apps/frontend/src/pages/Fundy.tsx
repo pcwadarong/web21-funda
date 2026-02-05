@@ -6,22 +6,12 @@ import { Loading } from '@/comp/Loading';
 import { FundyControllerContainer } from '@/feat/fundy/components/FundyControllerContainer';
 import { FundyLighting } from '@/feat/fundy/components/FundyLighting';
 import { FundyModel } from '@/feat/fundy/components/Model';
-import type { FundyAnimationConfig } from '@/feat/fundy/types';
+import { FundyStoreProvider, useFundyStore } from '@/store/fundyStore';
 
 export function PlayWithFundy() {
   const { active } = useProgress();
   const [showOverlay, setShowOverlay] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [animation, setAnimation] = useState<FundyAnimationConfig>({
-    blink: false,
-    lookAt: false,
-    helloAction: 0,
-    speedMultiplier: 1,
-    smile: false,
-    bigSmile: false,
-    wink: false,
-    openMouth: false,
-  });
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -43,8 +33,18 @@ export function PlayWithFundy() {
   }, [active, showOverlay]);
 
   return (
+    <FundyStoreProvider>
+      <FundyScene showOverlay={showOverlay} isFadingOut={isFadingOut} />
+    </FundyStoreProvider>
+  );
+}
+
+function FundyScene({ showOverlay, isFadingOut }: { showOverlay: boolean; isFadingOut: boolean }) {
+  const animation = useFundyStore(state => state.animation);
+
+  return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      <FundyControllerContainer animation={animation} setAnimation={setAnimation} />
+      <FundyControllerContainer />
 
       <Canvas shadows camera={{ position: [0, 1.2, 5], fov: 45 }}>
         <Suspense fallback={null}>

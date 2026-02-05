@@ -2,7 +2,7 @@ import type { FundyAnimationConfig } from '@/feat/fundy/types';
 
 export type AnimKey = keyof FundyAnimationConfig;
 
-export const FACE_EXPRESSIONS: AnimKey[] = ['smile', 'bigSmile', 'wink'];
+export const FACE_EXPRESSIONS: AnimKey[] = ['smile', 'smileSoft', 'bigSmile', 'wink'];
 
 export const MOUTH_OPTIONS = [
   { key: 'openMouth', value: false, label: '다물기', icon: '🤐' },

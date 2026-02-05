@@ -7,6 +7,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { useFixSkinnedMesh } from '@/feat/fundy/hooks/useFixSkinnedMesh';
 import { useFundyAnimation } from '@/feat/fundy/hooks/useFundyAnimation';
 import type { FundyAnimationConfig, GLTFResult } from '@/feat/fundy/types';
+import { useFundyStore } from '@/store/fundyStore';
 
 export type FundyModelProps = ThreeElements['group'] & {
   animation?: FundyAnimationConfig;
@@ -16,6 +17,7 @@ export type FundyModelProps = ThreeElements['group'] & {
 export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
   ({ animation, enhancedEyes = true, ...props }, ref) => {
     const group = useRef<THREE.Group>(null!);
+    const { setActionLocked, setSystemAnimation } = useFundyStore(state => state.actions);
 
     // ref 전달
     useImperativeHandle(ref, () => group.current);
@@ -94,12 +96,35 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       prevHelloRef.current = trigger;
       if (trigger === 0) return;
 
+      setActionLocked(true);
+      setSystemAnimation({ smileSoft: false });
+
       hello.reset();
       hello.setLoop(THREE.LoopOnce, 1);
       hello.clampWhenFinished = true;
       hello.fadeIn(0.15);
       hello.play();
-    }, [actions, animation?.helloAction]);
+
+      const mixer = hello.getMixer();
+      let smileTimer: ReturnType<typeof setTimeout> | null = null;
+      const handleFinished = (event: THREE.Event & { action?: THREE.AnimationAction }) => {
+        if (event.action !== hello) return;
+        if (smileTimer) clearTimeout(smileTimer);
+        setActionLocked(false);
+        setSystemAnimation({ smileSoft: false });
+        mixer.removeEventListener('finished', handleFinished);
+      };
+      mixer.addEventListener('finished', handleFinished);
+
+      smileTimer = setTimeout(() => {
+        setSystemAnimation({ smileSoft: true });
+      }, 300);
+
+      return () => {
+        if (smileTimer) clearTimeout(smileTimer);
+        mixer.removeEventListener('finished', handleFinished);
+      };
+    }, [actions, animation?.helloAction, setActionLocked, setSystemAnimation]);
 
     return (
       <group ref={group} {...props} dispose={null}>

@@ -138,6 +138,8 @@ export interface FundyAnimationConfig {
   helloAction?: number;
   /** 웃기 */
   smile?: boolean;
+  /** 은은한 웃기 */
+  smileSoft?: boolean;
   /** 입 벌리며 웃기 */
   bigSmile?: boolean;
   /** 윙크 */
@@ -168,7 +170,7 @@ export interface FundyMorphMeshes {
 
   /** 눈썹 (eyebrow) - Shape Keys: Key 1 (올리기) */
   eyebrow: THREE.Mesh & {
-    morphTargetDictionary?: { a?: number };
+    morphTargetDictionary?: { up?: number; down?: number; wink?: number };
     morphTargetInfluences?: number[];
   };
 

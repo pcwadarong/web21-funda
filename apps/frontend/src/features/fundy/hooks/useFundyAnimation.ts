@@ -8,42 +8,48 @@ import type { FundyAnimationConfig, FundyNodes } from '../types';
  * 얼굴 애니메이션 구성 데이터
  */
 const EXPRESSION_CONFIGS = {
-  smile: {
+  smileSoft: {
+    head: { mouth_smile: 1, eyes_closed: 0, wink: 0, a: 0, o: 0 },
+    eyelash: { bigger: 1, wink: 0 },
+    teeth: { smile: 1, a: 0, o: 0 },
+    eyebrow: { up: 0, wink: 0, down: 0 },
+  },
+  smileEyesClosed: {
     head: { mouth_smile: 1, eyes_closed: 1, wink: 0, a: 0, o: 0 },
     eyelash: { smile: 1, wink: 0 },
     teeth: { smile: 1, a: 0, o: 0 },
-    eyebrow: { a: 0 },
+    eyebrow: { up: 0, wink: 0, down: 0 },
   },
-  bigSmile: {
+  smileOpenBig: {
     head: { eyes_closed: 1, mouth_smile: 0.7, wink: 0, a: 0.8, o: 0 },
     eyelash: { smile: 1, wink: 0 },
     teeth: { smile: 0.7, a: 0.8, o: 0 },
-    eyebrow: { a: 1 },
+    eyebrow: { up: 1, wink: 0, down: 0 },
   },
   wink: {
     head: { wink: 1, mouth_smile: 0, a: 0, o: 0, eyes_closed: 0 },
     eyelash: { wink: 1, smile: 0 },
     teeth: { smile: 1, a: 0, o: 0 },
-    eyebrow: { a: 1 },
+    eyebrow: { up: 0, wink: 1, down: 0 },
   },
   open_A: {
     head: { a: 1, o: 0, mouth_smile: 0, wink: 0, eyes_closed: 0 },
     eyelash: { smile: 0, wink: 0 },
     teeth: { a: 1, o: 0, smile: 0 },
     tongue: { a: 1 },
-    eyebrow: { a: 0 },
+    eyebrow: { up: 0, wink: 0, down: 0 },
   },
   open_O: {
     head: { a: 0, o: 1, mouth_smile: 0, wink: 0, eyes_closed: 0 },
     eyelash: { smile: 0, wink: 0 },
     teeth: { a: 0, o: 1, smile: 0 },
-    eyebrow: { a: 0 },
+    eyebrow: { up: 0, wink: 0, down: 0 },
   },
   default: {
     head: { mouth_smile: 0, wink: 0, a: 0, o: 0, eyes_closed: 0 },
-    eyelash: { smile: 0, wink: 0 },
+    eyelash: { smile: 0, wink: 0, bigger: 0 },
     teeth: { smile: 0, a: 0, o: 0 },
-    eyebrow: { a: 0 },
+    eyebrow: { up: 0, wink: 0, down: 0 },
     tongue: { a: 0 },
   },
 } as const;
@@ -77,6 +83,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     lookAt = false,
     speedMultiplier = 1,
     smile = false,
+    smileSoft = false,
     bigSmile = false,
     wink = false,
     openMouth = false,
@@ -138,8 +145,9 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     // ==========================================
 
     let currentKey: keyof typeof EXPRESSION_CONFIGS = 'default';
-    if (smile) currentKey = 'smile';
-    else if (bigSmile) currentKey = 'bigSmile';
+    if (smileSoft) currentKey = 'smileSoft';
+    else if (smile) currentKey = 'smileEyesClosed';
+    else if (bigSmile) currentKey = 'smileOpenBig';
     else if (wink) currentKey = 'wink';
     else if (openMouth === 'a') currentKey = 'open_A';
     else if (openMouth === 'o') currentKey = 'open_O';
@@ -167,7 +175,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
       s.timer += delta;
 
       if (s.timer >= s.next) {
-        const progress = (s.timer - s.next) * 10;
+        const progress = (s.timer - s.next) * 8;
 
         if (progress < 1) {
           const t = progress;
@@ -191,16 +199,6 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     // 시선 추적
     // ==========================================
 
-    const lookAtMode =
-      lookAt === true
-        ? 'head+eyes'
-        : lookAt === false
-          ? false
-          : (lookAt as 'head' | 'eyes' | 'head+eyes');
-
-    const trackHead = lookAtMode === 'head' || lookAtMode === 'head+eyes';
-    const trackEyes = lookAtMode === 'eyes' || lookAtMode === 'head+eyes';
-
     // 회전 기준값 초기 저장
     if (!restRotations.current.ready) {
       if (bones.defHead || bones.eyeL || bones.eyeR) {
@@ -214,7 +212,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     }
 
     // 마우스 따라 시선 회전
-    if (lookAtMode) {
+    if (lookAt) {
       const { pointer } = state;
       mouseLerp.current.lerp(pointer, 0.1);
 
@@ -223,7 +221,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
       const eyeRotationY = mouseLerp.current.x * 0.9;
       const eyeRotationX = -mouseLerp.current.y * 0.6;
 
-      if (trackHead && bones.defHead) {
+      if (bones.defHead) {
         bones.defHead.rotation.y = THREE.MathUtils.lerp(
           bones.defHead.rotation.y,
           headRotationY,
@@ -235,9 +233,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
           0.1,
         );
         bones.defHead.updateMatrixWorld(true);
-      }
 
-      if (trackEyes) {
         if (bones.eyeL) {
           bones.eyeL.rotation.y = THREE.MathUtils.lerp(bones.eyeL.rotation.y, eyeRotationY, 0.15);
           bones.eyeL.rotation.x = THREE.MathUtils.lerp(bones.eyeL.rotation.x, eyeRotationX, 0.15);
@@ -248,46 +244,45 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
           bones.eyeR.rotation.x = THREE.MathUtils.lerp(bones.eyeR.rotation.x, eyeRotationX, 0.15);
           bones.eyeR.updateMatrixWorld(true);
         }
-      }
-    } else {
-      if (bones.defHead && restRotations.current.head) {
-        bones.defHead.rotation.y = THREE.MathUtils.lerp(
-          bones.defHead.rotation.y,
-          restRotations.current.head.y,
-          0.1,
-        );
-        bones.defHead.rotation.x = THREE.MathUtils.lerp(
-          bones.defHead.rotation.x,
-          restRotations.current.head.x,
-          0.1,
-        );
-        bones.defHead.updateMatrixWorld(true);
-      }
-      if (bones.eyeL && restRotations.current.eyeL) {
-        bones.eyeL.rotation.y = THREE.MathUtils.lerp(
-          bones.eyeL.rotation.y,
-          restRotations.current.eyeL.y,
-          0.15,
-        );
-        bones.eyeL.rotation.x = THREE.MathUtils.lerp(
-          bones.eyeL.rotation.x,
-          restRotations.current.eyeL.x,
-          0.15,
-        );
-        bones.eyeL.updateMatrixWorld(true);
-      }
-      if (bones.eyeR && restRotations.current.eyeR) {
-        bones.eyeR.rotation.y = THREE.MathUtils.lerp(
-          bones.eyeR.rotation.y,
-          restRotations.current.eyeR.y,
-          0.15,
-        );
-        bones.eyeR.rotation.x = THREE.MathUtils.lerp(
-          bones.eyeR.rotation.x,
-          restRotations.current.eyeR.x,
-          0.15,
-        );
-        bones.eyeR.updateMatrixWorld(true);
+        if (bones.defHead && restRotations.current.head) {
+          bones.defHead.rotation.y = THREE.MathUtils.lerp(
+            bones.defHead.rotation.y,
+            restRotations.current.head.y,
+            0.1,
+          );
+          bones.defHead.rotation.x = THREE.MathUtils.lerp(
+            bones.defHead.rotation.x,
+            restRotations.current.head.x,
+            0.1,
+          );
+          bones.defHead.updateMatrixWorld(true);
+        }
+        if (bones.eyeL && restRotations.current.eyeL) {
+          bones.eyeL.rotation.y = THREE.MathUtils.lerp(
+            bones.eyeL.rotation.y,
+            restRotations.current.eyeL.y,
+            0.15,
+          );
+          bones.eyeL.rotation.x = THREE.MathUtils.lerp(
+            bones.eyeL.rotation.x,
+            restRotations.current.eyeL.x,
+            0.15,
+          );
+          bones.eyeL.updateMatrixWorld(true);
+        }
+        if (bones.eyeR && restRotations.current.eyeR) {
+          bones.eyeR.rotation.y = THREE.MathUtils.lerp(
+            bones.eyeR.rotation.y,
+            restRotations.current.eyeR.y,
+            0.15,
+          );
+          bones.eyeR.rotation.x = THREE.MathUtils.lerp(
+            bones.eyeR.rotation.x,
+            restRotations.current.eyeR.x,
+            0.15,
+          );
+          bones.eyeR.updateMatrixWorld(true);
+        }
       }
     }
 
@@ -302,6 +297,6 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
   });
 
   return {
-    isAnimating: !!(blink || lookAt || smile || bigSmile || wink || openMouth),
+    isAnimating: !!(blink || lookAt || smile || smileSoft || bigSmile || wink || openMouth),
   };
 }

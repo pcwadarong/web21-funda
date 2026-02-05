@@ -81,3 +81,5 @@ jobs:
           # main 브랜치일 때만 NCR로 이미지를 push
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ secrets.NCR_REGISTRY }}/funda-frontend:latest
+          build-args: |
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}

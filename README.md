@@ -166,13 +166,33 @@ flowchart LR
 
 <table>
   <tr align="center">
-    <td><strong>실시간 배틀 화면</strong></td>
+    <td colspan="2"><strong>실시간 배틀 화면</strong></td>
   </tr>
   <tr align="center">
     <td>
       <img
-        src="https://placehold.co/1200x675?text=Battle+GIF+or+Image"
-        alt="실시간 배틀 화면 이미지"
+        src="https://github.com/user-attachments/assets/8d560772-81a5-420e-a699-15f3a88bd87d"
+        alt="대기화면"
+      />
+    </td>
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/8a3dcac7-e34e-4ff3-83bf-927511eb152c"
+        alt="문제풀이"
+      />
+    </td>
+  </tr>
+  <tr align="center">
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/60d00fbb-21e3-4804-84ef-9e5f4ede094e"
+        alt="정답확인"
+      />
+    </td>
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/b5965f0a-78f4-4f25-b19c-ec6b41ddef48"
+        alt="결과화면"
       />
     </td>
   </tr>

@@ -136,6 +136,7 @@ const headerStyle = css`
   display: flex;
   flex-direction: column;
   gap: 24px;
+  align-items: flex-start;
 `;
 
 const backButtonStyle = (theme: Theme) => css`

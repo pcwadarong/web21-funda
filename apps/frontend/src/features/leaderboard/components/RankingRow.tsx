@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import type { KeyboardEvent } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import SVGIcon from '@/components/SVGIcon';
@@ -13,17 +14,20 @@ interface RankingRowProps {
   member: RankingMember;
   showRankZoneIcon?: boolean;
   xpLabel?: string;
+  onClick?: () => void;
 }
 
 export const RankingRow = ({
   member,
   showRankZoneIcon = true,
   xpLabel = 'XP',
+  onClick,
 }: RankingRowProps) => {
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   const { isMe, rankZone, rank, profileImageUrl, displayName, xp, tierName } = member;
   const tierIconName = getTierIconName(tierName);
+  const isClickable = typeof onClick === 'function';
 
   const ZONE_COLORS = {
     PROMOTION: theme.colors.success.main,
@@ -70,11 +74,38 @@ export const RankingRow = ({
 
   const zoneLabel =
     rankZone === 'PROMOTION' ? '승급권' : rankZone === 'DEMOTION' ? '강등권' : '유지';
+  const handleClick = () => {
+    if (!isClickable) {
+      return;
+    }
+
+    onClick();
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {
+    if (!isClickable) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick();
+    }
+  };
+  let rowRole: 'button' | undefined;
+  let rowTabIndex: number | undefined;
+  if (isClickable) {
+    rowRole = 'button';
+    rowTabIndex = 0;
+  }
 
   return (
     <li
-      css={rankingRowStyle(theme, isMe, isDarkMode)}
+      css={rankingRowStyle(theme, isMe, isDarkMode, isClickable)}
       aria-label={`${displayName}${isMe ? ', 나' : ''}, ${rank}위, ${xp.toLocaleString()} ${xpLabel}, ${zoneLabel}`}
+      onClick={isClickable ? handleClick : undefined}
+      onKeyDown={isClickable ? handleKeyDown : undefined}
+      role={rowRole}
+      tabIndex={rowTabIndex}
     >
       <span css={rankNumberStyle(theme, activeColor)}>{rank}</span>
 
@@ -110,13 +141,19 @@ export const RankingRow = ({
   );
 };
 
-const rankingRowStyle = (theme: Theme, isMe: boolean, isDarkMode: boolean) => css`
+const rankingRowStyle = (
+  theme: Theme,
+  isMe: boolean,
+  isDarkMode: boolean,
+  isClickable: boolean,
+) => css`
   display: grid;
   grid-template-columns: 36px 44px 1fr 110px;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
   border-radius: ${theme.borderRadius.medium};
+  cursor: ${isClickable ? 'pointer' : 'default'};
 
   background: ${isMe
     ? isDarkMode
@@ -130,6 +167,22 @@ const rankingRowStyle = (theme: Theme, isMe: boolean, isDarkMode: boolean) => cs
   css`
     outline: 1.5px solid ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
     outline-offset: -1.5px;
+  `}
+
+  ${isClickable &&
+  css`
+    &:hover {
+      background: ${isMe
+        ? isDarkMode
+          ? 'rgba(101, 89, 234, 0.28)'
+          : theme.colors.primary.surface
+        : theme.colors.surface.default};
+    }
+
+    &:focus-visible {
+      outline: 2px solid ${theme.colors.primary.main};
+      outline-offset: 2px;
+    }
   `}
 
   @media (max-width: 768px) {

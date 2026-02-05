@@ -1,11 +1,8 @@
 import { css } from '@emotion/react';
-import { useEffect } from 'react';
 
-import fanfareSound from '@/assets/audio/fanfare.mp3';
 import { PodiumSection } from '@/feat/battle/components/result/PodiumSection';
 import { RankListSection } from '@/feat/battle/components/result/RankListSection';
 import type { BattleParticipant, BattleReward, Ranking } from '@/feat/battle/types';
-import { useSound } from '@/hooks/useSound';
 
 interface BattleResultContainerProps {
   rankings: Ranking[];
@@ -27,15 +24,6 @@ export const BattleResultContainer = ({
   // 상위 3명 추출
   const sortedRankings = [...rankings].sort((a, b) => b.score - a.score);
   const topThree = sortedRankings.slice(0, 3);
-
-  const { playSound, stopSound } = useSound();
-
-  useEffect(() => {
-    void playSound({ src: fanfareSound });
-    return () => {
-      stopSound(fanfareSound);
-    };
-  }, [playSound, stopSound]);
 
   return (
     <main css={mainLayoutStyle}>

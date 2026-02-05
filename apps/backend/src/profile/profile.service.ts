@@ -382,7 +382,7 @@ export class ProfileService {
 
     const characters = await this.profileCharacterRepository.find({
       where: { isActive: true },
-      order: { id: 'ASC' },
+      order: { id: 'DESC' },
     });
 
     return {

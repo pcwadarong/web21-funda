@@ -81,6 +81,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
       quizSolutions: state.quizSolutions,
       questionStatuses: state.questionStatuses,
       serverTime: state.serverTime,
+      isCorrect: state.isCorrect,
+      scoreDelta: state.scoreDelta,
     })),
   );
   const {
@@ -90,6 +92,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     setQuizSolution,
     setQuestionStatus,
     setSelectedAnswer,
+    setResultTime,
     reset,
     resetForRestart,
   } = useBattleStore(state => state.actions);
@@ -130,16 +133,12 @@ export function useBattleSocket(): UseBattleSocketReturn {
       status: BattleRoomStatus;
       remainingSeconds: number;
       rankings: Ranking[];
-      resultEndsAt?: number;
-      serverTime?: number;
       countdownEndsAt?: number | null;
     }) => {
       setBattleState({
         status: data.status,
         remainingSeconds: data.remainingSeconds,
         rankings: data.rankings,
-        resultEndsAt: data.resultEndsAt ?? undefined,
-        serverTime: data.serverTime ?? undefined,
         countdownEndsAt: data.countdownEndsAt ?? null,
       });
     };
@@ -162,8 +161,9 @@ export function useBattleSocket(): UseBattleSocketReturn {
     const handleBattleQuiz = (data: BattleQuizData) => {
       setBattleState({
         status: 'in_progress',
-        resultEndsAt: null,
         countdownEndsAt: null,
+        isCorrect: null,
+        scoreDelta: 0,
       });
 
       setQuiz(data);
@@ -177,6 +177,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
           correct_pairs?: MatchingPair[];
         };
       };
+      isCorrect: boolean;
+      scoreDelta: number;
     }) => {
       const currentIndex = useBattleStore.getState().currentQuizIndex;
       const solution = data.quizResult?.solution ?? {};
@@ -187,11 +189,20 @@ export function useBattleSocket(): UseBattleSocketReturn {
             ? String(solution.correct_option_id)
             : null;
 
-      setQuizSolution(currentIndex, {
-        correctAnswer,
-        explanation: solution.explanation ?? '',
-      });
+      setQuizSolution(
+        currentIndex,
+        {
+          correctAnswer,
+          explanation: solution.explanation ?? '',
+        },
+        data.isCorrect,
+        data.scoreDelta,
+      );
       setQuestionStatus(currentIndex, 'checked');
+    };
+
+    const handleBattleResultTime = (data: { resultEndsAt: number; serverTime: number }) => {
+      setResultTime(data.resultEndsAt, data.serverTime);
     };
 
     // 4. 게임 종료 및 무효 처리
@@ -220,6 +231,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     socket.on('battle:roomUpdated', handleRoomUpdated);
     socket.on('battle:quiz', handleBattleQuiz);
     socket.on('battle:result', handleBattleResult);
+    socket.on('battle:resultTime', handleBattleResultTime);
     socket.on('battle:finish', handleBattleFinish);
     socket.on('battle:invalid', handleBattleInvalid);
     socket.on('battle:error', handleBattleError);
@@ -230,6 +242,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
       socket.off('battle:roomUpdated', handleRoomUpdated);
       socket.off('battle:quiz', handleBattleQuiz);
       socket.off('battle:result', handleBattleResult);
+      socket.off('battle:resultTime', handleBattleResultTime);
       socket.off('battle:finish', handleBattleFinish);
       socket.off('battle:invalid', handleBattleInvalid);
       socket.off('battle:error', handleBattleError);
@@ -241,6 +254,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     setQuiz,
     setQuizSolution,
     setQuestionStatus,
+    setResultTime,
     showToast,
   ]);
 

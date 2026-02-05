@@ -79,7 +79,9 @@ export const LeaderboardContainer = ({
       ? `${weeklyRanking.tier.name} 리그`
       : ''
     : '전체 순위';
-  const tierIconName = isMyLeagueView ? getTierIconName(weeklyRanking?.tier.name) : null;
+
+  const tierIconName =
+    isMyLeagueView && weeklyRanking?.tier ? getTierIconName(weeklyRanking.tier.name) : null;
   const groupedMembers =
     weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
   const remainingDaysText = activeRanking ? buildRemainingDaysText(activeRanking.weekKey) : '';
@@ -109,7 +111,7 @@ export const LeaderboardContainer = ({
     }));
 
   return (
-    <main css={pageStyle}>
+    <section css={pageStyle} aria-label="리더보드">
       <div css={pageContentStyle}>
         <header css={headerStyle}>
           <h1 css={pageTitleStyle(theme)}>LEADERBOARD</h1>
@@ -120,8 +122,9 @@ export const LeaderboardContainer = ({
               type="button"
               disabled={isRefreshing}
               aria-label="리더보드 새로고침"
+              aria-busy={isRefreshing}
             >
-              <SVGIcon icon="Refresh" size="sm" />
+              <SVGIcon icon="Refresh" size="sm" aria-hidden="true" />
             </button>
           )}
         </header>
@@ -152,12 +155,14 @@ export const LeaderboardContainer = ({
         </section>
 
         {isLoading ? (
-          <Loading text="랭킹 정보를 불러오는 중입니다." />
+          <div role="status" aria-live="polite" aria-label="랭킹 로딩 중">
+            <Loading text="랭킹 정보를 불러오는 중입니다." />
+          </div>
         ) : stateType !== 'normal' ? (
           <LeaderboardStateMessage state={stateType} message={stateMessage} />
         ) : (
           <>
-            <section css={summaryCardStyle(theme)} data-section="summary">
+            <section css={summaryCardStyle(theme)} data-section="summary" aria-label="리그 요약">
               <div>
                 <div css={summaryMainStyle}>
                   {tierIconName && (
@@ -186,13 +191,17 @@ export const LeaderboardContainer = ({
               <div css={summaryRightStyle(theme)}>{remainingDaysText}</div>
             </section>
 
-            <section css={leaderboardCardStyle(theme)} data-section="ranking">
+            <section
+              css={leaderboardCardStyle(theme)}
+              data-section="ranking"
+              aria-label="주간 랭킹"
+            >
               {isMyLeagueView ? (
                 <>
                   {weeklyRanking!.tier.name !== 'MASTER' && (
-                    <div css={zoneSectionStyle}>
+                    <div css={zoneSectionStyle} role="region" aria-label="승급권 구역">
                       <MemberList members={groupedMembers!.promotion} />
-                      <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                      <div css={zoneHeaderStyle(theme, 'PROMOTION')} aria-hidden="true">
                         <SVGIcon
                           style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
                           icon="ArrowLeft"
@@ -202,13 +211,13 @@ export const LeaderboardContainer = ({
                       </div>
                     </div>
                   )}
-                  <div css={zoneSectionStyle}>
+                  <div css={zoneSectionStyle} role="region" aria-label="유지 구역">
                     <MemberList members={groupedMembers!.maintain} />
                   </div>
                   {/* BRONZE가 아닐 때만 강등권 표시 */}
                   {weeklyRanking!.tier.name !== 'BRONZE' && (
-                    <div css={zoneSectionStyle}>
-                      <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                    <div css={zoneSectionStyle} role="region" aria-label="강등권 구역">
+                      <div css={zoneHeaderStyle(theme, 'DEMOTION')} aria-hidden="true">
                         <SVGIcon
                           icon="ArrowLeft"
                           style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
@@ -221,7 +230,7 @@ export const LeaderboardContainer = ({
                   )}
                 </>
               ) : (
-                <div css={zoneSectionStyle}>
+                <div css={zoneSectionStyle} role="region" aria-label="전체 순위">
                   <MemberList
                     members={overallMembers}
                     emptyMessage="이번 주 랭킹에 인원이 없습니다."
@@ -234,7 +243,7 @@ export const LeaderboardContainer = ({
           </>
         )}
       </div>
-    </main>
+    </section>
   );
 };
 

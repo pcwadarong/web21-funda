@@ -144,17 +144,19 @@ export const ReviewSection = React.memo(() => {
             <div css={reviewListQuestionStyle}>빈 칸에 들어갈 배열 메서드는?</div>
           </div>
           <div css={reviewListHintStyle}>이 개념을 얼마나 잘 기억하고 있나요?</div>
-          <div css={reviewScoreRowStyle}>
+          <ul css={reviewScoreListStyle} aria-label="데모 — 선택 불가: 기억 정도 표시">
             {reviewScores.map(score => (
-              <div
+              <li
                 key={score.value}
                 css={reviewScoreItemStyle(score.color, score.borderColor, score.backgroundColor)}
               >
-                <div css={reviewScoreEmojiStyle}>{score.emoji}</div>
-                <div css={reviewScoreValueStyle}>{score.value}</div>
-              </div>
+                <span css={reviewScoreEmojiStyle} aria-hidden="true">
+                  {score.emoji}
+                </span>
+                <span css={reviewScoreValueStyle}>{score.value}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
     </section>
@@ -433,7 +435,10 @@ const reviewListHintStyle = css`
   text-align: center;
 `;
 
-const reviewScoreRowStyle = css`
+const reviewScoreListStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;

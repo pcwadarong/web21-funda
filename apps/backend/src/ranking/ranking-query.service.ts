@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
+import { RedisService } from '../common/redis/redis.service';
 import { getKstNow, getKstWeekInfo } from '../common/utils/kst-date';
 import { User } from '../users/entities/user.entity';
 
@@ -40,6 +42,7 @@ export class RankingQueryService {
     private readonly tierRuleRepository: Repository<RankingTierRule>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
@@ -81,10 +84,15 @@ export class RankingQueryService {
    */
   async getWeeklyRanking(userId: number, weekKey: string | null): Promise<WeeklyRankingResult> {
     const targetWeekKey = weekKey ?? getKstWeekInfo(getKstNow()).weekKey;
+    const cached = await this.getCachedWeeklyRanking(userId, targetWeekKey);
+    if (cached) {
+      return cached;
+    }
+
     const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
 
     if (!week) {
-      return {
+      const result: WeeklyRankingResult = {
         weekKey: targetWeekKey,
         tier: null,
         groupIndex: null,
@@ -93,6 +101,7 @@ export class RankingQueryService {
         myWeeklyXp: 0,
         members: [],
       };
+      return this.cacheWeeklyRanking(userId, targetWeekKey, result);
     }
 
     const member = await this.memberRepository.findOne({
@@ -102,7 +111,7 @@ export class RankingQueryService {
 
     if (!member || !member.group) {
       const fallbackTier = await this.findDefaultTier();
-      return {
+      const result: WeeklyRankingResult = {
         weekKey: targetWeekKey,
         tier: fallbackTier
           ? {
@@ -117,6 +126,7 @@ export class RankingQueryService {
         myWeeklyXp: 0,
         members: [],
       };
+      return this.cacheWeeklyRanking(userId, targetWeekKey, result);
     }
 
     const groupMembers = await this.memberRepository.find({
@@ -177,7 +187,7 @@ export class RankingQueryService {
         }
       : null;
 
-    return {
+    const result: WeeklyRankingResult = {
       weekKey: targetWeekKey,
       tier,
       groupIndex: member.group.groupIndex,
@@ -186,6 +196,7 @@ export class RankingQueryService {
       myWeeklyXp,
       members,
     };
+    return this.cacheWeeklyRanking(userId, targetWeekKey, result);
   }
 
   /**
@@ -201,49 +212,62 @@ export class RankingQueryService {
     weekKey: string | null,
   ): Promise<OverallRankingResult> {
     const targetWeekKey = weekKey ?? getKstWeekInfo(getKstNow()).weekKey;
+    const cached = await this.getCachedOverallWeeklyRanking(userId, targetWeekKey);
+    if (cached) {
+      return cached;
+    }
+
     const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
 
     if (!week) {
-      return {
+      const result: OverallRankingResult = {
         weekKey: targetWeekKey,
         totalMembers: 0,
         myRank: null,
         myWeeklyXp: 0,
         members: [],
       };
+      return this.cacheOverallWeeklyRanking(userId, targetWeekKey, result);
     }
 
-    const allMembers = await this.memberRepository.find({
-      where: { weekId: week.id },
-      relations: { user: { profileCharacter: true }, tier: true },
-    });
+    const { raw: rawRows, entities: allMembers } = await this.memberRepository
+      .createQueryBuilder('member')
+      .leftJoinAndSelect('member.user', 'user')
+      .leftJoinAndSelect('user.profileCharacter', 'profileCharacter')
+      .leftJoinAndSelect('member.tier', 'tier')
+      .leftJoin(
+        RankingWeeklyXp,
+        'weeklyXp',
+        'weeklyXp.week_id = member.week_id AND weeklyXp.user_id = member.user_id',
+      )
+      .addSelect('weeklyXp.xp', 'weeklyXp_xp')
+      .addSelect('weeklyXp.first_solved_at', 'weeklyXp_firstSolvedAt')
+      .addSelect('weeklyXp.last_solved_at', 'weeklyXp_lastSolvedAt')
+      .where('member.week_id = :weekId', { weekId: week.id })
+      .getRawAndEntities();
 
     if (allMembers.length === 0) {
-      return {
+      const result: OverallRankingResult = {
         weekKey: targetWeekKey,
         totalMembers: 0,
         myRank: null,
         myWeeklyXp: 0,
         members: [],
       };
+      return this.cacheOverallWeeklyRanking(userId, targetWeekKey, result);
     }
 
-    const memberIds = allMembers.map(member => member.userId);
-    const weeklyXpList = await this.weeklyXpRepository.find({
-      where: { weekId: week.id, userId: In(memberIds) },
-    });
-    const weeklyXpMap = new Map(weeklyXpList.map(item => [item.userId, item]));
-
-    const rankingSeeds = allMembers.map(member => {
-      const weeklyXp = weeklyXpMap.get(member.userId);
-      const lastSolvedAt = weeklyXp?.lastSolvedAt ?? weeklyXp?.firstSolvedAt ?? member.joinedAt;
+    const rankingSeeds = allMembers.map((member, index) => {
+      const rawRow = rawRows[index];
+      const weeklyXp = this.parseWeeklyXpRow(rawRow);
+      const lastSolvedAt = weeklyXp.lastSolvedAt ?? weeklyXp.firstSolvedAt ?? member.joinedAt;
 
       return {
         userId: member.userId,
         displayName: member.user?.displayName ?? '알 수 없음',
         profileImageUrl:
           member.user?.profileCharacter?.imageUrl ?? member.user?.profileImageUrl ?? null,
-        xp: weeklyXp?.xp ?? 0,
+        xp: weeklyXp.xp,
         lastSolvedAt,
         tierName: member.tier?.name ?? null,
         tierOrderIndex: member.tier?.orderIndex ?? null,
@@ -284,15 +308,16 @@ export class RankingQueryService {
     }));
 
     const myRank = members.find(entry => entry.userId === userId)?.rank ?? null;
-    const myWeeklyXp = weeklyXpMap.get(userId)?.xp ?? 0;
+    const myWeeklyXp = rankingSeeds.find(entry => entry.userId === userId)?.xp ?? 0;
 
-    return {
+    const result: OverallRankingResult = {
       weekKey: targetWeekKey,
       totalMembers: members.length,
       myRank,
       myWeeklyXp,
       members,
     };
+    return this.cacheOverallWeeklyRanking(userId, targetWeekKey, result);
   }
 
   /**
@@ -493,5 +518,145 @@ export class RankingQueryService {
     }
 
     return 'MAINTAIN';
+  }
+
+  private parseWeeklyXpRow(row: unknown): {
+    xp: number;
+    firstSolvedAt: Date | null;
+    lastSolvedAt: Date | null;
+  } {
+    if (!row || typeof row !== 'object') {
+      return { xp: 0, firstSolvedAt: null, lastSolvedAt: null };
+    }
+
+    const record = row as {
+      weeklyXp_xp?: number | string | null;
+      weeklyXp_firstSolvedAt?: Date | string | null;
+      weeklyXp_lastSolvedAt?: Date | string | null;
+    };
+
+    const xp =
+      record.weeklyXp_xp !== null && record.weeklyXp_xp !== undefined
+        ? Number(record.weeklyXp_xp)
+        : 0;
+    const firstSolvedAt = this.toDateOrNull(record.weeklyXp_firstSolvedAt);
+    const lastSolvedAt = this.toDateOrNull(record.weeklyXp_lastSolvedAt);
+
+    return { xp, firstSolvedAt, lastSolvedAt };
+  }
+
+  private toDateOrNull(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return value;
+    }
+
+    const parsed = new Date(String(value));
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  private async cacheWeeklyRanking(
+    userId: number,
+    weekKey: string,
+    result: WeeklyRankingResult,
+  ): Promise<WeeklyRankingResult> {
+    await this.setCachedWeeklyRanking(userId, weekKey, result);
+    return result;
+  }
+
+  private async cacheOverallWeeklyRanking(
+    userId: number,
+    weekKey: string,
+    result: OverallRankingResult,
+  ): Promise<OverallRankingResult> {
+    await this.setCachedOverallWeeklyRanking(userId, weekKey, result);
+    return result;
+  }
+
+  private async getCachedWeeklyRanking(
+    userId: number,
+    weekKey: string,
+  ): Promise<WeeklyRankingResult | null> {
+    const cacheKey = CacheKeys.rankingWeekly(weekKey, userId);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isWeeklyRankingResult(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedWeeklyRanking(
+    userId: number,
+    weekKey: string,
+    result: WeeklyRankingResult,
+  ): Promise<void> {
+    const cacheKey = CacheKeys.rankingWeekly(weekKey, userId);
+
+    try {
+      await this.redisService.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
+    } catch {
+      return;
+    }
+  }
+
+  private async getCachedOverallWeeklyRanking(
+    userId: number,
+    weekKey: string,
+  ): Promise<OverallRankingResult | null> {
+    const cacheKey = CacheKeys.rankingOverall(weekKey, userId);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isOverallRankingResult(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedOverallWeeklyRanking(
+    userId: number,
+    weekKey: string,
+    result: OverallRankingResult,
+  ): Promise<void> {
+    const cacheKey = CacheKeys.rankingOverall(weekKey, userId);
+
+    try {
+      await this.redisService.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
+    } catch {
+      return;
+    }
+  }
+
+  private isWeeklyRankingResult(value: unknown): value is WeeklyRankingResult {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { members?: unknown };
+    return Array.isArray(record.members);
+  }
+
+  private isOverallRankingResult(value: unknown): value is OverallRankingResult {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { members?: unknown };
+    return Array.isArray(record.members);
   }
 }

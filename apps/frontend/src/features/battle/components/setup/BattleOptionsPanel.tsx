@@ -66,6 +66,9 @@ export const BattleOptionsPanel = ({
   const theme = useTheme();
   const { playSound } = useSound();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1200px)').matches : false,
+  );
   const startSoundTimerRef = useRef<number | null>(null);
   const startSoundPlayedRef = useRef(false);
   const canStartBattle = isHost && participantCount > 1;
@@ -137,6 +140,13 @@ export const BattleOptionsPanel = ({
     [],
   );
 
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1200px)');
+    const handler = () => setIsDesktop(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   const handleStartBattleClick = useCallback(() => {
     if (!roomId || !canStartBattle || hasCountdownStarted) {
       return;
@@ -145,40 +155,57 @@ export const BattleOptionsPanel = ({
     onStartBattle(roomId);
   }, [canStartBattle, hasCountdownStarted, onStartBattle, roomId]);
 
+  const collapsibleId = 'battle-settings-panel';
+
   return (
-    <div css={containerStyle}>
+    <section css={containerStyle} aria-label="배틀 설정">
       <BattleStartCountdown isVisible={isStartCountdownVisible} label={startCountdownLabel} />
       <div css={headerWrapper}>
-        <h2 css={titleStyle(theme)}>SETTING</h2>
-        <button css={toggleButtonStyle(theme)} onClick={() => setIsExpanded(!isExpanded)}>
+        <h2 css={titleStyle(theme)} id="battle-settings-heading">
+          SETTING
+        </h2>
+        <button
+          type="button"
+          css={toggleButtonStyle(theme)}
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          aria-controls={collapsibleId}
+          aria-label={isExpanded ? '설정 접기' : '설정 펼치기'}
+        >
           <span css={toggleTextStyle(theme)}>{isExpanded ? '접기' : '펼치기'}</span>
-          <div css={iconWrapperStyle(isExpanded)}>
+          <div css={iconWrapperStyle(isExpanded)} aria-hidden="true">
             <SVGIcon icon="ArrowLeft" size="sm" />
           </div>
         </button>
       </div>
 
       {/* 1. 설정 카드 영역: isExpanded에 따라 노출 여부 결정 */}
-      <div css={collapsibleStyle(isExpanded)}>
-        <div css={contentCardStyle(theme)}>
+      <div
+        id={collapsibleId}
+        css={collapsibleStyle(isExpanded)}
+        aria-hidden={isDesktop ? false : !isExpanded}
+      >
+        <div css={contentCardStyle(theme)} aria-labelledby="battle-settings-heading">
           {Object.entries(BATTLE_CONFIG).map(([key, config]) => (
-            <section key={key} css={sectionStyle}>
-              <div css={sectionLabelStyle(theme)}>{config.label}</div>
+            <fieldset key={key} css={fieldsetStyle}>
+              <legend id={`setting-${key}-label`} css={legendStyle(theme)}>
+                {config.label}
+              </legend>
               <div css={buttonGroupStyle}>
                 {config.options.map(opt => {
                   const isMaxPlayers = key === 'maxPlayers';
                   const isLowerThanCurrent =
                     isMaxPlayers && typeof opt.value === 'number' && participantCount > opt.value;
                   const isDisabled = !isHost || isLowerThanCurrent;
+                  const isSelected = settings?.[key as keyof typeof settings] === opt.value;
 
                   return (
                     <button
                       key={opt.value}
-                      css={pillButtonStyle(
-                        theme,
-                        settings?.[key as keyof typeof settings] === opt.value,
-                      )}
+                      css={pillButtonStyle(theme, isSelected)}
                       disabled={isDisabled}
+                      aria-pressed={isSelected}
+                      aria-label={`${config.label}: ${opt.label}${isSelected ? ', 선택됨' : ''}`}
                       onClick={() =>
                         roomId &&
                         settings &&
@@ -191,15 +218,21 @@ export const BattleOptionsPanel = ({
                   );
                 })}
               </div>
-            </section>
+            </fieldset>
           ))}
         </div>
       </div>
 
       {/* 2. 버튼 영역: 설정창의 상태와 상관없이 항상 노출 */}
-      <div css={actionButtonsStyle}>
-        <Button variant="secondary" fullWidth onClick={onCopyLink} css={flexBtn}>
-          <SVGIcon icon="Copy" size="md" /> 초대 링크 복사
+      <section css={actionButtonsStyle} aria-label="배틀 액션">
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={onCopyLink}
+          css={flexBtn}
+          aria-label="초대 링크 복사"
+        >
+          <SVGIcon icon="Copy" size="md" aria-hidden="true" /> 초대 링크 복사
         </Button>
         <Button
           variant="primary"
@@ -207,11 +240,13 @@ export const BattleOptionsPanel = ({
           disabled={!canStartBattle || hasCountdownStarted}
           onClick={handleStartBattleClick}
           css={flexBtn}
+          aria-label={startButtonLabel}
+          aria-disabled={!canStartBattle || hasCountdownStarted}
         >
           {startButtonLabel}
         </Button>
-      </div>
-    </div>
+      </section>
+    </section>
   );
 };
 
@@ -285,16 +320,20 @@ const contentCardStyle = (theme: Theme) => css`
   border: 1px solid ${theme.colors.border.default};
 `;
 
-const sectionStyle = css`
+const fieldsetStyle = css`
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: none;
 `;
 
-const sectionLabelStyle = (theme: Theme) => css`
+const legendStyle = (theme: Theme) => css`
   font-size: 13px;
   font-weight: 600;
   color: ${theme.colors.text.weak};
+  padding: 0;
 `;
 
 const buttonGroupStyle = css`

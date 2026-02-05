@@ -24,6 +24,7 @@ export const BattlePlayPage = () => {
     quizSolutions,
     questionStatuses,
     rankings,
+    scoreDelta,
   } = battleState;
 
   useEffect(() => {
@@ -115,6 +116,7 @@ export const BattlePlayPage = () => {
       handleNextQuestion={handleNextQuestion}
       rankings={rankings}
       currentParticipantId={socket?.id ?? null}
+      scoreDelta={scoreDelta}
     />
   );
 };

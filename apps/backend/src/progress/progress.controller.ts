@@ -25,6 +25,7 @@ import type { Request } from 'express';
 
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 
@@ -241,7 +242,7 @@ export class ProgressController {
     }
 
     // Redis에서 기존 step_ids 조회
-    const currentStepsData = await this.redisService.get(`step_ids:${clientId}`);
+    const currentStepsData = await this.redisService.get(CacheKeys.guestStepIds(clientId));
     const stepIds = currentStepsData ? (currentStepsData as number[]) : [];
 
     // 중복 확인 후 추가
@@ -250,7 +251,11 @@ export class ProgressController {
     }
 
     // Redis에 저장 (30일 TTL)
-    await this.redisService.set(`step_ids:${clientId}`, stepIds, 30 * 24 * 60 * 60);
+    await this.redisService.set(
+      CacheKeys.guestStepIds(clientId),
+      stepIds,
+      CACHE_TTL_SECONDS.guestProgress,
+    );
 
     return { success: true };
   }
@@ -306,5 +311,29 @@ export class ProgressController {
       fieldSlug: query.fieldSlug,
       limit: query.limit,
     });
+  }
+
+  @Get('goals')
+  @ApiOperation({
+    summary: '오늘 목표 현황 조회',
+    description: '오늘 기준으로 만점 스텝 수와 획득 경험치를 반환한다.',
+  })
+  @ApiOkResponse({
+    description: '오늘 목표 현황 조회 성공',
+    schema: {
+      example: {
+        perfectScoreSteps: 2,
+        totalEarnedXP: 45,
+      },
+    },
+  })
+  @UseGuards(JwtAccessGuard)
+  async getTodayGoals(@Req() req: Request & { user?: JwtPayload }) {
+    const userId = req.user?.sub;
+    if (userId === undefined || userId === null) {
+      throw new Error('사용자 정보를 확인할 수 없습니다.');
+    }
+
+    return this.progressService.getTodayGoals(userId);
   }
 }

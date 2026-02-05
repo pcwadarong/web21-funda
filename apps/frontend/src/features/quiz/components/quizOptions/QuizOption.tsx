@@ -16,6 +16,8 @@ export const QuizOption = ({
 }: QuizOptionProps) => {
   const theme = useTheme();
 
+  const stateLabel = isCorrect ? ', 정답' : isWrong ? ', 오답' : isSelected ? ', 선택됨' : '';
+
   return (
     <button
       css={[
@@ -28,6 +30,8 @@ export const QuizOption = ({
       ]}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={isSelected}
+      aria-label={`${label} 보기${stateLabel}`}
     >
       <span css={optionLabelStyle(theme, isSelected, isCorrect, isWrong)}>{label}</span>
       <span css={optionTextStyle(theme)}>

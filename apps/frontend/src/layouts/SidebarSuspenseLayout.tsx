@@ -3,6 +3,8 @@ import { type ReactNode, Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 
 import { Loading } from '@/components/Loading';
+import ErrorBoundary from '@/features/error/components/ErrorBoundary';
+import { ErrorView } from '@/features/error/components/ErrorView';
 import { Sidebar } from '@/layouts/Sidebar';
 
 interface SidebarLayoutProps {
@@ -16,12 +18,18 @@ export const SidebarSuspenseLayout = ({ children }: SidebarLayoutProps) => {
     <div css={containerStyle}>
       <Sidebar />
       <main css={mainContentStyle(location.pathname)}>
-        <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>
+        <ErrorBoundary fallback={<ErrorView {...ERROR_FALLBACK} />}>
+          <Suspense fallback={<Loading />}>{children || <Outlet />}</Suspense>
+        </ErrorBoundary>
       </main>
     </div>
   );
 };
-
+const ERROR_FALLBACK = {
+  title: '콘텐츠를 불러올 수 없습니다.',
+  description: '문제가 계속되면 다시 시도해주세요.',
+  onSecondaryButtonClick: () => window.location.reload(),
+};
 const containerStyle = css`
   display: flex;
   height: 100dvh;

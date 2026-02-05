@@ -29,3 +29,18 @@ export const useReviewQueueQuery = (
     queryFn: () => progressService.getReviewQueue(params),
     ...options,
   });
+
+export const useTodayGoalsQuery = (
+  options?: Omit<
+    UseQueryOptions<Awaited<ReturnType<typeof progressService.getTodayGoals>>, Error>,
+    'queryKey' | 'queryFn'
+  >,
+) =>
+  useQuery({
+    queryKey: ['today-goals'],
+    queryFn: () => progressService.getTodayGoals(),
+    refetchInterval: 1000 * 60,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    ...options,
+  });

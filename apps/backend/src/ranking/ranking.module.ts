@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { User } from '../users/entities/user.entity';
 
 import { RankingGroup } from './entities/ranking-group.entity';
@@ -34,7 +35,7 @@ import { RankingQueryService } from './ranking-query.service';
     ]),
   ],
   controllers: [RankingController, AdminRankingController],
-  providers: [RankingService, RankingEvaluationService, RankingQueryService],
+  providers: [RankingService, RankingEvaluationService, RankingQueryService, RedisService],
   exports: [RankingService],
 })
 export class RankingModule {}

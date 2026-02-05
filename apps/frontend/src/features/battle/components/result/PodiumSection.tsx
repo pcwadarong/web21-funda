@@ -51,12 +51,12 @@ export const PodiumSection = ({ topThree, participants, rewards }: PodiumSection
 
             <div css={podiumBoxStyle(idx)}>
               <div css={podiumStatsContainer}>
-                <span css={podiumScoreStyle}>{ranking.score}</span>
+                <output css={podiumScoreStyle}>{ranking.score}</output>
 
                 {reward && (
                   <div css={podiumRewardStyle}>
                     <SVGIcon icon="Diamond" size="md" />
-                    <span css={podiumRewardAmount}>{reward.amount}</span>
+                    <output css={podiumRewardAmount}>{reward.amount}</output>
                   </div>
                 )}
               </div>

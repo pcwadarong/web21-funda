@@ -23,10 +23,12 @@ export const ErrorView = ({
   const theme = useTheme();
 
   return (
-    <div css={containerStyle()}>
-      <h1 css={titleStyle(theme)}>{title}</h1>
+    <div css={containerStyle()} role="alert" aria-live="assertive" aria-label="오류 안내">
+      <h1 css={titleStyle(theme)} id="error-title">
+        {title}
+      </h1>
       <p css={descriptionStyle(theme)}>{description}</p>
-      <div css={buttonGroupStyle}>
+      <div css={buttonGroupStyle} role="group" aria-label="오류 후 액션">
         {onSecondaryButtonClick && (
           <div css={buttonWrapperStyle}>
             <Button variant="secondary" onClick={onSecondaryButtonClick} fullWidth>

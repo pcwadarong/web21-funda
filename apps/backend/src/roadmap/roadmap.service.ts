@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
+import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { getKstNow } from '../common/utils/kst-date';
@@ -26,6 +27,25 @@ import type { QuizResponse } from './dto/quiz-list.dto';
 import type { QuizSubmissionRequest, QuizSubmissionResponse } from './dto/quiz-submission.dto';
 import type { UnitOverviewResponse } from './dto/unit-overview.dto';
 import { CheckpointQuizPool, Field, Quiz, Step, Unit } from './entities';
+
+interface FieldUnitsBaseResponse {
+  field: {
+    name: string;
+    slug: string;
+  };
+  units: Array<{
+    id: number;
+    title: string;
+    orderIndex: number;
+    steps: Array<{
+      id: number;
+      title: string;
+      orderIndex: number;
+      quizCount: number;
+      isCheckpoint: boolean;
+    }>;
+  }>;
+}
 
 @Injectable()
 export class RoadmapService {
@@ -61,12 +81,17 @@ export class RoadmapService {
    * @returns 분야 리스트
    */
   async getFields(): Promise<FieldListResponse> {
+    const cached = await this.getCachedFieldList();
+    if (cached) {
+      return cached;
+    }
+
     const fields = await this.fieldRepository.find({
       select: ['slug', 'name', 'description'],
       order: { id: 'ASC' },
     });
 
-    return {
+    const response: FieldListResponse = {
       fields: fields.map(field => ({
         slug: field.slug,
         name: field.name,
@@ -74,6 +99,9 @@ export class RoadmapService {
         icon: this.getFieldIconBySlug(field.slug),
       })),
     };
+
+    await this.setCachedFieldList(response);
+    return response;
   }
 
   /**
@@ -83,23 +111,32 @@ export class RoadmapService {
    * @returns 필드와 유닛/스텝 정보
    */
   async getUnitsByFieldSlug(fieldSlug: string, userId: number | null): Promise<FieldUnitsResponse> {
-    const field = await this.fieldRepository.findOne({
-      where: { slug: fieldSlug },
-      relations: { units: { steps: true } }, // 유닛과 스텝까지 함께 로딩
-    });
+    let baseResponse = await this.getCachedFieldUnitsBase(fieldSlug);
 
-    if (!field) {
-      throw new NotFoundException('Field not found.'); // 존재하지 않으면 404
+    if (!baseResponse) {
+      const field = await this.fieldRepository.findOne({
+        where: { slug: fieldSlug },
+        relations: { units: { steps: true } }, // 유닛과 스텝까지 함께 로딩
+      });
+
+      if (!field) {
+        throw new NotFoundException('Field not found.'); // 존재하지 않으면 404
+      }
+
+      const units = field.units ?? [];
+      const steps = units.flatMap(unit => unit.steps ?? []);
+      const stepIds = steps.map(step => step.id);
+      const uniqueStepIds = Array.from(new Set(stepIds));
+      const quizCountByStepId = await this.getQuizCountByStepId(uniqueStepIds);
+
+      baseResponse = this.buildFieldUnitsBaseResponse(field, units, quizCountByStepId);
+      await this.setCachedFieldUnitsBase(fieldSlug, baseResponse);
     }
 
-    const units = field.units ?? [];
-    const steps = units.flatMap(unit => unit.steps ?? []);
-    const stepIds = steps.map(step => step.id);
-    const uniqueStepIds = Array.from(new Set(stepIds));
-    const quizCountByStepId = await this.getQuizCountByStepId(uniqueStepIds);
-    const completedStepIdSet = await this.getCompletedStepIdSet(uniqueStepIds, userId);
+    const stepIds = this.extractStepIdsFromFieldUnitsBase(baseResponse);
+    const completedStepIdSet = await this.getCompletedStepIdSet(stepIds, userId);
 
-    return this.buildFieldUnitsResponse(field, units, quizCountByStepId, completedStepIdSet);
+    return this.applyCompletedStepsToFieldUnitsBase(baseResponse, completedStepIdSet);
   }
 
   /**
@@ -181,6 +218,11 @@ export class RoadmapService {
    * @returns 필드 정보와 첫 유닛
    */
   async getFirstUnitByFieldSlug(fieldSlug: string): Promise<FirstUnitResponse> {
+    const cached = await this.getCachedFirstUnit(fieldSlug);
+    if (cached) {
+      return cached;
+    }
+
     const field = await this.fieldRepository
       .createQueryBuilder('field')
       .leftJoinAndSelect('field.units', 'unit')
@@ -207,13 +249,16 @@ export class RoadmapService {
       };
     }
 
-    return {
+    const response: FirstUnitResponse = {
       field: {
         name: field.name,
         slug: field.slug,
       },
       unit: unitSummary,
     };
+
+    await this.setCachedFirstUnit(fieldSlug, response);
+    return response;
   }
 
   /**
@@ -222,6 +267,11 @@ export class RoadmapService {
    * @returns 유닛 개요 정보
    */
   async getUnitOverview(unitId: number): Promise<UnitOverviewResponse> {
+    const cached = await this.getCachedUnitOverview(unitId);
+    if (cached) {
+      return cached;
+    }
+
     const unit = await this.unitRepository.findOne({
       where: { id: unitId },
       select: { id: true, title: true, overview: true },
@@ -231,13 +281,16 @@ export class RoadmapService {
       throw new NotFoundException('Unit not found.');
     }
 
-    return {
+    const response: UnitOverviewResponse = {
       unit: {
         id: unit.id,
         title: unit.title,
         overview: unit.overview ?? null,
       },
     };
+
+    await this.setCachedUnitOverview(unitId, response);
+    return response;
   }
 
   /**
@@ -260,13 +313,16 @@ export class RoadmapService {
 
     const saved = await this.unitRepository.save(unit);
 
-    return {
+    const response: UnitOverviewResponse = {
       unit: {
         id: saved.id,
         title: saved.title,
         overview: saved.overview ?? null,
       },
     };
+
+    await this.deleteCachedUnitOverview(unitId);
+    return response;
   }
 
   /**
@@ -379,9 +435,13 @@ export class RoadmapService {
           }
         } else if (clientId) {
           // 비로그인 사용자: Redis에 저장
-          const currentHeart = await this.redisService.get(`heart:${clientId}`);
+          const currentHeart = await this.redisService.get(CacheKeys.guestHeart(clientId));
           const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
-          await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
+          await this.redisService.set(
+            CacheKeys.guestHeart(clientId),
+            newHeart,
+            CACHE_TTL_SECONDS.guestProgress,
+          );
         }
       }
 
@@ -428,9 +488,13 @@ export class RoadmapService {
         }
       } else if (clientId) {
         // 비로그인 사용자: Redis에 저장
-        const currentHeart = await this.redisService.get(`heart:${clientId}`);
+        const currentHeart = await this.redisService.get(CacheKeys.guestHeart(clientId));
         const newHeart = Math.max(0, ((currentHeart as number) ?? 5) - 1);
-        await this.redisService.set(`heart:${clientId}`, newHeart, 30 * 24 * 60 * 60);
+        await this.redisService.set(
+          CacheKeys.guestHeart(clientId),
+          newHeart,
+          CACHE_TTL_SECONDS.guestProgress,
+        );
       }
     }
 
@@ -534,38 +598,6 @@ export class RoadmapService {
   }
 
   /**
-   * 엔티티를 응답 DTO 형태로 변환한다.
-   * @param field 필드 엔티티
-   * @param units 유닛 엔티티 목록
-   * @param quizCountByStepId stepId -> quizCount 매핑
-   * @param completedStepIdSet 완료된 스텝 ID 집합
-   * @returns 응답 DTO
-   */
-  private buildFieldUnitsResponse(
-    field: Field,
-    units: NonNullable<Field['units']> = [],
-    quizCountByStepId: Map<number, number>,
-    completedStepIdSet: Set<number>,
-  ): FieldUnitsResponse {
-    return {
-      field: {
-        name: field.name,
-        slug: field.slug,
-      },
-      units: this.sortByOrderIndex(units).map(unit => ({
-        id: unit.id,
-        title: unit.title,
-        orderIndex: unit.orderIndex,
-        steps: this.buildUnitStepsWithCheckpoints(
-          unit.steps ?? [],
-          quizCountByStepId,
-          completedStepIdSet,
-        ),
-      })),
-    };
-  }
-
-  /**
    * 유닛의 스텝을 orderIndex 기준으로 정렬해 응답 형태로 변환한다.
    * 체크포인트 스텝은 DB에 저장된 값을 그대로 사용한다.
    */
@@ -598,6 +630,217 @@ export class RoadmapService {
    */
   private sortByOrderIndex<T extends { orderIndex: number }>(items: T[]): T[] {
     return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  private buildFieldUnitsBaseResponse(
+    field: Field,
+    units: NonNullable<Field['units']> = [],
+    quizCountByStepId: Map<number, number>,
+  ): FieldUnitsBaseResponse {
+    return {
+      field: {
+        name: field.name,
+        slug: field.slug,
+      },
+      units: this.sortByOrderIndex(units).map(unit => ({
+        id: unit.id,
+        title: unit.title,
+        orderIndex: unit.orderIndex,
+        steps: this.sortByOrderIndex(unit.steps ?? []).map(step => ({
+          id: step.id,
+          title: step.title,
+          orderIndex: step.orderIndex,
+          quizCount: quizCountByStepId.get(step.id) ?? 0,
+          isCheckpoint: step.isCheckpoint,
+        })),
+      })),
+    };
+  }
+
+  private applyCompletedStepsToFieldUnitsBase(
+    base: FieldUnitsBaseResponse,
+    completedStepIdSet: Set<number>,
+  ): FieldUnitsResponse {
+    return {
+      field: base.field,
+      units: base.units.map(unit => ({
+        id: unit.id,
+        title: unit.title,
+        orderIndex: unit.orderIndex,
+        steps: unit.steps.map(step => {
+          const isCompleted = completedStepIdSet.has(step.id);
+          const isLocked = step.isCheckpoint && !isCompleted;
+
+          return {
+            ...step,
+            isCompleted,
+            isLocked,
+          };
+        }),
+      })),
+    };
+  }
+
+  private extractStepIdsFromFieldUnitsBase(base: FieldUnitsBaseResponse): number[] {
+    const stepIds: number[] = [];
+
+    for (const unit of base.units) {
+      for (const step of unit.steps) {
+        stepIds.push(step.id);
+      }
+    }
+
+    return Array.from(new Set(stepIds));
+  }
+
+  private async getCachedFieldList(): Promise<FieldListResponse | null> {
+    try {
+      const cached = await this.redisService.get(CacheKeys.fieldList());
+      if (!this.isFieldListResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedFieldList(value: FieldListResponse): Promise<void> {
+    try {
+      await this.redisService.set(CacheKeys.fieldList(), value, CACHE_TTL_SECONDS.fieldList);
+    } catch {
+      return;
+    }
+  }
+
+  private async getCachedFieldUnitsBase(fieldSlug: string): Promise<FieldUnitsBaseResponse | null> {
+    const cacheKey = CacheKeys.fieldUnits(fieldSlug);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isFieldUnitsBaseResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedFieldUnitsBase(
+    fieldSlug: string,
+    value: FieldUnitsBaseResponse,
+  ): Promise<void> {
+    const cacheKey = CacheKeys.fieldUnits(fieldSlug);
+
+    try {
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.fieldUnits);
+    } catch {
+      return;
+    }
+  }
+
+  private async getCachedFirstUnit(fieldSlug: string): Promise<FirstUnitResponse | null> {
+    const cacheKey = CacheKeys.firstUnit(fieldSlug);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isFirstUnitResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedFirstUnit(fieldSlug: string, value: FirstUnitResponse): Promise<void> {
+    const cacheKey = CacheKeys.firstUnit(fieldSlug);
+
+    try {
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.firstUnit);
+    } catch {
+      return;
+    }
+  }
+
+  private isFieldListResponse(value: unknown): value is FieldListResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { fields?: unknown };
+    return Array.isArray(record.fields);
+  }
+
+  private isFieldUnitsBaseResponse(value: unknown): value is FieldUnitsBaseResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { field?: unknown; units?: unknown };
+    if (!record.field || !record.units) {
+      return false;
+    }
+
+    return Array.isArray(record.units);
+  }
+
+  private isFirstUnitResponse(value: unknown): value is FirstUnitResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { field?: unknown };
+    return Boolean(record.field);
+  }
+
+  private async getCachedUnitOverview(unitId: number): Promise<UnitOverviewResponse | null> {
+    const cacheKey = CacheKeys.unitOverview(unitId);
+
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (!this.isUnitOverviewResponse(cached)) {
+        return null;
+      }
+      return cached;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedUnitOverview(unitId: number, value: UnitOverviewResponse): Promise<void> {
+    const cacheKey = CacheKeys.unitOverview(unitId);
+
+    try {
+      await this.redisService.set(cacheKey, value, CACHE_TTL_SECONDS.unitOverview);
+    } catch {
+      return;
+    }
+  }
+
+  private async deleteCachedUnitOverview(unitId: number): Promise<void> {
+    const cacheKey = CacheKeys.unitOverview(unitId);
+
+    try {
+      await this.redisService.del(cacheKey);
+    } catch {
+      return;
+    }
+  }
+
+  private isUnitOverviewResponse(value: unknown): value is UnitOverviewResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const record = value as { unit?: unknown };
+    if (!record.unit || typeof record.unit !== 'object') {
+      return false;
+    }
+
+    const unitRecord = record.unit as { id?: unknown; title?: unknown };
+    return typeof unitRecord.id === 'number' && typeof unitRecord.title === 'string';
   }
 
   private async saveSolveLog(params: {

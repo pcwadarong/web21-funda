@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { SolveLog } from '../progress/entities/solve-log.entity';
 import { UserStepAttempt } from '../progress/entities/user-step-attempt.entity';
 import { Field } from '../roadmap/entities/field.entity';
@@ -25,6 +26,6 @@ import { ProfileService } from './profile.service';
     ]),
   ],
   controllers: [ProfileController],
-  providers: [ProfileService],
+  providers: [ProfileService, RedisService],
 })
 export class ProfileModule {}

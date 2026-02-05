@@ -21,10 +21,15 @@ export const MemberList = ({
 }: MemberListProps) => {
   const theme = useTheme();
 
-  if (members.length === 0) return <div css={emptyTextStyle(theme)}>{emptyMessage}</div>;
+  if (members.length === 0)
+    return (
+      <div css={emptyTextStyle(theme)} role="status" aria-label={emptyMessage}>
+        {emptyMessage}
+      </div>
+    );
 
   return (
-    <ol css={listStyle}>
+    <ol css={listStyle} aria-label="랭킹 목록">
       {members.map(member => (
         <RankingRow
           key={member.userId}

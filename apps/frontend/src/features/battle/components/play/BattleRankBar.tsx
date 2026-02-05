@@ -190,10 +190,12 @@ export const BattleRankBar = ({
   }, [scoreDelta, startPosition, theme]);
 
   return (
-    <div css={containerStyle}>
-      <div css={countStyle(theme)}>{participantCount}명 참여 중</div>
-      <section>
-        <div css={listStyle}>
+    <section css={containerStyle} aria-label="실시간 순위">
+      <output css={countStyle(theme)} aria-live="polite">
+        {participantCount}명 참여 중
+      </output>
+      <section aria-label="현재 순위 막대">
+        <ul css={listStyle} aria-label="참가자 순위">
           {visibleRankings.map((ranking, index) => {
             const isMine = ranking.participantId === currentParticipantId;
             const scoreColor =
@@ -204,9 +206,16 @@ export const BattleRankBar = ({
                   : theme.colors.text.default;
 
             return (
-              <>
+              <li
+                key={ranking.participantId}
+                css={listItemStyle}
+                aria-label={
+                  isMine
+                    ? `나, ${ranking.place}등, 점수 ${ranking.score}`
+                    : `${ranking.displayName}, ${ranking.place}등, 점수 ${ranking.score}`
+                }
+              >
                 <div
-                  key={ranking.participantId}
                   ref={node => {
                     cardRefs.current[ranking.participantId] = node;
                     if (isMine) myCardRef.current = node;
@@ -214,7 +223,9 @@ export const BattleRankBar = ({
                   css={cardWrapperStyle}
                 >
                   <div css={cardStyle(theme, isMine)}>
-                    <div css={rankBadgeStyle(theme, isMine, isDarkMode)}>{ranking.place}</div>
+                    <div css={rankBadgeStyle(theme, isMine, isDarkMode)} aria-hidden="true">
+                      {ranking.place}
+                    </div>
                     <Avatar
                       src={ranking.profileImg}
                       name={isMine ? '나' : ranking.displayName}
@@ -233,13 +244,13 @@ export const BattleRankBar = ({
                     </div>
                   </div>
                 </div>
-                {index === 0 && <div css={verticalDividerStyle(theme)}></div>}
-              </>
+                {index === 0 && <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>}
+              </li>
             );
           })}
-        </div>
+        </ul>
       </section>
-    </div>
+    </section>
   );
 };
 
@@ -267,12 +278,14 @@ const verticalDividerStyle = (theme: Theme) => css`
 `;
 
 const listStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 12px;
   height: 114px;
   display: flex;
   align-items: center;
   gap: 16px;
   overflow-y: visible;
-  padding: 12px;
 
   @media (max-width: 768px) {
     gap: 8px;
@@ -280,7 +293,7 @@ const listStyle = css`
   }
 `;
 
-const cardWrapperStyle = css`
+const listItemStyle = css`
   display: flex;
   align-items: center;
   gap: 16px;
@@ -290,6 +303,14 @@ const cardWrapperStyle = css`
   @media (max-width: 768px) {
     justify-content: center;
   }
+`;
+
+const cardWrapperStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
 `;
 
 const cardStyle = (theme: Theme, isMine: boolean) => css`

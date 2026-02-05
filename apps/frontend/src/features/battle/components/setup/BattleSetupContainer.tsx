@@ -32,11 +32,11 @@ export const BattleSetupContainer = ({
   onStartBattle,
   onCopyLink,
 }: BattleSetupContainerProps) => (
-  <div css={mainContainerStyle}>
+  <section css={mainContainerStyle} aria-label="배틀 대기실">
     <section css={leftSectionStyle}>
       <ParticipantsList participants={participants} currentParticipantId={currentParticipantId} />
     </section>
-    <section css={rightSectionStyle}>
+    <section css={rightSectionStyle} aria-label="배틀 설정">
       <BattleOptionsPanel
         isHost={isHost}
         roomId={roomId}
@@ -48,7 +48,7 @@ export const BattleSetupContainer = ({
         onCopyLink={onCopyLink}
       />
     </section>
-  </div>
+  </section>
 );
 
 const mainContainerStyle = css`

@@ -62,27 +62,39 @@ export const QuizHeader = ({
 
   return (
     <>
-      <header css={headerStyle(theme)}>
+      <header css={headerStyle(theme)} aria-label="퀴즈 진행 헤더">
         <div css={headerContentStyle(heartCount, isBattleMode)}>
-          <button css={closeButtonStyle(theme)} onClick={handleCloseClick}>
-            ✕
+          <button
+            type="button"
+            css={closeButtonStyle(theme)}
+            onClick={handleCloseClick}
+            aria-label={isBattleMode ? '배틀 종료' : '퀴즈 종료'}
+          >
+            <span aria-hidden="true">✕</span>
           </button>
-          <div css={progressContainerStyle(theme)}>
-            <div css={progressBarStyle(theme, progress)} />
+          <div
+            css={progressContainerStyle(theme)}
+            role="progressbar"
+            aria-valuenow={completedSteps}
+            aria-valuemin={0}
+            aria-valuemax={totalSteps}
+            aria-label={`진행률: ${completedSteps}완료 / ${totalSteps}문제`}
+          >
+            <div css={progressBarStyle(theme, progress)} aria-hidden="true" />
           </div>
-          <div css={progressTextStyle(theme)}>
+          <div css={progressTextStyle(theme)} aria-hidden="true">
             {currentStep}/{totalSteps}
           </div>
         </div>
         {typeof heartCount === 'number' && heartCount > 0 && (
-          <div css={heartContainerStyle(theme)}>
-            <SVGIcon icon="Heart" size="lg" />
+          <output css={heartContainerStyle(theme)} aria-label={`하트 ${heartCount}개`}>
+            <SVGIcon icon="Heart" size="lg" aria-hidden="true" />
             <span css={heartValueStyle(theme)}>{heartCount}</span>
-          </div>
+          </output>
         )}
         {isBattleMode && (
           <>
-            <div css={verticalDividerStyle(theme)}></div>
+            <div css={verticalDividerStyle(theme)} aria-hidden="true"></div>
             <BattleTimerCountdown isResultPhase={status === 'checked'} isForHeader={true} />
           </>
         )}

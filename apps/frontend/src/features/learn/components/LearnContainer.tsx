@@ -42,21 +42,23 @@ export const LearnContainer = ({
   const theme = useTheme();
   const { isDarkMode } = useThemeStore();
   return (
-    <div css={containerStyle}>
-      <SimpleBar css={simpleBarStyle} ref={scrollContainerRef}>
+    <section css={containerStyle} aria-label="학습 콘텐츠">
+      <SimpleBar css={simpleBarStyle} ref={scrollContainerRef} aria-label="유닛 및 레슨 스크롤">
         <div css={mainStyle}>
-          <div css={centerSectionStyle}>
-            <div css={spaceFillerStyle(isDarkMode)}></div>
+          <section css={centerSectionStyle} aria-label="유닛 및 레슨 목록">
+            <div css={spaceFillerStyle(isDarkMode)} aria-hidden="true"></div>
             {activeUnit && (
               <div css={stickyHeaderWrapperStyle} ref={headerRef}>
-                <div
+                <header
                   key={activeUnit.id}
                   css={[headerSectionStyle(), stickyHeaderStyle(theme), headerPulseStyle]}
+                  role="banner"
+                  aria-label={`현재 유닛: ${activeUnit.title}`}
                 >
                   <div css={headerContentStyle}>
-                    <Link to="/learn/roadmap">
+                    <Link to="/learn/roadmap" aria-label={`전체 ${fieldName} 로드맵으로 이동`}>
                       <div css={unitTextStyle(theme)}>
-                        <SVGIcon icon="ArrowLeft" size="md" />
+                        <SVGIcon icon="ArrowLeft" size="md" aria-hidden="true" />
                         전체 {fieldName} 로드맵
                       </div>
                     </Link>
@@ -70,11 +72,12 @@ export const LearnContainer = ({
                     to={`overview/${activeUnit.id}`}
                     onClick={() => onOverviewClick(activeUnit.id)}
                     css={overviewButtonStyle(theme)}
+                    aria-label={`${activeUnit.title} 학습 개요 보기`}
                   >
-                    <SVGIcon icon="Notebook" />
+                    <SVGIcon icon="Notebook" aria-hidden="true" />
                     <span>학습 개요</span>
                   </Link>
-                </div>
+                </header>
               </div>
             )}
 
@@ -85,26 +88,33 @@ export const LearnContainer = ({
                   css={sectionBlockStyle}
                   ref={registerUnitRef(unit.id)}
                   data-unit-id={unit.id}
+                  aria-label={`유닛: ${unit.title}`}
                 >
-                  <div css={unitDividerStyle(theme)}>
+                  <div css={unitDividerStyle(theme)} aria-hidden="true">
                     <span css={unitDividerLineStyle(theme)} />
                     <span css={unitDividerTextStyle(theme)}>{unit.title}</span>
                     <span css={unitDividerLineStyle(theme)} />
                   </div>
-                  <div css={lessonsContainerStyle(unit.steps.length)}>
+                  <ul
+                    css={lessonsContainerStyle(unit.steps.length)}
+                    aria-label={`${unit.title} 레슨 목록`}
+                  >
                     {unit.steps.map((step, index) => {
                       const positionStyle = lessonPositionStyle(index, unitIndex);
 
                       if (step.isLocked) {
                         return (
-                          <div key={step.id} css={positionStyle}>
+                          <li key={step.id} css={positionStyle} aria-label={`${step.title}, 잠김`}>
                             <div css={lessonStackStyle}>
-                              <div css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}>
+                              <div
+                                css={[lessonItemStyle(theme), lockedLessonStyle(theme)]}
+                                aria-hidden="true"
+                              >
                                 <SVGIcon icon="Lock" aria-hidden="true" size="lg" />
                               </div>
                               <div css={lessonNamePillStyle(theme)}>{step.title}</div>
                             </div>
-                          </div>
+                          </li>
                         );
                       }
 
@@ -115,8 +125,9 @@ export const LearnContainer = ({
                         onStepClick(step);
                       };
 
+                      const stepStatus = step.isCompleted ? '완료' : '시작 가능';
                       return (
-                        <div key={step.id} css={positionStyle}>
+                        <li key={step.id} css={positionStyle}>
                           <div css={lessonStackStyle}>
                             <div
                               onClick={handleStepSelection}
@@ -128,6 +139,15 @@ export const LearnContainer = ({
                                 !step.isCompleted && !step.isLocked && activeLessonStyle(theme),
                               ]}
                               style={{ cursor: step.isLocked ? 'not-allowed' : 'pointer' }}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleStepSelection();
+                                }
+                              }}
+                              aria-label={`${step.title}, ${stepStatus}`}
                             >
                               <SVGIcon
                                 icon={step.isCompleted ? 'Check' : step.isLocked ? 'Lock' : 'Start'}
@@ -137,19 +157,19 @@ export const LearnContainer = ({
                             </div>
                             <div css={lessonNamePillStyle(theme)}>{step.title}</div>
                           </div>
-                        </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </section>
               ))}
             </div>
-          </div>
+          </section>
 
           <LearnRightSidebar fieldSlug={fieldSlug} setFieldSlug={setFieldSlug} />
         </div>
       </SimpleBar>
-    </div>
+    </section>
   );
 };
 
@@ -434,8 +454,10 @@ const overviewButtonStyle = (theme: Theme) => css`
 
 const lessonsContainerStyle = (count: number) => css`
   position: relative;
-  min-height: ${count * 130}px;
+  list-style: none;
+  margin: 0;
   padding: 8px 0 24px;
+  min-height: ${count * 130}px;
 `;
 
 const lessonStackStyle = css`

@@ -25,7 +25,7 @@ const loadBoostadSdk = () => {
   script.async = true;
   script.dataset.boostadSdk = 'true';
   script.dataset.blogKey = '42e12acd-506f-455d-9831-864e3d9ccb3e';
-  script.dataset.context = '게임';
+  script.dataset.context = '실시간 협업';
   script.dataset.auto = 'false';
 
   document.head.appendChild(script);

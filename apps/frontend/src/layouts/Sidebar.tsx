@@ -105,12 +105,13 @@ export const Sidebar = () => {
 
       // 로그인 전용 페이지에서 로그아웃할 때는 /learn으로 이동
       const currentPath = location.pathname;
-      const isLoginRequiredPage =
-        currentPath.startsWith('/leaderboard') || currentPath.startsWith('/profile/characters');
+      const isLoginRequiredPage = currentPath.startsWith('/leaderboard');
 
       // 로그아웃 후 리다이렉트 경로를 sessionStorage에 저장
       if (isLoginRequiredPage) {
         sessionStorage.setItem('postLogoutRedirectPath', '/learn');
+      } else {
+        navigate('/learn', { replace: true });
       }
 
       await logoutMutation.mutateAsync();

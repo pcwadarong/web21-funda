@@ -49,6 +49,11 @@ discovery.relabel "container_logs" {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "job"
+  }
 }
 
 loki.source.docker "container_logs" {

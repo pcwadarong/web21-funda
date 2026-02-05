@@ -18,7 +18,6 @@ interface QuizHeaderProps {
   isBattleMode?: boolean;
 }
 
-<<<<<<< refactor/lighthouse-fix
 export const QuizHeader = memo(
   ({
     currentStep,
@@ -41,42 +40,6 @@ export const QuizHeader = memo(
       } else {
         if (completedSteps > 0) setShowExitModal(true);
         else navigate('/learn');
-=======
-export const QuizHeader = ({
-  currentStep,
-  totalSteps,
-  completedSteps,
-  heartCount,
-  status,
-  isBattleMode = false,
-}: QuizHeaderProps) => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const [showExitModal, setShowExitModal] = useState(false);
-
-  const { battleState, leaveBattle, disconnect } = useBattleSocket({ listen: false });
-  const roomId = isBattleMode ? battleState.roomId : null;
-
-  const handleCloseClick = useCallback(() => {
-    if (isBattleMode) {
-      setShowExitModal(true);
-    } else {
-      if (completedSteps > 0) setShowExitModal(true);
-      else navigate('/learn');
-    }
-  }, [completedSteps, navigate, isBattleMode]);
-
-  const handleContinue = useCallback(() => {
-    setShowExitModal(false);
-  }, []);
-
-  const handleExit = useCallback(() => {
-    if (isBattleMode) {
-      if (roomId) {
-        leaveBattle(roomId);
-        disconnect();
-        navigate('/battle');
->>>>>>> develop
       }
     }, [completedSteps, navigate, isBattleMode]);
 

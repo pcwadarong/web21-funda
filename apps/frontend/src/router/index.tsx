@@ -79,7 +79,7 @@ const Setting = lazy(() => import('@/pages/user/Setting').then(m => ({ default: 
 const Unsubscribe = lazy(() =>
   import('@/pages/user/Unsubscribe').then(m => ({ default: m.Unsubscribe })),
 );
-const Animation = lazy(() => import('@/pages/Animation').then(m => ({ default: m.FoxAnimation })));
+const Fundy = lazy(() => import('@/pages/Fundy').then(m => ({ default: m.PlayWithFundy })));
 
 const APP_ERROR_FALLBACK = {
   title: '서비스 이용에 불편을 드려 죄송합니다.',
@@ -118,7 +118,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:userId?', element: <Profile /> },
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
-          { path: 'animation', element: <Animation /> },
+          { path: 'fundy', element: <Fundy /> },
         ],
       },
 

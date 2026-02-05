@@ -1,8 +1,6 @@
 <div align="center">
   <img alt="히어로ui" src="https://github.com/user-attachments/assets/d2f866e7-c820-4c3b-a94c-b3af9c15a50d" />
 
-
-
   <h1>Funda</h1>
   <p><strong>지루한 CS 공부를 즐거운 습관으로 바꾸는 게이미피케이션 학습 플랫폼</strong></p>
 

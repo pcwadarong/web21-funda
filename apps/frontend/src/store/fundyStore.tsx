@@ -2,7 +2,7 @@ import { createContext, type ReactNode, useContext, useRef } from 'react';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
-import type { FundyAnimationConfig } from '@/feat/fundy/types';
+import type { FundyAnimationConfig, FundyIdleExpression } from '@/feat/fundy/types';
 
 type FundyAnimationUpdate =
   | Partial<FundyAnimationConfig>
@@ -11,10 +11,16 @@ type FundyAnimationUpdate =
 interface FundyState {
   animation: FundyAnimationConfig;
   isActionLocked: boolean;
+  idleExpression: FundyIdleExpression;
+  idleExpressionHold: boolean;
+  idleExpressionDelayMs: number;
   actions: {
     setAnimation: (update: FundyAnimationUpdate) => void;
     setSystemAnimation: (update: Partial<FundyAnimationConfig>) => void;
     setActionLocked: (locked: boolean) => void;
+    setIdleExpression: (expression: FundyIdleExpression) => void;
+    setIdleExpressionHold: (hold: boolean) => void;
+    setIdleExpressionDelayMs: (delayMs: number) => void;
     triggerHello: () => void;
     reset: () => void;
   };
@@ -32,10 +38,18 @@ const defaultAnimation: FundyAnimationConfig = {
   openMouth: false,
 };
 
-const createFundyStore = (initial?: Partial<FundyAnimationConfig>) =>
+const createFundyStore = (
+  initial?: Partial<FundyAnimationConfig>,
+  idleExpression: FundyIdleExpression = 'default',
+  idleExpressionHold: boolean = true,
+  idleExpressionDelayMs: number = 300,
+) =>
   createStore<FundyState>(set => ({
     animation: { ...defaultAnimation, ...initial },
     isActionLocked: false,
+    idleExpression,
+    idleExpressionHold,
+    idleExpressionDelayMs,
     actions: {
       setAnimation: update =>
         set(state => {
@@ -49,6 +63,9 @@ const createFundyStore = (initial?: Partial<FundyAnimationConfig>) =>
       setSystemAnimation: update =>
         set(state => ({ animation: { ...state.animation, ...update } })),
       setActionLocked: locked => set({ isActionLocked: locked }),
+      setIdleExpression: expression => set({ idleExpression: expression }),
+      setIdleExpressionHold: hold => set({ idleExpressionHold: hold }),
+      setIdleExpressionDelayMs: delayMs => set({ idleExpressionDelayMs: delayMs }),
       triggerHello: () =>
         set(state => ({
           animation: {
@@ -56,7 +73,14 @@ const createFundyStore = (initial?: Partial<FundyAnimationConfig>) =>
             helloAction: (state.animation.helloAction ?? 0) + 1,
           },
         })),
-      reset: () => set({ animation: defaultAnimation, isActionLocked: false }),
+      reset: () =>
+        set({
+          animation: defaultAnimation,
+          isActionLocked: false,
+          idleExpression: 'default',
+          idleExpressionHold: true,
+          idleExpressionDelayMs: 300,
+        }),
     },
   }));
 
@@ -67,13 +91,24 @@ const FundyStoreContext = createContext<FundyStore | null>(null);
 export function FundyStoreProvider({
   children,
   initialAnimation,
+  idleExpression = 'default',
+  idleExpressionHold = false,
+  idleExpressionDelayMs = 300,
 }: {
   children: ReactNode;
   initialAnimation?: Partial<FundyAnimationConfig>;
+  idleExpression?: FundyIdleExpression;
+  idleExpressionHold?: boolean;
+  idleExpressionDelayMs?: number;
 }) {
   const storeRef = useRef<FundyStore | null>(null);
   if (!storeRef.current) {
-    storeRef.current = createFundyStore(initialAnimation);
+    storeRef.current = createFundyStore(
+      initialAnimation,
+      idleExpression,
+      idleExpressionHold,
+      idleExpressionDelayMs,
+    );
   }
 
   return (

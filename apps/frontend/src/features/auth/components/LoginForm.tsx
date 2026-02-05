@@ -20,7 +20,13 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: Lo
     <div css={containerStyle()}>
       <div css={contentStyle()}>
         <div css={placeholderStyle}>
-          <FundyPreviewCanvas initialAnimation={{ lookAt: true }} autoHello />
+          <FundyPreviewCanvas
+            initialAnimation={{ lookAt: true }}
+            idleExpression="smileSoft"
+            idleExpressionHold
+            idleExpressionDelayMs={300}
+            autoHello
+          />
         </div>
         <h1 css={titleStyle(theme)}>Funda</h1>
         <p css={taglineStyle(theme)}>재미있게 배우는 개발 지식</p>

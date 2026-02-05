@@ -17,7 +17,12 @@ export const ServicePreparation = () => {
   return (
     <div css={containerStyle()}>
       <div css={placeholderStyle}>
-        <FundyPreviewCanvas initialAnimation={{ lookAt: true }} autoHello />
+        <FundyPreviewCanvas
+          initialAnimation={{ lookAt: true }}
+          idleExpression="default"
+          idleExpressionDelayMs={300}
+          autoHello
+        />
       </div>
       <h1 css={titleStyle(theme)}>서비스 준비 중입니다.</h1>
       <p css={descriptionStyle(theme)}>

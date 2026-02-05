@@ -32,7 +32,12 @@ export const AuthCheck = () => {
     <div css={containerStyle()}>
       <div css={contentStyle(theme)}>
         <div css={placeholderStyle}>
-          <FundyPreviewCanvas initialAnimation={{ lookAt: true }} autoHello />
+          <FundyPreviewCanvas
+            initialAnimation={{ lookAt: true }}
+            idleExpression="wink"
+            idleExpressionDelayMs={300}
+            autoHello
+          />
         </div>
         <div>
           <h1 css={titleStyle(theme)}>프로필을 생성하세요!</h1>

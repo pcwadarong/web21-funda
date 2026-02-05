@@ -127,6 +127,14 @@ export type GLTFResult = GLTF & {
 
 export type FundyNodes = GLTFResult['nodes'];
 
+export type FundyIdleExpression =
+  | 'default'
+  | 'smileSoft'
+  | 'wink'
+  | 'smileEyesClosed'
+  | 'smileOpenBig'
+  | 'angry';
+
 /**
  * 여우 애니메이션 컨트롤러
  * Bone 기반 애니메이션 + Shape Key 조합
@@ -176,7 +184,13 @@ export interface FundyMorphMeshes {
 
   /** 속눈썹 (eyelash) - Shape Keys: closed, smile, wink */
   eyelash: THREE.Mesh & {
-    morphTargetDictionary?: { closed?: number; smile?: number; wink?: number; bigger?: number };
+    morphTargetDictionary?: {
+      closed?: number;
+      smile?: number;
+      wink?: number;
+      angry?: number;
+      bigger?: number;
+    };
     morphTargetInfluences?: number[];
   };
 
@@ -188,6 +202,7 @@ export interface FundyMorphMeshes {
       eyes_closed?: number;
       o?: number;
       wink?: number;
+      angry?: number;
     };
     morphTargetInfluences?: number[];
   };

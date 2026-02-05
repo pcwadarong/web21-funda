@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
-import type { FundyAnimationConfig, FundyNodes } from '../types';
+import type { FundyAnimationConfig, FundyMorphMeshes, FundyNodes } from '../types';
 
 /**
  * 얼굴 애니메이션 구성 데이터
@@ -45,6 +45,12 @@ const EXPRESSION_CONFIGS = {
     teeth: { a: 0, o: 1, smile: 0 },
     eyebrow: { up: 0, wink: 0, down: 0 },
   },
+  angry: {
+    head: { mouth_smile: 0, eyes_closed: 0, wink: 0, a: 0, o: 0, angry: 1 },
+    eyelash: { smile: 0, wink: 0, bigger: 0, angry: 1 },
+    teeth: { smile: 0, a: 0, o: 0 },
+    eyebrow: { up: 0, wink: 0, down: 1 },
+  },
   default: {
     head: { mouth_smile: 0, wink: 0, a: 0, o: 0, eyes_closed: 0 },
     eyelash: { smile: 0, wink: 0, bigger: 0 },
@@ -53,6 +59,25 @@ const EXPRESSION_CONFIGS = {
     tongue: { a: 0 },
   },
 } as const;
+
+type ExpressionKey = keyof typeof EXPRESSION_CONFIGS;
+
+function applyExpression(
+  morphs: FundyMorphMeshes,
+  key: ExpressionKey,
+  smooth: boolean = true,
+  skipEyesClosed: boolean = false,
+) {
+  const config = EXPRESSION_CONFIGS[key];
+  Object.entries(config).forEach(([meshName, targets]) => {
+    const mesh = morphs[meshName as keyof typeof morphs];
+    if (!mesh) return;
+    Object.entries(targets).forEach(([targetName, value]) => {
+      if (skipEyesClosed && targetName === 'eyes_closed') return;
+      setMorphTarget(mesh, targetName, value as number, smooth);
+    });
+  });
+}
 
 /**
  * Shape Key를 안전하게 설정하는 헬퍼
@@ -153,18 +178,11 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     else if (openMouth === 'o') currentKey = 'open_O';
 
     // 표정에 따른 morph target 반영
-    const currentConfig = EXPRESSION_CONFIGS[currentKey];
-
-    Object.entries(currentConfig).forEach(([meshName, targets]) => {
-      const mesh = morphs[meshName as keyof typeof morphs];
-      if (!mesh) return;
-
-      Object.entries(targets).forEach(([targetName, value]) => {
-        // 깜빡이는 중일 때는 eyes_closed 무시
-        if (targetName === 'eyes_closed' && blinkState.current.isBlinking) return;
-        setMorphTarget(mesh, targetName, value as number, true);
-      });
-    });
+    if (currentKey !== 'default') {
+      applyExpression(morphs, currentKey, true, blinkState.current.isBlinking);
+    } else {
+      applyExpression(morphs, 'default', true, blinkState.current.isBlinking);
+    }
 
     // ==========================================
     // 눈 깜빡임

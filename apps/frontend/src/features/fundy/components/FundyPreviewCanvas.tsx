@@ -4,12 +4,15 @@ import { useEffect } from 'react';
 
 import { FundyLighting } from '@/feat/fundy/components/FundyLighting';
 import { FundyModel } from '@/feat/fundy/components/Model';
-import type { FundyAnimationConfig } from '@/feat/fundy/types';
+import type { FundyAnimationConfig, FundyIdleExpression } from '@/feat/fundy/types';
 import { FundyStoreProvider, useFundyStore } from '@/store/fundyStore';
 
 type FundyPreviewCanvasProps = {
   initialAnimation?: Partial<FundyAnimationConfig>;
   autoHello?: boolean;
+  idleExpression?: FundyIdleExpression;
+  idleExpressionHold?: boolean;
+  idleExpressionDelayMs?: number;
   scale?: number;
   position?: [number, number, number];
   camera?: { position?: [number, number, number]; fov?: number };
@@ -52,9 +55,17 @@ export function FundyPreviewCanvas({
   position,
   camera,
   target,
+  idleExpression,
+  idleExpressionHold,
+  idleExpressionDelayMs,
 }: FundyPreviewCanvasProps) {
   return (
-    <FundyStoreProvider initialAnimation={initialAnimation}>
+    <FundyStoreProvider
+      initialAnimation={initialAnimation}
+      idleExpression={idleExpression}
+      idleExpressionHold={idleExpressionHold}
+      idleExpressionDelayMs={idleExpressionDelayMs}
+    >
       <FundyPreviewScene
         autoHello={autoHello}
         scale={scale}

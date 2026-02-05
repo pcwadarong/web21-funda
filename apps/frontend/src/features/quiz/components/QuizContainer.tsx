@@ -8,6 +8,8 @@ import type {
   QuestionStatus,
   QuizQuestion,
 } from '@/feat/quiz/types';
+import ErrorBoundary from '@/features/error/components/ErrorBoundary';
+import { ErrorView } from '@/features/error/components/ErrorView';
 
 interface QuizContainerProps {
   quizzes: QuizQuestion[];
@@ -26,7 +28,11 @@ interface QuizContainerProps {
   handleNextQuestion: () => void;
   heartCount: number;
 }
-
+const QUIZ_ERROR_FALLBACK = {
+  title: '퀴즈를 불러올 수 없습니다.',
+  description: '문제가 계속되면 다시 시도해주세요.',
+  onSecondaryButtonClick: () => window.location.reload(),
+};
 export const QuizContainer = ({
   quizzes,
   currentQuizIndex,
@@ -57,21 +63,23 @@ export const QuizContainer = ({
         heartCount={heartCount}
       />
       <main css={mainStyle}>
-        <QuizContentCard
-          question={currentQuiz}
-          status={currentQuestionStatus}
-          selectedAnswer={selectedAnswers[currentQuizIndex] ?? null}
-          correctAnswer={quizSolutions[currentQuizIndex]?.correctAnswer ?? null}
-          explanation={quizSolutions[currentQuizIndex]?.explanation ?? ''}
-          onAnswerChange={handleAnswerChange}
-          isSubmitDisabled={isCheckDisabled}
-          isDontKnowDisabled={isDontKnowDisabled}
-          onCheck={handleCheckAnswer}
-          onDontKnow={handleDontKnowAnswer}
-          onNext={handleNextQuestion}
-          isLast={isLastQuestion}
-          isReviewMode={isReviewMode}
-        />
+        <ErrorBoundary fallback={<ErrorView {...QUIZ_ERROR_FALLBACK} />}>
+          <QuizContentCard
+            question={currentQuiz}
+            status={currentQuestionStatus}
+            selectedAnswer={selectedAnswers[currentQuizIndex] ?? null}
+            correctAnswer={quizSolutions[currentQuizIndex]?.correctAnswer ?? null}
+            explanation={quizSolutions[currentQuizIndex]?.explanation ?? ''}
+            onAnswerChange={handleAnswerChange}
+            isSubmitDisabled={isCheckDisabled}
+            isDontKnowDisabled={isDontKnowDisabled}
+            onCheck={handleCheckAnswer}
+            onDontKnow={handleDontKnowAnswer}
+            onNext={handleNextQuestion}
+            isLast={isLastQuestion}
+            isReviewMode={isReviewMode}
+          />
+        </ErrorBoundary>
       </main>
     </div>
   );

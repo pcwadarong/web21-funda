@@ -1,4 +1,6 @@
 import { css, useTheme } from '@emotion/react';
+import * as Sentry from '@sentry/react';
+import { useEffect } from 'react';
 
 import { Button } from '@/comp/Button';
 import type { Theme } from '@/styles/theme';
@@ -21,7 +23,10 @@ export const ErrorView = ({
   onSecondaryButtonClick,
 }: ErrorViewProps) => {
   const theme = useTheme();
-
+  useEffect(() => {
+    // 에러 페이지가 표시될 때마다 Sentry에 기록
+    Sentry.captureMessage('라우트 에러 발생', 'error');
+  }, []);
   return (
     <div css={containerStyle()} role="alert" aria-live="assertive" aria-label="오류 안내">
       <h1 css={titleStyle(theme)} id="error-title">

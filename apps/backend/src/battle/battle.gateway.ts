@@ -1088,8 +1088,9 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
       const nextIndex = latestRoom.currentQuizIndex + 1;
       if (nextIndex >= latestRoom.totalQuizzes) {
-        // TODO: 최종 점수 기준 우승자 산정 및 보상 계산 연결 필요합니다.
-        void this.finishRoom(latestRoom.roomId);
+        void this.revealQuizResult(latestRoom, latestRoom, {
+          finishAfterResult: true,
+        });
         return;
       }
 
@@ -1109,15 +1110,16 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    *
    * @param latestRoom 현재 방 상태
    * @param advancedRoom 다음 문제로 인덱스가 증가된 방 상태
-   * @param delay 결과 표시 시간(초)
+   * @param options 결과 표시 및 종료 옵션
    * @returns 없음
    */
   private async revealQuizResult(
     room: BattleRoomState,
     advancedRoom: BattleRoomState,
-    delay = 5,
+    options?: { finishAfterResult?: boolean; delaySeconds?: number },
   ): Promise<void> {
-    const resultEndsAt = Date.now() + delay * 1000;
+    const delaySeconds = options?.delaySeconds ?? 5;
+    const resultEndsAt = Date.now() + delaySeconds * 1000;
     const delayMs = Math.max(0, (resultEndsAt ?? Date.now()) - Date.now());
 
     const latestRoom = this.battleService.getRoom(room.roomId);
@@ -1157,14 +1159,17 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(roomWithResultEndsAt.roomId).emit('battle:state', {
       roomId: roomWithResultEndsAt.roomId,
       status: roomWithResultEndsAt.status,
-      remainingSeconds: delay,
+      remainingSeconds: delaySeconds,
       rankings: this.buildRankings(roomWithResultEndsAt),
       countdownEndsAt: roomWithResultEndsAt.countdownEndsAt,
     });
 
+    const shouldFinishAfterResult = options?.finishAfterResult === true;
     const nextRoom = {
       ...roomWithResultEndsAt,
-      currentQuizIndex: advancedRoom.currentQuizIndex,
+      currentQuizIndex: shouldFinishAfterResult
+        ? roomWithResultEndsAt.currentQuizIndex
+        : advancedRoom.currentQuizIndex,
     };
     this.battleService.saveRoom(nextRoom);
 
@@ -1179,6 +1184,11 @@ export class BattleGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       }
 
       if (latestRoom.status !== 'in_progress') {
+        return;
+      }
+
+      if (shouldFinishAfterResult) {
+        await this.finishRoom(nextRoom.roomId);
         return;
       }
 

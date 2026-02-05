@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -16,12 +17,15 @@ const dirname =
 export default defineConfig({
   build: {
     minify: 'terser',
+
     terserOptions: {
       compress: {
         drop_console: true, // 모든 콘솔 로그 제거
         drop_debugger: true,
       },
     },
+
+    sourcemap: true,
   },
   plugins: [
     react(),
@@ -32,6 +36,14 @@ export default defineConfig({
         defineAlgorithm('gzip', { level: 9 }),
       ],
       exclude: [/\.(map)$/],
+    }),
+    sentryVitePlugin({
+      org: 'x-ma',
+      project: 'javascript-react',
+      sourcemaps: {
+        assets: './dist/**',
+        filesToDeleteAfterUpload: ['./dist/**/*.map'], // 빌드 후 소스맵 파일 삭제
+      },
     }),
   ],
   resolve: {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 
 import { PointEffect } from '@/feat/quiz/components/PointEffect';
+import { useSound } from '@/hooks/useSound';
 import { lightTheme } from '@/styles/theme';
 
 const meta: Meta<typeof PointEffect> = {
@@ -41,11 +42,17 @@ export const Default: StoryObj<typeof PointEffect> = {
   render: args => {
     // 애니메이션을 다시 보기 위한 새로고침용 상태
     const [key, setKey] = useState(0);
+    const { resumeAudioContext } = useSound();
+
+    const handleReplay = async () => {
+      await resumeAudioContext();
+      setKey(prev => prev + 1);
+    };
 
     return (
       <div style={{ position: 'relative' }}>
         <button
-          onClick={() => setKey(prev => prev + 1)}
+          onClick={handleReplay}
           style={{
             position: 'absolute',
             bottom: '40px', // 버튼을 아래로 내려서 연출을 가리지 않게 함

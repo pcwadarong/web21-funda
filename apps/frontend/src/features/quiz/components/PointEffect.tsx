@@ -1,8 +1,11 @@
 import { css } from '@emotion/react';
 import { motion, type Variants } from 'framer-motion';
+import { useEffect } from 'react';
 
+import twinkleSound from '@/assets/audio/twinkle.mp3';
 import BigStar from '@/assets/images/star3d.svg?react';
 import SVGIcon from '@/comp/SVGIcon';
+import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 
 interface PointEffectProps {
@@ -14,6 +17,15 @@ interface PointEffectProps {
  * 구조: 배경 라인 확장 -> 별 낙하 및 충격파(Glow) -> 텍스트 순차 등장 -> 소멸(Exit)
  */
 export const PointEffect = ({ points }: PointEffectProps) => {
+  const { playSound, stopSound } = useSound();
+
+  useEffect(() => {
+    void playSound({ src: twinkleSound });
+    return () => {
+      stopSound(twinkleSound);
+    };
+  }, [playSound, stopSound]);
+
   // ==========================================
   // 1. Framer Motion Variants (애니메이션 설정)
   // ==========================================

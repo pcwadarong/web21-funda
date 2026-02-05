@@ -1,8 +1,11 @@
 import { css } from '@emotion/react';
 import { motion, type Variants } from 'framer-motion';
+import { useEffect } from 'react';
 
+import fireSound from '@/assets/audio/fire.mp3';
 import SVGIcon from '@/comp/SVGIcon';
 import { getSortedWeekdays } from '@/feat/quiz/utils/getSortedWeekDays';
+import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 
@@ -13,6 +16,15 @@ interface StreakProps {
 }
 
 export const Streak = ({ currentStreak = 1 }: StreakProps) => {
+  const { playSound, stopSound } = useSound();
+
+  useEffect(() => {
+    void playSound({ src: fireSound });
+    return () => {
+      stopSound(fireSound);
+    };
+  }, [playSound, stopSound]);
+
   // 요일 정렬
   const allDays = getSortedWeekdays(currentStreak);
 

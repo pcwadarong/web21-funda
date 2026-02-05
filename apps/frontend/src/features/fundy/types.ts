@@ -1,7 +1,7 @@
 import type * as THREE from 'three';
 import type { GLTF } from 'three-stdlib';
 
-type ActionName = 'hello_action' | 'head' | 'eyebrow' | 'eyelash' | 'teeth' | 'tongue' | 'Action';
+type ActionName = 'hello_action' | 'eyebrow' | 'eyelash' | 'head' | 'teeth' | 'tongue';
 
 interface GLTFAction extends THREE.AnimationClip {
   name: ActionName;
@@ -9,36 +9,26 @@ interface GLTFAction extends THREE.AnimationClip {
 
 export type GLTFResult = GLTF & {
   nodes: {
+    eyebrow: THREE.Mesh;
+    eyelash: THREE.Mesh;
     teeth: THREE.Mesh;
-    tongue_1: THREE.Mesh;
     tongue: THREE.Mesh;
-    body: THREE.SkinnedMesh;
-    ear_inside: THREE.SkinnedMesh | THREE.Mesh;
-    eye_left: THREE.SkinnedMesh | THREE.Mesh;
-    iris_left: THREE.SkinnedMesh | THREE.Mesh;
-    eye_right: THREE.SkinnedMesh | THREE.Mesh;
-    iris_right: THREE.SkinnedMesh | THREE.Mesh;
+    head: THREE.Mesh;
+    ear_inside: THREE.Mesh;
+    nose: THREE.Mesh;
     Sphere001: THREE.Mesh;
     Sphere001_1: THREE.Mesh;
-    Mesh: THREE.Mesh;
-    Mesh_1: THREE.Mesh;
+    Sphere003: THREE.Mesh;
+    Sphere003_1: THREE.Mesh;
+    body: THREE.SkinnedMesh;
     muffler: THREE.SkinnedMesh;
-    nose_1: THREE.SkinnedMesh;
-    nose: THREE.Mesh;
-    eyebrow: THREE.SkinnedMesh | THREE.Mesh;
-    eyelash: THREE.SkinnedMesh | THREE.Mesh;
-    head_1: THREE.SkinnedMesh;
-    head: THREE.SkinnedMesh;
-    tail_1: THREE.SkinnedMesh | THREE.Bone;
-    muffler001: THREE.SkinnedMesh;
-    [key: string]: any;
-    tail: THREE.Bone | THREE.SkinnedMesh;
+    tail: THREE.SkinnedMesh;
+    tail_1: THREE.Bone;
     tail001: THREE.Bone;
     tail002: THREE.Bone;
     tail003: THREE.Bone;
     tail004: THREE.Bone;
-    Bone: THREE.Bone;
-    neutral_bone: THREE.Bone;
+    muffler_tail: THREE.SkinnedMesh;
     ['DEF-spine']: THREE.Bone;
     ['DEF-spine001']: THREE.Bone;
     ['DEF-spine002']: THREE.Bone;
@@ -111,18 +101,23 @@ export type GLTFResult = GLTF & {
     ['DEF-upper_armR']: THREE.Bone;
     ['DEF-breastL']: THREE.Bone;
     ['DEF-breastR']: THREE.Bone;
+    neutral_bone: THREE.Bone;
+    muff: THREE.Bone;
+    muff001: THREE.Bone;
+    muff002: THREE.Bone;
+    muff003: THREE.Bone;
   };
   materials: {
-    teeth: THREE.MeshStandardMaterial;
-    tongue: THREE.MeshStandardMaterial;
-    body: THREE.MeshStandardMaterial;
-    ear_inside: THREE.MeshStandardMaterial;
-    eye: THREE.MeshStandardMaterial;
-    iris: THREE.MeshStandardMaterial;
-    muffler: THREE.MeshStandardMaterial;
-    nose: THREE.MeshStandardMaterial;
     eyebrow: THREE.MeshStandardMaterial;
     eyelash: THREE.MeshStandardMaterial;
+    teeth: THREE.MeshStandardMaterial;
+    tongue: THREE.MeshStandardMaterial;
+    ear_inside: THREE.MeshStandardMaterial;
+    nose: THREE.MeshStandardMaterial;
+    eye: THREE.MeshStandardMaterial;
+    iris: THREE.MeshStandardMaterial;
+    body: THREE.MeshStandardMaterial;
+    muffler: THREE.MeshStandardMaterial;
     face: THREE.MeshStandardMaterial;
     tail: THREE.MeshStandardMaterial;
     muffler_tail: THREE.MeshStandardMaterial;
@@ -172,19 +167,19 @@ export interface FundyMorphMeshes {
   };
 
   /** 눈썹 (eyebrow) - Shape Keys: Key 1 (올리기) */
-  eyebrow: (THREE.SkinnedMesh | THREE.Mesh) & {
+  eyebrow: THREE.Mesh & {
     morphTargetDictionary?: { a?: number };
     morphTargetInfluences?: number[];
   };
 
   /** 속눈썹 (eyelash) - Shape Keys: closed, smile, wink */
-  eyelash: (THREE.SkinnedMesh | THREE.Mesh) & {
-    morphTargetDictionary?: { closed?: number; smile?: number; wink?: number };
+  eyelash: THREE.Mesh & {
+    morphTargetDictionary?: { closed?: number; smile?: number; wink?: number; bigger?: number };
     morphTargetInfluences?: number[];
   };
 
   /** 머리 (head) - Shape Keys: a, mouth_smile, eyes_closed, o, wink */
-  head: THREE.SkinnedMesh & {
+  head: THREE.Mesh & {
     morphTargetDictionary?: {
       a?: number;
       mouth_smile?: number;

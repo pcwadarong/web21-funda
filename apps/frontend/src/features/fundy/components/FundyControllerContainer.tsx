@@ -54,7 +54,6 @@ export function FundyControllerContainer({
       animation={animation}
       onToggle={(key, value) => updateAnim(key, value)}
       onSetMouth={value => updateAnim('openMouth', value)}
-      onSetLookAt={value => updateAnim('lookAt', value)}
       onSpeedChange={value => updateAnim('speedMultiplier', value)}
       onPlayHello={handlePlayHello}
     />

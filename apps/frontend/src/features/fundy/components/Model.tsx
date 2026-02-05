@@ -62,10 +62,10 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       const eyeMat = enhancedEyes && eyeMaterial ? eyeMaterial : materials.eye;
       const irisMat = materials.iris;
 
-      const eyeMeshes = [nodes.Sphere001, nodes.Mesh].filter(
+      const eyeMeshes = [nodes.Sphere001, nodes.Sphere003].filter(
         (mesh): mesh is THREE.Mesh => !!mesh && (mesh as THREE.Mesh).isMesh,
       );
-      const irisMeshes = [nodes.Sphere001_1, nodes.Mesh_1].filter(
+      const irisMeshes = [nodes.Sphere001_1, nodes.Sphere003_1].filter(
         (mesh): mesh is THREE.Mesh => !!mesh && (mesh as THREE.Mesh).isMesh,
       );
 
@@ -100,9 +100,6 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       hello.fadeIn(0.15);
       hello.play();
     }, [actions, animation?.helloAction]);
-
-    const headMesh = (nodes.head ?? nodes.head_1) as THREE.SkinnedMesh | undefined;
-    const tailMesh = nodes.tail as THREE.SkinnedMesh | undefined;
 
     return (
       <group ref={group} {...props} dispose={null}>
@@ -175,38 +172,18 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
             <primitive object={nodes['DEF-breastL']} />
             <primitive object={nodes['DEF-breastR']} />
             <primitive object={nodes.neutral_bone} />
-
-            {nodes.body?.geometry?.attributes?.position && (
-              <skinnedMesh
-                name="body"
-                geometry={nodes.body.geometry}
-                material={materials.body}
-                skeleton={nodes.body.skeleton}
-                frustumCulled={false}
-              />
-            )}
-
-            {nodes.muffler?.geometry?.attributes?.position && (
-              <skinnedMesh
-                name="muffler"
-                geometry={nodes.muffler.geometry}
-                material={materials.muffler}
-                skeleton={nodes.muffler.skeleton}
-                frustumCulled={false}
-              />
-            )}
-
-            {headMesh?.geometry?.attributes?.position && (
-              <skinnedMesh
-                name={headMesh.name}
-                geometry={headMesh.geometry}
-                material={materials.face}
-                skeleton={headMesh.skeleton}
-                morphTargetDictionary={headMesh.morphTargetDictionary}
-                morphTargetInfluences={headMesh.morphTargetInfluences}
-                frustumCulled={false}
-              />
-            )}
+            <skinnedMesh
+              name="body"
+              geometry={nodes.body.geometry}
+              material={materials.body}
+              skeleton={nodes.body.skeleton}
+            />
+            <skinnedMesh
+              name="muffler"
+              geometry={nodes.muffler.geometry}
+              material={materials.muffler}
+              skeleton={nodes.muffler.skeleton}
+            />
           </group>
 
           <group
@@ -215,16 +192,16 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
             rotation={[-0.428, 0, -1.034]}
             scale={2.178}
           >
-            {tailMesh?.geometry?.attributes?.position && (
+            <primitive object={nodes.tail_1} />
+            {nodes.tail?.geometry?.attributes?.position && (
               <skinnedMesh
-                name={tailMesh.name}
-                geometry={tailMesh.geometry}
+                name="tail"
+                geometry={nodes.tail.geometry}
                 material={materials.tail}
-                skeleton={tailMesh.skeleton}
+                skeleton={nodes.tail.skeleton}
                 frustumCulled={false}
               />
             )}
-            <primitive object={nodes.tail_1} />
           </group>
 
           <group
@@ -232,16 +209,13 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
             position={[0.192, 2.203, 0.612]}
             rotation={[-0.103, -0.003, -3.112]}
           >
-            {nodes.muffler001?.geometry?.attributes?.position && (
-              <skinnedMesh
-                name="muffler001"
-                geometry={nodes.muffler001.geometry}
-                material={materials.muffler_tail}
-                skeleton={nodes.muffler001.skeleton}
-                frustumCulled={false}
-              />
-            )}
-            <primitive object={nodes.Bone} />
+            <primitive object={nodes.muff} />
+            <skinnedMesh
+              name="muffler_tail"
+              geometry={nodes.muffler_tail.geometry}
+              material={materials.muffler_tail}
+              skeleton={nodes.muffler_tail.skeleton}
+            />
           </group>
         </group>
       </group>

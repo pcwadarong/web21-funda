@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import type { FundyAnimationConfig, FundyNodes } from '../types';
 
 /**
- * 표정 및 입 모양 구성 데이터
+ * 얼굴 애니메이션 구성 데이터
  */
 const EXPRESSION_CONFIGS = {
   smile: {
@@ -50,24 +50,27 @@ const EXPRESSION_CONFIGS = {
 
 /**
  * Shape Key를 안전하게 설정하는 헬퍼
+ * @param mesh - Morph 대상 Mesh
+ * @param targetName - Morph 타겟 이름
+ * @param value - 설정할 influence 값
+ * @param smooth - 부드러운 LERP 전환 여부
  */
 function setMorphTarget(mesh: any, targetName: string, value: number, smooth: boolean = false) {
   if (!mesh?.morphTargetDictionary || !mesh?.morphTargetInfluences) return;
-
   const idx = mesh.morphTargetDictionary[targetName];
   if (idx === undefined) return;
 
-  if (smooth) {
-    mesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
-      mesh.morphTargetInfluences[idx] || 0,
-      value,
-      0.1,
-    );
-  } else {
-    mesh.morphTargetInfluences[idx] = value;
-  }
+  // 부드럽게 보간하거나 즉시 설정
+  mesh.morphTargetInfluences[idx] = smooth
+    ? THREE.MathUtils.lerp(mesh.morphTargetInfluences[idx] || 0, value, 0.1)
+    : value;
 }
 
+/**
+ * Fundy 얼굴 애니메이션 훅
+ * @param nodes - 모델 노드들
+ * @param config - 애니메이션 설정
+ */
 export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfig = {}) {
   const {
     blink = false,
@@ -82,22 +85,35 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
   const clockRef = useRef(0);
   const blinkState = useRef({ timer: 0, next: Math.random() * 3 + 2, isBlinking: false });
   const mouseLerp = useRef(new THREE.Vector2());
-  const restRotations = useRef<{
-    ready: boolean;
-    head?: THREE.Euler;
-    eyeL?: THREE.Euler;
-    eyeR?: THREE.Euler;
-  }>({ ready: false });
+
+  // 머리 및 눈의 초기 회전값 기억
+  const restRotations = useRef({
+    ready: false,
+    head: undefined as THREE.Euler | undefined,
+    eyeL: undefined as THREE.Euler | undefined,
+    eyeR: undefined as THREE.Euler | undefined,
+  });
 
   const refs = useMemo(() => {
     const asBone = (node?: THREE.Object3D | null) =>
       node && (node as THREE.Bone).isBone ? (node as THREE.Bone) : undefined;
+
     const pick = <T>(...values: Array<T | undefined | null>) =>
       values.find(Boolean) as T | undefined;
 
     return {
       bones: {
-        defHead: asBone(nodes['DEF-spine']),
+        defHead: asBone(
+          pick(
+            nodes['DEF-spine006'],
+            nodes['DEF-spine005'],
+            nodes['DEF-spine004'],
+            nodes['DEF-spine003'],
+            nodes['DEF-spine002'],
+            nodes['DEF-spine001'],
+            nodes['DEF-spine'],
+          ),
+        ),
         eyeL: asBone(pick(nodes['DEF-eye_masterL'], nodes['DEF-eyeL'])),
         eyeR: asBone(pick(nodes['DEF-eye_masterR'], nodes['DEF-eyeR'])),
       },
@@ -128,6 +144,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     else if (openMouth === 'a') currentKey = 'open_A';
     else if (openMouth === 'o') currentKey = 'open_O';
 
+    // 표정에 따른 morph target 반영
     const currentConfig = EXPRESSION_CONFIGS[currentKey];
 
     Object.entries(currentConfig).forEach(([meshName, targets]) => {
@@ -135,6 +152,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
       if (!mesh) return;
 
       Object.entries(targets).forEach(([targetName, value]) => {
+        // 깜빡이는 중일 때는 eyes_closed 무시
         if (targetName === 'eyes_closed' && blinkState.current.isBlinking) return;
         setMorphTarget(mesh, targetName, value as number, true);
       });
@@ -179,9 +197,11 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
         : lookAt === false
           ? false
           : (lookAt as 'head' | 'eyes' | 'head+eyes');
+
     const trackHead = lookAtMode === 'head' || lookAtMode === 'head+eyes';
     const trackEyes = lookAtMode === 'eyes' || lookAtMode === 'head+eyes';
 
+    // 회전 기준값 초기 저장
     if (!restRotations.current.ready) {
       if (bones.defHead || bones.eyeL || bones.eyeR) {
         restRotations.current = {
@@ -193,6 +213,7 @@ export function useFundyAnimation(nodes: FundyNodes, config: FundyAnimationConfi
       }
     }
 
+    // 마우스 따라 시선 회전
     if (lookAtMode) {
       const { pointer } = state;
       mouseLerp.current.lerp(pointer, 0.1);

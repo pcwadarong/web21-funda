@@ -31,6 +31,7 @@ const sampleStepTitle = '전송 계층 입문';
 const sampleQuizId = 9001;
 const sampleQuestionText = '네트워크에서 TCP는 신뢰성을 제공한다.';
 const sampleExplanation = 'TCP는 순서 보장과 재전송으로 신뢰성을 제공합니다.';
+const sampleReviewQuestionText = 'HTTP는 무상태 프로토콜이다.';
 
 function createSuccessResponse<T>(result: T): ApiResponse<T> {
   return {
@@ -140,7 +141,19 @@ async function applyLoggedInApiMocks(page: Page): Promise<void> {
     }
 
     if (pathname === '/api/progress/reviews') {
-      const body = createSuccessResponse([]);
+      const body = createSuccessResponse([
+        {
+          id: 9101,
+          type: 'ox',
+          content: {
+            question: sampleReviewQuestionText,
+            options: [
+              { id: 'o', text: 'O' },
+              { id: 'x', text: 'X' },
+            ],
+          },
+        },
+      ]);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -222,6 +235,22 @@ async function applyLoggedInApiMocks(page: Page): Promise<void> {
       return;
     }
 
+    if (pathname === `/api/progress/steps/${sampleStepId}/complete`) {
+      const body = createSuccessResponse({
+        successRate: 100,
+        xpGained: 0,
+        durationMs: 12000,
+        currentStreak: 3,
+        isFirstSolveToday: false,
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
+      return;
+    }
+
     const body = createFailureResponse('mock not found');
     await route.fulfill({
       status: 404,
@@ -231,20 +260,23 @@ async function applyLoggedInApiMocks(page: Page): Promise<void> {
   });
 }
 
+async function goToQuizByStepSelection(page: Page): Promise<void> {
+  await page.goto('/learn');
+
+  const stepButton = page.getByRole('button', { name: `${sampleStepTitle}, 시작 가능` });
+  await expect(stepButton).toBeVisible();
+
+  await stepButton.click();
+  await expect(page).toHaveURL(/\/quiz$/);
+}
+
 test.describe('로그인 사용자 스텝 풀이', () => {
   test.beforeEach(async ({ page }) => {
     await applyLoggedInApiMocks(page);
   });
 
   test('스텝 선택 후 정답 제출까지 진행된다', async ({ page }) => {
-    await page.goto('/learn');
-
-    const stepButton = page.getByRole('button', { name: `${sampleStepTitle}, 시작 가능` });
-    await expect(stepButton).toBeVisible();
-
-    await stepButton.click();
-
-    await expect(page).toHaveURL(/\/quiz$/);
+    await goToQuizByStepSelection(page);
 
     const questionHeading = page.getByRole('heading', {
       name: new RegExp(sampleQuestionText),
@@ -265,5 +297,46 @@ test.describe('로그인 사용자 스텝 풀이', () => {
 
     const resultButton = page.getByRole('button', { name: '결과 보기' });
     await expect(resultButton).toBeVisible();
+  });
+
+  test('정답 제출 후 결과 화면으로 이동된다', async ({ page }) => {
+    await goToQuizByStepSelection(page);
+
+    await page.getByRole('button', { name: 'O' }).click();
+
+    const submitButton = page.getByRole('button', { name: '정답 확인' });
+    await submitButton.click();
+
+    await page.getByRole('button', { name: '결과 보기' }).click();
+
+    await expect(page).toHaveURL(/\/quiz\/result$/);
+
+    const keepLearningButton = page.getByRole('button', { name: '학습 계속하기' });
+    await expect(keepLearningButton).toBeVisible();
+  });
+
+  test('복습 시작하기를 누르면 복습 퀴즈가 열린다', async ({ page }) => {
+    await page.goto('/learn');
+
+    const reviewButton = page.getByRole('button', { name: '복습 시작하기' });
+    await expect(reviewButton).toBeEnabled();
+    await reviewButton.click();
+
+    await expect(page).toHaveURL(/\/quiz\?mode=review/);
+
+    const reviewQuestionHeading = page.getByRole('heading', {
+      name: new RegExp(sampleReviewQuestionText),
+    });
+    await expect(reviewQuestionHeading).toBeVisible();
+  });
+
+  test('퀴즈 신고 모달이 열린다', async ({ page }) => {
+    await goToQuizByStepSelection(page);
+
+    const reportButton = page.getByRole('button', { name: '오류 신고' });
+    await reportButton.click();
+
+    await expect(page.getByRole('heading', { name: '오류 신고' })).toBeVisible();
+    await expect(page.getByText('신고 유형', { exact: true })).toBeVisible();
   });
 });

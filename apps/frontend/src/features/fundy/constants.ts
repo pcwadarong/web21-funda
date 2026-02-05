@@ -1,6 +1,6 @@
-import type { FoxAnimationConfig } from '@/feat/fundy/types';
+import type { FundyAnimationConfig } from '@/feat/fundy/types';
 
-export type AnimKey = keyof FoxAnimationConfig;
+export type AnimKey = keyof FundyAnimationConfig;
 
 export const FACE_EXPRESSIONS: AnimKey[] = ['smile', 'bigSmile', 'wink'];
 

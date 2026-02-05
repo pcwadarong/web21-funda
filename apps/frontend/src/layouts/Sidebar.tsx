@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { id: 'ranking', label: '랭킹', icon: 'Ranking', path: '/leaderboard' },
   { id: 'battle', label: '퀴즈배틀', icon: 'Battle', path: '/battle' },
   { id: 'profile', label: '프로필', icon: 'Profile', path: '/profile' },
+  { id: 'fundy', label: '펀디', icon: 'Profile', path: '/fundy' },
   { id: 'settings', label: '설정', icon: 'Setting', path: '/setting' },
 ] as const;
 

@@ -12,6 +12,10 @@ interface PlaySoundParams {
 
 const audioBufferCache = new Map<string, AudioBuffer>();
 let sharedAudioContext: AudioContext | null = null;
+const activeHtmlAudios = new Set<HTMLAudioElement>();
+const activeBufferSources = new Set<AudioBufferSourceNode>();
+const htmlAudioSourceMap = new Map<HTMLAudioElement, string>();
+const bufferSourceMap = new Map<AudioBufferSourceNode, string>();
 
 /**
  * 브라우저가 지원하면 공유 AudioContext 인스턴스를 반환합니다.
@@ -136,8 +140,18 @@ export const useSound = () => {
       audio.volume = finalVolume;
       audio.currentTime = currentTime;
       audio.playbackRate = playbackRate;
+      activeHtmlAudios.add(audio);
+      htmlAudioSourceMap.set(audio, src);
+      const handleEnded = () => {
+        activeHtmlAudios.delete(audio);
+        htmlAudioSourceMap.delete(audio);
+        audio.removeEventListener('ended', handleEnded);
+      };
+      audio.addEventListener('ended', handleEnded);
       audio.play().catch(error => {
         console.error('Failed to play sound:', error);
+        activeHtmlAudios.delete(audio);
+        htmlAudioSourceMap.delete(audio);
       });
       return;
     }
@@ -154,6 +168,12 @@ export const useSound = () => {
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.playbackRate.value = playbackRate;
+    activeBufferSources.add(source);
+    bufferSourceMap.set(source, src);
+    source.onended = () => {
+      activeBufferSources.delete(source);
+      bufferSourceMap.delete(source);
+    };
 
     const gainNode = audioContext.createGain();
     gainNode.gain.value = finalVolume;
@@ -165,5 +185,32 @@ export const useSound = () => {
     source.start(0, safeTime);
   };
 
-  return { playSound, preloadSound, resumeAudioContext, isAudioContextReady };
+  /**
+   * 재생 중인 사운드를 중지합니다.
+   * src를 지정하면 해당 리소스만 중지합니다.
+   */
+  const stopSound = (src?: string) => {
+    activeHtmlAudios.forEach(audio => {
+      const matches = !src || htmlAudioSourceMap.get(audio) === src;
+      if (!matches) return;
+      audio.pause();
+      audio.currentTime = 0;
+      activeHtmlAudios.delete(audio);
+      htmlAudioSourceMap.delete(audio);
+    });
+
+    activeBufferSources.forEach(source => {
+      const matches = !src || bufferSourceMap.get(source) === src;
+      if (!matches) return;
+      try {
+        source.stop(0);
+      } catch {
+        // ignore if already stopped
+      }
+      activeBufferSources.delete(source);
+      bufferSourceMap.delete(source);
+    });
+  };
+
+  return { playSound, stopSound, preloadSound, resumeAudioContext, isAudioContextReady };
 };

@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useId } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import type { Participant } from '@/feat/battle/types';
@@ -12,21 +13,37 @@ interface ParticipantsListProps {
 
 export const ParticipantsList = ({ participants, currentParticipantId }: ParticipantsListProps) => {
   const theme = useTheme();
+  const headingId = useId();
 
   return (
-    <div css={containerStyle}>
-      <h2 css={titleStyle(theme)}>PARTICIPANTS</h2>
+    <section css={containerStyle} aria-label="참가자 목록">
+      <h2 css={titleStyle(theme)} id={headingId}>
+        PARTICIPANTS
+      </h2>
       {!Array.isArray(participants) ? (
-        <div css={containerStyle}>참여자 목록을 불러오는 중...</div>
+        <output css={containerStyle} aria-live="polite">
+          참여자 목록을 불러오는 중...
+        </output>
       ) : (
         <div css={gridWrapperStyle}>
-          <div css={gridStyle}>
+          <ul css={gridStyle} aria-labelledby={headingId}>
             {participants.map((participant, index) => {
               const isCurrentUser = participant.participantId === currentParticipantId;
+              const isHost = participant.isHost;
               return (
-                <div key={participant.id} css={cardStyle(theme, isCurrentUser)}>
+                <li
+                  key={participant.id}
+                  css={cardStyle(theme, isCurrentUser)}
+                  aria-label={
+                    isHost
+                      ? `${participant.name}, 호스트${isCurrentUser ? ', 나' : ''}`
+                      : `${participant.name}${isCurrentUser ? ', 나' : ''}`
+                  }
+                >
                   <div css={leftInfoStyle}>
-                    <span css={numberStyle(theme)}>{index + 1}</span>
+                    <span css={numberStyle(theme)} aria-hidden="true">
+                      {index + 1}
+                    </span>
                     <Avatar
                       src={participant.profileImageUrl}
                       name={participant.name}
@@ -36,14 +53,18 @@ export const ParticipantsList = ({ participants, currentParticipantId }: Partici
                     />
                     <div css={nameStyle(theme)}>{participant.name}</div>
                   </div>
-                  {index === 0 && <span css={crownStyle}>👑</span>}
-                </div>
+                  {index === 0 && (
+                    <span css={crownStyle} aria-hidden="true">
+                      👑
+                    </span>
+                  )}
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
@@ -69,6 +90,9 @@ const gridWrapperStyle = css`
 `;
 
 const gridStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 15px;

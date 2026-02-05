@@ -11,7 +11,7 @@ import { Modal } from '@/components/Modal';
 import { UserSearchModal } from '@/feat/user/profile/components/UserSearchModal';
 import type { ProfileSearchUser } from '@/feat/user/profile/types';
 import { useFieldsQuery } from '@/hooks/queries/fieldQueries';
-import { useReviewQueueQuery } from '@/hooks/queries/progressQueries';
+import { useReviewQueueQuery, useTodayGoalsQuery } from '@/hooks/queries/progressQueries';
 import {
   useFollowUserMutation,
   useProfileSearchUsers,
@@ -22,12 +22,6 @@ import { useStorage } from '@/hooks/useStorage';
 import { useAuthUser, useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 import type { Theme } from '@/styles/theme';
-
-// TODO: 오늘의 목표 추가
-const TODAY_GOALS = [
-  { id: 'xp', label: '50 XP 획득하기', current: 0, target: 50 },
-  { id: 'lessons', label: '2개의 퀴즈 만점 받기', current: 0, target: 2 },
-] as const;
 
 export const LearnRightSidebar = ({
   fieldSlug,
@@ -57,6 +51,9 @@ export const LearnRightSidebar = ({
       enabled: isLoggedIn && isAuthReady,
     },
   );
+
+  const { data: todayGoalsData } = useTodayGoalsQuery({ enabled: isLoggedIn && isAuthReady });
+  const TODAY_GOALS = todayGoalsData ? [todayGoalsData.totalXP, todayGoalsData.perfectScore] : [];
 
   const diamondCount = user?.diamondCount ?? 0;
 
@@ -142,6 +139,15 @@ export const LearnRightSidebar = ({
   useEffect(() => {
     setFollowOverrides({});
   }, [debouncedKeyword]);
+
+  useEffect(() => {
+    if (!todayGoalsData?.rewardGranted) {
+      return;
+    }
+
+    // 오늘의 목표 달성했을 때, 다이아 바로 반영하기 위해 currentUser refetch
+    queryClient.refetchQueries({ queryKey: ['current-user'], type: 'active' });
+  }, [queryClient, todayGoalsData?.rewardGranted]);
 
   const shouldSearch = isSearchModalOpen && isLoggedIn && debouncedKeyword.length >= 1;
   const { data: searchUsers = [], isLoading: isSearchLoading } = useProfileSearchUsers(
@@ -271,13 +277,13 @@ export const LearnRightSidebar = ({
                 <span css={statIconStyle}>
                   <SVGIcon icon="Diamond" size="md" />
                 </span>
-                <span css={statValueStyle(theme)}>{diamondCount}</span>
+                <output css={statValueStyle(theme)}>{diamondCount}</output>
               </div>
               <div css={statContainerStyle(theme)}>
                 <span css={statIconStyle}>
                   <SVGIcon icon="Streak" size="md" />
                 </span>
-                <span css={statValueStyle(theme)}>{user.currentStreak}</span>
+                <output css={statValueStyle(theme)}>{user.currentStreak}</output>
               </div>
             </>
           )}
@@ -286,7 +292,7 @@ export const LearnRightSidebar = ({
             <span css={statIconStyle}>
               <SVGIcon icon="Heart" size="lg" />
             </span>
-            <span css={statValueStyle(theme)}>{heartCount}</span>
+            <output css={statValueStyle(theme)}>{heartCount}</output>
           </div>
         </div>
 
@@ -316,24 +322,30 @@ export const LearnRightSidebar = ({
               </span>
               <span css={cardTitleStyle(theme)}>오늘의 목표</span>
             </div>
-            <div css={goalsContentStyle}>
+            <ul css={goalsListStyle}>
               {TODAY_GOALS.map(goal => (
-                <div key={goal.id} css={goalItemStyle}>
+                <li key={goal.id} css={goalItemStyle}>
                   <div css={goalLabelContainerStyle}>
                     <span css={goalLabelStyle(theme)}>{goal.label}</span>
-                    <span css={goalLabelStyle(theme)}>
+                    <output css={goalLabelStyle(theme)}>
                       {goal.current}/{goal.target}
-                    </span>
+                    </output>
                   </div>
                   <div css={progressBarContainerStyle(theme)}>
                     <div
                       css={progressBarStyle(theme, (goal.current / goal.target) * 100)}
                       role="progressbar"
+                      aria-valuenow={Math.round(
+                        Math.min(100, Math.max(0, (goal.current / goal.target) * 100)),
+                      )}
+                      aria-label="오늘의 목표 진행률"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
                     />
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
           <div css={cardStyle(theme)}>
@@ -371,7 +383,9 @@ export const LearnRightSidebar = ({
           )}
         </div>
 
-        <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
+        {!import.meta.env.DEV && (
+          <div data-boostad-zone css={[cardStyle(theme), boostadZoneOverride]}></div>
+        )}
 
         {isSearchModalOpen && (
           <Modal
@@ -588,7 +602,10 @@ const overlayTitleStyle = (theme: Theme) => css`
   color: ${theme.colors.text.strong};
 `;
 
-const goalsContentStyle = css`
+const goalsListStyle = css`
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -634,4 +651,8 @@ const boostadZoneOverride = css`
   }
 
   min-height: 107px;
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
 `;

@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { QuizCode } from '@/feat/quiz/components/quizType/QuizCode';
 import { QuizMatching } from '@/feat/quiz/components/quizType/QuizMatching';
 import { QuizMCQ } from '@/feat/quiz/components/quizType/QuizMCQ';
@@ -15,6 +17,7 @@ interface QuizRendererProps {
   selectedAnswer: AnswerType | null;
   correctAnswer: CorrectAnswerType | null;
   onAnswerChange: (answer: AnswerType) => void;
+  onSelectPosition?: (position: { x: number; y: number }) => void;
   showResult: boolean;
   disabled: boolean;
 }
@@ -26,10 +29,10 @@ const QUIZ_MAP: Record<QuizType, React.ComponentType<QuizComponentProps>> = {
   matching: QuizMatching as React.ComponentType<QuizComponentProps>,
 };
 
-export const QuizRenderer = ({ question, ...props }: QuizRendererProps) => {
+export const QuizRenderer = memo(({ question, ...props }: QuizRendererProps) => {
   const Component = QUIZ_MAP[question.type];
 
   if (!Component) return <div>지원하지 않는 퀴즈 유형입니다: {question.type}</div>;
 
   return <Component content={question.content} {...props} />;
-};
+});

@@ -1,12 +1,17 @@
 import { css, keyframes, type Theme, useTheme } from '@emotion/react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import SVGIcon from '@/comp/SVGIcon';
 import { Loading } from '@/components/Loading';
 import { InfoLeaderBoardModal } from '@/feat/leaderboard/components/InfoLeaderBoardModal';
 import { LeaderboardStateMessage } from '@/feat/leaderboard/components/LeaderboardStateMessage';
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
-import type { OverallRankingResult, WeeklyRankingResult } from '@/feat/leaderboard/types';
+import type {
+  OverallRankingResult,
+  RankingMember,
+  WeeklyRankingResult,
+} from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
@@ -38,6 +43,7 @@ export const LeaderboardContainer = ({
   const theme = useTheme();
   const { openModal } = useModal();
   const [activeLeaderboardView, setActiveLeaderboardView] = useState<LeaderboardView>('MY_LEAGUE');
+  const navigate = useNavigate();
 
   const isMyLeagueView = activeLeaderboardView === 'MY_LEAGUE';
   const isOverallView = activeLeaderboardView === 'OVERALL';
@@ -53,6 +59,9 @@ export const LeaderboardContainer = ({
 
   const handleSelectOverall = () => {
     setActiveLeaderboardView('OVERALL');
+  };
+  const handleMoveToProfile = (member: RankingMember) => {
+    navigate(`/profile/${member.userId}`);
   };
 
   const activeErrorMessage = isMyLeagueView ? weeklyErrorMessage : overallErrorMessage;
@@ -79,7 +88,9 @@ export const LeaderboardContainer = ({
       ? `${weeklyRanking.tier.name} 리그`
       : ''
     : '전체 순위';
-  const tierIconName = isMyLeagueView ? getTierIconName(weeklyRanking?.tier.name) : null;
+
+  const tierIconName =
+    isMyLeagueView && weeklyRanking?.tier ? getTierIconName(weeklyRanking.tier.name) : null;
   const groupedMembers =
     weeklyRanking && isMyLeagueView ? groupMembersByZone(weeklyRanking.members) : null;
   const remainingDaysText = activeRanking ? buildRemainingDaysText(activeRanking.weekKey) : '';
@@ -90,13 +101,6 @@ export const LeaderboardContainer = ({
     : '';
   const overallMembers = [...(overallRanking?.members ?? [])]
     .sort((left, right) => {
-      const leftTierOrderIndex = left.tierOrderIndex ?? 0;
-      const rightTierOrderIndex = right.tierOrderIndex ?? 0;
-
-      if (leftTierOrderIndex !== rightTierOrderIndex) {
-        return rightTierOrderIndex - leftTierOrderIndex;
-      }
-
       if (left.xp !== right.xp) {
         return right.xp - left.xp;
       }
@@ -109,7 +113,7 @@ export const LeaderboardContainer = ({
     }));
 
   return (
-    <main css={pageStyle}>
+    <section css={pageStyle} aria-label="리더보드">
       <div css={pageContentStyle}>
         <header css={headerStyle}>
           <h1 css={pageTitleStyle(theme)}>LEADERBOARD</h1>
@@ -120,8 +124,9 @@ export const LeaderboardContainer = ({
               type="button"
               disabled={isRefreshing}
               aria-label="리더보드 새로고침"
+              aria-busy={isRefreshing}
             >
-              <SVGIcon icon="Refresh" size="sm" />
+              <SVGIcon icon="Refresh" size="sm" aria-hidden="true" />
             </button>
           )}
         </header>
@@ -152,12 +157,14 @@ export const LeaderboardContainer = ({
         </section>
 
         {isLoading ? (
-          <Loading text="랭킹 정보를 불러오는 중입니다." />
+          <div role="status" aria-live="polite" aria-label="랭킹 로딩 중">
+            <Loading text="랭킹 정보를 불러오는 중입니다." />
+          </div>
         ) : stateType !== 'normal' ? (
           <LeaderboardStateMessage state={stateType} message={stateMessage} />
         ) : (
           <>
-            <section css={summaryCardStyle(theme)} data-section="summary">
+            <section css={summaryCardStyle(theme)} data-section="summary" aria-label="리그 요약">
               <div>
                 <div css={summaryMainStyle}>
                   {tierIconName && (
@@ -186,13 +193,20 @@ export const LeaderboardContainer = ({
               <div css={summaryRightStyle(theme)}>{remainingDaysText}</div>
             </section>
 
-            <section css={leaderboardCardStyle(theme)} data-section="ranking">
+            <section
+              css={leaderboardCardStyle(theme)}
+              data-section="ranking"
+              aria-label="주간 랭킹"
+            >
               {isMyLeagueView ? (
                 <>
                   {weeklyRanking!.tier.name !== 'MASTER' && (
-                    <div css={zoneSectionStyle}>
-                      <MemberList members={groupedMembers!.promotion} />
-                      <div css={zoneHeaderStyle(theme, 'PROMOTION')}>
+                    <div css={zoneSectionStyle} role="region" aria-label="승급권 구역">
+                      <MemberList
+                        members={groupedMembers!.promotion}
+                        onMemberClick={handleMoveToProfile}
+                      />
+                      <div css={zoneHeaderStyle(theme, 'PROMOTION')} aria-hidden="true">
                         <SVGIcon
                           style={{ transform: 'rotate(90deg)', color: theme.colors.success.main }}
                           icon="ArrowLeft"
@@ -202,13 +216,16 @@ export const LeaderboardContainer = ({
                       </div>
                     </div>
                   )}
-                  <div css={zoneSectionStyle}>
-                    <MemberList members={groupedMembers!.maintain} />
+                  <div css={zoneSectionStyle} role="region" aria-label="유지 구역">
+                    <MemberList
+                      members={groupedMembers!.maintain}
+                      onMemberClick={handleMoveToProfile}
+                    />
                   </div>
                   {/* BRONZE가 아닐 때만 강등권 표시 */}
                   {weeklyRanking!.tier.name !== 'BRONZE' && (
-                    <div css={zoneSectionStyle}>
-                      <div css={zoneHeaderStyle(theme, 'DEMOTION')}>
+                    <div css={zoneSectionStyle} role="region" aria-label="강등권 구역">
+                      <div css={zoneHeaderStyle(theme, 'DEMOTION')} aria-hidden="true">
                         <SVGIcon
                           icon="ArrowLeft"
                           style={{ transform: 'rotate(270deg)', color: theme.colors.error.main }}
@@ -216,17 +233,21 @@ export const LeaderboardContainer = ({
                         />
                         <span>강등권</span>
                       </div>
-                      <MemberList members={groupedMembers!.demotion} />
+                      <MemberList
+                        members={groupedMembers!.demotion}
+                        onMemberClick={handleMoveToProfile}
+                      />
                     </div>
                   )}
                 </>
               ) : (
-                <div css={zoneSectionStyle}>
+                <div css={zoneSectionStyle} role="region" aria-label="전체 순위">
                   <MemberList
                     members={overallMembers}
                     emptyMessage="이번 주 랭킹에 인원이 없습니다."
                     showRankZoneIcon={false}
                     xpLabel="XP"
+                    onMemberClick={handleMoveToProfile}
                   />
                 </div>
               )}
@@ -234,7 +255,7 @@ export const LeaderboardContainer = ({
           </>
         )}
       </div>
-    </main>
+    </section>
   );
 };
 

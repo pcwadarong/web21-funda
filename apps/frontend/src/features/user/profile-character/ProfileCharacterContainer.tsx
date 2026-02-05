@@ -68,7 +68,7 @@ export const ProfileCharacterContainer = ({
   };
 
   return (
-    <main css={pageStyle(theme)}>
+    <section css={pageStyle()} aria-label="캐릭터 프로필 설정">
       <div css={contentStyle}>
         <header css={headerStyle}>
           <div css={headerTopRowStyle}>
@@ -171,15 +171,15 @@ export const ProfileCharacterContainer = ({
           </Popover>
         </section>
       </div>
-    </main>
+    </section>
   );
 };
 
-const pageStyle = (theme: Theme) => css`
+const pageStyle = () => css`
   flex: 1;
   min-height: 100vh;
   padding: 2rem 1.5rem 0;
-  background: ${theme.colors.surface.default};
+  background: transparent;
 `;
 
 const contentStyle = css`
@@ -266,7 +266,7 @@ const loadingStyle = (theme: Theme) => css`
   grid-column: 1 / -1;
   padding: 1.5rem;
   border-radius: ${theme.borderRadius.medium};
-  background: ${theme.colors.surface.default};
+  background: transparent;
   color: ${theme.colors.text.weak};
   text-align: center;
 `;

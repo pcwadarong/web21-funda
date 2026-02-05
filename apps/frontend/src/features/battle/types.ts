@@ -35,6 +35,7 @@ export interface BattleParticipant {
   userId: number | null; // 로그인 유저는 ID, 비로그인은 null
   displayName: string; // 화면에 표시할 닉네임
   score: number; // 현재 누적 점수
+  scoreDelta: number; // 최근 점수 변화량
   avatar?: string; // 프로필 이미지 URL (선택)
   isHost: boolean; // 방장 여부
   isConnected: boolean; // 현재 연결 여부
@@ -69,6 +70,7 @@ export interface Participant {
   avatar?: string;
   participantId: string;
   profileImageUrl?: string; // 로그인 사용자 프로필 이미지
+  isHost: boolean;
 }
 
 /**

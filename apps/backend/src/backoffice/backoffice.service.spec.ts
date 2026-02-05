@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import type { DataSource, EntityManager, Repository } from 'typeorm';
 
+import { RedisService } from '../common/redis/redis.service';
 import { Unit } from '../roadmap/entities/unit.entity';
 
 import { BackofficeService } from './backoffice.service';
@@ -11,6 +12,7 @@ describe('BackofficeService', () => {
   let manager: Partial<EntityManager>;
   let unitRepository: Partial<Repository<Unit>>;
   let transactionMock: jest.Mock;
+  let redisService: Partial<RedisService>;
 
   beforeEach(() => {
     unitRepository = {
@@ -34,7 +36,11 @@ describe('BackofficeService', () => {
       transaction: transactionMock as DataSource['transaction'],
     };
 
-    service = new BackofficeService(dataSource as DataSource);
+    redisService = {
+      del: jest.fn(),
+    };
+
+    service = new BackofficeService(dataSource as DataSource, redisService as RedisService);
   });
 
   it('유닛 개요를 업로드하면 해당 유닛의 개요를 업데이트한다', async () => {

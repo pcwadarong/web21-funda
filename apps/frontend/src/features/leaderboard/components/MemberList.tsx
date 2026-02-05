@@ -11,6 +11,7 @@ interface MemberListProps {
   emptyMessage?: string;
   showRankZoneIcon?: boolean;
   xpLabel?: string;
+  onMemberClick?: (member: RankingMember) => void;
 }
 
 export const MemberList = ({
@@ -18,19 +19,33 @@ export const MemberList = ({
   emptyMessage = '해당 구역에 인원이 없습니다.',
   showRankZoneIcon = true,
   xpLabel = 'XP',
+  onMemberClick,
 }: MemberListProps) => {
   const theme = useTheme();
+  const canClickMember = typeof onMemberClick === 'function';
 
-  if (members.length === 0) return <div css={emptyTextStyle(theme)}>{emptyMessage}</div>;
+  if (members.length === 0)
+    return (
+      <div css={emptyTextStyle(theme)} role="status" aria-label={emptyMessage}>
+        {emptyMessage}
+      </div>
+    );
 
   return (
-    <ol css={listStyle}>
+    <ol css={listStyle} aria-label="랭킹 목록">
       {members.map(member => (
         <RankingRow
           key={member.userId}
           member={member}
           showRankZoneIcon={showRankZoneIcon}
           xpLabel={xpLabel}
+          onClick={
+            canClickMember
+              ? () => {
+                  onMemberClick(member);
+                }
+              : undefined
+          }
         />
       ))}
     </ol>

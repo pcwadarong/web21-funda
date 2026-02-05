@@ -2,6 +2,9 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
+  Param,
+  Patch,
   Post,
   UploadedFiles,
   UseGuards,
@@ -13,6 +16,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
@@ -20,6 +24,10 @@ import {
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 
+import type {
+  AdminProfileCharacterItem,
+  AdminProfileCharacterUpdateRequest,
+} from './dto/profile-character-admin.dto';
 import type { ProfileCharacterUploadSummary } from './dto/profile-characters-upload.dto';
 import type { UploadedQuizFile } from './dto/quizzes-upload.dto';
 import { BackofficeService } from './backoffice.service';
@@ -180,6 +188,44 @@ export class BackofficeController {
     },
   ) {
     return this.backofficeService.createProfileCharacter(payload);
+  }
+
+  @Get('profile-characters')
+  @ApiOperation({
+    summary: '프로필 캐릭터 목록 조회',
+    description: '관리자용 프로필 캐릭터 목록을 반환합니다.',
+  })
+  @ApiOkResponse({
+    description: '프로필 캐릭터 목록 조회 성공',
+  })
+  async getProfileCharacters(): Promise<AdminProfileCharacterItem[]> {
+    return this.backofficeService.getProfileCharactersForAdmin();
+  }
+
+  @Patch('profile-characters/:characterId')
+  @ApiOperation({
+    summary: '프로필 캐릭터 정보 수정',
+    description: '가격과 노출 여부를 수정합니다.',
+  })
+  @ApiOkResponse({
+    description: '프로필 캐릭터 수정 성공',
+    schema: {
+      example: {
+        id: 10,
+        updated: true,
+      },
+    },
+  })
+  async updateProfileCharacter(
+    @Param('characterId') characterIdParam: string,
+    @Body() payload: AdminProfileCharacterUpdateRequest,
+  ) {
+    const characterId = Number(characterIdParam);
+    if (!Number.isInteger(characterId) || characterId <= 0) {
+      throw new BadRequestException('유효한 캐릭터 ID가 필요합니다.');
+    }
+
+    return this.backofficeService.updateProfileCharacterForAdmin(characterId, payload);
   }
 
   @Post('profile-characters/upload')

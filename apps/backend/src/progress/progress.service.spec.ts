@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 
 import type { QuizContentService } from '../common/utils/quiz-content.service';
+import { DEFAULT_TODAY_GOALS } from '../common/utils/today-goals';
 import type { QuizResponse } from '../roadmap/dto/quiz-list.dto';
 import { CheckpointQuizPool, Quiz, Step } from '../roadmap/entities';
 import { User } from '../users/entities';
@@ -30,10 +31,14 @@ describe('ProgressService', () => {
   let stepStatusFindOneMock: jest.Mock;
   let stepStatusSaveMock: jest.Mock;
   let stepStatusCreateMock: jest.Mock;
+  let stepStatusCountMock: jest.Mock;
   let stepFindOneMock: jest.Mock;
   let quizCountMock: jest.Mock;
   let checkpointPoolCountMock: jest.Mock;
   let userIncrementMock: jest.Mock;
+  let userFindOneMock: jest.Mock;
+  let userSaveMock: jest.Mock;
+  let userUpdateMock: jest.Mock;
   let userQuizStatusQueryBuilderMock: {
     innerJoinAndSelect: jest.Mock;
     innerJoin: jest.Mock;
@@ -54,10 +59,14 @@ describe('ProgressService', () => {
     stepStatusFindOneMock = jest.fn();
     stepStatusSaveMock = jest.fn();
     stepStatusCreateMock = jest.fn(entity => entity);
+    stepStatusCountMock = jest.fn();
     stepFindOneMock = jest.fn().mockResolvedValue({ id: 1 } as Step);
     quizCountMock = jest.fn().mockResolvedValue(0);
     checkpointPoolCountMock = jest.fn().mockResolvedValue(0);
     userIncrementMock = jest.fn().mockResolvedValue({});
+    userFindOneMock = jest.fn();
+    userSaveMock = jest.fn();
+    userUpdateMock = jest.fn().mockResolvedValue({});
     quizResponseMock = jest.fn();
     userQuizStatusQueryBuilderMock = {
       innerJoinAndSelect: jest.fn().mockReturnThis(),
@@ -82,6 +91,7 @@ describe('ProgressService', () => {
       findOne: stepStatusFindOneMock,
       save: stepStatusSaveMock,
       create: stepStatusCreateMock,
+      count: stepStatusCountMock,
     };
     stepRepository = {
       findOne: stepFindOneMock,
@@ -94,6 +104,9 @@ describe('ProgressService', () => {
     };
     userRepository = {
       increment: userIncrementMock,
+      findOne: userFindOneMock,
+      save: userSaveMock,
+      update: userUpdateMock,
     };
     userQuizStatusRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(userQuizStatusQueryBuilderMock),
@@ -136,20 +149,17 @@ describe('ProgressService', () => {
       { isCorrect: true },
     ] as SolveLog[]);
 
-    const result = await service.calculateStepAttemptScore(2, {
-      baseScorePerQuiz: 3,
-      correctBonus: 2,
-      wrongBonus: -1,
-    });
+    const result = await service.calculateStepAttemptScore(2);
 
-    // 점수 계산: (3+2) + (3-1) + (3+2) = 12
-    expect(result.score).toBe(12);
+    // 점수 계산: (3+1) + (3+0) + (3+1) = 11
+    expect(result.score).toBe(11);
     expect(result.correctCount).toBe(2);
     expect(result.totalQuizzes).toBe(3);
     expect(result.successRate).toBeCloseTo((2 / 3) * 100);
   });
 
   it('스텝 시도를 생성한다', async () => {
+    stepFindOneMock.mockResolvedValueOnce({ id: 3 } as Step);
     stepAttemptFindOneMock.mockResolvedValue({ attemptNo: 2 } as UserStepAttempt);
     quizCountMock.mockResolvedValue(5);
     stepAttemptSaveMock.mockResolvedValue({ id: 10 });
@@ -195,6 +205,11 @@ describe('ProgressService', () => {
       isCompleted: false,
       bestScore: 8,
     } as UserStepStatus);
+    userFindOneMock.mockResolvedValue({
+      id: 1,
+      currentStreak: 3,
+      lastStreakUpdatedAt: new Date(),
+    } as User);
 
     const result = await service.completeStepAttempt({
       userId: 1,
@@ -211,14 +226,15 @@ describe('ProgressService', () => {
     expect(stepStatusSaveMock).toHaveBeenCalled();
     const expectedDuration = Math.floor((Date.now() - startedAt.getTime()) / 1000);
     expect(result).toEqual({
-      score: 9,
-      experience: 9,
+      score: 11,
+      experience: 11,
       correctCount: 2,
       totalQuizzes: 4,
       answeredQuizzes: 3,
       successRate: (2 / 4) * 100,
       durationSeconds: result.durationSeconds,
-      firstSolve: false,
+      isFirstSolveToday: false,
+      currentStreak: 3,
     });
     expect(result.durationSeconds).toBeGreaterThanOrEqual(expectedDuration - 1);
     expect(result.durationSeconds).toBeLessThanOrEqual(expectedDuration + 2);
@@ -244,6 +260,11 @@ describe('ProgressService', () => {
     });
     solveLogFindMock.mockResolvedValue([{ isCorrect: true } as SolveLog]);
     stepStatusFindOneMock.mockResolvedValue(null);
+    userFindOneMock.mockResolvedValue({
+      id: 1,
+      currentStreak: 1,
+      lastStreakUpdatedAt: new Date(),
+    } as User);
 
     const result = await service.completeStepAttempt({
       userId: 1,
@@ -255,7 +276,7 @@ describe('ProgressService', () => {
       where: { id: 30, userId: 1, step: { id: 7 }, status: StepAttemptStatus.IN_PROGRESS },
     });
     expect(result).toMatchObject({
-      score: 3,
+      score: 4,
       correctCount: 1,
       totalQuizzes: 2,
     });
@@ -389,5 +410,65 @@ describe('ProgressService', () => {
 
     expect(fieldFilterCall).toBeDefined();
     expect(userQuizStatusQueryBuilderMock.take).toHaveBeenCalledWith(10);
+  });
+
+  describe('getTodayGoals', () => {
+    it('목표를 모두 달성했으면 오늘 최초 1회 다이아를 지급한다', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-02-04T00:00:00.000Z'));
+
+      jest.spyOn(service, 'calculateScore').mockReturnValue(DEFAULT_TODAY_GOALS.totalXP.target);
+
+      stepStatusFindOneMock.mockResolvedValue(null);
+      stepStatusCountMock.mockResolvedValue(DEFAULT_TODAY_GOALS.perfectScore.target);
+      solveLogFindMock.mockResolvedValue(
+        Array.from({ length: 13 }, () => ({ isCorrect: true }) as SolveLog),
+      );
+      userFindOneMock.mockResolvedValue({
+        id: 1,
+        lastDailyGoalRewardedAt: null,
+      } as User);
+
+      await service.getTodayGoals(1);
+
+      expect(userIncrementMock).toHaveBeenCalledWith({ id: 1 }, 'diamondCount', 1);
+      expect(userUpdateMock).toHaveBeenCalledWith(
+        { id: 1 },
+        { lastDailyGoalRewardedAt: expect.any(Date) },
+      );
+
+      jest.restoreAllMocks();
+      jest.useRealTimers();
+    });
+
+    it('이미 오늘 보상을 받았다면 다이아를 추가 지급하지 않는다', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-02-04T00:00:00.000Z'));
+
+      stepStatusCountMock.mockResolvedValue(DEFAULT_TODAY_GOALS.perfectScore.target);
+      solveLogFindMock.mockResolvedValue([{ isCorrect: true } as SolveLog]);
+      userFindOneMock.mockResolvedValue({
+        id: 1,
+        lastDailyGoalRewardedAt: new Date('2026-02-04T01:00:00.000Z'),
+      } as User);
+
+      await service.getTodayGoals(1);
+
+      expect(userIncrementMock).not.toHaveBeenCalled();
+      expect(userUpdateMock).not.toHaveBeenCalled();
+
+      jest.useRealTimers();
+    });
+
+    it('목표를 달성하지 못했으면 보상을 지급하지 않는다', async () => {
+      stepStatusCountMock.mockResolvedValue(0);
+      solveLogFindMock.mockResolvedValue([]);
+
+      await service.getTodayGoals(1);
+
+      expect(userFindOneMock).not.toHaveBeenCalled();
+      expect(userIncrementMock).not.toHaveBeenCalled();
+      expect(userUpdateMock).not.toHaveBeenCalled();
+    });
   });
 });

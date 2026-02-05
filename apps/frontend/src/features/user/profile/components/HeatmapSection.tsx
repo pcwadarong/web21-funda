@@ -198,6 +198,13 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                   }
                 };
 
+                const handleCellClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+                  if (isInteractive) {
+                    handleCellMouseEnter(e, dayDate, solvedCount);
+                    e.currentTarget.focus();
+                  }
+                };
+
                 return (
                   <span
                     key={`cell-${index}`}
@@ -213,6 +220,7 @@ export const HeatmapSection = memo(({ months = 12, streaks = [] }: HeatmapSectio
                       isInteractive ? e => handleCellMouseEnter(e, dayDate, solvedCount) : undefined
                     }
                     onMouseLeave={isInteractive ? handleCellMouseLeave : undefined}
+                    onClick={isInteractive ? handleCellClick : undefined}
                     onFocus={isInteractive ? handleCellInteraction : undefined}
                     onBlur={isInteractive ? handleCellMouseLeave : undefined}
                     onKeyDown={isInteractive ? handleCellKeyDown : undefined}
@@ -334,6 +342,7 @@ const weekDayLabelRowStyle = css`
   display: flex;
   flex-direction: column;
   margin-top: -0.2rem;
+  gap: 0.2rem;
 `;
 
 const weekDayLabelStyle = (theme: Theme) => css`

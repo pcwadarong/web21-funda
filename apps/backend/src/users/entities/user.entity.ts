@@ -93,6 +93,10 @@ export class User {
   @Column({ name: 'last_streak_updated_at', type: 'datetime', nullable: true })
   lastStreakUpdatedAt?: Date | null;
 
+  // 일일 목표 보상 지급 여부를 확인하기 위한 최근 지급 시각
+  @Column({ name: 'last_daily_goal_rewarded_at', type: 'datetime', nullable: true })
+  lastDailyGoalRewardedAt?: Date | null;
+
   @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
   lastLoginAt?: Date | null;
 

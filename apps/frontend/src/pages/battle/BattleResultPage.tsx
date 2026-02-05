@@ -6,12 +6,14 @@ import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
 
 export const BattleResultPage = () => {
   const navigate = useNavigate();
-  const { battleState, restartBattle, leaveBattle, disconnect } = useBattleSocket();
+  const { battleState, restartBattle, leaveBattle, disconnect } = useBattleSocket({
+    listen: false,
+  });
 
   const { rankings, participants, rewards, roomId, inviteToken } = battleState;
 
   // 15초 타이머
-  const [timeLeft, setTimeLeft] = useState(8);
+  const [timeLeft, setTimeLeft] = useState(15);
 
   // 타이머 로직: 1초마다 감소
   useEffect(() => {

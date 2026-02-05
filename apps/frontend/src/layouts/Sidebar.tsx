@@ -310,6 +310,7 @@ const activeNavItemStyle = (theme: Theme, isDarkMode: boolean) => css`
 
   @media (max-width: 768px) {
     background: transparent;
+    color: ${isDarkMode ? theme.colors.primary.light : theme.colors.primary.main};
   }
 `;
 

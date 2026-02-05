@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { Response } from 'express';
 import { Repository } from 'typeorm';
 
+import { CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { UserStepStatus } from '../progress/entities';
 import { Step } from '../roadmap/entities';
@@ -73,7 +74,7 @@ export class AuthService {
     // Redis에서 비로그인 사용자의 데이터 동기화
     if (clientId) {
       // 1. step_ids 동기화
-      const stepIdsData = await this.redisService.get(`step_ids:${clientId}`);
+      const stepIdsData = await this.redisService.get(CacheKeys.guestStepIds(clientId));
       if (stepIdsData) {
         const stepIds = stepIdsData as number[];
 
@@ -98,11 +99,11 @@ export class AuthService {
         }
 
         // Redis step_ids 삭제
-        await this.redisService.del(`step_ids:${clientId}`);
+        await this.redisService.del(CacheKeys.guestStepIds(clientId));
       }
 
       // 2. heart 동기화
-      const heartFromRedis = await this.redisService.get(`heart:${clientId}`);
+      const heartFromRedis = await this.redisService.get(CacheKeys.guestHeart(clientId));
 
       if (heartFromRedis !== null && heartFromRedis !== undefined) {
         const heartValue =
@@ -113,7 +114,7 @@ export class AuthService {
         await this.users.save(user);
 
         // Redis heart 삭제
-        await this.redisService.del(`heart:${clientId}`);
+        await this.redisService.del(CacheKeys.guestHeart(clientId));
       }
     }
 

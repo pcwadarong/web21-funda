@@ -24,7 +24,7 @@ export function BattleFlowLayout() {
   const inviteToken = useBattleStore(state => state.inviteToken);
 
   // 소켓 이벤트 리스닝 및 스토어 업데이트
-  useBattleSocket();
+  useBattleSocket({ listen: true });
 
   // 배틀 상태 기반 라우팅 관리
   useBattleFlow();

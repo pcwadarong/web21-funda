@@ -1,12 +1,18 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
+import { CacheKeys } from '../common/cache/cache-keys';
+import { RedisService } from '../common/redis/redis.service';
 import { ProfileCharacter } from '../profile/entities/profile-character.entity';
 import { Field } from '../roadmap/entities/field.entity';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 import { Step } from '../roadmap/entities/step.entity';
 import { Unit } from '../roadmap/entities/unit.entity';
 
+import type {
+  AdminProfileCharacterItem,
+  AdminProfileCharacterUpdateRequest,
+} from './dto/profile-character-admin.dto';
 import type {
   ProfileCharacterJsonlRow,
   ProfileCharacterUploadSummary,
@@ -25,7 +31,10 @@ interface UpsertResult<T> {
 
 @Injectable()
 export class BackofficeService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly redisService: RedisService,
+  ) {}
 
   async uploadQuizzesFromJsonl(fileBuffer: Buffer): Promise<UploadSummary> {
     if (!fileBuffer || fileBuffer.length === 0) {
@@ -50,6 +59,9 @@ export class BackofficeService {
       quizzesUpdated: 0,
     };
 
+    const changedFieldSlugs = new Set<string>();
+    const changedQuizIds = new Set<number>();
+
     // 트랜잭션 처리
     await this.dataSource.transaction(async manager => {
       for (const [index, row] of rows.entries()) {
@@ -60,6 +72,7 @@ export class BackofficeService {
         const fieldResult = await this.upsertField(row, manager);
         summary.fieldsCreated += fieldResult.created ? 1 : 0;
         summary.fieldsUpdated += fieldResult.updated ? 1 : 0;
+        changedFieldSlugs.add(fieldResult.entity.slug);
 
         const unitResult = await this.upsertUnit(row, fieldResult.entity, manager);
         summary.unitsCreated += unitResult.created ? 1 : 0;
@@ -72,8 +85,12 @@ export class BackofficeService {
         const quizResult = await this.upsertQuiz(row, stepResult.entity, manager, lineNumber);
         summary.quizzesCreated += quizResult.created ? 1 : 0;
         summary.quizzesUpdated += quizResult.updated ? 1 : 0;
+        changedQuizIds.add(quizResult.entity.id);
       }
     });
+
+    await this.invalidateRoadmapCache(changedFieldSlugs);
+    await this.invalidateQuizContentCache(changedQuizIds);
 
     return summary;
   }
@@ -99,6 +116,8 @@ export class BackofficeService {
       unitsNotFound: 0,
     };
 
+    const updatedUnitIds = new Set<number>();
+
     await this.dataSource.transaction(async manager => {
       const repository = manager.getRepository(Unit);
 
@@ -123,9 +142,12 @@ export class BackofficeService {
           unit.overview = overview;
           await repository.save(unit);
           summary.unitsUpdated += 1;
+          updatedUnitIds.add(unit.id);
         }
       }
     });
+
+    await this.invalidateUnitOverviewCache(updatedUnitIds);
 
     return summary;
   }
@@ -198,6 +220,119 @@ export class BackofficeService {
       created: result.created,
       updated: !!result.updated,
     };
+  }
+
+  /**
+   * 관리자용 프로필 캐릭터 목록을 조회한다.
+   *
+   * @returns 관리자용 프로필 캐릭터 목록
+   */
+  async getProfileCharactersForAdmin(): Promise<AdminProfileCharacterItem[]> {
+    const repository = this.dataSource.getRepository(ProfileCharacter);
+    const characters = await repository.find({ order: { id: 'ASC' } });
+
+    return characters.map(character => ({
+      id: character.id,
+      name: character.name,
+      imageUrl: character.imageUrl,
+      priceDiamonds: character.priceDiamonds,
+      description: character.description ?? null,
+      isActive: character.isActive,
+      createdAt: character.createdAt,
+      updatedAt: character.updatedAt,
+    }));
+  }
+
+  /**
+   * 관리자용 프로필 캐릭터 정보를 수정한다.
+   *
+   * @param characterId 수정할 캐릭터 ID
+   * @param payload 수정할 값
+   * @returns 수정 결과
+   */
+  async updateProfileCharacterForAdmin(
+    characterId: number,
+    payload: AdminProfileCharacterUpdateRequest,
+  ): Promise<{ id: number; updated: boolean }> {
+    if (!Number.isInteger(characterId) || characterId <= 0) {
+      throw new BadRequestException('유효한 캐릭터 ID가 필요합니다.');
+    }
+
+    if (!Number.isFinite(payload.priceDiamonds) || payload.priceDiamonds < 0) {
+      throw new BadRequestException('가격은 0 이상의 숫자여야 합니다.');
+    }
+
+    if (typeof payload.isActive !== 'boolean') {
+      throw new BadRequestException('노출 여부 값이 올바르지 않습니다.');
+    }
+
+    const repository = this.dataSource.getRepository(ProfileCharacter);
+    const character = await repository.findOne({ where: { id: characterId } });
+
+    if (!character) {
+      throw new NotFoundException('프로필 캐릭터를 찾을 수 없습니다.');
+    }
+
+    character.priceDiamonds = payload.priceDiamonds;
+    character.isActive = payload.isActive;
+
+    const saved = await repository.save(character);
+
+    return { id: saved.id, updated: true };
+  }
+
+  /**
+   * 업로드로 변경된 로드맵 캐시를 무효화한다.
+   */
+  private async invalidateRoadmapCache(fieldSlugs: Set<string>): Promise<void> {
+    if (fieldSlugs.size === 0) {
+      return;
+    }
+
+    await this.safeDeleteCacheKey(CacheKeys.fieldList());
+
+    for (const slug of fieldSlugs) {
+      const unitsKey = CacheKeys.fieldUnits(slug);
+      const firstUnitKey = CacheKeys.firstUnit(slug);
+      await this.safeDeleteCacheKey(unitsKey);
+      await this.safeDeleteCacheKey(firstUnitKey);
+    }
+  }
+
+  /**
+   * 퀴즈 콘텐츠 캐시를 무효화한다.
+   */
+  private async invalidateQuizContentCache(quizIds: Set<number>): Promise<void> {
+    if (quizIds.size === 0) {
+      return;
+    }
+
+    for (const quizId of quizIds) {
+      const cacheKey = CacheKeys.quizContent(quizId);
+      await this.safeDeleteCacheKey(cacheKey);
+    }
+  }
+
+  /**
+   * 유닛 개요 캐시를 무효화한다.
+   */
+  private async invalidateUnitOverviewCache(unitIds: Set<number>): Promise<void> {
+    if (unitIds.size === 0) {
+      return;
+    }
+
+    for (const unitId of unitIds) {
+      const cacheKey = CacheKeys.unitOverview(unitId);
+      await this.safeDeleteCacheKey(cacheKey);
+    }
+  }
+
+  private async safeDeleteCacheKey(cacheKey: string): Promise<void> {
+    try {
+      await this.redisService.del(cacheKey);
+    } catch {
+      // 캐시 삭제 실패는 업로드 흐름을 막지 않는다.
+    }
   }
 
   /**

@@ -1,78 +1,14 @@
-import { css, useTheme } from '@emotion/react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '@/comp/Button';
-import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
-import type { Theme } from '@/styles/theme';
+import { ServicePreparationContainer } from '@/feat/error/components/ServicePreparationContainer';
 
 export const ServicePreparation = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
 
-  const handleNavigate = useCallback(() => {
+  const handleGoMain = useCallback(() => {
     navigate('/learn');
   }, [navigate]);
 
-  return (
-    <div css={containerStyle()}>
-      <div css={placeholderStyle}>
-        <FundyPreviewCanvas
-          initialAnimation={{ lookAt: true }}
-          idleExpression="default"
-          idleExpressionDelayMs={300}
-          autoHello
-        />
-      </div>
-      <h1 css={titleStyle(theme)}>서비스 준비 중입니다.</h1>
-      <p css={descriptionStyle(theme)}>
-        보다 나은 서비스 제공을 위하여 페이지 준비 중에 있습니다.
-        <br />
-        가능한 빠른 시일 내에 준비하여 찾아 뵙겠습니다.
-      </p>
-      <div css={buttonWrapperStyle}>
-        <Button variant="primary" onClick={handleNavigate} fullWidth>
-          메인 페이지로 이동
-        </Button>
-      </div>
-    </div>
-  );
+  return <ServicePreparationContainer onGoMain={handleGoMain} />;
 };
-
-const containerStyle = () => css`
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  gap: 32px;
-`;
-
-const placeholderStyle = css`
-  width: 800px;
-  height: 400px;
-  overflow: hidden;
-`;
-
-const titleStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['32Bold'].fontSize};
-  line-height: ${theme.typography['32Bold'].lineHeight};
-  font-weight: ${theme.typography['32Bold'].fontWeight};
-  color: ${theme.colors.text.default};
-  text-align: center;
-`;
-
-const descriptionStyle = (theme: Theme) => css`
-  font-size: ${theme.typography['16Medium'].fontSize};
-  line-height: ${theme.typography['16Medium'].lineHeight};
-  font-weight: ${theme.typography['16Medium'].fontWeight};
-  color: ${theme.colors.text.light};
-  text-align: center;
-  max-width: 400px;
-`;
-
-const buttonWrapperStyle = css`
-  width: 100%;
-  max-width: 300px;
-`;

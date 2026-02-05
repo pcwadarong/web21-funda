@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { useCallback, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/shallow';
 
@@ -48,10 +49,11 @@ export interface UseBattleSocketReturn extends SocketContextValue {
   setQuestionStatus: (index: number, status: QuestionStatus) => void;
 }
 
-export function useBattleSocket(): UseBattleSocketReturn {
+export function useBattleSocket(options?: { listen?: boolean }): UseBattleSocketReturn {
   const socketContext = useSocketContext();
   const { socket, status: socketStatus, connect } = socketContext;
   const { showToast } = useToast();
+  const listen = options?.listen ?? true;
 
   // 인증 정보
   const isLoggedIn = useAuthStore(state => state.isLoggedIn);
@@ -81,6 +83,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
       quizSolutions: state.quizSolutions,
       questionStatuses: state.questionStatuses,
       serverTime: state.serverTime,
+      isCorrect: state.isCorrect,
+      scoreDelta: state.scoreDelta,
     })),
   );
   const {
@@ -90,6 +94,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     setQuizSolution,
     setQuestionStatus,
     setSelectedAnswer,
+    setResultTime,
     reset,
     resetForRestart,
   } = useBattleStore(state => state.actions);
@@ -112,6 +117,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
   } | null>(null);
 
   useEffect(() => {
+    if (!listen) return;
     if (!socket) return;
 
     // 1. 참가자 명단 업데이트 (입장/퇴장 시)
@@ -130,16 +136,12 @@ export function useBattleSocket(): UseBattleSocketReturn {
       status: BattleRoomStatus;
       remainingSeconds: number;
       rankings: Ranking[];
-      resultEndsAt?: number;
-      serverTime?: number;
       countdownEndsAt?: number | null;
     }) => {
       setBattleState({
         status: data.status,
         remainingSeconds: data.remainingSeconds,
         rankings: data.rankings,
-        resultEndsAt: data.resultEndsAt ?? undefined,
-        serverTime: data.serverTime ?? undefined,
         countdownEndsAt: data.countdownEndsAt ?? null,
       });
     };
@@ -162,8 +164,9 @@ export function useBattleSocket(): UseBattleSocketReturn {
     const handleBattleQuiz = (data: BattleQuizData) => {
       setBattleState({
         status: 'in_progress',
-        resultEndsAt: null,
         countdownEndsAt: null,
+        isCorrect: null,
+        scoreDelta: 0,
       });
 
       setQuiz(data);
@@ -177,6 +180,8 @@ export function useBattleSocket(): UseBattleSocketReturn {
           correct_pairs?: MatchingPair[];
         };
       };
+      isCorrect: boolean;
+      scoreDelta: number;
     }) => {
       const currentIndex = useBattleStore.getState().currentQuizIndex;
       const solution = data.quizResult?.solution ?? {};
@@ -187,11 +192,20 @@ export function useBattleSocket(): UseBattleSocketReturn {
             ? String(solution.correct_option_id)
             : null;
 
-      setQuizSolution(currentIndex, {
-        correctAnswer,
-        explanation: solution.explanation ?? '',
-      });
+      setQuizSolution(
+        currentIndex,
+        {
+          correctAnswer,
+          explanation: solution.explanation ?? '',
+        },
+        data.isCorrect,
+        data.scoreDelta,
+      );
       setQuestionStatus(currentIndex, 'checked');
+    };
+
+    const handleBattleResultTime = (data: { resultEndsAt: number; serverTime: number }) => {
+      setResultTime(data.resultEndsAt, data.serverTime);
     };
 
     // 4. 게임 종료 및 무효 처리
@@ -203,12 +217,30 @@ export function useBattleSocket(): UseBattleSocketReturn {
       });
     };
     const handleBattleInvalid = (data: { reason: string }) => {
+      Sentry.captureMessage(`Battle Invalid: ${data.reason}`, {
+        level: 'warning',
+        tags: { type: 'battle-invalid' },
+        extra: { roomId: battleState.roomId },
+      });
+
       setBattleState({ status: 'invalid' });
       showToast(`${data.reason}`);
     };
 
     // 5. 에러 처리
     const handleBattleError = (error: { code: string; message: string }) => {
+      Sentry.captureException(new Error(`Battle Socket Error: ${error.code}`), {
+        level: 'error',
+        tags: {
+          type: 'socket-error',
+          errorCode: error.code,
+        },
+        extra: {
+          message: error.message,
+          roomId: battleState.roomId,
+        },
+      });
+
       if (error.code === 'ROOM_FULL' || error.code === 'ROOM_NOT_JOINABLE') {
         showToast('방에 입장할 수 없습니다. 다른 방을 이용해 주세요.');
         setBattleState({ status: 'invalid' });
@@ -220,6 +252,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     socket.on('battle:roomUpdated', handleRoomUpdated);
     socket.on('battle:quiz', handleBattleQuiz);
     socket.on('battle:result', handleBattleResult);
+    socket.on('battle:resultTime', handleBattleResultTime);
     socket.on('battle:finish', handleBattleFinish);
     socket.on('battle:invalid', handleBattleInvalid);
     socket.on('battle:error', handleBattleError);
@@ -230,38 +263,44 @@ export function useBattleSocket(): UseBattleSocketReturn {
       socket.off('battle:roomUpdated', handleRoomUpdated);
       socket.off('battle:quiz', handleBattleQuiz);
       socket.off('battle:result', handleBattleResult);
+      socket.off('battle:resultTime', handleBattleResultTime);
       socket.off('battle:finish', handleBattleFinish);
       socket.off('battle:invalid', handleBattleInvalid);
       socket.off('battle:error', handleBattleError);
     };
   }, [
+    listen,
     socket,
     setBattleState,
     setParticipants,
     setQuiz,
     setQuizSolution,
     setQuestionStatus,
+    setResultTime,
     showToast,
   ]);
 
   // roomId 변경 시 readySentRef 리셋
   useEffect(() => {
+    if (!listen) return;
     readySentRef.current = false;
     lastCountdownEndsAtRef.current = null;
-  }, [battleState.roomId]);
+  }, [battleState.roomId, listen]);
 
   // 대기 상태로 돌아가면 ready 상태를 초기화
   useEffect(() => {
+    if (!listen) return;
     if (battleState.status !== 'waiting') {
       return;
     }
 
     readySentRef.current = false;
     lastCountdownEndsAtRef.current = null;
-  }, [battleState.status]);
+  }, [battleState.status, listen]);
 
   // 카운트다운 종료 시점에 자동으로 ready 신호 전송
   useEffect(() => {
+    if (!listen) return;
     if (!socket || !battleState.roomId) {
       return;
     }
@@ -291,7 +330,7 @@ export function useBattleSocket(): UseBattleSocketReturn {
     }, delayMs);
 
     return () => window.clearTimeout(timerId);
-  }, [battleState.countdownEndsAt, battleState.roomId, socket]);
+  }, [battleState.countdownEndsAt, battleState.roomId, socket, listen]);
 
   const disconnect = useCallback(() => {
     socketContext.disconnect();

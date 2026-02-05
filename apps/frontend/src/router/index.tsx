@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 
+import { ErrorView } from '@/features/error/components/ErrorView';
 import { AdminSuspenseLayout } from '@/layouts/AdminSuspenseLayout';
 import { BattleFlowLayout } from '@/layouts/BattleFlowLayout';
 import { PageSuspenseLayout } from '@/layouts/PageSuspenseLayout';
@@ -28,6 +29,11 @@ const AdminLeaderboard = lazy(() =>
 );
 const AdminProfileCharacters = lazy(() =>
   import('@/pages/admin/ProfileCharacters').then(m => ({ default: m.AdminProfileCharacters })),
+);
+const AdminProfileCharacterManagement = lazy(() =>
+  import('@/pages/admin/ProfileCharacterManagement').then(m => ({
+    default: m.AdminProfileCharacterManagement,
+  })),
 );
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
 
@@ -75,9 +81,16 @@ const Unsubscribe = lazy(() =>
 );
 const Fundy = lazy(() => import('@/pages/Fundy').then(m => ({ default: m.PlayWithFundy })));
 
+const APP_ERROR_FALLBACK = {
+  title: '서비스 이용에 불편을 드려 죄송합니다.',
+  description: '일시적인 오류가 발생했습니다.',
+  onSecondaryButtonClick: () => window.location.reload(),
+};
+
 export const router = createBrowserRouter([
   {
     path: '/',
+    errorElement: <ErrorView {...APP_ERROR_FALLBACK} />,
     children: [
       // 공용 페이지
       { index: true, element: <Landing /> },
@@ -172,6 +185,10 @@ export const router = createBrowserRouter([
                   { path: 'quizzes/upload', element: <AdminQuizUpload /> },
                   { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
                   { path: 'quizzes/reports', element: <Reports /> },
+                  {
+                    path: 'profile-characters/manage',
+                    element: <AdminProfileCharacterManagement />,
+                  },
                   { path: 'profile-characters', element: <AdminProfileCharacters /> },
                 ],
               },

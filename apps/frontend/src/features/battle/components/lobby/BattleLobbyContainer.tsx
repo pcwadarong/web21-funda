@@ -21,7 +21,7 @@ export const BattleLobbyContainer = ({ onClick, isLoading = false }: BattleLobby
   }
 
   return (
-    <main css={contentStyle}>
+    <section css={contentStyle} aria-label="실시간 배틀 로비">
       <div css={logoPlaceholderStyle(theme)}></div>
 
       <h1 css={titleStyle(theme)}>실시간 CS 퀴즈 배틀</h1>
@@ -43,7 +43,7 @@ export const BattleLobbyContainer = ({ onClick, isLoading = false }: BattleLobby
       <Button variant="primary" onClick={onClick} css={loginButtonStyle}>
         방 생성하기
       </Button>
-    </main>
+    </section>
   );
 };
 

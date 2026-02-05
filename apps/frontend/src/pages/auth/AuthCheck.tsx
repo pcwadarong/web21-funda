@@ -1,17 +1,16 @@
-import { css, useTheme } from '@emotion/react';
+import { css, type Theme, useTheme } from '@emotion/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/comp/Button';
 import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import { useStorage } from '@/hooks/useStorage';
-import type { Theme } from '@/styles/theme';
 
 export const AuthCheck = () => {
   const { updateUIState, uiState } = useStorage();
   const location = useLocation();
-  const { from } = location.state || {};
-  const theme = useTheme();
   const navigate = useNavigate();
+  const { from } = (location.state as { from?: string } | undefined) ?? {};
+  const theme = useTheme();
 
   const handleLogin = () => {
     navigate('/login');

@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@emotion/react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MemberList } from '@/feat/leaderboard/components/MemberList';
@@ -8,10 +8,17 @@ import { lightTheme } from '@/styles/theme';
 
 // RankingRow 모킹
 vi.mock('@/feat/leaderboard/components/RankingRow', () => ({
-  RankingRow: ({ member }: { member: RankingMember; xpLabel?: string }) => (
-    <div data-testid={`ranking-row-${member.userId}`}>
+  RankingRow: ({
+    member,
+    onClick,
+  }: {
+    member: RankingMember;
+    xpLabel?: string;
+    onClick?: () => void;
+  }) => (
+    <button type="button" data-testid={`ranking-row-${member.userId}`} onClick={onClick}>
       {member.displayName} - {member.rank}
-    </div>
+    </button>
   ),
 }));
 
@@ -45,10 +52,14 @@ const mockMembers: RankingMember[] = [
   },
 ];
 
-const renderMemberList = (members: RankingMember[] = mockMembers, emptyMessage?: string) =>
+const renderMemberList = (
+  members: RankingMember[] = mockMembers,
+  emptyMessage?: string,
+  onMemberClick?: (member: RankingMember) => void,
+) =>
   render(
     <ThemeProvider theme={lightTheme}>
-      <MemberList members={members} emptyMessage={emptyMessage} />
+      <MemberList members={members} emptyMessage={emptyMessage} onMemberClick={onMemberClick} />
     </ThemeProvider>,
   );
 
@@ -111,5 +122,15 @@ describe('MemberList 컴포넌트 테스트', () => {
     expect(screen.getByTestId('ranking-row-1')).toBeInTheDocument();
     expect(screen.getByTestId('ranking-row-10')).toBeInTheDocument();
     expect(screen.queryByText('해당 구역에 인원이 없습니다.')).not.toBeInTheDocument();
+  });
+
+  it('멤버 클릭 시 콜백이 호출된다', () => {
+    const handleMemberClick = vi.fn();
+
+    renderMemberList(mockMembers, undefined, handleMemberClick);
+
+    fireEvent.click(screen.getByTestId('ranking-row-2'));
+
+    expect(handleMemberClick).toHaveBeenCalledWith(mockMembers[1]);
   });
 });

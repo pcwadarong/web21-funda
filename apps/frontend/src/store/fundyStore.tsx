@@ -40,7 +40,6 @@ const defaultAnimation: FundyAnimationConfig = {
   fallAction: 0,
   battleAction: 0,
   trophyAction: 0,
-  trophyAction: 0,
   speedMultiplier: 1,
   smile: false,
   smileSoft: false,

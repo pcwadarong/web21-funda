@@ -79,7 +79,9 @@ export const Quiz = () => {
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
   const [showHeartExhaustedModal, setShowHeartExhaustedModal] = useState(false);
   const [showIntermission, setShowIntermission] = useState(false);
-  const [intermissionMessage, setIntermissionMessage] = useState(QUIZ_INTERMISSION_MESSAGES[0]);
+  const [intermissionMessage, setIntermissionMessage] = useState(
+    QUIZ_INTERMISSION_MESSAGES[0] ?? '잠깐 쉬어가요!',
+  );
   const intermissionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigate = useNavigate();

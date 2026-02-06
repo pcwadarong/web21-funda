@@ -23,7 +23,7 @@ export const BattleLobbyContainer = ({ onClick, isLoading = false }: BattleLobby
 
   return (
     <section css={contentStyle} aria-label="실시간 배틀 로비">
-      <div css={logoPlaceholderStyle}>
+      <div css={placeholderStyle}>
         <FundyPreviewCanvas
           autoAction="battle"
           autoHello={false}
@@ -67,8 +67,8 @@ const contentStyle = () => css`
   margin: auto;
 `;
 
-const logoPlaceholderStyle = css`
-  width: 100vw;
+const placeholderStyle = css`
+  width: 100%;
   height: 400px;
   overflow: hidden;
   margin-bottom: 36px;

@@ -75,7 +75,7 @@ const contentStyle = (theme: Theme) => css`
 `;
 
 const placeholderStyle = css`
-  width: 800px;
+  width: 100vw;
   height: 400px;
   overflow: hidden;
 `;

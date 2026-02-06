@@ -7,6 +7,7 @@ import wrongSound from '@/assets/audio/wrong.mp3';
 import { Modal } from '@/comp/Modal';
 import { Loading } from '@/components/Loading';
 import { QuizContainer } from '@/feat/quiz/components/QuizContainer';
+import { QuizIntermission } from '@/feat/quiz/components/QuizIntermission';
 import { QuizLoadErrorView } from '@/feat/quiz/components/QuizLoadErrorView';
 import type {
   AnswerType,
@@ -43,6 +44,16 @@ type GuestStepResult = {
 };
 
 /**
+ * 인터미션 메세지
+ */
+const QUIZ_INTERMISSION_MESSAGES = [
+  '잘하고 있어요!',
+  '잠깐 쉬어가요!',
+  '집중력 최고예요!',
+  '거의 다 왔어요!',
+];
+
+/**
  * 퀴즈 풀이 페이지 컴포넌트
  * 퀴즈 데이터 로딩, 답변 상태 관리, 정답 확인 및 페이지 이동 로직을 담당합니다.
  */
@@ -67,6 +78,11 @@ export const Quiz = () => {
   const [loadError, setLoadError] = useState(false);
   const [stepAttemptId, setStepAttemptId] = useState<number | null>(null);
   const [showHeartExhaustedModal, setShowHeartExhaustedModal] = useState(false);
+  const [showIntermission, setShowIntermission] = useState(false);
+  const [intermissionMessage, setIntermissionMessage] = useState(
+    QUIZ_INTERMISSION_MESSAGES[0] ?? '잠깐 쉬어가요!',
+  );
+  const intermissionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -305,6 +321,15 @@ export const Quiz = () => {
     };
   }, [hasProgress]);
 
+  useEffect(
+    () => () => {
+      if (intermissionTimerRef.current) {
+        clearTimeout(intermissionTimerRef.current);
+      }
+    },
+    [],
+  );
+
   // -----------------------------------------------------------------------------
   // 액션 핸들러 / 파생 상태
   // 정답 확인 버튼 활성화 여부 계산
@@ -506,6 +531,7 @@ export const Quiz = () => {
    */
   const handleNextQuestion = useCallback(async () => {
     if (!currentQuiz) return;
+    if (showIntermission) return;
 
     if (isLastQuestion) {
       try {
@@ -561,6 +587,22 @@ export const Quiz = () => {
       }
     } else {
       const nextIndex = currentQuizIndex + 1;
+      /** 인터미션 애니메이션 노출 */
+      if (currentQuizIndex === 4) {
+        const message =
+          QUIZ_INTERMISSION_MESSAGES[Math.floor(Math.random() * QUIZ_INTERMISSION_MESSAGES.length)];
+        setIntermissionMessage(message ?? '잠깐 쉬어가요!');
+        setShowIntermission(true);
+
+        if (intermissionTimerRef.current) clearTimeout(intermissionTimerRef.current);
+
+        intermissionTimerRef.current = setTimeout(() => {
+          setShowIntermission(false);
+          setCurrentQuizIndex(nextIndex);
+          setCurrentQuestionStatus(questionStatuses[nextIndex] || 'idle');
+        }, 2500);
+        return;
+      }
       setCurrentQuizIndex(nextIndex);
       // 다음 문제가 이미 풀었던 문제라면 해당 상태를 유지, 아니면 'idle'
       setCurrentQuestionStatus(questionStatuses[nextIndex] || 'idle');
@@ -570,6 +612,7 @@ export const Quiz = () => {
     navigate,
     questionStatuses,
     currentQuizIndex,
+    showIntermission,
     addStepHistory,
     currentQuiz,
     step_id,
@@ -606,6 +649,7 @@ export const Quiz = () => {
           onClose={handleHeartExhaustedModalClose}
         />
       )}
+      {showIntermission && <QuizIntermission message={intermissionMessage} />}
       <QuizContainer
         quizzes={quizzes}
         currentQuizIndex={currentQuizIndex}

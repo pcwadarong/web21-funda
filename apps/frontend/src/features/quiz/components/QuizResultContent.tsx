@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import appearSound from '@/assets/audio/ding.mp3';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 
@@ -117,14 +118,10 @@ export const QuizResultContent = ({
    * 사운드 리소스를 미리 로딩해 재생 지연을 줄인다.
    */
   const ensureAppearSoundReady = async () => {
-    if (isAppearSoundReadyRef.current) {
-      return true;
-    }
+    if (isAppearSoundReadyRef.current) return true;
 
     const isReady = await preloadSound(appearSound);
-    if (isReady) {
-      isAppearSoundReadyRef.current = true;
-    }
+    if (isReady) isAppearSoundReadyRef.current = true;
 
     return isReady;
   };
@@ -138,18 +135,11 @@ export const QuizResultContent = ({
     appearSoundSequenceIdRef.current = sequenceId;
 
     // 새로고침 직후처럼 사용자 제스처가 없으면 재생을 예약하지 않는다.
-    if (!isAudioContextReady()) {
-      return;
-    }
+    if (!isAudioContextReady()) return;
 
     const isReady = await ensureAppearSoundReady();
-    if (!isReady) {
-      return;
-    }
-
-    if (appearSoundSequenceIdRef.current !== sequenceId) {
-      return;
-    }
+    if (!isReady) return;
+    if (appearSoundSequenceIdRef.current !== sequenceId) return;
 
     const timeouts = Array.from({ length: metricCount }, (_, index) => {
       const baseDelaySeconds =
@@ -168,24 +158,17 @@ export const QuizResultContent = ({
 
   useEffect(() => {
     const preloadAppearSound = async () => {
-      if (isAppearSoundReadyRef.current) {
-        return;
-      }
+      if (isAppearSoundReadyRef.current) return;
 
       const isReady = await preloadSound(appearSound);
-      if (isReady) {
-        isAppearSoundReadyRef.current = true;
-      }
+      if (isReady) isAppearSoundReadyRef.current = true;
     };
 
     void preloadAppearSound();
   }, [preloadSound]);
 
   useEffect(() => {
-    if (hasPlayedAppearSoundRef.current) {
-      return;
-    }
-
+    if (hasPlayedAppearSoundRef.current) return;
     hasPlayedAppearSoundRef.current = true;
 
     void playAppearSounds();
@@ -200,50 +183,53 @@ export const QuizResultContent = ({
   });
 
   const handleNextNavigation = () => {
-    if (onNextNavigation) {
-      onNextNavigation();
-    }
+    if (onNextNavigation) onNextNavigation();
   };
 
   const handleMainNavigation = () => {
-    if (onMainNavigation) {
-      onMainNavigation();
-    }
+    if (onMainNavigation) onMainNavigation();
   };
 
   return (
     <div css={containerStyle}>
       <h1 css={titleStyle(theme)}>LESSON COMPLETE!</h1>
-      <div css={placeholderStyle(theme)} />
-
-      <div css={metricsContainerStyle}>
-        {config.map((item, index) => (
-          <motion.div
-            key={item.key}
-            custom={index}
-            initial="hidden"
-            animate="visible"
-            variants={metricAppearVariants}
-            css={metricCardStyle(theme, item.styles.bg)}
-          >
-            <div css={metricTitleStyle(theme)}>{item.title}</div>
-            <div css={metricValueContainerStyle(theme, item.styles.bg)}>
-              <SVGIcon
-                icon={item.icon}
-                size="lg"
-                css={css`
-                  color: ${item.styles.iconColor};
-                `}
-              />
-              <span css={metricValueStyle(theme, item.styles.text)}>
-                {item.getValue(resultData)}
-              </span>
-            </div>
-          </motion.div>
-        ))}
+      <div css={placeholderStyle}>
+        <FundyPreviewCanvas
+          autoAction="trophy"
+          autoHello={false}
+          initialAnimation={{ lookAt: true }}
+          trophyHold
+        />
       </div>
 
-      {hasMissingData && (
+      {!hasMissingData ? (
+        <div css={metricsContainerStyle}>
+          {config.map((item, index) => (
+            <motion.div
+              key={item.key}
+              custom={index}
+              initial="hidden"
+              animate="visible"
+              variants={metricAppearVariants}
+              css={metricCardStyle(theme, item.styles.bg)}
+            >
+              <div css={metricTitleStyle(theme)}>{item.title}</div>
+              <div css={metricValueContainerStyle(theme, item.styles.bg)}>
+                <SVGIcon
+                  icon={item.icon}
+                  size="lg"
+                  css={css`
+                    color: ${item.styles.iconColor};
+                  `}
+                />
+                <span css={metricValueStyle(theme, item.styles.text)}>
+                  {item.getValue(resultData)}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
         <p css={noticeTextStyle(theme)}>
           결과 데이터를 불러오지 못했어요. 기록은 정상 저장되었어요.
         </p>
@@ -277,11 +263,10 @@ const titleStyle = (theme: Theme) => css`
   text-align: center;
 `;
 
-const placeholderStyle = (theme: Theme) => css`
-  width: 200px;
-  height: 200px;
-  background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.medium};
+const placeholderStyle = css`
+  width: 100vw;
+  height: 400px;
+  overflow: hidden;
 `;
 
 const metricsContainerStyle = css`

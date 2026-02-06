@@ -264,7 +264,7 @@ const titleStyle = (theme: Theme) => css`
 `;
 
 const placeholderStyle = css`
-  width: 100vw;
+  width: 100%;
   height: 400px;
   overflow: hidden;
 `;

@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { Loading } from '@/comp/Loading';
+
 export const LoginCallback = () => {
   const navigate = useNavigate();
   const hasNavigatedRef = useRef(false);
@@ -21,5 +23,5 @@ export const LoginCallback = () => {
     navigate(redirectTo || '/learn', { replace: true });
   }, [navigate]);
 
-  return null;
+  return <Loading />;
 };

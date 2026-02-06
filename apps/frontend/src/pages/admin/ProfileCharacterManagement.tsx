@@ -236,6 +236,7 @@ export const AdminProfileCharacterManagement = () => {
                           onClick={() => handleSaveCharacter(row)}
                           disabled={!hasChanges || row.isSaving || !isValidPrice}
                           aria-label={`캐릭터 ${row.id} 저장`}
+                          css={saveButtonStyle}
                         >
                           {row.isSaving ? '저장 중' : '저장'}
                         </Button>
@@ -261,6 +262,7 @@ const pageStyle = css`
 
 const cardStyle = (theme: Theme) => css`
   width: 100%;
+  box-sizing: border-box;
   background: ${theme.colors.surface.strong};
   padding: 32px;
   border-radius: ${theme.borderRadius.large};
@@ -385,4 +387,9 @@ const statusTextStyle = (theme: Theme) => css`
   color: ${theme.colors.text.default};
   font-weight: 600;
   font-size: ${theme.typography['12Medium'].fontSize};
+`;
+
+const saveButtonStyle = css`
+  white-space: nowrap;
+  min-width: 72px;
 `;

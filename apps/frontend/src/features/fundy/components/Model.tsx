@@ -45,7 +45,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     useImperativeHandle(ref, () => group.current);
 
     // GLTF 로드 (캐싱됨)
-    const { scene, animations } = useGLTF('/fundy/model.glb') as unknown as GLTFResult;
+    const { scene, animations } = useGLTF('/character/model.glb') as unknown as GLTFResult;
 
     // 씬 복제 (인스턴스마다 독립적인 애니메이션을 위해)
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
@@ -101,9 +101,9 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     const eyeTextures = useTexture(
       enhancedEyes
         ? [
-            '/fundy/textures/eyes_color.png',
-            '/fundy/textures/eyes_roughness.png',
-            '/fundy/textures/eyes_transmission.png',
+            '/character/textures/eyes_color.png',
+            '/character/textures/eyes_roughness.png',
+            '/character/textures/eyes_transmission.png',
           ]
         : [],
     );
@@ -353,9 +353,9 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
 
 FundyModel.displayName = 'FundyModel';
 
-useGLTF.preload('/fundy/model.glb');
+useGLTF.preload('/character/model.glb');
 useTexture.preload([
-  '/fundy/textures/eyes_color.png',
-  '/fundy/textures/eyes_roughness.png',
-  '/fundy/textures/eyes_transmission.png',
+  '/character/textures/eyes_color.png',
+  '/character/textures/eyes_roughness.png',
+  '/character/textures/eyes_transmission.png',
 ]);

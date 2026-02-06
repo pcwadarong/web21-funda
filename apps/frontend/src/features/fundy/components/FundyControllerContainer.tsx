@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { type AnimKey, FACE_EXPRESSIONS } from '@/feat/fundy/constants';
 import { useFundyStore } from '@/store/fundyStore';
@@ -8,7 +8,19 @@ import { FundyController } from './FundyController';
 export function FundyControllerContainer() {
   const animation = useFundyStore(state => state.animation);
   const isActionLocked = useFundyStore(state => state.isActionLocked);
-  const { setAnimation, triggerHello } = useFundyStore(state => state.actions);
+  const {
+    setAnimation,
+    triggerHello,
+    triggerPeek,
+    triggerFall,
+    triggerBattle,
+    setForceActionRelease,
+  } = useFundyStore(state => state.actions);
+
+  useEffect(() => {
+    setForceActionRelease(true);
+    return () => setForceActionRelease(false);
+  }, [setForceActionRelease]);
 
   const updateAnim = useCallback(
     (key: AnimKey, value: (typeof animation)[AnimKey]) => {
@@ -41,6 +53,15 @@ export function FundyControllerContainer() {
   const handlePlayHello = useCallback(() => {
     triggerHello();
   }, [triggerHello]);
+  const handlePlayPeek = useCallback(() => {
+    triggerPeek();
+  }, [triggerPeek]);
+  const handlePlayFall = useCallback(() => {
+    triggerFall();
+  }, [triggerFall]);
+  const handlePlayBattle = useCallback(() => {
+    triggerBattle();
+  }, [triggerBattle]);
 
   return (
     <FundyController
@@ -50,6 +71,9 @@ export function FundyControllerContainer() {
       onSetMouth={value => updateAnim('openMouth', value)}
       onSpeedChange={value => updateAnim('speedMultiplier', value)}
       onPlayHello={handlePlayHello}
+      onPlayPeek={handlePlayPeek}
+      onPlayFall={handlePlayFall}
+      onPlayBattle={handlePlayBattle}
     />
   );
 }

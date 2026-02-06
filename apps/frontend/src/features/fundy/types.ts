@@ -1,7 +1,17 @@
 import type * as THREE from 'three';
 import type { GLTF } from 'three-stdlib';
 
-type ActionName = 'hello_action' | 'eyebrow' | 'eyelash' | 'head' | 'teeth' | 'tongue';
+type ActionName =
+  | 'battle_action'
+  | 'fall_action'
+  | 'hello_action'
+  | 'peek_action'
+  | 'trophy_action'
+  | 'eyebrow'
+  | 'eyelash'
+  | 'head'
+  | 'teeth'
+  | 'tongue';
 
 interface GLTFAction extends THREE.AnimationClip {
   name: ActionName;
@@ -14,12 +24,17 @@ export type GLTFResult = GLTF & {
     teeth: THREE.Mesh;
     tongue: THREE.Mesh;
     head: THREE.Mesh;
+    cap: THREE.Mesh;
+    cap_taile: THREE.Mesh;
     ear_inside: THREE.Mesh;
     nose: THREE.Mesh;
     Sphere001: THREE.Mesh;
     Sphere001_1: THREE.Mesh;
     Sphere003: THREE.Mesh;
     Sphere003_1: THREE.Mesh;
+    trophy: THREE.Mesh;
+    tag: THREE.Mesh;
+    trophy_handle: THREE.Mesh;
     body: THREE.SkinnedMesh;
     muffler: THREE.SkinnedMesh;
     tail: THREE.SkinnedMesh;
@@ -112,10 +127,13 @@ export type GLTFResult = GLTF & {
     eyelash: THREE.MeshStandardMaterial;
     teeth: THREE.MeshStandardMaterial;
     tongue: THREE.MeshStandardMaterial;
+    cap: THREE.MeshStandardMaterial;
     ear_inside: THREE.MeshStandardMaterial;
     nose: THREE.MeshStandardMaterial;
     eye: THREE.MeshStandardMaterial;
     iris: THREE.MeshStandardMaterial;
+    trophy: THREE.MeshStandardMaterial;
+    tag: THREE.MeshStandardMaterial;
     body: THREE.MeshStandardMaterial;
     muffler: THREE.MeshStandardMaterial;
     face: THREE.MeshStandardMaterial;
@@ -144,6 +162,12 @@ export interface FundyAnimationConfig {
   blink?: boolean;
   /** hello_action 재생 */
   helloAction?: number;
+  /** peek_action 재생 */
+  peekAction?: number;
+  /** fall_action 재생 */
+  fallAction?: number;
+  /** battle_action 재생 */
+  battleAction?: number;
   /** 웃기 */
   smile?: boolean;
   /** 은은한 웃기 */
@@ -152,6 +176,8 @@ export interface FundyAnimationConfig {
   bigSmile?: boolean;
   /** 윙크 */
   wink?: boolean;
+  /** 화난 표정 */
+  angry?: boolean;
   /** 입 벌리기 (a, o 발음) */
   openMouth?: 'a' | 'o' | false;
   /** 시선 추적 (마우스) */

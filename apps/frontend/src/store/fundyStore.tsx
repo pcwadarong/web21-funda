@@ -14,6 +14,7 @@ interface FundyState {
   idleExpression: FundyIdleExpression;
   idleExpressionHold: boolean;
   idleExpressionDelayMs: number;
+  forceActionRelease: boolean;
   actions: {
     setAnimation: (update: FundyAnimationUpdate) => void;
     setSystemAnimation: (update: Partial<FundyAnimationConfig>) => void;
@@ -21,7 +22,11 @@ interface FundyState {
     setIdleExpression: (expression: FundyIdleExpression) => void;
     setIdleExpressionHold: (hold: boolean) => void;
     setIdleExpressionDelayMs: (delayMs: number) => void;
+    setForceActionRelease: (enabled: boolean) => void;
     triggerHello: () => void;
+    triggerPeek: () => void;
+    triggerFall: () => void;
+    triggerBattle: () => void;
     reset: () => void;
   };
 }
@@ -30,11 +35,15 @@ const defaultAnimation: FundyAnimationConfig = {
   blink: false,
   lookAt: false,
   helloAction: 0,
+  peekAction: 0,
+  fallAction: 0,
+  battleAction: 0,
   speedMultiplier: 1,
   smile: false,
   smileSoft: false,
   bigSmile: false,
   wink: false,
+  angry: false,
   openMouth: false,
 };
 
@@ -50,6 +59,7 @@ const createFundyStore = (
     idleExpression,
     idleExpressionHold,
     idleExpressionDelayMs,
+    forceActionRelease: false,
     actions: {
       setAnimation: update =>
         set(state => {
@@ -66,11 +76,33 @@ const createFundyStore = (
       setIdleExpression: expression => set({ idleExpression: expression }),
       setIdleExpressionHold: hold => set({ idleExpressionHold: hold }),
       setIdleExpressionDelayMs: delayMs => set({ idleExpressionDelayMs: delayMs }),
+      setForceActionRelease: enabled => set({ forceActionRelease: enabled }),
       triggerHello: () =>
         set(state => ({
           animation: {
             ...state.animation,
             helloAction: (state.animation.helloAction ?? 0) + 1,
+          },
+        })),
+      triggerPeek: () =>
+        set(state => ({
+          animation: {
+            ...state.animation,
+            peekAction: (state.animation.peekAction ?? 0) + 1,
+          },
+        })),
+      triggerFall: () =>
+        set(state => ({
+          animation: {
+            ...state.animation,
+            fallAction: (state.animation.fallAction ?? 0) + 1,
+          },
+        })),
+      triggerBattle: () =>
+        set(state => ({
+          animation: {
+            ...state.animation,
+            battleAction: (state.animation.battleAction ?? 0) + 1,
           },
         })),
       reset: () =>

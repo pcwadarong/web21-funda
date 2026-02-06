@@ -52,8 +52,8 @@ const EXPRESSION_CONFIGS = {
     eyebrow: { up: 0, wink: 0, down: 1 },
   },
   default: {
-    head: { mouth_smile: 0, wink: 0, a: 0, o: 0, eyes_closed: 0 },
-    eyelash: { smile: 0, wink: 0, bigger: 0 },
+    head: { mouth_smile: 0, wink: 0, a: 0, o: 0, eyes_closed: 0, angry: 0 },
+    eyelash: { smile: 0, wink: 0, bigger: 0, angry: 0 },
     teeth: { smile: 0, a: 0, o: 0 },
     eyebrow: { up: 0, wink: 0, down: 0 },
     tongue: { a: 0 },
@@ -111,6 +111,7 @@ export function useMorphAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     smileSoft = false,
     bigSmile = false,
     wink = false,
+    angry = false,
     openMouth = false,
   } = config;
 
@@ -174,6 +175,7 @@ export function useMorphAnimation(nodes: FundyNodes, config: FundyAnimationConfi
     else if (smile) currentKey = 'smileEyesClosed';
     else if (bigSmile) currentKey = 'smileOpenBig';
     else if (wink) currentKey = 'wink';
+    else if (angry) currentKey = 'angry';
     else if (openMouth === 'a') currentKey = 'open_A';
     else if (openMouth === 'o') currentKey = 'open_O';
 

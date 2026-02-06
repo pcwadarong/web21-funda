@@ -31,8 +31,6 @@ loki.process "container_logs" {
 }
 
 discovery.relabel "container_logs" {
-  # Docker 디스커버리 결과를 받아서 라벨 재구성을 수행합니다.
-  # targets가 비어 있으면 Loki로 전송할 대상이 없어집니다.
   targets = discovery.docker.container_logs.targets
 
   rule {
@@ -51,12 +49,16 @@ discovery.relabel "container_logs" {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "job"
+  }
 }
 
 loki.source.docker "container_logs" {
   host             = "unix:///var/run/docker.sock"
-  # 라벨 재구성이 반영된 타깃을 사용해야 정확한 대상만 수집됩니다.
-  targets          = discovery.relabel.container_logs.targets
+  targets          = discovery.relabel.container_logs.output
   forward_to       = [loki.process.container_logs.receiver]
   relabel_rules    = discovery.relabel.container_logs.rules
   refresh_interval = "5s"

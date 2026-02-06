@@ -586,7 +586,7 @@ export const Quiz = () => {
     } else {
       const nextIndex = currentQuizIndex + 1;
       /** 인터미션 애니메이션 노출 */
-      if (currentQuizIndex === 1) {
+      if (currentQuizIndex === 4) {
         const message =
           QUIZ_INTERMISSION_MESSAGES[Math.floor(Math.random() * QUIZ_INTERMISSION_MESSAGES.length)];
         setIntermissionMessage(message);

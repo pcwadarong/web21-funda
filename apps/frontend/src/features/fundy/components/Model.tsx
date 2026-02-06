@@ -202,6 +202,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       idleExpressionOverride: 'smileOpenBig',
       forceIdleExpressionOverride: true,
       idleExpressionDelayMsOverride: 0,
+      idleExpressionHoldOverride: true,
       resetClips: allActionClips,
     });
     useFundyHelloAction({

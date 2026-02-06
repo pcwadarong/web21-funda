@@ -591,7 +591,7 @@ export const Quiz = () => {
       if (currentQuizIndex === 4) {
         const message =
           QUIZ_INTERMISSION_MESSAGES[Math.floor(Math.random() * QUIZ_INTERMISSION_MESSAGES.length)];
-        setIntermissionMessage(message);
+        setIntermissionMessage(message ?? '잠깐 쉬어가요!');
         setShowIntermission(true);
 
         if (intermissionTimerRef.current) clearTimeout(intermissionTimerRef.current);

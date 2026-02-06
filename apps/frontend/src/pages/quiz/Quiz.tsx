@@ -1,4 +1,3 @@
-import { useGLTF, useTexture } from '@react-three/drei';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -82,15 +81,6 @@ export const Quiz = () => {
   const [showIntermission, setShowIntermission] = useState(false);
   const [intermissionMessage, setIntermissionMessage] = useState(QUIZ_INTERMISSION_MESSAGES[0]);
   const intermissionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    useGLTF.preload('/fundy/model.glb');
-    useTexture.preload([
-      '/fundy/textures/eyes_color.png',
-      '/fundy/textures/eyes_roughness.png',
-      '/fundy/textures/eyes_transmission.png',
-    ]);
-  }, []);
 
   const navigate = useNavigate();
   const location = useLocation();

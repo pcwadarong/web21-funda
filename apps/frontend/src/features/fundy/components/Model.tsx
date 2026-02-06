@@ -1,6 +1,15 @@
 import { useAnimations, useGLTF, useTexture } from '@react-three/drei';
 import { type ThreeElements, useGraph } from '@react-three/fiber';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
@@ -30,6 +39,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       trophy?: THREE.AnimationAction | null;
     }>({});
     const lastTrophyTriggerRef = useRef<number>(0);
+    const trophyVisibleRef = useRef<boolean | null>(null);
 
     // ref 전달
     useImperativeHandle(ref, () => group.current);
@@ -115,15 +125,22 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       [nodes],
     );
 
-    const setTrophyVisible = (visible: boolean) => {
-      trophyParts.forEach(node => {
-        node.visible = visible;
-      });
-    };
+    const setTrophyVisible = useCallback(
+      (visible: boolean) => {
+        if (trophyVisibleRef.current === visible) return;
+        trophyVisibleRef.current = visible;
+        trophyParts.forEach(node => {
+          if (node.visible !== visible) {
+            node.visible = visible;
+          }
+        });
+      },
+      [trophyParts],
+    );
 
-    useEffect(() => {
+    useLayoutEffect(() => {
       setTrophyVisible(false);
-    }, [trophyParts]);
+    }, [setTrophyVisible]);
 
     useEffect(() => {
       const action = actionClips.trophy ?? null;
@@ -152,7 +169,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       return () => {
         mixer.removeEventListener('finished', handleFinished);
       };
-    }, [actionClips.trophy, animation?.trophyAction, trophyHold, trophyParts]);
+    }, [actionClips.trophy, animation?.trophyAction, trophyHold, setTrophyVisible]);
 
     const allActionClips = useMemo(
       () => [
@@ -336,3 +353,8 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
 FundyModel.displayName = 'FundyModel';
 
 useGLTF.preload('/fundy/model.glb');
+useTexture.preload([
+  '/fundy/textures/eyes_color.png',
+  '/fundy/textures/eyes_roughness.png',
+  '/fundy/textures/eyes_transmission.png',
+]);

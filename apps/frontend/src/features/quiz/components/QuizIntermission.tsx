@@ -1,4 +1,5 @@
 import { css, keyframes, useTheme } from '@emotion/react';
+import { Suspense } from 'react';
 
 import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import type { Theme } from '@/styles/theme';
@@ -13,19 +14,21 @@ export const QuizIntermission = ({ message }: QuizIntermissionProps) => {
   return (
     <div css={overlayStyle(theme)}>
       <div css={canvasWrapperStyle}>
-        <FundyPreviewCanvas
-          initialAnimation={{ lookAt: true }}
-          autoHello={false}
-          autoAction="peek"
-          scale={0.4}
-          position={[0.2, -0.5, 0]}
-          riseOnMount
-          riseFromY={-1.5}
-          riseDurationMs={700}
-          autoActionDelayMs={500}
-          camera={{ position: [0, 1, 4.2], fov: 38 }}
-          target={[0, 1.5, 0]}
-        />
+        <Suspense fallback={null}>
+          <FundyPreviewCanvas
+            initialAnimation={{ lookAt: true }}
+            autoHello={false}
+            autoAction="peek"
+            scale={0.4}
+            position={[0.2, -0.5, 0]}
+            riseOnMount
+            riseFromY={-1.5}
+            riseDurationMs={700}
+            autoActionDelayMs={500}
+            camera={{ position: [0, 1, 4.2], fov: 38 }}
+            target={[0, 1.5, 0]}
+          />
+        </Suspense>
       </div>
       <div css={messageBubbleStyle(theme)}>{message}</div>
     </div>

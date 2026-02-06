@@ -47,15 +47,15 @@ jobs:
             # 5. 네트워크 및 공통 설정 준비
             docker network inspect funda-network >/dev/null 2>&1 || docker network create funda-network
 
-            # 6. 실행 (애플리케이션 + 모니터링)
+            # 6. 실행 (애플리케이션)
             APP_COMPOSE=docker/production/docker-compose.deploy.yml
-            MONITOR_COMPOSE=docker/monitoring/docker-compose.monitoring.production.yml
+            # MONITOR_COMPOSE=docker/monitoring/docker-compose.monitoring.production.yml
 
             docker compose --env-file .env -f $APP_COMPOSE pull
-            docker compose --env-file .env -f $MONITOR_COMPOSE pull
+            # docker compose --env-file .env -f $MONITOR_COMPOSE pull
 
             docker compose --env-file .env -f $APP_COMPOSE up -d
-            docker compose --env-file .env -f $MONITOR_COMPOSE up -d
+            # docker compose --env-file .env -f $MONITOR_COMPOSE up -d
 
             # 7. DB 마이그레이션
             docker compose --env-file .env -f $APP_COMPOSE exec -T backend \

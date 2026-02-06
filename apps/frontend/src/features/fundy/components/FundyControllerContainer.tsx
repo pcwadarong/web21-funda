@@ -11,7 +11,6 @@ export function FundyControllerContainer() {
   const {
     setAnimation,
     triggerHello,
-    triggerPeek,
     triggerFall,
     triggerBattle,
     triggerTrophy,
@@ -54,9 +53,6 @@ export function FundyControllerContainer() {
   const handlePlayHello = useCallback(() => {
     triggerHello();
   }, [triggerHello]);
-  const handlePlayPeek = useCallback(() => {
-    triggerPeek();
-  }, [triggerPeek]);
   const handlePlayFall = useCallback(() => {
     triggerFall();
   }, [triggerFall]);
@@ -75,7 +71,6 @@ export function FundyControllerContainer() {
       onSetMouth={value => updateAnim('openMouth', value)}
       onSpeedChange={value => updateAnim('speedMultiplier', value)}
       onPlayHello={handlePlayHello}
-      onPlayPeek={handlePlayPeek}
       onPlayFall={handlePlayFall}
       onPlayBattle={handlePlayBattle}
       onPlayTrophy={handlePlayTrophy}

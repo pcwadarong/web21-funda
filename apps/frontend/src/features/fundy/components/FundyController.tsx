@@ -10,7 +10,6 @@ type FundyControllerProps = {
   onSetMouth: (value: FundyAnimationConfig['openMouth']) => void;
   onSpeedChange: (value: number) => void;
   onPlayHello: () => void;
-  onPlayPeek: () => void;
   onPlayFall: () => void;
   onPlayBattle: () => void;
   onPlayTrophy: () => void;
@@ -23,7 +22,6 @@ export function FundyController({
   onSetMouth,
   onSpeedChange,
   onPlayHello,
-  onPlayPeek,
   onPlayFall,
   onPlayBattle,
   onPlayTrophy,
@@ -97,9 +95,6 @@ export function FundyController({
           <SectionTitle>액션</SectionTitle>
           <PlayButton type="button" onClick={onPlayHello} disabled={disabled}>
             ▶ Hello 액션 재생
-          </PlayButton>
-          <PlayButton type="button" onClick={onPlayPeek} disabled={disabled}>
-            ▶ Peek 액션 재생
           </PlayButton>
           <PlayButton type="button" onClick={onPlayFall} disabled={disabled}>
             ▶ Fall 액션 재생

@@ -17,6 +17,7 @@ export const CONTROL_CATEGORIES = [
       { key: 'smile', value: true, label: '웃기', icon: '😊' },
       { key: 'bigSmile', value: true, label: '활짝 웃기', icon: '😆' },
       { key: 'wink', value: true, label: '윙크하기', icon: '😉' },
+      { key: 'angry', value: true, label: '화난 표정', icon: '😠' },
     ],
   },
   {

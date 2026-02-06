@@ -14,6 +14,7 @@ export function FundyControllerContainer() {
     triggerPeek,
     triggerFall,
     triggerBattle,
+    triggerTrophy,
     setForceActionRelease,
   } = useFundyStore(state => state.actions);
 
@@ -62,6 +63,9 @@ export function FundyControllerContainer() {
   const handlePlayBattle = useCallback(() => {
     triggerBattle();
   }, [triggerBattle]);
+  const handlePlayTrophy = useCallback(() => {
+    triggerTrophy();
+  }, [triggerTrophy]);
 
   return (
     <FundyController
@@ -74,6 +78,7 @@ export function FundyControllerContainer() {
       onPlayPeek={handlePlayPeek}
       onPlayFall={handlePlayFall}
       onPlayBattle={handlePlayBattle}
+      onPlayTrophy={handlePlayTrophy}
     />
   );
 }

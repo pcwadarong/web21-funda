@@ -13,6 +13,7 @@ type FundyControllerProps = {
   onPlayPeek: () => void;
   onPlayFall: () => void;
   onPlayBattle: () => void;
+  onPlayTrophy: () => void;
   disabled?: boolean;
 };
 
@@ -25,6 +26,7 @@ export function FundyController({
   onPlayPeek,
   onPlayFall,
   onPlayBattle,
+  onPlayTrophy,
   disabled = false,
 }: FundyControllerProps) {
   const [isOpen, setIsOpen] = useState(true);
@@ -104,6 +106,9 @@ export function FundyController({
           </PlayButton>
           <PlayButton type="button" onClick={onPlayBattle} disabled={disabled}>
             ▶ Battle 액션 재생
+          </PlayButton>
+          <PlayButton type="button" onClick={onPlayTrophy} disabled={disabled}>
+            ▶ Trophy 액션 재생
           </PlayButton>
         </Section>
       </PanelBody>

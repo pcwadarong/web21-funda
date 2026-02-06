@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { useState } from 'react';
 
 import { type AnimKey, CONTROL_CATEGORIES, MOUTH_OPTIONS } from '@/feat/fundy/constants';
 import type { FundyAnimationConfig } from '@/feat/fundy/types';
@@ -26,72 +27,86 @@ export function FundyController({
   onPlayBattle,
   disabled = false,
 }: FundyControllerProps) {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
     <ControlPanel>
-      <Title>Fundy Controller</Title>
+      <HeaderRow>
+        <Title>Fundy Controller</Title>
+        <ToggleButton
+          type="button"
+          onClick={() => setIsOpen(prev => !prev)}
+          aria-expanded={isOpen}
+          aria-controls="fundy-controller-body"
+        >
+          {isOpen ? '접기' : '펼치기'}
+        </ToggleButton>
+      </HeaderRow>
 
-      {CONTROL_CATEGORIES.map(cat => (
-        <Section key={cat.title}>
-          <SectionTitle>{cat.title}</SectionTitle>
-          {cat.items.map(item => (
-            <ControlLabel key={item.key}>
+      <PanelBody id="fundy-controller-body" $open={isOpen}>
+        {CONTROL_CATEGORIES.map(cat => (
+          <Section key={cat.title}>
+            <SectionTitle>{cat.title}</SectionTitle>
+            {cat.items.map(item => (
+              <ControlLabel key={item.key}>
+                <input
+                  type="checkbox"
+                  checked={!!animation[item.key]}
+                  onChange={e => onToggle(item.key, e.target.checked)}
+                  disabled={disabled}
+                />
+                {item.icon} {item.label}
+              </ControlLabel>
+            ))}
+          </Section>
+        ))}
+
+        <Section>
+          <SectionTitle>입 모양</SectionTitle>
+          {MOUTH_OPTIONS.map(opt => (
+            <ControlLabel key={String(opt.value)}>
               <input
-                type="checkbox"
-                checked={!!animation[item.key]}
-                onChange={e => onToggle(item.key, e.target.checked)}
+                type="radio"
+                name="mouth"
+                checked={animation.openMouth === opt.value}
+                onChange={() => onSetMouth(opt.value)}
                 disabled={disabled}
               />
-              {item.icon} {item.label}
+              {opt.icon} {opt.label}
             </ControlLabel>
           ))}
         </Section>
-      ))}
 
-      <Section>
-        <SectionTitle>입 모양</SectionTitle>
-        {MOUTH_OPTIONS.map(opt => (
-          <ControlLabel key={String(opt.value)}>
-            <input
-              type="radio"
-              name="mouth"
-              checked={animation.openMouth === opt.value}
-              onChange={() => onSetMouth(opt.value)}
-              disabled={disabled}
-            />
-            {opt.icon} {opt.label}
-          </ControlLabel>
-        ))}
-      </Section>
+        <Section>
+          <SectionTitle>속도 조절 ({(animation.speedMultiplier ?? 1).toFixed(1)}x)</SectionTitle>
+          <input
+            type="range"
+            min="0.1"
+            max="2"
+            step="0.1"
+            value={animation.speedMultiplier ?? 1}
+            onChange={e => onSpeedChange(parseFloat(e.target.value))}
+            style={{ width: '100%' }}
+            disabled={disabled}
+          />
+        </Section>
 
-      <Section>
-        <SectionTitle>속도 조절 ({(animation.speedMultiplier ?? 1).toFixed(1)}x)</SectionTitle>
-        <input
-          type="range"
-          min="0.1"
-          max="2"
-          step="0.1"
-          value={animation.speedMultiplier ?? 1}
-          onChange={e => onSpeedChange(parseFloat(e.target.value))}
-          style={{ width: '100%' }}
-          disabled={disabled}
-        />
-      </Section>
-
-      <Section>
-        <SectionTitle>액션</SectionTitle>
-        <PlayButton type="button" onClick={onPlayHello} disabled={disabled}>
-          ▶ Hello 액션 재생
-        </PlayButton>
-        <PlayButton type="button" onClick={onPlayPeek} disabled={disabled}>
-          ▶ Peek 액션 재생
-        </PlayButton>
-        <PlayButton type="button" onClick={onPlayFall} disabled={disabled}>
-          ▶ Fall 액션 재생
-        </PlayButton>
-        <PlayButton type="button" onClick={onPlayBattle} disabled={disabled}>
-          ▶ Battle 액션 재생
-        </PlayButton>
-      </Section>
+        <Section>
+          <SectionTitle>액션</SectionTitle>
+          <PlayButton type="button" onClick={onPlayHello} disabled={disabled}>
+            ▶ Hello 액션 재생
+          </PlayButton>
+          <PlayButton type="button" onClick={onPlayPeek} disabled={disabled}>
+            ▶ Peek 액션 재생
+          </PlayButton>
+          <PlayButton type="button" onClick={onPlayFall} disabled={disabled}>
+            ▶ Fall 액션 재생
+          </PlayButton>
+          <PlayButton type="button" onClick={onPlayBattle} disabled={disabled}>
+            ▶ Battle 액션 재생
+          </PlayButton>
+        </Section>
+      </PanelBody>
     </ControlPanel>
   );
 }
@@ -113,10 +128,39 @@ const ControlPanel = styled.div`
   font-size: 13px;
 `;
 
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+`;
+
 const Title = styled.div`
   font-size: 16px;
   font-weight: bold;
-  margin-bottom: 20px;
+`;
+
+const ToggleButton = styled.button`
+  display: none;
+  border: 1px solid #444;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  @media (max-width: 768px) {
+    display: inline-flex;
+  }
+`;
+
+const PanelBody = styled.div<{ $open: boolean }>`
+  @media (max-width: 768px) {
+    display: ${props => (props.$open ? 'block' : 'none')};
+  }
 `;
 
 const Section = styled.div`

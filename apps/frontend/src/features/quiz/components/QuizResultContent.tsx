@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import appearSound from '@/assets/audio/ding.mp3';
 import { Button } from '@/comp/Button';
 import SVGIcon from '@/comp/SVGIcon';
+import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import { useSound } from '@/hooks/useSound';
 import type { Theme } from '@/styles/theme';
 
@@ -214,7 +215,14 @@ export const QuizResultContent = ({
   return (
     <div css={containerStyle}>
       <h1 css={titleStyle(theme)}>LESSON COMPLETE!</h1>
-      <div css={placeholderStyle(theme)} />
+      <div css={placeholderStyle}>
+        <FundyPreviewCanvas
+          autoAction="trophy"
+          autoHello={false}
+          initialAnimation={{ lookAt: true }}
+          trophyHold
+        />
+      </div>
 
       <div css={metricsContainerStyle}>
         {config.map((item, index) => (
@@ -277,11 +285,10 @@ const titleStyle = (theme: Theme) => css`
   text-align: center;
 `;
 
-const placeholderStyle = (theme: Theme) => css`
-  width: 200px;
-  height: 200px;
-  background: ${theme.colors.surface.strong};
-  border-radius: ${theme.borderRadius.medium};
+const placeholderStyle = css`
+  width: 100vw;
+  height: 400px;
+  overflow: hidden;
 `;
 
 const metricsContainerStyle = css`

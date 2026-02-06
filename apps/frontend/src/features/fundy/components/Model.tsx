@@ -14,10 +14,11 @@ import type { FundyAnimationConfig, GLTFResult } from '@/feat/fundy/types';
 export type FundyModelProps = ThreeElements['group'] & {
   animation?: FundyAnimationConfig;
   enhancedEyes?: boolean;
+  trophyHold?: boolean;
 };
 
 export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
-  ({ animation, enhancedEyes = true, ...props }, ref) => {
+  ({ animation, enhancedEyes = true, trophyHold = false, ...props }, ref) => {
     const group = useRef<THREE.Group>(null!);
     const Primitive = ({ object }: { object?: THREE.Object3D | null }) =>
       object ? <primitive object={object} /> : null;
@@ -26,7 +27,9 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       peek?: THREE.AnimationAction | null;
       fall?: THREE.AnimationAction | null;
       battle?: THREE.AnimationAction | null;
+      trophy?: THREE.AnimationAction | null;
     }>({});
+    const lastTrophyTriggerRef = useRef<number>(0);
 
     // ref 전달
     useImperativeHandle(ref, () => group.current);
@@ -42,6 +45,7 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     const peekActionRef = actions?.peek_action;
     const fallActionRef = actions?.fall_action;
     const battleActionRef = actions?.battle_action;
+    const trophyActionRef = actions?.trophy_action;
 
     useEffect(() => {
       if (mixer && clips && group.current) {
@@ -51,26 +55,37 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
           peek: getClip('peek_action'),
           fall: getClip('fall_action'),
           battle: getClip('battle_action'),
+          trophy: getClip('trophy_action'),
         };
-        if (next.hello || next.peek || next.fall || next.battle) {
+        if (next.hello || next.peek || next.fall || next.battle || next.trophy) {
           setActionClips({
             hello: next.hello ? mixer.clipAction(next.hello, group.current) : null,
             peek: next.peek ? mixer.clipAction(next.peek, group.current) : null,
             fall: next.fall ? mixer.clipAction(next.fall, group.current) : null,
             battle: next.battle ? mixer.clipAction(next.battle, group.current) : null,
+            trophy: next.trophy ? mixer.clipAction(next.trophy, group.current) : null,
           });
           return;
         }
       }
-      if (helloActionRef || peekActionRef || fallActionRef || battleActionRef) {
+      if (helloActionRef || peekActionRef || fallActionRef || battleActionRef || trophyActionRef) {
         setActionClips({
           hello: helloActionRef ?? null,
           peek: peekActionRef ?? null,
           fall: fallActionRef ?? null,
           battle: battleActionRef ?? null,
+          trophy: trophyActionRef ?? null,
         });
       }
-    }, [helloActionRef, peekActionRef, fallActionRef, battleActionRef, clips, mixer]);
+    }, [
+      helloActionRef,
+      peekActionRef,
+      fallActionRef,
+      battleActionRef,
+      trophyActionRef,
+      clips,
+      mixer,
+    ]);
 
     // 눈알 반짝이는 재질
     const eyeTextures = useTexture(
@@ -92,9 +107,68 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
     // 애니메이션 컨트롤러
     useMorphAnimation(nodes, animation);
 
+    const trophyParts = useMemo(
+      () =>
+        [nodes.trophy, nodes.trophy_handle, nodes.tag, nodes.cap, nodes.cap_taile].filter(
+          Boolean,
+        ) as THREE.Object3D[],
+      [nodes],
+    );
+
+    const setTrophyVisible = (visible: boolean) => {
+      trophyParts.forEach(node => {
+        node.visible = visible;
+      });
+    };
+
+    useEffect(() => {
+      setTrophyVisible(false);
+    }, [trophyParts]);
+
+    useEffect(() => {
+      const action = actionClips.trophy ?? null;
+      const trigger = animation?.trophyAction ?? 0;
+
+      if (!action || trigger === 0) {
+        setTrophyVisible(false);
+        return;
+      }
+
+      if (lastTrophyTriggerRef.current === trigger) return;
+      lastTrophyTriggerRef.current = trigger;
+
+      setTrophyVisible(true);
+
+      const mixer = action.getMixer();
+      const handleFinished = (event: THREE.Event & { action?: THREE.AnimationAction }) => {
+        if (event.action !== action) return;
+        if (!trophyHold) {
+          setTrophyVisible(false);
+        }
+        mixer.removeEventListener('finished', handleFinished);
+      };
+
+      mixer.addEventListener('finished', handleFinished);
+      return () => {
+        mixer.removeEventListener('finished', handleFinished);
+      };
+    }, [actionClips.trophy, animation?.trophyAction, trophyHold, trophyParts]);
+
     const allActionClips = useMemo(
-      () => [actionClips.hello, actionClips.peek, actionClips.fall, actionClips.battle],
-      [actionClips.hello, actionClips.peek, actionClips.fall, actionClips.battle],
+      () => [
+        actionClips.hello,
+        actionClips.peek,
+        actionClips.fall,
+        actionClips.battle,
+        actionClips.trophy,
+      ],
+      [
+        actionClips.hello,
+        actionClips.peek,
+        actionClips.fall,
+        actionClips.battle,
+        actionClips.trophy,
+      ],
     );
 
     useFundyHelloAction({
@@ -128,6 +202,12 @@ export const FundyModel = forwardRef<THREE.Group, FundyModelProps>(
       lookAt: animation?.lookAt,
       idleExpressionOverride: 'angry',
       forceIdleExpressionOverride: true,
+      resetClips: allActionClips,
+    });
+    useFundyHelloAction({
+      actionTrigger: animation?.trophyAction,
+      actionClip: actionClips.trophy ?? null,
+      lookAt: animation?.lookAt,
       resetClips: allActionClips,
     });
 

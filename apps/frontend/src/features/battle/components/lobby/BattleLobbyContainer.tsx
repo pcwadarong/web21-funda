@@ -3,6 +3,7 @@ import { css, useTheme } from '@emotion/react';
 
 import { Button } from '@/components/Button';
 import { Loading } from '@/components/Loading';
+import { FundyPreviewCanvas } from '@/feat/fundy/components/FundyPreviewCanvas';
 import { useModal } from '@/store/modalStore';
 
 import { InfoBattleModal } from './InfoBattleModal';
@@ -22,7 +23,13 @@ export const BattleLobbyContainer = ({ onClick, isLoading = false }: BattleLobby
 
   return (
     <section css={contentStyle} aria-label="실시간 배틀 로비">
-      <div css={logoPlaceholderStyle(theme)}></div>
+      <div css={logoPlaceholderStyle}>
+        <FundyPreviewCanvas
+          autoAction="battle"
+          autoHello={false}
+          initialAnimation={{ lookAt: true }}
+        />
+      </div>
 
       <h1 css={titleStyle(theme)}>실시간 CS 퀴즈 배틀</h1>
       <p css={subtitleStyle(theme)}>방을 만들고 친구를 초대해 바로 대결해보세요!</p>
@@ -60,15 +67,10 @@ const contentStyle = () => css`
   margin: auto;
 `;
 
-const logoPlaceholderStyle = (theme: Theme) => css`
-  width: 300px;
-  height: 300px;
-  background: ${theme.colors.surface.bold};
-  border-radius: ${theme.borderRadius.large};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+const logoPlaceholderStyle = css`
+  width: 100vw;
+  height: 400px;
+  overflow: hidden;
   margin-bottom: 36px;
 `;
 

@@ -168,6 +168,8 @@ export interface FundyAnimationConfig {
   fallAction?: number;
   /** battle_action 재생 */
   battleAction?: number;
+  /** trophy_action 재생 */
+  trophyAction?: number;
   /** 웃기 */
   smile?: boolean;
   /** 은은한 웃기 */

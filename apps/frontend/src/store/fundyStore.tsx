@@ -27,6 +27,7 @@ interface FundyState {
     triggerPeek: () => void;
     triggerFall: () => void;
     triggerBattle: () => void;
+    triggerTrophy: () => void;
     reset: () => void;
   };
 }
@@ -38,6 +39,8 @@ const defaultAnimation: FundyAnimationConfig = {
   peekAction: 0,
   fallAction: 0,
   battleAction: 0,
+  trophyAction: 0,
+  trophyAction: 0,
   speedMultiplier: 1,
   smile: false,
   smileSoft: false,
@@ -103,6 +106,13 @@ const createFundyStore = (
           animation: {
             ...state.animation,
             battleAction: (state.animation.battleAction ?? 0) + 1,
+          },
+        })),
+      triggerTrophy: () =>
+        set(state => ({
+          animation: {
+            ...state.animation,
+            trophyAction: (state.animation.trophyAction ?? 0) + 1,
           },
         })),
       reset: () =>

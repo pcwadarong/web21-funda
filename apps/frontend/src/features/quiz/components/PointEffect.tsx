@@ -24,7 +24,7 @@ export const PointEffect = ({ points }: PointEffectProps) => {
     return () => {
       stopSound(twinkleSound);
     };
-  }, [playSound, stopSound]);
+  }, []);
 
   // ==========================================
   // 1. Framer Motion Variants (애니메이션 설정)

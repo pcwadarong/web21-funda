@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import fanfareSound from '@/assets/audio/fanfare.mp3';
 import { BattleResultContainer } from '@/feat/battle/components/result/BattleResultContainer';
 import { useBattleSocket } from '@/feat/battle/hooks/useBattleSocket';
+import { useSound } from '@/hooks/useSound';
 
 export const BattleResultPage = () => {
   const navigate = useNavigate();
@@ -12,8 +14,18 @@ export const BattleResultPage = () => {
 
   const { rankings, participants, rewards, roomId, inviteToken } = battleState;
 
+  const { playSound, stopSound } = useSound();
+
   // 15초 타이머
   const [timeLeft, setTimeLeft] = useState(15);
+
+  // 사운드 이펙트 재생 (한 번만 실행)
+  useEffect(() => {
+    void playSound({ src: fanfareSound, volume: 0.5 });
+    return () => {
+      stopSound(fanfareSound);
+    };
+  }, []);
 
   // 타이머 로직: 1초마다 감소
   useEffect(() => {

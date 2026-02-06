@@ -13,6 +13,7 @@ import type {
   WeeklyRankingResult,
 } from '@/feat/leaderboard/types';
 import { buildRemainingDaysText, groupMembersByZone } from '@/feat/leaderboard/utils';
+import { useIsAuthReady } from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { colors } from '@/styles/token';
 import { getTierIconName } from '@/utils/tier';
@@ -44,6 +45,7 @@ export const LeaderboardContainer = ({
   const { openModal } = useModal();
   const [activeLeaderboardView, setActiveLeaderboardView] = useState<LeaderboardView>('MY_LEAGUE');
   const navigate = useNavigate();
+  const isAuthReady = useIsAuthReady();
 
   const isMyLeagueView = activeLeaderboardView === 'MY_LEAGUE';
   const isOverallView = activeLeaderboardView === 'OVERALL';
@@ -112,6 +114,8 @@ export const LeaderboardContainer = ({
       rank: index + 1,
     }));
 
+  if (!isAuthReady || isLoading) return <Loading text="랭킹 정보 불러오는 중" />;
+
   return (
     <section css={pageStyle} aria-label="리더보드">
       <div css={pageContentStyle}>
@@ -156,11 +160,7 @@ export const LeaderboardContainer = ({
           </div>
         </section>
 
-        {isLoading ? (
-          <div role="status" aria-live="polite" aria-label="랭킹 로딩 중">
-            <Loading text="랭킹 정보를 불러오는 중입니다." />
-          </div>
-        ) : stateType !== 'normal' ? (
+        {stateType !== 'normal' ? (
           <LeaderboardStateMessage state={stateType} message={stateMessage} />
         ) : (
           <>

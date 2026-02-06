@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { Loading } from '@/components/Loading';
 
 export const LoginCallback = () => {
   const navigate = useNavigate();
+  const hasNavigatedRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+
     // 세션 스토리지에서 로그인 후 이동할 경로를 가져옴
     const redirectTo = sessionStorage.getItem('loginRedirectPath');
 
@@ -19,10 +21,5 @@ export const LoginCallback = () => {
     navigate(redirectTo || '/learn', { replace: true });
   }, [navigate]);
 
-  // 리다이렉트가 처리되는 동안 로딩 화면을 보여줌
-  return (
-    <div role="status" aria-label="로그인 처리 중">
-      <Loading />
-    </div>
-  );
+  return null;
 };

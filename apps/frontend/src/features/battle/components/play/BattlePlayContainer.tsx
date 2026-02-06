@@ -49,7 +49,9 @@ export const BattlePlayContainer = ({
       <QuizHeader
         currentStep={quizInfo.index + 1}
         totalSteps={quizInfo.total}
-        completedSteps={quizInfo.index}
+        completedSteps={
+          questionStatuses[quizInfo.index] === 'checked' ? quizInfo.index + 1 : quizInfo.index
+        }
         status={questionStatuses[quizInfo.index] ?? 'idle'}
         isBattleMode
       />

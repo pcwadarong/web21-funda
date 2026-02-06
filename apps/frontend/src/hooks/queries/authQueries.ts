@@ -1,11 +1,13 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { authService } from '@/services/authService';
 import { useAuthActions } from '@/store/authStore';
 
 export const useCurrentUserQuery = () =>
-  useSuspenseQuery({
+  useQuery({
     queryKey: ['current-user'],
+    retry: false,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const user = await authService.getCurrentUser();
       if (user) return user;

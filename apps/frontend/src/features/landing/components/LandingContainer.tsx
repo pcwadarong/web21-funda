@@ -39,6 +39,10 @@ const simpleBarStyle = css`
   height: 100dvh;
   width: 100dvw;
 
+  & .simplebar-content-wrapper {
+    overflow-x: clip !important;
+  }
+
   & .simplebar-track,
   .simplebar-scrollbar {
     pointer-events: auto !important;

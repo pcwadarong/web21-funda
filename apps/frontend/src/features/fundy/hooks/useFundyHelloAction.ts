@@ -135,6 +135,7 @@ export function useFundyHelloAction(params: {
     // 3. 다른 시스템 애니메이션 중단 (표정 겹침 방지)
     const resetExpression = getIdleExpressionConfig('default');
     setSystemAnimation({ lookAt: false });
+    setSystemAnimation({ blink: false });
     setSystemAnimation(resetExpression);
 
     // 4. 애니메이션 실행
@@ -163,6 +164,7 @@ export function useFundyHelloAction(params: {
       }
       if (postHold) setSystemAnimation(getIdleExpressionConfig(postExpression));
       else setSystemAnimation(resetExpression);
+      setSystemAnimation({ blink: true });
       mixer.removeEventListener('finished', handleFinished);
       if (smileTimer) clearTimeout(smileTimer);
       if (safetyTimer) clearTimeout(safetyTimer);

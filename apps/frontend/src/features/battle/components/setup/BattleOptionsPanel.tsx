@@ -334,6 +334,7 @@ const legendStyle = (theme: Theme) => css`
   font-weight: 600;
   color: ${theme.colors.text.weak};
   padding: 0;
+  margin-bottom: 10px;
 `;
 
 const buttonGroupStyle = css`

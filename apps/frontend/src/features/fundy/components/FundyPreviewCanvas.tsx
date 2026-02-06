@@ -1,6 +1,6 @@
 import { OrbitControls, useProgress } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type * as THREE from 'three';
 
 import { FundyLighting } from '@/feat/fundy/components/FundyLighting';
@@ -24,6 +24,8 @@ type FundyPreviewCanvasProps = {
   riseFromY?: number;
   riseDurationMs?: number;
   autoActionDelayMs?: number;
+  enableTripleClickFall?: boolean;
+  tripleClickWindowMs?: number;
   camera?: { position?: [number, number, number]; fov?: number };
   target?: [number, number, number];
 };
@@ -38,6 +40,8 @@ function FundyPreviewContent({
   riseFromY = -1.2,
   riseDurationMs = 700,
   autoActionDelayMs = 500,
+  enableTripleClickFall = true,
+  tripleClickWindowMs = 700,
   target = [0, 1, 0],
 }: Omit<FundyPreviewCanvasProps, 'initialAnimation' | 'camera'>) {
   const animation = useFundyStore(state => state.animation);
@@ -58,6 +62,7 @@ function FundyPreviewContent({
   const lastActionKeyRef = useRef<string | null>(null);
   const triggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const actionKey = autoAction ?? (autoHello ? 'hello' : 'none');
+  const clickTimesRef = useRef<number[]>([]);
 
   useEffect(() => {
     if (lastActionKeyRef.current !== actionKey) {
@@ -155,6 +160,23 @@ function FundyPreviewContent({
     }
   });
 
+  const handleTripleClick = useCallback(
+    (event: { button?: number }) => {
+      if (!enableTripleClickFall) return;
+      if (event.button !== undefined && event.button !== 0) return;
+      const now = performance.now();
+      const windowMs = Math.max(200, tripleClickWindowMs);
+      const nextTimes = clickTimesRef.current.filter(time => now - time < windowMs);
+      nextTimes.push(now);
+      clickTimesRef.current = nextTimes;
+      if (nextTimes.length >= 3) {
+        clickTimesRef.current = [];
+        triggerFall();
+      }
+    },
+    [enableTripleClickFall, triggerFall, tripleClickWindowMs],
+  );
+
   return (
     <>
       <FundyLighting />
@@ -165,6 +187,7 @@ function FundyPreviewContent({
         animation={animation}
         enhancedEyes
         trophyHold={trophyHold}
+        onPointerDown={handleTripleClick}
       />
       <OrbitControls makeDefault target={target} enablePan={false} enableZoom={false} />
     </>
@@ -181,13 +204,20 @@ function FundyPreviewScene({
   riseFromY = -1.2,
   riseDurationMs = 700,
   autoActionDelayMs = 500,
+  enableTripleClickFall = true,
+  tripleClickWindowMs = 700,
   camera,
   target = [0, 1, 0],
 }: Omit<FundyPreviewCanvasProps, 'initialAnimation'>) {
   return (
     <Canvas
+      frameloop="always"
       camera={{ position: camera?.position ?? [0, 1.1, 4.2], fov: camera?.fov ?? 40 }}
-      gl={{ alpha: true }}
+      gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
+      dpr={[1, 2]}
+      onCreated={({ gl }) => {
+        gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      }}
       style={{ background: 'transparent' }}
     >
       <FundyPreviewContent
@@ -200,6 +230,8 @@ function FundyPreviewScene({
         riseFromY={riseFromY}
         riseDurationMs={riseDurationMs}
         autoActionDelayMs={autoActionDelayMs}
+        enableTripleClickFall={enableTripleClickFall}
+        tripleClickWindowMs={tripleClickWindowMs}
         target={target}
       />
     </Canvas>
@@ -217,6 +249,8 @@ export function FundyPreviewCanvas({
   riseFromY,
   riseDurationMs,
   autoActionDelayMs = 500,
+  enableTripleClickFall,
+  tripleClickWindowMs,
   camera,
   target,
   idleExpression,
@@ -240,6 +274,8 @@ export function FundyPreviewCanvas({
         riseFromY={riseFromY}
         riseDurationMs={riseDurationMs}
         autoActionDelayMs={autoActionDelayMs}
+        enableTripleClickFall={enableTripleClickFall}
+        tripleClickWindowMs={tripleClickWindowMs}
         camera={camera}
         target={target}
       />

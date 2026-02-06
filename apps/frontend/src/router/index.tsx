@@ -109,8 +109,9 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        element: <SidebarSuspenseLayout />,
+        element: <SidebarSuspenseLayout />, // 사이드바 있는 레이아웃
         children: [
+          // 비로그인/로그인 공용
           { path: 'learn', element: <Learn /> },
           { path: 'learn/select-field', element: <SelectField /> },
           { path: 'learn/roadmap', element: <Roadmap /> },
@@ -119,6 +120,16 @@ export const router = createBrowserRouter([
           { path: 'setting', element: <Setting /> },
           { path: 'unsubscribe', element: <Unsubscribe /> },
           { path: 'fundy', element: <Fundy /> },
+          {
+            element: <LoginGuard />,
+            loader: protectedLoader,
+            children: [
+              // 로그인 사용자 전용
+              { path: 'leaderboard', element: <Leaderboard /> },
+              { path: 'profile/characters', element: <ProfileCharacter /> },
+              { path: 'login/callback', element: <LoginCallback /> },
+            ],
+          },
         ],
       },
 
@@ -159,20 +170,6 @@ export const router = createBrowserRouter([
         element: <LoginGuard />,
         loader: protectedLoader,
         children: [
-          { path: 'login/callback', element: <LoginCallback /> },
-          // 사이드바가 있는 페이지 그룹
-          {
-            element: <SidebarSuspenseLayout />,
-            children: [
-              {
-                path: '/reports',
-                element: <Reports />,
-              },
-              { path: 'leaderboard', element: <Leaderboard /> },
-              { path: 'profile/:userId?', element: <Profile /> },
-              { path: 'profile/characters', element: <ProfileCharacter /> },
-            ],
-          },
           // 관리자 전용 (이중 보호)
           {
             element: <AdminSuspenseLayout />,

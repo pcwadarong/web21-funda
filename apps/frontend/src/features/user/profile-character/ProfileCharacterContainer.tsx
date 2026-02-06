@@ -82,93 +82,95 @@ export const ProfileCharacterContainer = ({
           <h1 css={titleStyle(theme)}>캐릭터 프로필 설정하기</h1>
         </header>
 
-        <section css={gridStyle} ref={gridRef}>
-          {isLoading ? (
-            <div css={loadingStyle(theme)}>캐릭터 목록을 불러오는 중입니다.</div>
-          ) : (
-            characters.map(item => {
-              const isSelected = item.id === selectedCharacterId;
-              const isActiveCharacter =
-                (activeCharacterId !== null && item.id === activeCharacterId) ||
-                (!!activeCharacterImageUrl && item.imageUrl === activeCharacterImageUrl);
-              const shouldShowAction = isSelected;
-              const actionLabel = item.isOwned
-                ? isActiveCharacter
-                  ? '적용됨'
-                  : '적용하기'
-                : '구매하기';
-              const isActionDisabled = item.isOwned ? isActiveCharacter : false;
-              const actionVariant = item.isOwned
-                ? isActiveCharacter
-                  ? 'applied'
-                  : 'apply'
-                : 'purchase';
+        <section css={gridContainerStyle}>
+          <div css={gridStyle} ref={gridRef}>
+            {isLoading ? (
+              <div css={loadingStyle(theme)}>캐릭터 목록을 불러오는 중입니다.</div>
+            ) : (
+              characters.map(item => {
+                const isSelected = item.id === selectedCharacterId;
+                const isActiveCharacter =
+                  (activeCharacterId !== null && item.id === activeCharacterId) ||
+                  (!!activeCharacterImageUrl && item.imageUrl === activeCharacterImageUrl);
+                const shouldShowAction = isSelected;
+                const actionLabel = item.isOwned
+                  ? isActiveCharacter
+                    ? '적용됨'
+                    : '적용하기'
+                  : '구매하기';
+                const isActionDisabled = item.isOwned ? isActiveCharacter : false;
+                const actionVariant = item.isOwned
+                  ? isActiveCharacter
+                    ? 'applied'
+                    : 'apply'
+                  : 'purchase';
 
-              const handleActionClick = () => {
-                if (isActionDisabled) return;
-                if (item.isOwned) {
-                  onApply(item.id);
-                  return;
-                }
+                const handleActionClick = () => {
+                  if (isActionDisabled) return;
+                  if (item.isOwned) {
+                    onApply(item.id);
+                    return;
+                  }
 
-                onPurchase(item.id);
-              };
+                  onPurchase(item.id);
+                };
 
-              return (
-                <div key={item.id} css={cardWrapperStyle}>
-                  <button
-                    type="button"
-                    css={cardStyle(theme, isSelected)}
-                    onClick={() => onSelect(item.id)}
-                    onMouseEnter={event => handleCharacterMouseEnter(event, item)}
-                    onMouseLeave={handleCharacterMouseLeave}
-                    aria-label={`캐릭터 ${item.id} 선택`}
-                  >
-                    <div css={imageWrapperStyle}>
-                      <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
-                    </div>
-                    <div css={priceStyle(theme)}>
-                      {isActiveCharacter ? (
-                        <span css={appliedLabelStyle(theme)}>적용됨</span>
-                      ) : item.isOwned ? (
-                        <span css={purchasedLabelStyle(theme)}>구매함</span>
-                      ) : item.priceDiamonds === 0 ? (
-                        <span css={freeLabelStyle}>FREE</span>
-                      ) : (
-                        <>
-                          <SVGIcon icon="Diamond" size="xs" />
-                          <span>{item.priceDiamonds}</span>
-                        </>
-                      )}
-                    </div>
-                  </button>
-                  {shouldShowAction && (
-                    <div css={actionWrapperStyle}>
-                      <button
-                        type="button"
-                        css={actionCardStyle(theme, actionVariant)}
-                        onClick={handleActionClick}
-                        disabled={isActionDisabled}
-                      >
-                        {actionLabel}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-          <Popover
-            x={hoveredCharacter?.x ?? 0}
-            y={hoveredCharacter?.y ?? 0}
-            isVisible={hoveredCharacter !== null}
-            containerRect={hoveredCharacter?.containerRect ?? null}
-            onMouseEnter={() => hoveredCharacter && setHoveredCharacter(hoveredCharacter)}
-            onMouseLeave={handleCharacterMouseLeave}
-            offsetY={-40}
-          >
-            <p>{hoveredCharacter?.description ?? ''}</p>
-          </Popover>
+                return (
+                  <div key={item.id} css={cardWrapperStyle}>
+                    <button
+                      type="button"
+                      css={cardStyle(theme, isSelected)}
+                      onClick={() => onSelect(item.id)}
+                      onMouseEnter={event => handleCharacterMouseEnter(event, item)}
+                      onMouseLeave={handleCharacterMouseLeave}
+                      aria-label={`캐릭터 ${item.id} 선택`}
+                    >
+                      <div css={imageWrapperStyle}>
+                        <img src={item.imageUrl} alt="캐릭터 이미지" css={imageStyle} />
+                      </div>
+                      <div css={priceStyle(theme)}>
+                        {isActiveCharacter ? (
+                          <span css={appliedLabelStyle(theme)}>적용됨</span>
+                        ) : item.isOwned ? (
+                          <span css={purchasedLabelStyle(theme)}>구매함</span>
+                        ) : item.priceDiamonds === 0 ? (
+                          <span css={freeLabelStyle}>FREE</span>
+                        ) : (
+                          <>
+                            <SVGIcon icon="Diamond" size="xs" />
+                            <span>{item.priceDiamonds}</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                    {shouldShowAction && (
+                      <div css={actionWrapperStyle}>
+                        <button
+                          type="button"
+                          css={actionCardStyle(theme, actionVariant)}
+                          onClick={handleActionClick}
+                          disabled={isActionDisabled}
+                        >
+                          {actionLabel}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+            <Popover
+              x={hoveredCharacter?.x ?? 0}
+              y={hoveredCharacter?.y ?? 0}
+              isVisible={hoveredCharacter !== null}
+              containerRect={hoveredCharacter?.containerRect ?? null}
+              onMouseEnter={() => hoveredCharacter && setHoveredCharacter(hoveredCharacter)}
+              onMouseLeave={handleCharacterMouseLeave}
+              offsetY={-40}
+            >
+              <p>{hoveredCharacter?.description ?? ''}</p>
+            </Popover>
+          </div>
         </section>
       </div>
     </section>
@@ -240,6 +242,11 @@ const clearButtonStyle = (theme: Theme) => css`
   }
 `;
 
+const gridContainerStyle = css`
+  width: 100%;
+  container-type: inline-size;
+`;
+
 const gridStyle = css`
   position: relative;
   display: grid;
@@ -249,15 +256,15 @@ const gridStyle = css`
   justify-content: center;
   padding-bottom: 5rem;
 
-  @media (max-width: 64rem) {
+  @container (max-width: 65rem) {
     grid-template-columns: repeat(4, 160px);
   }
 
-  @media (max-width: 52rem) {
+  @container (max-width: 52rem) {
     grid-template-columns: repeat(3, 160px);
   }
 
-  @media (max-width: 38rem) {
+  @container (max-width: 38rem) {
     grid-template-columns: repeat(2, 160px);
   }
 `;

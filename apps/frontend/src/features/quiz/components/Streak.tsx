@@ -23,7 +23,7 @@ export const Streak = ({ currentStreak = 1 }: StreakProps) => {
     return () => {
       stopSound(fireSound);
     };
-  }, [playSound, stopSound]);
+  }, []);
 
   // 요일 정렬
   const allDays = getSortedWeekdays(currentStreak);

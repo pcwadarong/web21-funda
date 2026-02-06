@@ -27,8 +27,8 @@ export const Loading = ({ text = 'Loading' }: { text?: string }) => {
 };
 
 const containerStyle = (theme: Theme) => css`
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;

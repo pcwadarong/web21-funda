@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { setUser, clearAuth, setAuthReady } = useAuthActions();
   const hasRequestedGuestId = useRef(false);
 
-  const { data } = useCurrentUserQuery();
+  const { data, isLoading, isError } = useCurrentUserQuery();
 
   // 비로그인 사용자에게 client_id 발급
   const initGuestId = useCallback(async () => {
@@ -24,6 +24,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const finalizeAuth = async () => {
+      if (isLoading) return;
+
+      if (isError) {
+        clearAuth();
+        setAuthReady(true);
+        return;
+      }
+
       if (data) {
         setUser(data);
       } else {
@@ -37,7 +45,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       clearAuth();
       setAuthReady(true);
     });
-  }, [clearAuth, data, setAuthReady, setUser, initGuestId]);
+  }, [clearAuth, data, initGuestId, isError, isLoading, setAuthReady, setUser]);
 
   return <>{children}</>;
 };

@@ -20,7 +20,7 @@ export const ReviewCompletionEffect = () => {
     return () => {
       stopSound(shineSound);
     };
-  }, [playSound, stopSound]);
+  }, []);
 
   // ==========================================
   // 1. 데이터 생성 (파티클 등)

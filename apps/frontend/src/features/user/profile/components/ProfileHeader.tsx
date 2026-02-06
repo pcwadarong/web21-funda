@@ -4,6 +4,7 @@ import { memo, useMemo } from 'react';
 import SVGIcon from '@/comp/SVGIcon';
 import { Avatar } from '@/components/Avatar';
 import type { ProfileSummaryResult } from '@/feat/user/profile/types';
+import { useIsAuthReady, useIsLoggedIn } from '@/store/authStore';
 import type { Theme } from '@/styles/theme';
 import { palette } from '@/styles/token';
 import { getTierIconName } from '@/utils/tier';
@@ -41,6 +42,8 @@ export const ProfileHeader = memo(
     onFollowToggle,
   }: ProfileHeaderProps) => {
     const theme = useTheme();
+    const isAuthReady = useIsAuthReady();
+    const isLoggedIn = useIsLoggedIn();
 
     const displayName = useMemo(
       () => profileSummary?.displayName ?? '사용자',
@@ -101,14 +104,12 @@ export const ProfileHeader = memo(
             </div>
           </div>
         </div>
-        {isMyProfile ? (
+        {!isAuthReady || isMyProfile || !isLoggedIn || !shouldShowFollow ? (
           <div />
-        ) : shouldShowFollow ? (
+        ) : (
           <button type="button" css={rightActionButtonStyle(theme)} onClick={onFollowToggle}>
             {isFollowing ? '언팔로우하기' : '팔로우하기'}
           </button>
-        ) : (
-          <div />
         )}
       </section>
     );
@@ -212,13 +213,28 @@ const avatarEditButtonStyle = (theme: Theme, _isDisabled: boolean) => css`
 `;
 
 const rightActionButtonStyle = (theme: Theme) => css`
-  padding: 0.625rem 1rem;
-  border-radius: ${theme.borderRadius.medium};
-  border: none;
-  background: ${theme.colors.primary.light};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  font-weight: ${theme.typography['12Medium'].fontWeight};
-  color: ${palette.grayscale[50]};
-  cursor: pointer;
-  opacity: 0.95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: ${theme.colors.primary.light}A6;
+  color: ${theme.colors.grayscale[50]};
+  border-radius: ${theme.borderRadius.large};
+  padding: 8px 20px;
+  font-size: clamp(12px, 2.6vw, ${theme.typography['16Medium'].fontSize});
+  line-height: clamp(16px, 3vw, ${theme.typography['16Medium'].lineHeight});
+  font-weight: ${theme.typography['16Medium'].fontWeight};
+  box-shadow: 0 0.4rem 0 ${theme.colors.primary.dark}80;
+  transition: all 150ms ease;
+
+  &:hover {
+    transform: translateY(-0.1rem);
+    box-shadow: 0 0.5rem 0 ${theme.colors.primary.dark}80;
+    filter: brightness(1.02);
+  }
+
+  &:active {
+    transform: translateY(0.2rem);
+    box-shadow: 0 0.2rem 0 ${theme.colors.primary.dark}80;
+  }
 `;

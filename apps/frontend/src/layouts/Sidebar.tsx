@@ -1,5 +1,5 @@
-import { css, useTheme } from '@emotion/react';
-import { useCallback } from 'react';
+import { css, keyframes, useTheme } from '@emotion/react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { Avatar } from '@/components/Avatar';
@@ -8,7 +8,12 @@ import { Loading } from '@/components/Loading';
 import SVGIcon from '@/components/SVGIcon';
 import { useLogoutMutation } from '@/hooks/queries/authQueries';
 import { useRankingMe } from '@/hooks/queries/leaderboardQueries';
-import { useAuthProfileImageUrl, useAuthUser, useIsLoggedIn } from '@/store/authStore';
+import {
+  useAuthProfileImageUrl,
+  useAuthUser,
+  useIsAuthReady,
+  useIsLoggedIn,
+} from '@/store/authStore';
 import { useModal } from '@/store/modalStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useToast } from '@/store/toastStore';
@@ -36,6 +41,7 @@ export const Sidebar = () => {
   const { isDarkMode } = useThemeStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const isAuthReady = useIsAuthReady();
   const isLoggedIn = useIsLoggedIn();
   const user = useAuthUser();
   const profileImageUrl = useAuthProfileImageUrl();
@@ -43,11 +49,19 @@ export const Sidebar = () => {
   const { showToast } = useToast();
   const { confirm } = useModal();
   const logoutMutation = useLogoutMutation();
+  const [isLogoutOverlayVisible, setIsLogoutOverlayVisible] = useState(false);
 
   // 사용자 티어 조회
-  const { data: rankingMe } = useRankingMe(isLoggedIn && !!user);
+  const isRankingMeEnabled = isAuthReady && isLoggedIn && !!user;
+  const {
+    data: rankingMe,
+    isLoading: isRankingMeLoading,
+    isFetching: isRankingMeFetching,
+  } = useRankingMe(isRankingMeEnabled);
   const tierName = rankingMe?.tier?.name ?? null;
   const tierIconName = getTierIconName(tierName);
+  const showTierSkeleton = isRankingMeEnabled && (isRankingMeLoading || isRankingMeFetching);
+  const tierLabel = tierName ? buildTierLabel(tierName) : null;
 
   // 관리자 여부 확인
   const isAdmin = user?.role === 'admin';
@@ -69,6 +83,14 @@ export const Sidebar = () => {
 
   const activeItemId = getActiveItemId();
 
+  useEffect(() => {
+    if (!isLogoutOverlayVisible) return;
+    if (!location.pathname.startsWith('/learn')) return;
+
+    const raf = requestAnimationFrame(() => setIsLogoutOverlayVisible(false));
+    return () => cancelAnimationFrame(raf);
+  }, [isLogoutOverlayVisible, location.pathname]);
+
   const handleLogout = useCallback(async () => {
     const isConfirmed = await confirm({
       title: '로그아웃',
@@ -79,12 +101,25 @@ export const Sidebar = () => {
     if (!isConfirmed) return;
 
     try {
-      navigate('/learn', { replace: true });
+      setIsLogoutOverlayVisible(true);
+
+      // 로그인 전용 페이지에서 로그아웃할 때는 /learn으로 이동
+      const currentPath = location.pathname;
+      const isLoginRequiredPage = currentPath.startsWith('/leaderboard');
+
+      // 로그아웃 후 리다이렉트 경로를 sessionStorage에 저장
+      if (isLoginRequiredPage) {
+        sessionStorage.setItem('postLogoutRedirectPath', '/learn');
+      } else {
+        navigate('/learn', { replace: true });
+      }
+
       await logoutMutation.mutateAsync();
     } catch {
       showToast('로그아웃 중 오류가 발생했습니다.');
+      setIsLogoutOverlayVisible(false);
     }
-  }, [confirm, logoutMutation, navigate, showToast]);
+  }, [confirm, logoutMutation, showToast, location.pathname]);
 
   const dropdownOptions = [{ value: 'logout', label: '로그아웃' }];
 
@@ -94,6 +129,10 @@ export const Sidebar = () => {
     targetPath: string,
   ) => {
     event.preventDefault();
+
+    if (!isAuthReady) {
+      return;
+    }
 
     if (!isLoggedIn && !user && (itemId === 'ranking' || itemId === 'profile')) {
       const isConfirmed = await confirm({
@@ -125,7 +164,11 @@ export const Sidebar = () => {
 
   return (
     <>
-      {logoutMutation.isPending && <Loading />}
+      {isLogoutOverlayVisible && (
+        <div css={loadingOverlayStyle}>
+          <Loading />
+        </div>
+      )}
       <aside css={sidebarStyle(theme)}>
         <Link to="/learn" css={logoSectionStyle}>
           <img src="/favicon.ico" alt="Funda 로고" css={logoImageStyle} />
@@ -155,9 +198,12 @@ export const Sidebar = () => {
               </Link>
             );
           })}
+
+          {isAuthReady && !isAdmin && <div css={adminNavSpacerStyle} aria-hidden="true" />}
         </nav>
 
-        {isLoggedIn && user && (
+        {!isAuthReady && <div css={userSectionSkeletonStyle(theme)} aria-hidden="true" />}
+        {isAuthReady && isLoggedIn && user && (
           <Dropdown
             options={dropdownOptions}
             onChange={handleLogout}
@@ -174,10 +220,15 @@ export const Sidebar = () => {
                 />
                 <div css={userInfoStyle}>
                   <div css={userNameStyle(theme)}>{user.displayName}</div>
-                  <div css={userTierRowStyle}>
-                    {tierIconName && <SVGIcon icon={tierIconName} size="sm" />}
-                    <span css={userLevelStyle(theme)}>{buildTierLabel(tierName)}</span>
-                  </div>
+                  {showTierSkeleton && (
+                    <div css={userTierSkeletonStyle(theme)} aria-hidden="true" />
+                  )}
+                  {!showTierSkeleton && tierLabel && (
+                    <div css={userTierRowStyle}>
+                      {tierIconName && <SVGIcon icon={tierIconName} size="sm" />}
+                      <span css={userLevelStyle(theme)}>{tierLabel}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             }
@@ -188,6 +239,12 @@ export const Sidebar = () => {
     </>
   );
 };
+
+const loadingOverlayStyle = css`
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+`;
 
 const sidebarStyle = (theme: Theme) => css`
   display: flex;
@@ -387,8 +444,7 @@ const userTierRowStyle = css`
   gap: 6px;
 `;
 
-const buildTierLabel = (tierName: string | null) =>
-  tierName ? `${tierName} 티어` : '티어 정보 없음';
+const buildTierLabel = (tierName: string) => `${tierName} 티어`;
 
 const userSectionTriggerStyle = css`
   width: 100%;
@@ -404,4 +460,48 @@ const userSectionTriggerStyle = css`
       filter: brightness(0.97);
     }
   }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+`;
+
+const skeletonFillStyle = (theme: Theme) => css`
+  background: linear-gradient(
+    90deg,
+    ${theme.colors.surface.default} 0%,
+    ${theme.colors.surface.bold} 30%,
+    ${theme.colors.surface.default} 60%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.2s ease-in-out infinite;
+`;
+
+const adminNavSpacerStyle = css`
+  height: 48px;
+  margin-top: 8px;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const userSectionSkeletonStyle = (theme: Theme) => css`
+  width: 100%;
+  height: 72px;
+  border-radius: ${theme.borderRadius.medium};
+  ${skeletonFillStyle(theme)};
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const userTierSkeletonStyle = (theme: Theme) => css`
+  margin-top: 4px;
+  width: 110px;
+  height: 12px;
+  border-radius: 999px;
+  ${skeletonFillStyle(theme)};
 `;

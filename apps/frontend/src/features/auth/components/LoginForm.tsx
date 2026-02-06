@@ -19,13 +19,15 @@ export const LoginForm = memo(({ onGoogleLogin, onGitHubLogin, isLoggingIn }: Lo
   return (
     <main css={containerStyle()}>
       <section css={contentStyle()}>
-        <FundyPreviewCanvas
-          initialAnimation={{ lookAt: true }}
-          idleExpression="smileSoft"
-          idleExpressionHold={false}
-          idleExpressionDelayMs={300}
-          autoHello
-        />
+        <div css={placeholderStyle}>
+          <FundyPreviewCanvas
+            initialAnimation={{ lookAt: true }}
+            idleExpression="smileSoft"
+            idleExpressionHold={false}
+            idleExpressionDelayMs={300}
+            autoHello
+          />
+        </div>
         <h1 css={titleStyle(theme)}>Funda</h1>
         <p css={taglineStyle(theme)}>재미있게 배우는 개발 지식</p>
 
@@ -87,6 +89,12 @@ const contentStyle = () => css`
   gap: 24px;
   max-width: 400px;
   width: 100%;
+`;
+
+const placeholderStyle = css`
+  width: 100vw;
+  height: 400px;
+  overflow: hidden;
 `;
 
 const titleStyle = (theme: Theme) => css`

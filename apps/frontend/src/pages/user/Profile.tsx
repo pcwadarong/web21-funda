@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
+import { Loading } from '@/comp/Loading';
 import { ProfileContainer } from '@/feat/user/profile/components/ProfileContainer';
 import { ErrorView } from '@/features/error/components/ErrorView';
 import {
@@ -13,7 +14,7 @@ import {
   useProfileSummary,
   useUnfollowUserMutation,
 } from '@/hooks/queries/userQueries';
-import { useAuthProfileImageUrl, useAuthUser } from '@/store/authStore';
+import { useAuthProfileImageUrl, useAuthUser, useIsAuthReady } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
 /**
@@ -25,6 +26,7 @@ import { useToast } from '@/store/toastStore';
 export const Profile = () => {
   const { userId } = useParams();
   const user = useAuthUser();
+  const isAuthReady = useIsAuthReady();
   const authProfileImageUrl = useAuthProfileImageUrl();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -91,9 +93,19 @@ export const Profile = () => {
 
   const diamondCount = profileSummary?.diamondCount ?? 0;
 
-  // 라우팅 처리: userId가 없으면 현재 사용자 프로필로 리다이렉트
-  if (!userId && user?.id) return <Navigate to={`/profile/${user.id}`} replace />;
-  if (!userId && !user) return <Navigate to="/login" replace />;
+  // 라우팅 처리: /profile(아이디 없음) 접근 시
+  // - 인증 준비 중이면 기다렸다가
+  // - 준비 완료 후 로그인 상태면 내 프로필로
+  // - 비로그인이면 로그인 페이지로 이동
+  if (!userId) {
+    if (!isAuthReady) {
+      return <Loading text="프로필 정보 불러오는 중" />;
+    }
+    if (user?.id) {
+      return <Navigate to={`/profile/${user.id}`} replace />;
+    }
+    return <Navigate to="/login" replace />;
+  }
 
   // 에러 처리
   if (!isProfileLoading && (profileSummaryError || (shouldFetch !== null && !profileSummary))) {
@@ -109,6 +121,9 @@ export const Profile = () => {
     isMyProfile && profileSummary
       ? { ...profileSummary, profileImageUrl: authProfileImageUrl }
       : profileSummary;
+
+  if (!isAuthReady || isProfileLoading || !resolvedProfileSummary)
+    return <Loading text="프로필 정보 불러오는 중" />;
 
   return (
     <ProfileContainer

@@ -46,7 +46,16 @@ function FundyScene({ showOverlay, isFadingOut }: { showOverlay: boolean; isFadi
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <FundyControllerContainer />
 
-      <Canvas shadows camera={{ position: [0, 1.2, 5], fov: 45 }}>
+      <Canvas
+        shadows
+        frameloop="always"
+        camera={{ position: [0, 1.2, 5], fov: 45 }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        dpr={[1, 2]}
+        onCreated={({ gl }) => {
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        }}
+      >
         <Suspense fallback={null}>
           <FundyLighting />
           <FundyModel scale={0.5} position={[0, 0, 0]} animation={animation} enhancedEyes={true} />

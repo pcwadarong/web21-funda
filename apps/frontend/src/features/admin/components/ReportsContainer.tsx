@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useNavigate } from 'react-router-dom';
 
 import type { ReportResponse } from '@/services/reportService';
 import type { Theme } from '@/styles/theme';
@@ -11,6 +12,7 @@ export interface ReportsContainerProps {
 
 export const ReportsContainer = ({ reports, loading, error }: ReportsContainerProps) => {
   const theme = useTheme();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -32,20 +34,14 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
     <div css={tableWrapperStyle}>
       <div css={gridStyle(theme)} role="table" aria-label="신고 목록">
         <div css={headerRowStyle(theme)} role="row">
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="ID">
-            ID
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="리포트 ID">
+            리포트 ID
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="Quiz ID">
-            Quiz ID
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="문제">
-            문제
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID">
+            퀴즈 ID
           </div>
           <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저">
             유저
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="신고 내용">
-            신고 내용
           </div>
           <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜">
             날짜
@@ -57,15 +53,19 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
           </div>
         ) : (
           reports.map(report => (
-            <div key={report.id} css={gridRowStyle(theme)} role="row">
+            <button
+              key={report.id}
+              css={gridRowStyle(theme)}
+              role="row"
+              type="button"
+              onClick={() => navigate(`/admin/quizzes/reports/${report.id}`)}
+              aria-label={`신고 ${report.id} 상세로 이동`}
+            >
               <div css={cellStyle(theme)} role="cell">
                 {report.id}
               </div>
               <div css={cellStyle(theme)} role="cell">
                 {report.quizId}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
-                {report.question ?? '-'}
               </div>
               <div css={cellStyle(theme)} role="cell">
                 {report.userDisplayName
@@ -75,12 +75,9 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
                   : '게스트'}
               </div>
               <div css={cellStyle(theme)} role="cell">
-                {report.report_description}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
                 {new Date(report.createdAt).toLocaleString('ko-KR')}
               </div>
-            </div>
+            </button>
           ))
         )}
       </div>
@@ -99,7 +96,7 @@ const tableWrapperStyle = css`
 `;
 
 const gridStyle = (theme: Theme) => css`
-  min-width: 860px;
+  min-width: 720px;
   background: ${theme.colors.surface.strong};
   display: grid;
   grid-auto-rows: minmax(52px, auto);
@@ -107,9 +104,7 @@ const gridStyle = (theme: Theme) => css`
 
 const headerRowStyle = (theme: Theme) => css`
   display: grid;
-  grid-template-columns:
-    80px 90px minmax(180px, 2fr) minmax(160px, 1.3fr) minmax(220px, 2.2fr)
-    160px;
+  grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
   background-color: ${theme.colors.surface.bold};
   position: sticky;
   top: 0;
@@ -119,10 +114,19 @@ const headerRowStyle = (theme: Theme) => css`
 
 const gridRowStyle = (theme: Theme) => css`
   display: grid;
-  grid-template-columns:
-    80px 90px minmax(180px, 2fr) minmax(160px, 1.3fr) minmax(220px, 2.2fr)
-    160px;
+  grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
   border-bottom: 1px solid ${theme.colors.border.default};
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+
+  &:hover {
+    background: ${theme.colors.surface.bold};
+  }
 `;
 
 const cellStyle = (theme: Theme) => css`

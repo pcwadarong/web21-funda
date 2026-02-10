@@ -30,6 +30,9 @@ const AdminUploads = lazy(() =>
   import('@/pages/admin/Uploads').then(m => ({ default: m.AdminUploads })),
 );
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
+const AdminReportDetail = lazy(() =>
+  import('@/pages/admin/ReportDetail').then(m => ({ default: m.AdminReportDetail })),
+);
 
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
@@ -184,6 +187,7 @@ export const router = createBrowserRouter([
                     element: <Navigate to="/admin/uploads?type=unit-overviews" replace />,
                   },
                   { path: 'quizzes/reports', element: <Reports /> },
+                  { path: 'quizzes/reports/:reportId', element: <AdminReportDetail /> },
                   {
                     path: 'profile-characters/manage',
                     element: <AdminProfileCharacterManagement />,

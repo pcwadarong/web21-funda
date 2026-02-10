@@ -13,6 +13,7 @@ import { Unit } from '../roadmap/entities/unit.entity';
 
 import type {
   AdminQuizDetailResponse,
+  AdminQuizMatchingPair,
   AdminQuizOption,
   AdminQuizUpdateRequest,
   AdminQuizUpdateResponse,
@@ -151,6 +152,69 @@ export class BackofficeService {
       if (nextLanguage !== prevLanguage) {
         contentObject.language = nextLanguage;
         updatedFields.push('language');
+      }
+    }
+
+    if (payload.correctOptionId !== undefined) {
+      const nextCorrectOptionId = payload.correctOptionId.trim();
+      if (!nextCorrectOptionId) {
+        throw new BadRequestException('correctOptionId는 비어 있을 수 없습니다.');
+      }
+
+      // Matching answer editing is not supported here (pairs 구조가 필요).
+      if (quiz.type.trim().toUpperCase() === 'MATCHING') {
+        throw new BadRequestException('매칭 타입 정답 수정은 지원하지 않습니다.');
+      }
+
+      const prevCorrectOptionId = this.getOptionAnswerId(quiz.answer);
+      if (prevCorrectOptionId !== nextCorrectOptionId) {
+        const answerObject = this.toAnswerObject(quiz.answer) ?? {};
+        answerObject.correct_option_id = nextCorrectOptionId;
+        answerObject.value = nextCorrectOptionId;
+        quiz.answer = answerObject;
+        updatedFields.push('answer');
+      }
+    }
+
+    if (payload.correctPairs !== undefined) {
+      if (quiz.type.trim().toUpperCase() !== 'MATCHING') {
+        throw new BadRequestException('correctPairs는 매칭 타입에서만 수정할 수 있습니다.');
+      }
+
+      const normalizedPairs = this.normalizeMatchingPairs(payload.correctPairs);
+
+      const allowed = this.getMatchingAllowedIds(contentObject);
+      if (allowed.left.length === 0 || allowed.right.length === 0) {
+        throw new BadRequestException('매칭 선택지 정보를 찾을 수 없습니다.');
+      }
+
+      if (allowed.left.length !== allowed.right.length) {
+        throw new BadRequestException('좌/우 선택지 개수가 동일하지 않습니다.');
+      }
+
+      if (normalizedPairs.length !== allowed.left.length) {
+        throw new BadRequestException(`정답 쌍은 ${allowed.left.length}개를 모두 매칭해야 합니다.`);
+      }
+
+      const allowedLeftSet = new Set(allowed.left);
+      const allowedRightSet = new Set(allowed.right);
+      for (const pair of normalizedPairs) {
+        if (!allowedLeftSet.has(pair.left)) {
+          throw new BadRequestException('정답 쌍에 존재하지 않는 좌측 항목이 포함되어 있습니다.');
+        }
+        if (!allowedRightSet.has(pair.right)) {
+          throw new BadRequestException('정답 쌍에 존재하지 않는 우측 항목이 포함되어 있습니다.');
+        }
+      }
+
+      const prevPairs = this.getMatchingAnswerPairs(quiz.answer);
+      if (this.buildPairsKey(prevPairs) !== this.buildPairsKey(normalizedPairs)) {
+        const answerObject = this.toAnswerObject(quiz.answer) ?? {};
+        answerObject.correct_pairs = normalizedPairs;
+        answerObject.pairs = normalizedPairs;
+        answerObject.value = normalizedPairs;
+        quiz.answer = answerObject;
+        updatedFields.push('answer');
       }
     }
 
@@ -1134,6 +1198,111 @@ export class BackofficeService {
     return null;
   }
 
+  private toAnswerObject(raw: unknown): Record<string, unknown> | null {
+    if (this.isPlainObject(raw)) {
+      return raw;
+    }
+
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (this.isPlainObject(parsed)) {
+          return parsed;
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  private getOptionAnswerId(answer: unknown): string | null {
+    const obj = this.toAnswerObject(answer);
+    if (!obj) return null;
+    return this.toCleanString(obj.value ?? obj.correct_option_id ?? obj.option_id);
+  }
+
+  private normalizeMatchingPairs(
+    value: AdminQuizMatchingPair[],
+  ): Array<{ left: string; right: string }> {
+    if (!Array.isArray(value)) {
+      throw new BadRequestException('correctPairs 형식이 올바르지 않습니다.');
+    }
+
+    const pairs: Array<{ left: string; right: string }> = [];
+    const usedLeft = new Set<string>();
+    const usedRight = new Set<string>();
+
+    for (const item of value) {
+      if (!item || typeof item !== 'object') {
+        continue;
+      }
+
+      const left = this.toCleanString((item as AdminQuizMatchingPair).left);
+      const right = this.toCleanString((item as AdminQuizMatchingPair).right);
+      if (!left || !right) {
+        continue;
+      }
+
+      if (usedLeft.has(left) || usedRight.has(right)) {
+        throw new BadRequestException('정답 쌍에 중복된 항목이 포함되어 있습니다.');
+      }
+
+      usedLeft.add(left);
+      usedRight.add(right);
+      pairs.push({ left, right });
+    }
+
+    if (pairs.length === 0) {
+      throw new BadRequestException('correctPairs가 비어 있습니다.');
+    }
+
+    return pairs;
+  }
+
+  private getMatchingAnswerPairs(answer: unknown): Array<{ left: string; right: string }> {
+    const obj = this.toAnswerObject(answer);
+    if (!obj) return [];
+
+    const rawPairs = obj.pairs ?? obj.correct_pairs ?? obj.matching ?? obj.value ?? null;
+    if (!Array.isArray(rawPairs)) return [];
+
+    const pairs: Array<{ left: string; right: string }> = [];
+    for (const raw of rawPairs) {
+      if (!this.isPlainObject(raw)) continue;
+      const left = this.toCleanString(raw.left);
+      const right = this.toCleanString(raw.right);
+      if (left && right) {
+        pairs.push({ left, right });
+      }
+    }
+    return pairs;
+  }
+
+  private buildPairsKey(pairs: Array<{ left: string; right: string }>): string {
+    return [...pairs]
+      .map(pair => ({ left: pair.left.trim(), right: pair.right.trim() }))
+      .sort((a, b) =>
+        a.left === b.left ? a.right.localeCompare(b.right) : a.left.localeCompare(b.left),
+      )
+      .map(pair => `${pair.left}|||${pair.right}`)
+      .join('@@@');
+  }
+
+  private getMatchingAllowedIds(contentObject: Record<string, unknown>): {
+    left: string[];
+    right: string[];
+  } {
+    const leftItems = this.normalizeMatchingItems(contentObject.left);
+    const rightItems = this.normalizeMatchingItems(contentObject.right);
+
+    return {
+      left: leftItems.map(item => item.id),
+      right: rightItems.map(item => item.id),
+    };
+  }
+
   private toContentObject(raw: unknown): Record<string, unknown> | null {
     if (this.isPlainObject(raw)) {
       return raw;
@@ -1161,7 +1330,9 @@ export class BackofficeService {
     const result = [...array];
     for (let i = result.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
+      const temp = result[i]!;
+      result[i] = result[j]!;
+      result[j] = temp;
     }
     return result;
   }

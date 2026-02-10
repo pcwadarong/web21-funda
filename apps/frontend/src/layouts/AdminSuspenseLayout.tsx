@@ -19,7 +19,7 @@ const ADMIN_TABS = [
   {
     label: '퀴즈 리포트',
     to: '/admin/quizzes/reports',
-    isActive: (pathname: string) => pathname === '/admin/quizzes/reports',
+    isActive: (pathname: string) => pathname.startsWith('/admin/quizzes/reports'),
   },
   // Uploads use a query string for the selected type; active state should ignore search params.
   {

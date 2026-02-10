@@ -1,5 +1,4 @@
 import { useTheme } from '@emotion/react';
-import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { AdminReportDetailView } from '@/feat/admin/components/AdminReportDetailView';
@@ -10,7 +9,8 @@ export const AdminReportDetailContainer = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  const reportId = useMemo(() => Number(params.reportId), [params.reportId]);
+  const parsed = params.reportId ? parseInt(params.reportId, 10) : NaN;
+  const reportId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 
   const detail = useAdminReportDetail({ reportId });
 
@@ -19,7 +19,7 @@ export const AdminReportDetailContainer = () => {
       theme={theme}
       reportId={reportId}
       onBack={() => navigate('/admin/quizzes/reports')}
-      {...detail}
+      detail={detail}
     />
   );
 };

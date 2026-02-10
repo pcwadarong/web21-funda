@@ -10,13 +10,13 @@ import { CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { CodeFormatter } from '../common/utils/code-formatter';
 import { ProfileCharacter } from '../profile/entities/profile-character.entity';
-import type { QuizContent } from '../roadmap/dto/quiz-list.dto';
 import { Field } from '../roadmap/entities/field.entity';
 import { Quiz } from '../roadmap/entities/quiz.entity';
 import { Step } from '../roadmap/entities/step.entity';
 import { Unit } from '../roadmap/entities/unit.entity';
 
 import type {
+  AdminQuizContent,
   AdminQuizDetailResponse,
   AdminQuizMatchingPair,
   AdminQuizOption,
@@ -1078,10 +1078,10 @@ export class BackofficeService {
   private async buildAdminQuizContent(
     fallbackQuestion: string,
     raw: unknown,
-  ): Promise<QuizContent> {
+  ): Promise<AdminQuizContent> {
     const rawObject = this.toContentObject(raw);
 
-    const content: QuizContent = {
+    const content: AdminQuizContent = {
       question: fallbackQuestion.trim(),
     };
 
@@ -1095,10 +1095,10 @@ export class BackofficeService {
 
     // Preserve raw code/language for admin edit screens (renderer uses code_metadata).
     if (typeof rawObject.code === 'string') {
-      (content as unknown as Record<string, unknown>).code = rawObject.code;
+      content.code = rawObject.code;
     }
     if (typeof rawObject.language === 'string') {
-      (content as unknown as Record<string, unknown>).language = rawObject.language;
+      content.language = rawObject.language;
     }
 
     const options = this.normalizeOptions(rawObject.options, false);

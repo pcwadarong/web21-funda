@@ -43,7 +43,7 @@ describe('BackofficeService', () => {
     };
 
     codeFormatter = {
-      format: jest.fn(),
+      format: jest.fn().mockImplementation(async (code: string) => code),
     };
 
     service = new BackofficeService(

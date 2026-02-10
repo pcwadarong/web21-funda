@@ -23,9 +23,6 @@ export interface AdminQuizDetailResponse {
       left: Array<{ id: string; text: string }>;
       right: Array<{ id: string; text: string }>;
     };
-    // Provided for admin editing (not used by the learner renderer directly).
-    code?: string;
-    language?: string;
   };
   answer: unknown;
   explanation: string | null;

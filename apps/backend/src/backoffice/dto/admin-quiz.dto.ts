@@ -1,9 +1,15 @@
 import type { QuizContent } from '../../roadmap/dto/quiz-list.dto';
 
+export interface AdminQuizContent extends QuizContent {
+  // Raw DB values for admin use (renderer uses code_metadata).
+  code?: string;
+  language?: string;
+}
+
 export interface AdminQuizDetailResponse {
   id: number;
   type: string;
-  content: QuizContent;
+  content: AdminQuizContent;
   // Raw DB values for admin use (not shuffled, not hidden).
   answer: unknown;
   explanation: string | null;

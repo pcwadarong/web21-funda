@@ -34,16 +34,16 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
     <div css={tableWrapperStyle}>
       <div css={gridStyle(theme)} role="table" aria-label="신고 목록">
         <div css={headerRowStyle(theme)} role="row">
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="리포트 ID">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="리포트 ID" tabIndex={0}>
             리포트 ID
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID" tabIndex={0}>
             퀴즈 ID
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저" tabIndex={0}>
             유저
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜" tabIndex={0}>
             날짜
           </div>
         </div>
@@ -53,14 +53,13 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
           </div>
         ) : (
           reports.map(report => (
-            <button
-              key={report.id}
-              css={gridRowStyle(theme)}
-              role="row"
-              type="button"
-              onClick={() => navigate(`/admin/quizzes/reports/${report.id}`)}
-              aria-label={`신고 ${report.id} 상세로 이동`}
-            >
+            <div key={report.id} css={gridRowStyle(theme)} role="row">
+              <button
+                type="button"
+                css={rowLinkButtonStyle}
+                onClick={() => navigate(`/admin/quizzes/reports/${report.id}`)}
+                aria-label={`신고 ${report.id} 상세로 이동`}
+              />
               <div css={cellStyle(theme)} role="cell">
                 {report.id}
               </div>
@@ -77,7 +76,7 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
               <div css={cellStyle(theme)} role="cell">
                 {new Date(report.createdAt).toLocaleString('ko-KR')}
               </div>
-            </button>
+            </div>
           ))
         )}
       </div>
@@ -113,6 +112,7 @@ const headerRowStyle = (theme: Theme) => css`
 `;
 
 const gridRowStyle = (theme: Theme) => css`
+  position: relative;
   display: grid;
   grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
   border-bottom: 1px solid ${theme.colors.border.default};
@@ -129,6 +129,16 @@ const gridRowStyle = (theme: Theme) => css`
   }
 `;
 
+const rowLinkButtonStyle = css`
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 2;
+`;
+
 const cellStyle = (theme: Theme) => css`
   padding: 12px 16px;
   color: ${theme.colors.text.default};
@@ -138,6 +148,8 @@ const cellStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 `;
 
 const headerCellStyle = (theme: Theme) => css`

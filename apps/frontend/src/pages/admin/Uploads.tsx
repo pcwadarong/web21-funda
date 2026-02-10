@@ -62,11 +62,11 @@ export const AdminUploads = () => {
         </label>
       </section>
 
-      <div css={contentStyle} aria-label={`선택된 업로드: ${pageTitle}`}>
+      <section css={contentStyle} aria-label={`선택된 업로드: ${pageTitle}`}>
         {selectedType === 'quizzes' && <AdminQuizUpload />}
         {selectedType === 'unit-overviews' && <AdminUnitOverviewUpload />}
         {selectedType === 'profile-characters' && <AdminProfileCharacters />}
-      </div>
+      </section>
     </div>
   );
 };

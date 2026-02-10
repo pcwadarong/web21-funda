@@ -1,11 +1,10 @@
 import { css } from '@emotion/react';
-import type { Dispatch, SetStateAction } from 'react';
 
 import { Button } from '@/components/Button';
+import type { AdminReportDetailModel } from '@/feat/admin/hooks/useAdminReportDetail';
 import { QuizRenderer } from '@/feat/quiz/components/QuizRenderer';
-import type { CorrectAnswerType, MatchingPair, QuizQuestion, QuizType } from '@/feat/quiz/types';
-import type { AdminQuizDetailResponse, AdminQuizOption } from '@/services/adminService';
-import type { ReportResponse } from '@/services/reportService';
+import type { MatchingPair } from '@/feat/quiz/types';
+import { getMatchingPairs } from '@/features/quiz/utils/getMatchingPairs';
 import type { Theme } from '@/styles/theme';
 import { TextWithCodeStyle } from '@/utils/textParser';
 
@@ -13,98 +12,40 @@ type TabKey = 'edit' | 'preview';
 
 type AdminReportDetailViewProps = {
   theme: Theme;
-  reportId: number;
+  reportId: number | null;
   onBack: () => void;
-
-  loading: boolean;
-  error: string | null;
-  report: ReportResponse | null;
-  quiz: AdminQuizDetailResponse | null;
-
-  quizType: QuizType | null;
-  quizQuestion: QuizQuestion | null;
-  correctAnswer: CorrectAnswerType | null;
-  effectiveCorrectAnswer: CorrectAnswerType | null;
-  previewQuestion: QuizQuestion | null;
-
-  isEditing: boolean;
-  isQuizOpen: boolean;
-  isEditOpen: boolean;
-  isReportOpen: boolean;
-  tab: TabKey;
-  isSaving: boolean;
-  hasChanges: boolean;
-
-  draftQuestion: string;
-  draftExplanation: string;
-  draftOptions: AdminQuizOption[];
-  draftCode: string;
-  draftLanguage: string;
-  draftCorrectOptionId: string;
-  draftMatchingPairs: MatchingPair[];
-
-  setIsQuizOpen: Dispatch<SetStateAction<boolean>>;
-  setIsEditOpen: Dispatch<SetStateAction<boolean>>;
-  setIsReportOpen: Dispatch<SetStateAction<boolean>>;
-  setDraftQuestion: Dispatch<SetStateAction<string>>;
-  setDraftExplanation: Dispatch<SetStateAction<string>>;
-  setDraftCode: Dispatch<SetStateAction<string>>;
-  setDraftLanguage: Dispatch<SetStateAction<string>>;
-  setDraftCorrectOptionId: Dispatch<SetStateAction<string>>;
-  setDraftMatchingPairs: Dispatch<SetStateAction<MatchingPair[]>>;
-  handleChangeOptionText: (optionId: string, value: string) => void;
-
-  startEdit: () => void;
-  cancelEdit: () => Promise<void>;
-  goEditTab: () => void;
-  goPreviewTab: () => Promise<void>;
-  save: () => Promise<void>;
+  detail: AdminReportDetailModel;
 };
 
 export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
-  const {
-    theme,
-    reportId,
-    onBack,
-    loading,
-    error,
-    report,
-    quiz,
-    quizType,
-    quizQuestion,
-    correctAnswer,
-    effectiveCorrectAnswer,
-    previewQuestion,
-    isEditing,
-    isQuizOpen,
-    isEditOpen,
-    isReportOpen,
-    tab,
-    isSaving,
-    hasChanges,
-    draftQuestion,
-    draftExplanation,
-    draftOptions,
-    draftCode,
-    draftLanguage,
-    draftCorrectOptionId,
-    draftMatchingPairs,
-    setIsQuizOpen,
-    setIsEditOpen,
-    setIsReportOpen,
-    setDraftQuestion,
-    setDraftExplanation,
-    setDraftCode,
-    setDraftLanguage,
-    setDraftCorrectOptionId,
-    setDraftMatchingPairs,
-    handleChangeOptionText,
-    startEdit,
-    cancelEdit,
-    goEditTab,
-    goPreviewTab,
-    save,
-  } = props;
+  const { theme, reportId, onBack, detail } = props;
+  const { data, ui, draft, actions } = detail;
+
+  const loading = data.loading;
+  const error = data.error;
+  const report = data.report;
+  const quiz = data.quiz;
+  const quizType = data.quizType;
+  const quizQuestion = data.quizQuestion;
+  const correctAnswer = data.correctAnswer;
+  const effectiveCorrectAnswer = data.effectiveCorrectAnswer;
+  const previewQuestion = data.previewQuestion;
+
+  const isEditing = ui.isEditing;
+  const isQuizOpen = ui.isQuizOpen;
+  const isEditOpen = ui.isEditOpen;
+  const isReportOpen = ui.isReportOpen;
+  const tab = ui.tab as TabKey;
+  const isSaving = ui.isSaving;
+  const hasChanges = ui.hasChanges;
+
+  const draftQuestion = draft.draftQuestion;
+  const draftExplanation = draft.draftExplanation;
+  const draftOptions = draft.draftOptions;
+  const draftCode = draft.draftCode;
+  const draftLanguage = draft.draftLanguage;
+  const draftCorrectOptionId = draft.draftCorrectOptionId;
+  const draftMatchingPairs = draft.draftMatchingPairs;
 
   if (loading) {
     return <div css={statusStyle(theme)}>로딩 중...</div>;
@@ -136,18 +77,23 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
         </div>
         <div css={topRightStyle}>
           {!isEditing ? (
-            <Button variant="primary" type="button" onClick={startEdit}>
+            <Button variant="primary" type="button" onClick={actions.startEdit}>
               수정하기
             </Button>
           ) : (
             <>
-              <Button variant="secondary" type="button" onClick={cancelEdit} disabled={isSaving}>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={actions.cancelEdit}
+                disabled={isSaving}
+              >
                 취소
               </Button>
               <Button
                 variant="primary"
                 type="button"
-                onClick={save}
+                onClick={actions.save}
                 disabled={isSaving || !hasChanges}
               >
                 {isSaving ? '저장 중...' : '저장'}
@@ -161,7 +107,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
         <button
           type="button"
           css={sectionHeaderButtonStyle(theme)}
-          onClick={() => setIsQuizOpen(prev => !prev)}
+          onClick={() => actions.setIsQuizOpen(prev => !prev)}
           aria-expanded={isQuizOpen}
         >
           <h2 css={sectionTitleStyle(theme)}>퀴즈 내용</h2>
@@ -177,7 +123,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
               <QuizRenderer
                 question={quizQuestion}
                 selectedAnswer={
-                  quizType === 'matching' ? { pairs: correctPairs(correctAnswer) } : null
+                  quizType === 'matching' ? { pairs: getMatchingPairs(correctAnswer) } : null
                 }
                 correctAnswer={correctAnswer}
                 onAnswerChange={() => {}}
@@ -204,7 +150,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
           <button
             type="button"
             css={sectionHeaderButtonStyle(theme)}
-            onClick={() => setIsEditOpen(prev => !prev)}
+            onClick={() => actions.setIsEditOpen(prev => !prev)}
             aria-expanded={isEditOpen}
           >
             <h2 css={sectionTitleStyle(theme)}>수정</h2>
@@ -216,19 +162,23 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
               <div css={editHeaderStyle}>
                 <div css={tabBarStyle(theme)} role="tablist" aria-label="미리보기 탭">
                   <button
+                    id="admin-reportdetail-edit-tab"
                     type="button"
                     role="tab"
                     aria-selected={tab === 'edit'}
-                    onClick={goEditTab}
+                    aria-controls="admin-reportdetail-edit-panel"
+                    onClick={actions.goEditTab}
                     css={[tabButtonStyle(theme), tab === 'edit' && tabButtonActiveStyle(theme)]}
                   >
                     편집
                   </button>
                   <button
+                    id="admin-reportdetail-preview-tab"
                     type="button"
                     role="tab"
                     aria-selected={tab === 'preview'}
-                    onClick={goPreviewTab}
+                    aria-controls="admin-reportdetail-preview-panel"
+                    onClick={actions.goPreviewTab}
                     css={[tabButtonStyle(theme), tab === 'preview' && tabButtonActiveStyle(theme)]}
                   >
                     미리보기
@@ -237,7 +187,13 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
               </div>
 
               {tab === 'edit' ? (
-                <div css={formStyle}>
+                <div
+                  css={formStyle}
+                  role="tabpanel"
+                  id="admin-reportdetail-edit-panel"
+                  aria-labelledby="admin-reportdetail-edit-tab"
+                  tabIndex={0}
+                >
                   <label css={labelStyle(theme)} htmlFor="admin-quiz-question">
                     제목/문제
                   </label>
@@ -245,7 +201,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                     id="admin-quiz-question"
                     css={textareaStyle(theme)}
                     value={draftQuestion}
-                    onChange={event => setDraftQuestion(event.target.value)}
+                    onChange={event => actions.setDraftQuestion(event.target.value)}
                   />
 
                   {quizType !== 'matching' && (
@@ -257,7 +213,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                         id="admin-quiz-correct"
                         css={inputStyle(theme)}
                         value={draftCorrectOptionId}
-                        onChange={event => setDraftCorrectOptionId(event.target.value)}
+                        onChange={event => actions.setDraftCorrectOptionId(event.target.value)}
                         disabled={draftOptions.length === 0}
                       >
                         <option value="" disabled>
@@ -279,7 +235,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                               css={optionTextareaStyle(theme)}
                               value={option.text}
                               onChange={event =>
-                                handleChangeOptionText(option.id, event.target.value)
+                                actions.handleChangeOptionText(option.id, event.target.value)
                               }
                             />
                           </label>
@@ -302,7 +258,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                         <Button
                           type="button"
                           variant="secondary"
-                          onClick={() => setDraftMatchingPairs([])}
+                          onClick={() => actions.setDraftMatchingPairs([])}
                         >
                           초기화
                         </Button>
@@ -312,7 +268,9 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                         selectedAnswer={{ pairs: draftMatchingPairs }}
                         correctAnswer={null}
                         onAnswerChange={answer =>
-                          setDraftMatchingPairs((answer as { pairs?: MatchingPair[] }).pairs ?? [])
+                          actions.setDraftMatchingPairs(
+                            (answer as { pairs?: MatchingPair[] }).pairs ?? [],
+                          )
                         }
                         showResult={false}
                         disabled={false}
@@ -330,7 +288,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                         id="admin-quiz-language"
                         css={inputStyle(theme)}
                         value={draftLanguage}
-                        onChange={event => setDraftLanguage(event.target.value)}
+                        onChange={event => actions.setDraftLanguage(event.target.value)}
                         placeholder="javascript"
                       />
 
@@ -341,7 +299,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                         id="admin-quiz-code"
                         css={textareaStyle(theme)}
                         value={draftCode}
-                        onChange={event => setDraftCode(event.target.value)}
+                        onChange={event => actions.setDraftCode(event.target.value)}
                       />
                     </>
                   )}
@@ -353,12 +311,18 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
                     id="admin-quiz-explanation"
                     css={textareaStyle(theme)}
                     value={draftExplanation}
-                    onChange={event => setDraftExplanation(event.target.value)}
+                    onChange={event => actions.setDraftExplanation(event.target.value)}
                     placeholder="(선택) 해설을 입력하세요."
                   />
                 </div>
               ) : (
-                <div css={previewBoxStyle(theme)}>
+                <div
+                  css={previewBoxStyle(theme)}
+                  role="tabpanel"
+                  id="admin-reportdetail-preview-panel"
+                  aria-labelledby="admin-reportdetail-preview-tab"
+                  tabIndex={0}
+                >
                   <div css={questionTitleStyle(theme)}>
                     Q. <TextWithCodeStyle text={draftQuestion} />
                   </div>
@@ -398,7 +362,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
         <button
           type="button"
           css={sectionHeaderButtonStyle(theme)}
-          onClick={() => setIsReportOpen(prev => !prev)}
+          onClick={() => actions.setIsReportOpen(prev => !prev)}
           aria-expanded={isReportOpen}
         >
           <h2 css={sectionTitleStyle(theme)}>신고 정보</h2>
@@ -432,12 +396,6 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
       </section>
     </div>
   );
-};
-
-const correctPairs = (answer: CorrectAnswerType | null): MatchingPair[] => {
-  if (!answer || typeof answer !== 'object' || !('pairs' in answer)) return [];
-  const pairs = (answer as { pairs: MatchingPair[] | null }).pairs;
-  return Array.isArray(pairs) ? pairs : [];
 };
 
 const pageStyle = css`

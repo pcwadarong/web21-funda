@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 
 import { CacheKeys } from '../common/cache/cache-keys';
@@ -72,161 +77,205 @@ export class BackofficeService {
     quizId: number,
     payload: AdminQuizUpdateRequest,
   ): Promise<AdminQuizUpdateResponse> {
-    const repository = this.dataSource.getRepository(Quiz);
-    const quiz = await repository.findOne({ where: { id: quizId } });
+    try {
+      const result = await this.dataSource.transaction(async manager => {
+        const repository = manager.getRepository(Quiz);
 
-    if (!quiz) {
-      throw new NotFoundException('퀴즈를 찾을 수 없습니다.');
-    }
+        // Prevent lost updates by taking a row-level write lock for the duration of the transaction.
+        const quiz = await repository.findOne({
+          where: { id: quizId },
+          lock: { mode: 'pessimistic_write' },
+        });
 
-    const updatedFields: AdminQuizUpdateResponse['updatedFields'] = [];
-
-    const contentObject = this.toContentObject(quiz.content) ?? {};
-
-    if (payload.question !== undefined) {
-      const nextQuestion = payload.question.trim();
-      const prevQuestion = (typeof quiz.question === 'string' ? quiz.question : '').trim();
-
-      // Keep both quiz.question and content.question in sync (renderer prefers content.question).
-      const prevContentQuestion =
-        typeof contentObject.question === 'string' ? contentObject.question.trim() : prevQuestion;
-
-      if (nextQuestion.length === 0) {
-        throw new BadRequestException('question은 비어 있을 수 없습니다.');
-      }
-
-      if (nextQuestion !== prevQuestion || nextQuestion !== prevContentQuestion) {
-        quiz.question = nextQuestion;
-        contentObject.question = nextQuestion;
-        updatedFields.push('question');
-      }
-    }
-
-    if (payload.explanation !== undefined) {
-      const nextExplanation =
-        payload.explanation === null ? null : payload.explanation.trim() || null;
-      const prevExplanation = quiz.explanation?.trim() || null;
-
-      if (nextExplanation !== prevExplanation) {
-        quiz.explanation = nextExplanation;
-        updatedFields.push('explanation');
-      }
-    }
-
-    if (payload.options !== undefined) {
-      const normalized = this.normalizeAdminOptions(payload.options);
-      const prevNormalized = this.normalizeOptions(contentObject.options, false) ?? [];
-
-      const normalizeKey = (options: AdminQuizOption[]) =>
-        options.map(option => `${option.id.trim()}|||${option.text.trim()}`).join('@@@');
-
-      if (normalizeKey(normalized) !== normalizeKey(prevNormalized)) {
-        contentObject.options = normalized;
-        updatedFields.push('options');
-      }
-    }
-
-    if (payload.code !== undefined) {
-      const nextCode = payload.code.trim();
-      const prevCode = typeof contentObject.code === 'string' ? contentObject.code.trim() : '';
-
-      if (nextCode.length === 0) {
-        throw new BadRequestException('code는 비어 있을 수 없습니다.');
-      }
-
-      if (nextCode !== prevCode) {
-        contentObject.code = nextCode;
-        updatedFields.push('code');
-      }
-    }
-
-    if (payload.language !== undefined) {
-      const nextLanguage = payload.language.trim();
-      const prevLanguage =
-        typeof contentObject.language === 'string' ? contentObject.language.trim() : '';
-
-      if (nextLanguage.length === 0) {
-        throw new BadRequestException('language는 비어 있을 수 없습니다.');
-      }
-
-      if (nextLanguage !== prevLanguage) {
-        contentObject.language = nextLanguage;
-        updatedFields.push('language');
-      }
-    }
-
-    if (payload.correctOptionId !== undefined) {
-      const nextCorrectOptionId = payload.correctOptionId.trim();
-      if (!nextCorrectOptionId) {
-        throw new BadRequestException('correctOptionId는 비어 있을 수 없습니다.');
-      }
-
-      // Matching answer editing is not supported here (pairs 구조가 필요).
-      if (quiz.type.trim().toUpperCase() === 'MATCHING') {
-        throw new BadRequestException('매칭 타입 정답 수정은 지원하지 않습니다.');
-      }
-
-      const prevCorrectOptionId = this.getOptionAnswerId(quiz.answer);
-      if (prevCorrectOptionId !== nextCorrectOptionId) {
-        const answerObject = this.toAnswerObject(quiz.answer) ?? {};
-        answerObject.correct_option_id = nextCorrectOptionId;
-        answerObject.value = nextCorrectOptionId;
-        quiz.answer = answerObject;
-        updatedFields.push('answer');
-      }
-    }
-
-    if (payload.correctPairs !== undefined) {
-      if (quiz.type.trim().toUpperCase() !== 'MATCHING') {
-        throw new BadRequestException('correctPairs는 매칭 타입에서만 수정할 수 있습니다.');
-      }
-
-      const normalizedPairs = this.normalizeMatchingPairs(payload.correctPairs);
-
-      const allowed = this.getMatchingAllowedIds(contentObject);
-      if (allowed.left.length === 0 || allowed.right.length === 0) {
-        throw new BadRequestException('매칭 선택지 정보를 찾을 수 없습니다.');
-      }
-
-      if (allowed.left.length !== allowed.right.length) {
-        throw new BadRequestException('좌/우 선택지 개수가 동일하지 않습니다.');
-      }
-
-      if (normalizedPairs.length !== allowed.left.length) {
-        throw new BadRequestException(`정답 쌍은 ${allowed.left.length}개를 모두 매칭해야 합니다.`);
-      }
-
-      const allowedLeftSet = new Set(allowed.left);
-      const allowedRightSet = new Set(allowed.right);
-      for (const pair of normalizedPairs) {
-        if (!allowedLeftSet.has(pair.left)) {
-          throw new BadRequestException('정답 쌍에 존재하지 않는 좌측 항목이 포함되어 있습니다.');
+        if (!quiz) {
+          throw new NotFoundException('퀴즈를 찾을 수 없습니다.');
         }
-        if (!allowedRightSet.has(pair.right)) {
-          throw new BadRequestException('정답 쌍에 존재하지 않는 우측 항목이 포함되어 있습니다.');
+
+        const updatedFields: AdminQuizUpdateResponse['updatedFields'] = [];
+
+        const contentObject = this.toContentObject(quiz.content) ?? {};
+
+        if (payload.question !== undefined) {
+          const nextQuestion = payload.question.trim();
+          const prevQuestion = (typeof quiz.question === 'string' ? quiz.question : '').trim();
+
+          // Keep both quiz.question and content.question in sync (renderer prefers content.question).
+          const prevContentQuestion =
+            typeof contentObject.question === 'string'
+              ? contentObject.question.trim()
+              : prevQuestion;
+
+          if (nextQuestion.length === 0) {
+            throw new BadRequestException('question은 비어 있을 수 없습니다.');
+          }
+
+          if (nextQuestion !== prevQuestion || nextQuestion !== prevContentQuestion) {
+            quiz.question = nextQuestion;
+            contentObject.question = nextQuestion;
+            updatedFields.push('question');
+          }
         }
+
+        if (payload.explanation !== undefined) {
+          const nextExplanation =
+            payload.explanation === null ? null : payload.explanation.trim() || null;
+          const prevExplanation = quiz.explanation?.trim() || null;
+
+          if (nextExplanation !== prevExplanation) {
+            quiz.explanation = nextExplanation;
+            updatedFields.push('explanation');
+          }
+        }
+
+        if (payload.options !== undefined) {
+          const normalized = this.normalizeAdminOptions(payload.options);
+          const prevNormalized = this.normalizeOptions(contentObject.options, false) ?? [];
+
+          const normalizeKey = (options: AdminQuizOption[]) =>
+            options.map(option => `${option.id.trim()}|||${option.text.trim()}`).join('@@@');
+
+          if (normalizeKey(normalized) !== normalizeKey(prevNormalized)) {
+            contentObject.options = normalized;
+            updatedFields.push('options');
+          }
+        }
+
+        if (payload.code !== undefined) {
+          const nextCode = payload.code.trim();
+          const prevCode = typeof contentObject.code === 'string' ? contentObject.code.trim() : '';
+
+          if (nextCode.length === 0) {
+            throw new BadRequestException('code는 비어 있을 수 없습니다.');
+          }
+
+          if (nextCode !== prevCode) {
+            contentObject.code = nextCode;
+            updatedFields.push('code');
+          }
+        }
+
+        if (payload.language !== undefined) {
+          const nextLanguage = payload.language.trim();
+          const prevLanguage =
+            typeof contentObject.language === 'string' ? contentObject.language.trim() : '';
+
+          if (nextLanguage.length === 0) {
+            throw new BadRequestException('language는 비어 있을 수 없습니다.');
+          }
+
+          if (nextLanguage !== prevLanguage) {
+            contentObject.language = nextLanguage;
+            updatedFields.push('language');
+          }
+        }
+
+        if (payload.correctOptionId !== undefined) {
+          const nextCorrectOptionId = payload.correctOptionId.trim();
+          if (!nextCorrectOptionId) {
+            throw new BadRequestException('correctOptionId는 비어 있을 수 없습니다.');
+          }
+
+          if (quiz.type.trim().toUpperCase() === 'MATCHING') {
+            throw new BadRequestException('매칭 타입에서는 correctOptionId를 수정할 수 없습니다.');
+          }
+
+          const prevCorrectOptionId = this.getOptionAnswerId(quiz.answer);
+          if (prevCorrectOptionId !== nextCorrectOptionId) {
+            const answerObject = this.toAnswerObject(quiz.answer) ?? {};
+            answerObject.correct_option_id = nextCorrectOptionId;
+            answerObject.value = nextCorrectOptionId;
+            quiz.answer = answerObject;
+            updatedFields.push('answer');
+          }
+        }
+
+        if (payload.correctPairs !== undefined) {
+          if (quiz.type.trim().toUpperCase() !== 'MATCHING') {
+            throw new BadRequestException('correctPairs는 매칭 타입에서만 수정할 수 있습니다.');
+          }
+
+          const normalizedPairs = this.normalizeMatchingPairs(payload.correctPairs);
+
+          const allowed = this.getMatchingAllowedIds(contentObject);
+          if (allowed.left.length === 0 || allowed.right.length === 0) {
+            throw new BadRequestException('매칭 선택지 정보를 찾을 수 없습니다.');
+          }
+
+          if (allowed.left.length !== allowed.right.length) {
+            throw new BadRequestException('좌/우 선택지 개수가 동일하지 않습니다.');
+          }
+
+          if (normalizedPairs.length !== allowed.left.length) {
+            throw new BadRequestException(
+              `정답 쌍은 ${allowed.left.length}개를 모두 매칭해야 합니다.`,
+            );
+          }
+
+          const allowedLeftSet = new Set(allowed.left);
+          const allowedRightSet = new Set(allowed.right);
+          for (const pair of normalizedPairs) {
+            if (!allowedLeftSet.has(pair.left)) {
+              throw new BadRequestException(
+                '정답 쌍에 존재하지 않는 좌측 항목이 포함되어 있습니다.',
+              );
+            }
+            if (!allowedRightSet.has(pair.right)) {
+              throw new BadRequestException(
+                '정답 쌍에 존재하지 않는 우측 항목이 포함되어 있습니다.',
+              );
+            }
+          }
+
+          const prevPairs = this.getMatchingAnswerPairs(quiz.answer);
+          if (this.buildPairsKey(prevPairs) !== this.buildPairsKey(normalizedPairs)) {
+            const answerObject = this.toAnswerObject(quiz.answer) ?? {};
+            answerObject.correct_pairs = normalizedPairs;
+            answerObject.pairs = normalizedPairs;
+            answerObject.value = normalizedPairs;
+            quiz.answer = answerObject;
+            updatedFields.push('answer');
+          }
+        }
+
+        if (updatedFields.length === 0) {
+          return { id: quiz.id, updated: false, updatedFields: [] };
+        }
+
+        quiz.content = contentObject;
+        await repository.save(quiz);
+
+        return { id: quiz.id, updated: true, updatedFields };
+      });
+
+      if (result.updated) {
+        await this.invalidateQuizContentCache(new Set([result.id]));
       }
 
-      const prevPairs = this.getMatchingAnswerPairs(quiz.answer);
-      if (this.buildPairsKey(prevPairs) !== this.buildPairsKey(normalizedPairs)) {
-        const answerObject = this.toAnswerObject(quiz.answer) ?? {};
-        answerObject.correct_pairs = normalizedPairs;
-        answerObject.pairs = normalizedPairs;
-        answerObject.value = normalizedPairs;
-        quiz.answer = answerObject;
-        updatedFields.push('answer');
+      return result;
+    } catch (err) {
+      // Lock wait timeouts/deadlocks/serialization failures typically surface as QueryFailedError.
+      // Return a clear conflict error to the caller so they can retry.
+      if (this.isConcurrencyFailure(err)) {
+        throw new ConflictException(
+          '다른 요청이 같은 퀴즈를 수정 중입니다. 잠시 후 다시 시도해주세요.',
+        );
       }
+      throw err;
     }
+  }
 
-    if (updatedFields.length === 0) {
-      return { id: quiz.id, updated: false, updatedFields: [] };
-    }
-
-    quiz.content = contentObject;
-    await repository.save(quiz);
-    await this.invalidateQuizContentCache(new Set([quiz.id]));
-
-    return { id: quiz.id, updated: true, updatedFields };
+  private isConcurrencyFailure(err: unknown): boolean {
+    if (!err || typeof err !== 'object') return false;
+    const message = (err as { message?: unknown }).message;
+    const text = typeof message === 'string' ? message.toLowerCase() : '';
+    return (
+      text.includes('deadlock') ||
+      text.includes('could not serialize') ||
+      text.includes('serialization failure') ||
+      text.includes('lock wait timeout') ||
+      text.includes('timeout') ||
+      text.includes('canceling statement due to lock timeout')
+    );
   }
 
   async uploadQuizzesFromJsonl(fileBuffer: Buffer): Promise<UploadSummary> {

@@ -281,6 +281,11 @@ const cardHeaderStyle = css`
   flex-wrap: wrap;
 `;
 
+const spinKeyframes = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
 const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
   display: flex;
   align-items: center;
@@ -295,10 +300,7 @@ const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
 
   ${isRefreshing &&
   css`
-    animation: ${keyframes`
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      `} 1s linear infinite;
+    animation: ${spinKeyframes} 1s linear infinite;
   `}
 
   &:hover {
